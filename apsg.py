@@ -38,7 +38,7 @@ class Vec3(np.ndarray):
     """Base class to store 3D vectors derived from numpy.ndarray
     """
     def __new__(cls, array):
-        # casting na nasi tridu
+        # casting to our class
         obj = np.asarray(array).view(cls)
         return obj
 
@@ -46,26 +46,25 @@ class Vec3(np.ndarray):
         return 'V' + '(%.3f, %.3f, %.3f)' % tuple(self)
 
     def __mul__(self, other):
-        # nasobeni je skalarni soucin
         return np.dot(self, other)
 
     def __abs__(self):
-        # abs vrati delku vektoru
+        # abs returns euclidian norm
         return np.sqrt(self * self)
 
     def __pow__(self, other):
-        # vektorovy soucin nebo mocnina delky vektoru
+        # cross product or power of magnitude
         if np.isscalar(other):
             return pow(abs(self), other)
         else:
             return Vec3(np.cross(self, other))
 
     def __eq__(self, other):
-        # jsou stejne
+        # equal
         return abs(self - other) < 1e-15
 
     def __ne__(self, other):
-        # nejsou stejne
+        # not equal
         return not self == other
 
     def getuv(self):
@@ -151,11 +150,10 @@ class Vec3(np.ndarray):
                (1-cosd(phi))*k*(k*self)
 
     def proj(self, other):
-        '''
-        Vrátí projekci vektoru *u* na vektor *v*::
+        """Returns projection of vector *u* onto vector *v*::
 
             u.proj(v)
-        '''
+        """
         return np.dot(self, other) * other / abs(other) ** 2
 
 
@@ -163,7 +161,7 @@ class Lin(Vec3):
     """Class for linear features
     """
     def __new__(cls, azi, inc):
-        # casting na nasi tridu
+        # casting to our class
         return Vec3(getldc(azi, inc)).view(cls)
 
     def __repr__(self):
@@ -171,42 +169,42 @@ class Lin(Vec3):
         return 'L:%d/%d' % (round(azi), round(inc))
 
     def __add__(self, other):
-        # soucet osnich dat
+        # add axial data
         if self * other < 0:
             other = -other
         return super(Lin, self).__add__(other)
 
     def __iadd__(self, other):
-        # soucet osnich dat
+        # add axial data
         if self * other < 0:
             other = -other
         return super(Lin, self).__iadd__(other)
 
     def __sub__(self, other):
-        # rozdil osnich dat
+        # substract axial data
         if self * other < 0:
             other = -other
         return super(Lin, self).__sub__(other)
 
     def __isub__(self, other):
-        # rozdil osnich dat
+        # substract axial data
         if self * other < 0:
             other = -other
         return super(Lin, self).__isub__(other)
 
     def __pow__(self, other):
-        # vektorovy soucin nebo mocnina delky vektoru
+        # cross product or power of magnitude
         if np.isscalar(other):
             return pow(abs(self), other)
         else:
             return super(Lin, self).cross(other).asfol()
 
     def __eq__(self, other):
-        # jsou stejne
+        # equal
         return abs(self-other) < 1e-15 or abs(self+other) < 1e-15
 
     def __ne__(self, other):
-        # nejsou stejne
+        # not equal
         return not (self == other or self == -other)
 
     def angle(self, lin):
@@ -222,31 +220,31 @@ class Lin(Vec3):
         return acosd(abs(np.dot(self.getuv(), lin.getuv())))
 
     def cross(self, other):
-        """Vrátí planární strukturní prvek definovaný dvěma lineárními
-        prvky *k* a *l*::
+        """Returns planar feature defined by two linear
+        features *f* a *g*::
 
-            k.cross(l)
+            f.cross(g)
 
-        Stejný výsledek je možné získat vektorovým součinem
-        lineárních prvků::
+        Same as::
 
-            k**l
+            f**g
         """
-        return Vec3(np.cross(self, other)).asfol
+        return Vec3(np.cross(self, other)).asfol()
 
     def rotate(self, axis, phi):
-        """Vrátí výsledek rotace lineárního prvku *l* o úhel *phi*
-        kolem osy *a*::
+        """Returns rotated linear feature *l* about angle *phi*
+        around axis *a*::
 
             l.rotate(a, phi)
 
-        Osa *a* je objekt třídy :class:`apsg.lin` anebo :class:`apsg.vec3`
-        a úhel *phi* je ve stupních.
+        Axis *a* is instance of :class:`apsg.Lin` or :class:`apsg.Vec3`
+        and angle *phi* is given in degrees.
         """
         return Vec3(self).rotate(Vec3(axis), phi).aslin()
 
     def proj(self, other):
-        """Vrátí projekci lineárního prvku *k* na prvek *l*::
+        """Returns vector projection of linear feature *k* on
+        feature *l*::
 
             k.proj(l)
         """
@@ -270,7 +268,7 @@ class Fol(Vec3):
     """Class for planar features
     """
     def __new__(cls, azi, inc):
-        # casting na nasi tridu
+        # casting to our class
         return Vec3(getfdc(azi, inc)).view(cls)
 
     def __repr__(self):
@@ -278,42 +276,42 @@ class Fol(Vec3):
         return 'S:%d/%d' % (round(azi), round(inc))
 
     def __add__(self, other):
-        # soucet osnich dat
+        # add axial data
         if self * other < 0:
             other = -other
         return super(Fol, self).__add__(other)
 
     def __iadd__(self, other):
-        # soucet osnich dat
+        # add axial data
         if self * other < 0:
             other = -other
         return super(Fol, self).__iadd__(other)
 
     def __sub__(self, other):
-        # rozdil osnich dat
+        # substract axial data
         if self * other < 0:
             other = -other
         return super(Fol, self).__sub__(other)
 
     def __isub__(self, other):
-        # rozdil osnich dat
+        # substract axial data
         if self * other < 0:
             other = -other
         return super(Fol, self).__isub__(other)
 
     def __pow__(self, other):
-        # vektorovy soucin nebo mocnina delky vektoru
+        # cross product or power of magnitude
         if np.isscalar(other):
             return pow(abs(self), other)
         else:
             return super(Fol, self).cross(other).aslin()
 
     def __eq__(self, other):
-        # jsou stejne
+        # equal
         return abs(self-other) < 1e-15 or abs(self+other) < 1e-15
 
     def __ne__(self, other):
-        # nejsou stejne
+        # not equal
         return not (self == other or self == -other)
 
     def angle(self, fol):
@@ -329,31 +327,31 @@ class Fol(Vec3):
         return acosd(abs(np.dot(self.getuv(), fol.getuv())))
 
     def cross(self, other):
-        """Vrátí lineární strukturní prvek definovaný intersekcí
-        dvou planárních prvků *f* a *g*::
+        """Returns linear feature defined as intersection of
+        two planar features *f* a *g*::
 
             f.cross(g)
 
-        Stejný výsledek je možné získat vektorovým součinem
-        planárních prvků::
+        Same as::
 
             f**g
         """
         return Vec3(np.cross(self, other)).aslin()
 
     def rotate(self, axis, phi):
-        """Vrátí výsledek rotace planárního prvku *f* o úhel *phi*
-        kolem osy *a*::
+        """Returns rotated planar feature *f* about angle *phi*
+        around axis *a*::
 
             f.rotate(a, phi)
 
-        Osa *a* je objekt třídy :class:`apsg.lin` anebo :class:`apsg.vec3`
-        a úhel *phi* je ve stupních.
+        Axis *a* is instance of :class:`apsg.Lin` or :class:`apsg.Vec3`
+        and angle *phi* is given in degrees.
         """
         return Vec3(self).rotate(Vec3(axis), phi).asfol()
 
     def proj(self, other):
-        """Vrátí projekci planárního prvku *f* na prvek *g*::
+        """Returns vector projection of planar feature *f* on
+        feature *g*::
 
             f.proj(g)
         """
@@ -377,15 +375,181 @@ class Pole(Fol):
     """Class for planar features represented as poles
     """
     def __new__(cls, azi, inc):
-        # casting na nasi tridu
+        # casting to our class
         return Vec3(getfdc(azi, inc)).view(cls)
 
     def __repr__(self):
         azi, inc = self.dd
         return 'P:%d/%d' % (round(azi), round(inc))
 
+class Dataset(list):
+    """Dataset class
+    """
+    def __init__(self, data=[],
+                 name='Default',
+                 color='blue',
+                 lines={'lw':1, 'ls':'-'},
+                 points={'marker':'o', 's':20},
+                 poles={'marker':'v', 's':36, 'facecolors':None},
+                 vecs={'marker':'d', 's':24, 'facecolors':None}):
+        if not issubclass(type(data), list):
+            data = [data]
+        list.__init__(self, data)
+        self.name = name
+        self.color = color
+        self.lines = lines
+        self.points = points
+        self.poles = poles
+        self.vecs = vecs
+
+    @classmethod
+    def fromcsv(cls, fname, typ=Lin, acol=1, icol=2, name='Default', color='blue'):
+        """Read dataset from csv"""
+        import csv
+        with open(fname, 'rb') as csvfile:
+            sniffer = csv.Sniffer()
+            dialect = sniffer.sniff(csvfile.read(1024))
+            csvfile.seek(0)
+            d = cls(name=name, color=color)
+            reader = csv.reader(csvfile, dialect)
+            if sniffer.has_header:
+                reader.next()
+            for row in reader:
+                if len(row) > 1:
+                    d.append(typ(float(row[acol-1]), float(row[icol-1])))
+            return d
+
+    def __repr__(self):
+        return self.name + ':' + repr(list(self))
+
+    def __add__(self, d2):
+        # merge Datasets
+        return Dataset(list(self) + d2, self.name, self.color,
+                       self.lines, self.points, self.poles)
+
+    def getlins(self):
+        """return only Lin from Dataset"""
+        return Dataset([d for d in self if type(d) == Lin], self.name,
+                        self.color, self.points)
+
+    def getfols(self):
+        """return only Fol from Dataset"""
+        return Dataset([d for d in self if type(d) == Fol], self.name,
+                        self.color, self.lines)
+
+    def getpoles(self):
+        """return only Poles from Dataset"""
+        return Dataset([d for d in self if type(d) == Pole], self.name,
+                        self.color, self.poles)
+
+    def getvecs(self):
+        """return only Vec3 from Dataset"""
+        return Dataset([d for d in self if type(d) == Vec3], self.name,
+                        self.color, self.vecs)
+
+    @property
+    def numlins(self):
+        """number of Lin in Dataset"""
+        return len(self.getlins())
+
+    @property
+    def numfols(self):
+        """number of Fol in Dataset"""
+        return len(self.getfols())
+
+    @property
+    def numpoles(self):
+        """number of Poles in Dataset"""
+        return len(self.getpoles())
+
+    @property
+    def numvecs(self):
+        """number of Vec3 in Dataset"""
+        return len(self.getvecs())
+
+    def aslin(self):
+        """Convert all data in Dataset to Lin"""
+        return Dataset([d.aslin() for d in self], self.name, self.color,
+                        self.lines, self.points, self.poles)
+
+    def asfol(self):
+        """Convert all data in Dataset to Fol"""
+        return Dataset([d.asfol() for d in self], self.name, self.color,
+                        self.lines, self.points, self.poles)
+
+    def aspole(self):
+        """Convert all data in Dataset to Pole"""
+        return Dataset([d.aspole() for d in self], self.name, self.color,
+                        self.lines, self.points, self.poles)
+
+    @property
+    def resultant(self):
+        """calculate resultant vector of Dataset"""
+        r = deepcopy(self[0])
+        for v in self[1:]:
+            r += v
+        return r
+
+    @property
+    def rdegree(self):
+        """degree of preffered orientation od Dataset"""
+        r = self.resultant
+        n = len(self)
+        return 100*(2*abs(r) - n)/n
+
+    def cross(self, d=None):
+        """return cross products of all pairs in Dataset"""
+        res = Dataset(name='Pairs')
+        if d == None:
+            for i in range(len(self)-1):
+                for j in range(i+1, len(self)):
+                    res.append(self[i]**self[j])
+        else:
+            for i in range(len(self)):
+                for j in range(len(d)):
+                    res.append(self[i]**d[j])
+        return res
+
+    def rotate(self, axis, phi):
+        """rotate Dataset"""
+        dr = Dataset(name='R-' + self.name, color=self.color)
+        for e in self:
+            dr.append(e.rotate(axis, phi))
+        return dr
+
+    def center(self):
+        """rotate E3 direction of Dataset to vertical"""
+        ot = self.ortensor
+        azi, inc = ot.eigenlins[2][0].dd
+        return self.rotate(Lin(azi - 90, 0), 90 - inc)
+
+    def angle(self, other):
+        """list of angles between given feature and Dataset"""
+        r = []
+        for e in self:
+            r.append(e.angle(other))
+        return np.array(r)
+
+    @property
+    def ortensor(self):
+        """return orientation tensor of Dataset"""
+        return Ortensor(self)
+
+    @property
+    def dd(self):
+        """array of dip directions and dips of Dataset"""
+        return np.array([d.dd for d in self]).T
+
+    def density(self, k=100, npoints=180):
+        """calculate density of Dataset"""
+        return Density(self, k, npoints)
+
+    def plot(self):
+        """Show Dataset on Schmidt net"""
+        return SchmidtNet(self)
+
 class Ortensor(object):
-    """trida Ortensor"""
+    """Ortensor class"""
     def __init__(self, d):
         self.M = np.dot(np.array(d).T, np.array(d))
         self.n = len(d)
@@ -432,155 +596,6 @@ class Ortensor(object):
         d2 = Dataset(v2.asfol(), name='E2', color='magenta')
         d3 = Dataset(v3.asfol(), name='E3', color='green')
         return d1, d2, d3
-
-class Dataset(list):
-    """Class for dataset i.e. set of planar or linear features
-    """
-    def __init__(self, data=[],
-                 name='Default',
-                 color='blue',
-                 lines={'lw':1, 'ls':'-'},
-                 points={'marker':'o', 's':20},
-                 poles={'marker':'v', 's':36, 'facecolors':None},
-                 vecs={'marker':'d', 's':24, 'facecolors':None}):
-        if not issubclass(type(data), list):
-            data = [data]
-        list.__init__(self, data)
-        self.name = name
-        self.color = color
-        self.lines = lines
-        self.points = points
-        self.poles = poles
-        self.vecs = vecs
-
-    def __repr__(self):
-        return self.name + ':' + repr(list(self))
-
-    def __add__(self, d2):
-        # slouci datasety
-        return Dataset(list(self) + d2, self.name, self.color,
-                       self.lines, self.points, self.poles)
-
-    def getlins(self):
-        """Vrati pouze lineace z datasetu"""
-        return Dataset([d for d in self if type(d) == Lin], self.name,
-                        self.color, self.points)
-
-    def getfols(self):
-        """Vrati pouze foliace z datasetu"""
-        return Dataset([d for d in self if type(d) == Fol], self.name,
-                        self.color, self.lines)
-
-    def getpoles(self):
-            """Vrati pouze poly z datasetu"""
-            return Dataset([d for d in self if type(d) == Pole], self.name,
-                            self.color, self.poles)
-
-    def getvecs(self):
-        """Vrati pouze foliace z datasetu"""
-        return Dataset([d for d in self if type(d) == Vec3], self.name,
-                        self.color, self.vecs)
-
-    @property
-    def numlins(self):
-        """Vrati pocet lineaci v datasetu"""
-        return len(self.getlins())
-
-    @property
-    def numfols(self):
-        """Vrati pocet foliacii v datasetu"""
-        return len(self.getfols())
-
-    @property
-    def numpoles(self):
-        """Vrati pocet polu v datasetu"""
-        return len(self.getpoles())
-
-    @property
-    def numvecs(self):
-        """Vrati pocet vektoru v datasetu"""
-        return len(self.getvecs())
-
-    def aslin(self):
-        """Prevede vsechny data v datasetu na lineace"""
-        return Dataset([d.aslin() for d in self], self.name, self.color,
-                        self.lines, self.points, self.poles)
-
-    def asfol(self):
-        """Prevede vsechny data v datasetu na foliace"""
-        return Dataset([d.asfol() for d in self], self.name, self.color,
-                        self.lines, self.points, self.poles)
-
-    def aspole(self):
-        """Prevede vsechny data v datasetu na poly"""
-        return Dataset([d.aspole() for d in self], self.name, self.color,
-                        self.lines, self.points, self.poles)
-
-    @property
-    def resultant(self):
-        """Vrati resultant vektor"""
-        r = deepcopy(self[0])
-        for v in self[1:]:
-            r += v
-        return r
-
-    @property
-    def rdegree(self):
-        """Vrati stupen prednostni orientace"""
-        r = self.resultant
-        n = len(self)
-        return 100*(2*abs(r) - n)/n
-
-    def cross(self, d=None):
-        """All pairs cross product"""
-        res = Dataset(name='Pairs')
-        if d == None:
-            for i in range(len(self)-1):
-                for j in range(i+1, len(self)):
-                    res.append(self[i]**self[j])
-        else:
-            for i in range(len(self)):
-                for j in range(len(d)):
-                    res.append(self[i]**d[j])
-        return res
-
-    def rotate(self, axis, phi):
-        """Rotace datasetu kolem osi axis o uhel phi"""
-        dr = Dataset(name='R-' + self.name, color=self.color)
-        for e in self:
-            dr.append(e.rotate(axis, phi))
-        return dr
-
-    def center(self):
-        """Centrovani smeru E3 do vertikalni polohy"""
-        ot = self.ortensor
-        azi, inc = ot.eigenlins[2][0].dd
-        return self.rotate(Lin(azi - 90, 0), 90 - inc)
-
-    def angle(self, other):
-        """Vrati uhel mezi elementy datasetu a danym prvkem"""
-        r = []
-        for e in self:
-            r.append(e.angle(other))
-        return np.array(r)
-
-    @property
-    def ortensor(self):
-        """Vrati orienacni tenzor"""
-        return Ortensor(self)
-
-    @property
-    def dd(self):
-        """Vratí pole azimutů a sklonů měření v datasetu"""
-        return np.array([d.dd for d in self]).T
-
-    def density(self, k=100, npoints=180):
-        """Vrati density objekt"""
-        return Density(self, k, npoints)
-
-    def plot(self):
-        """Show dataset on Schmidt net"""
-        return SchmidtNet(self)
 
 class Datasource(object):
     """PySDB database access class"""
@@ -634,36 +649,39 @@ class Datasource(object):
         return fol + lin
 
 class Density(object):
-    """trida Density"""
-    def __init__(self, d, k=100, npoints=180):
+    """Density grid class"""
+    def __init__(self, d, k=100, npoints=180, nc=6, cmap=plt.cm.Greys):
         self.dcdata = np.asarray(d)
-        self.calculate(k, npoints)
+        self.k = k
+        self.npoints = npoints
+        self.nc = nc
+        self.cm = cmap
+        self.calculate()
 
-    def calculate(self, k, npoints=180):
+    def __repr__(self):
+        return ('Density grid from %d data with %d contours.\n' + \
+                'Gridded on %d points.\n' + \
+                'Values: k=%.4g E=%.4g s=%.4g\n' + \
+                'Max. weight: %.4g') % (self.n, self.nc, self.npoints,
+                                        self.k, self.E, self.s, self.weights.max())
+
+    def calculate(self):
         import matplotlib.tri as tri
         self.xg = 0
         self.yg = 0
-        for rho in np.linspace(0, 1, np.round(npoints/2/np.pi)):
-            theta = np.linspace(0, 360, np.round(npoints*rho + 1))[:-1]
+        for rho in np.linspace(0, 1, np.round(self.npoints/2/np.pi)):
+            theta = np.linspace(0, 360, np.round(self.npoints*rho + 1))[:-1]
             self.xg = np.hstack((self.xg, rho*sind(theta)))
             self.yg = np.hstack((self.yg, rho*cosd(theta)))
         self.dcgrid = np.asarray(getldc(*getldd(self.xg, self.yg)))
-        n = len(self.dcdata)
-        E = n/k  # some points on periphery are equivalent
-        s = np.sqrt((n*(0.5-1/k)/k))
-        w = np.zeros(len(self.xg))
-        for i in range(n):
-            w += np.exp(k*(np.abs(np.dot(self.dcdata[i], self.dcgrid))-1))
-        self.density = (w-E)/s
+        self.n = len(self.dcdata)
+        self.E = self.n/self.k  # some points on periphery are equivalent
+        self.s = np.sqrt((self.n*(0.5 - 1/self.k)/self.k))
+        self.weights = np.zeros(len(self.xg))
+        for i in range(self.n):
+            self.weights += np.exp(self.k*(np.abs(np.dot(self.dcdata[i], self.dcgrid))-1))
+        self.density = (self.weights - self.E)/self.s
         self.triang = tri.Triangulation(self.xg, self.yg)
-
-    def plot(self, N=6, cm=plt.cm.jet):
-        plt.figure()
-        plt.gca().set_aspect('equal')
-        plt.tricontourf(self.triang, self.density, N, cm=cm)
-        plt.colorbar()
-        plt.tricontour(self.triang, self.density, N, colors='k')
-        plt.show()
 
     def plotcountgrid(self):
         plt.figure()
@@ -672,45 +690,41 @@ class Density(object):
         plt.show()
 
 class SchmidtNet(object):
-    """trida SchmidtNet"""
+    """SchmidtNet class"""
     def __init__(self, *data):
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111)
         self.grid = True
         self.data = []
         self.density = None
-        self.nc = 6
-        self.cm = plt.cm.Greys
         for arg in data:
             self.add(arg)
         if data:
             self.show()
 
     def clear(self):
-        """odebere vsechny data"""
+        """remove all data from projection"""
         self.data = []
         self.density = None
-        self.nc = 6
-        self.cm = plt.cm.Greys
         self.show()
 
     def getlin(self):
-        """vrati Lin pomoci kliknuti mysi"""
+        """get Lin by mouse click"""
         x, y = plt.ginput(1)[0]
         return Lin(*getldd(x, y))
 
     def getfol(self):
-        """vrati Fol pomoci kliknuti mysi"""
+        """get Fol by mouse click"""
         x, y = plt.ginput(1)[0]
         return Fol(*getfdd(x, y))
 
     def getpole(self):
-        """vrati Pole pomoci kliknuti mysi"""
+        """get Pole by mouse click"""
         x, y = plt.ginput(1)[0]
         return Pole(*getfdd(x, y))
 
     def getlins(self):
-        """vrati Lin Dataset pomoci kliknuti mysi"""
+        """Collect Dataset of Lin by mouse clicks"""
         pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
         l = Dataset()
         for x, y in pts:
@@ -718,7 +732,7 @@ class SchmidtNet(object):
         return l
 
     def getfols(self):
-        """vrati Fol Dataset pomoci kliknuti mysi"""
+        """Collect Dataset of Fol by mouse clicks"""
         pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
         f = Dataset()
         for x, y in pts:
@@ -726,7 +740,7 @@ class SchmidtNet(object):
         return f
 
     def getpoles(self):
-        """vrati Pole Dataset pomoci kliknuti mysi"""
+        """Collect Dataset of Pole by mouse clicks"""
         pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
         f = Dataset()
         for x, y in pts:
@@ -734,7 +748,7 @@ class SchmidtNet(object):
         return f
 
     def add(self, *args):
-        """Prida dataset do seznamu prvku"""
+        """Add data to projection"""
         if not issubclass(type(args), tuple):
             args = tuple(args)
         for arg in args:
@@ -752,7 +766,7 @@ class SchmidtNet(object):
                                 ' cannot be plotted as linear feature.')
 
     def set_density(self, density):
-        """Nastavi density grid"""
+        """Set density grid"""
         if type(density) == Density or density == None:
             self.density = density
 
@@ -779,9 +793,9 @@ class SchmidtNet(object):
         #density grid
         if self.density:
             cs = self.ax.tricontourf(self.density.triang, self.density.density,
-                                     self.nc, cmap=self.cm, zorder=1)
+                                     self.density.nc, cmap=self.density.cm, zorder=1)
             self.ax.tricontour(self.density.triang, self.density.density,
-                               self.nc, colors='k', zorder=1)
+                               self.density.nc, colors='k', zorder=1)
 
         #grid
         if self.grid:
@@ -862,7 +876,7 @@ class SchmidtNet(object):
         plt.savefig(filename)
 
 def fixpair(f, l):
-    """Upraví měření foliace a lineace, tak aby lineace ležela ve foliaci::
+    """Fix pair of planar and linear data, so Lin is within plane Fol::
 
         fok,lok = fixpair(f,l)
     """
@@ -870,28 +884,8 @@ def fixpair(f, l):
     ang = (Vec3(l).angle(f) - 90)/2
     return Vec3(f).rotate(ax, ang).asfol(), Vec3(l).rotate(ax, -ang).aslin()
 
-
-def readcsv(fname, planar=0, acol=1, icol=2, name='Default', color='blue'):
-    """Nacte data z csv souboru do datasetu"""
-    import csv
-    with open(fname, 'rb') as csvfile:
-        sniffer = csv.Sniffer()
-        dialect = sniffer.sniff(csvfile.read(1024))
-        csvfile.seek(0)
-        d = Dataset(name=name, color=color)
-        reader = csv.reader(csvfile, dialect)
-        if sniffer.has_header:
-            reader.next()
-        for row in reader:
-            if planar:
-                d.append(Fol(float(row[acol-1]), float(row[icol-1])))
-            else:
-                d.append(Lin(float(row[acol-1]), float(row[icol-1])))
-        return d
-
-
 def rose(a, bins=13, **kwargs):
-    """vykresli ružicový histogram uhlu"""
+    """Plot rose diagram"""
     if isinstance(a, Dataset):
         a, _ = a.dd
     fig = plt.figure()

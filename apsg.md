@@ -30,7 +30,7 @@ active one for easier interactive work:
 
 
 
-Basic operation with vectors
+Basic operations with vectors
 ----------------------------
 
 Instance of vector object `Vec3` could be created from any iterable
@@ -282,8 +282,8 @@ Test data:[L:120/60, L:116/50, L:132/45, S:90/60, S:84/52]
 Same dataset could be created in simple way as:
 
 ~~~~{.python}
->>> d = Dataset([ Lin(120,60), Lin(116,50), Lin(132,45),
-...               Fol(90,60), Fol(84,52) ], name='Test data')
+>>> d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45),
+...              Fol(90,60), Fol(84,52)], name='Test data')
 ... 
 >>> print(d)
 Test data:[L:120/60, L:116/50, L:132/45, S:90/60, S:84/52]
@@ -356,6 +356,53 @@ R-Default:[L:90/57, L:103/50, L:120/55, L:89/41]
 
 
 
+Ortensor class
+==============
+
+`Ortensor` class represents orientation tensor of set of planar
+or linear features. Eigenvalues and eigenvectors could be obtained
+by methods `eigenvals` and `eigenvects`. Eigenvectors could be also
+represented by linear or planar features using properties eigenlins
+and eigenfols.
+
+~~~~{.python}
+>>> ot = Ortensor(d)
+>>> ot.eigenvals()
+(0.97013794785464869, 0.023838538194604419, 0.006023513950748253)
+>>> ot.eigenvects()
+(V(0.269, -0.545, -0.794), V(-0.962, -0.185, -0.199), V(0.038, -0.818, 0.57
+5))
+>>> ot.eigenlins
+(E1:[L:116/53], E2:[L:11/11], E3:[L:273/35])
+>>> ot.eigenfols
+(E1:[S:296/37], E2:[S:191/79], E3:[S:93/55])
+
+~~~~~~~~~~~~~
+
+
+
+Density class
+=============
+
+`Density` class represents Gaussian point density distribution of 
+features from dataset. Parameters of calculation could be defined
+by parameter `k` and by amount of counting points `npoints`. Number
+of countours and color map could be modified by `nc` and `cm` properties.
+
+~~~~{.python}
+>>> c = Density(d, npoints=90)
+>>> c
+Density grid from 4 data with 6 contours.
+Gridded on 90 points.
+Values: k=100 E=0.04 s=0.14
+Max. weight: 1.443
+>>> c.plotcountgrid()
+
+~~~~~~~~~~~~~
+
+![](figures/apsg_figure27_1.png)\
+
+
 Schmidt projection
 ==================
 
@@ -364,11 +411,11 @@ be visualized in Schmidt projection:
 
 ~~~~{.python}
 >>> SchmidtNet(Fol(214,55), Lin(120,60), Pole(240,60), Vec3([-1,-2,1]))
-<apsg.SchmidtNet object at 0x7ffda794a0d0>
+<apsg.SchmidtNet object at 0x7f683166ad90>
 
 ~~~~~~~~~~~~~
 
-![](figures/apsg_figure26_1.png)\
+![](figures/apsg_figure28_1.png)\
 
 
 Features could be added to Schmidt projection programatically as well:
@@ -382,7 +429,7 @@ Features could be added to Schmidt projection programatically as well:
 
 ~~~~~~~~~~~~~
 
-![](figures/apsg_figure27_1.png)\
+![](figures/apsg_figure29_1.png)\
 
 
 `Dataset` properties as color and name are used during visualization:
@@ -390,25 +437,31 @@ Features could be added to Schmidt projection programatically as well:
 ~~~~{.python}
 >>> s.clear()
 >>> d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)], name='
-Test', color='red')
+Test')
 >>> s.add(d)
+>>> s.add(d.ortensor)
 >>> s.show()
 
 ~~~~~~~~~~~~~
 
-![](figures/apsg_figure28_1.png)\
+![](figures/apsg_figure30_1.png)\
 
 
 All mentioned classes could be freely combined:
 
 ~~~~{.python}
 >>> s.clear()
->>> d = Dataset([ Lin(120,70), Lin(116,42), Lin(132,45), Lin(95,52) ], colo
-r='green')
+>>> d = Dataset([Lin(120,70), Lin(116,42), Lin(132,45),
+...              Lin(95,52), Lin(114,48), Lin(118,58) ],
+...             color='red', name='Test data')
+... 
 >>> s.add(d)
 >>> s.add(d.resultant)
+>>> s.add(*d.ortensor.eigenfols)
+>>> c = Density(d, nc=8)
+>>> s.add(c)
 >>> s.show()
 
 ~~~~~~~~~~~~~
 
-![](figures/apsg_figure29_1.png)\
+![](figures/apsg_figure31_1.png)\

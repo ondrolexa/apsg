@@ -27,7 +27,7 @@ active one for easier interactive work:
 from apsg import *
 @
 
-Basic operation with vectors
+Basic operations with vectors
 ----------------------------
 
 Instance of vector object `Vec3` could be created from any iterable
@@ -194,8 +194,8 @@ print(d)
 Same dataset could be created in simple way as:
 
 <<term = True>>=
-d = Dataset([ Lin(120,60), Lin(116,50), Lin(132,45),
-              Fol(90,60), Fol(84,52) ], name='Test data')
+d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45),
+             Fol(90,60), Fol(84,52)], name='Test data')
 print(d)
 @
 
@@ -239,6 +239,37 @@ we can use method `rotate`:
 d.rotate(l1, 45)
 @
 
+Ortensor class
+==============
+
+`Ortensor` class represents orientation tensor of set of planar
+or linear features. Eigenvalues and eigenvectors could be obtained
+by methods `eigenvals` and `eigenvects`. Eigenvectors could be also
+represented by linear or planar features using properties eigenlins
+and eigenfols.
+
+<<term = True>>=
+ot = Ortensor(d)
+ot.eigenvals()
+ot.eigenvects()
+ot.eigenlins
+ot.eigenfols
+@
+
+Density class
+=============
+
+`Density` class represents Gaussian point density distribution of 
+features from dataset. Parameters of calculation could be defined
+by parameter `k` and by amount of counting points `npoints`. Number
+of countours and color map could be modified by `nc` and `cm` properties.
+
+<<term = True, fig = True, width = '8cm', f_pos = "h!">>=
+c = Density(d, npoints=90)
+c
+c.plotcountgrid()
+@
+
 Schmidt projection
 ==================
 
@@ -263,8 +294,9 @@ s.show()
 
 <<term = True, fig = True, width = '8cm', f_pos = "h!">>=
 s.clear()
-d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)], name='Test', color='red')
+d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)], name='Test')
 s.add(d)
+s.add(d.ortensor)
 s.show()
 @
 
@@ -272,9 +304,14 @@ All mentioned classes could be freely combined:
 
 <<term = True, fig = True, width = '8cm', f_pos = "h!">>=
 s.clear()
-d = Dataset([ Lin(120,70), Lin(116,42), Lin(132,45), Lin(95,52) ], color='green')
+d = Dataset([Lin(120,70), Lin(116,42), Lin(132,45),
+             Lin(95,52), Lin(114,48), Lin(118,58) ],
+            color='red', name='Test data')
 s.add(d)
 s.add(d.resultant)
+s.add(*d.ortensor.eigenfols)
+c = Density(d, nc=8)
+s.add(c)
 s.show()
 @
 
