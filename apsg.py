@@ -17,6 +17,7 @@ Example::
 
 # import modulu
 from __future__ import division, print_function
+from copy import deepcopy
 import sqlite3
 import numpy as np
 import matplotlib.pyplot as plt
@@ -440,8 +441,8 @@ class Dataset(list):
                  color='blue',
                  lines={'lw':1, 'ls':'-'},
                  points={'marker':'o', 's':20},
-                 poles={'marker':'v', 's':36,
-                 'facecolors':None}):
+                 poles={'marker':'v', 's':36, 'facecolors':None},
+                 vecs={'marker':'d', 's':24, 'facecolors':None}):
         if not issubclass(type(data), list):
             data = [data]
         list.__init__(self, data)
@@ -450,6 +451,8 @@ class Dataset(list):
         self.lines = lines
         self.points = points
         self.poles = poles
+        self.vecs = vecs
+
     def __repr__(self):
         return self.name + ':' + repr(list(self))
 
@@ -461,17 +464,22 @@ class Dataset(list):
     def getlins(self):
         """Vrati pouze lineace z datasetu"""
         return Dataset([d for d in self if type(d) == Lin], self.name,
-                        self.color, self.lines, self.points, self.poles)
+                        self.color, self.points)
 
     def getfols(self):
         """Vrati pouze foliace z datasetu"""
         return Dataset([d for d in self if type(d) == Fol], self.name,
-                        self.color, self.lines, self.points, self.poles)
+                        self.color, self.lines)
 
     def getpoles(self):
             """Vrati pouze poly z datasetu"""
             return Dataset([d for d in self if type(d) == Pole], self.name,
-                            self.color, self.lines, self.points, self.poles)
+                            self.color, self.poles)
+
+    def getvecs(self):
+        """Vrati pouze foliace z datasetu"""
+        return Dataset([d for d in self if type(d) == Vec3], self.name,
+                        self.color, self.vecs)
 
     @property
     def numlins(self):
@@ -487,6 +495,11 @@ class Dataset(list):
     def numpoles(self):
         """Vrati pocet polu v datasetu"""
         return len(self.getpoles())
+
+    @property
+    def numvecs(self):
+        """Vrati pocet vektoru v datasetu"""
+        return len(self.getvecs())
 
     def aslin(self):
         """Prevede vsechny data v datasetu na lineace"""
@@ -506,7 +519,7 @@ class Dataset(list):
     @property
     def resultant(self):
         """Vrati resultant vektor"""
-        r = self[0]
+        r = deepcopy(self[0])
         for v in self[1:]:
             r += v
         return r
@@ -729,7 +742,7 @@ class SchmidtNet(object):
                 self.set_density(arg)
             elif type(arg) == Dataset:
                 self.data.append(arg)
-            elif type(arg) == Lin or type(arg) == Fol or type(arg) == Pole:
+            elif type(arg) == Lin or type(arg) == Fol or type(arg) == Pole or type(arg) == Vec3:
                 self.data.append(Dataset(arg))
             elif type(arg) == Ortensor:
                 for v in arg.eigenlins:
@@ -818,6 +831,14 @@ class SchmidtNet(object):
                     h = self.ax.scatter(x, y, color=arg.color, zorder=3, **arg.poles)
                 handles.append(h)
                 labels.append('P ' + arg.name)
+            #vector point
+            dd = arg.getvecs()
+            if dd:
+                for d in dd:
+                    x, y = d.aslin().getxy()
+                    h = self.ax.scatter(x, y, color=arg.color, zorder=3, **arg.vecs)
+                handles.append(h)
+                labels.append('V ' + arg.name)
         # legend
         if handles:
             self.ax.legend(handles, labels, bbox_to_anchor=(1.03, 1), loc=2,

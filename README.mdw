@@ -23,12 +23,9 @@ Import APSG module
 APSG module could be imported either into own namespace or into
 active one for easier interactive work:
 
-~~~~{.python}
->>> from apsg import *
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+from apsg import *
+@
 
 Basic operation with vectors
 ----------------------------
@@ -36,101 +33,64 @@ Basic operation with vectors
 Instance of vector object `Vec3` could be created from any iterable
 object as list, tuple or array:
 
-~~~~{.python}
->>> u = Vec3([1, -2, 3])
->>> v = Vec3([-2, 1, 1])
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+u = Vec3([1, -2, 3])
+v = Vec3([-2, 1, 1])
+@
 
 For common vector operation we can use standard mathematical operators
 or special methods using dot notation:
 
-~~~~{.python}
->>> u+v
-V(-1.000, -1.000, 4.000)
->>> u-v
-V(3.000, -3.000, 2.000)
->>> 3*u-2*v
-V(7.000, -8.000, 7.000)
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+u+v
+u-v
+3*u-2*v
+@
 
 Its magnitude or length is most commonly defined as its Euclidean norm
 and could be calculated using `abs`:
 
-~~~~{.python}
->>> abs(v)
-2.4494897427831779
->>> abs(u)
-3.7416573867739413
->>> abs(2*u)
-7.4833147735478827
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+abs(v)
+abs(u)
+abs(2*u)
+@
 
 For *dot product* we can use multiplification operator `*`
 or `dot` method:
 
-~~~~{.python}
->>> u*v
--1
->>> u.dot(v)
--1
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+u*v
+u.dot(v)
+@
 
 For *cross product* we can use operator `**` or method `cross`:
 
-~~~~{.python}
->>> u**v
-V(-5.000, -7.000, -3.000)
->>> u.cross(v)
-V(-5.000, -7.000, -3.000)
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+u**v
+u.cross(v)
+@
 
 To project vector $\vec{u}$ onto vector $\vec{v}$ we can use
 method `proj`:
 
-~~~~{.python}
->>> u.proj(v)
-V(0.333, -0.167, -0.167)
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+u.proj(v)
+@
 
 To find angle (in degrees) between to vectors we use method `angle`:
 
-~~~~{.python}
->>> u.angle(v)
-96.263952719927218
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+u.angle(v)
+@
 
 Method `rotate` provide possibility to rotate vector around
 another vector. For example, to rotate vector $\vec{u}$ around
 vector $\vec{v}$ for 45°:
 
-~~~~{.python}
->>> u.rotate(v,45)
-V(2.248, 0.558, 2.939)
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+u.rotate(v,45)
+@
 
 Classes Fol a Lin
 =================
@@ -148,117 +108,75 @@ on stereographic projection.
 To create instance of `Fol` or `Lin` class, we have to provide
 dip direction and dip, both in degrees:
 
-~~~~{.python}
->>> Lin(120,60)
-L:120/60
->>> Fol(216,62)
-S:216/62
->>> Pole(216,62)
-P:216/62
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+Lin(120,60)
+Fol(216,62)
+Pole(216,62)
+@
 
 or we can create instance from `Vec3` object:
 
-~~~~{.python}
->>> u.aslin()
-L:297/53
->>> u.asfol()
-S:117/37
->>> u.aspole()
-P:117/37
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+u.aslin()
+u.asfol()
+u.aspole()
+@
 
 Vec3 methods for Fol a Lin
 --------------------------
 
 To find angle between two linear or planar features:
 
-~~~~{.python}
->>> l1 = Lin(110,40)
->>> l2 = Lin(160,30)
->>> l1.angle(l2)
-41.597412680035468
->>> p1 = Fol(330,50)
->>> p2 = Fol(250,40)
->>> p1.angle(p2)
-54.696399321975328
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+l1 = Lin(110,40)
+l2 = Lin(160,30)
+l1.angle(l2)
+p1 = Fol(330,50)
+p2 = Fol(250,40)
+p1.angle(p2)
+@
 
 To construct planar feature defined by two linear features:
 
-~~~~{.python}
->>> l1**l2
-S:113/40
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+l1**l2
+@
 
 To construct linear feature defined as intersection of two planar features:
 
-~~~~{.python}
->>> p1**p2
-L:278/36
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+p1**p2
+@
 
 **Cross product** of planar and linear features could be used to:
 
 - construct plane defined by linear feature and normal
   of planar feature:
 
-~~~~{.python}
->>> l2**p2
-S:96/53
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+l2**p2
+@
 
 - or to find perpendicular linear feature on given plane.
 
-~~~~{.python}
->>> p2**l2
-L:276/37
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+p2**l2
+@
 
 Combined **cross product** could be used to find perpendicular
 projection of linear feature onto planar one, or project planar
 feature to pass trough linear feature:
 
-~~~~{.python}
->>> p2**l2**p2
-L:176/13
->>> l2**p2**l2
-S:223/52
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+p2**l2**p2
+l2**p2**l2
+@
 
 To rotate structural features we can use method `rotate`:
 
-~~~~{.python}
->>> p2.rotate(l2,45)
-S:269/78
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+p2.rotate(l2,45)
+@
 
 Dataset class
 =============
@@ -266,95 +184,60 @@ Dataset class
 `Dataset` class serve as list or container of `Fol` or `Lin` objects. It allows
 grouping of features either for visualization or batch analysis.
 
-~~~~{.python}
->>> d = Dataset(name='Test data')
->>> for dd in [Lin(120,60), Lin(116,50), Lin(132,45), Fol(90,60), Fol(84,52
-)]:
-...     d.append(dd)
-... 
->>> print(d)
-Test data:[L:120/60, L:116/50, L:132/45, S:90/60, S:84/52]
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+d = Dataset(name='Test data')
+for dd in [Lin(120,60), Lin(116,50), Lin(132,45), Fol(90,60), Fol(84,52)]:
+    d.append(dd)
+print(d)
+@
 
 Same dataset could be created in simple way as:
 
-~~~~{.python}
->>> d = Dataset([ Lin(120,60), Lin(116,50), Lin(132,45),
-...               Fol(90,60), Fol(84,52) ], name='Test data')
-... 
->>> print(d)
-Test data:[L:120/60, L:116/50, L:132/45, S:90/60, S:84/52]
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+d = Dataset([ Lin(120,60), Lin(116,50), Lin(132,45),
+              Fol(90,60), Fol(84,52) ], name='Test data')
+print(d)
+@
 
 Method `len` returns number of features in dataset:
 
-~~~~{.python}
->>> len(d)
-5
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+len(d)
+@
 
 To select only linear or planar features we can use methods
 `getlins` a `getfols`. Properties `numlin` a `numfol` gives
 number of linear or planar features in dataset.
 
-~~~~{.python}
->>> d.getlins()
-Test data:[L:120/60, L:116/50, L:132/45]
->>> d.numlins
-3
->>> d.getfols()
-Test data:[S:90/60, S:84/52]
->>> d.numfols
-2
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+d.getlins()
+d.numlins
+d.getfols()
+d.numfols
+@
 
 Another property of dataset is `resultant`,which returns
 mean or resultant of all features in dataset:
 
-~~~~{.python}
->>> d.getlins().resultant
-L:123/52
->>> d.getfols().resultant
-S:87/56
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+d.getlins().resultant
+d.getfols().resultant
+@
 
 To measure angles between all features in dataset and another feature,
 we can use method `angle`:
 
-~~~~{.python}
->>> d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)])
->>> d.angle(d.resultant)
-array([  7.74624256,   2.54411184,  12.80183755,  12.94898331])
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)])
+d.angle(d.resultant)
+@
 
 To rotate all features in dataset around another feature,
 we can use method `rotate`:
 
-~~~~{.python}
->>> d.rotate(l1, 45)
-R-Default:[L:90/57, L:103/50, L:120/55, L:89/41]
-
-~~~~~~~~~~~~~
-
-
+<<term = True>>=
+d.rotate(l1, 45)
+@
 
 Schmidt projection
 ==================
@@ -362,53 +245,36 @@ Schmidt projection
 Any `Fol`, `Lin`, `Pole`, `Vec3' or `Dataset` object could
 be visualized in Schmidt projection:
 
-~~~~{.python}
->>> SchmidtNet(Fol(214,55), Lin(120,60), Pole(240,60), Vec3([-1,-2,1]))
-<apsg.SchmidtNet object at 0x7fab0d4aa190>
-
-~~~~~~~~~~~~~
-
-![](figures/README_figure26_1.png)\
-
+<<term = True, fig = True, width = '8cm', f_pos = "h!">>=
+SchmidtNet(Fol(214,55), Lin(120,60), Pole(240,60), Vec3([-1,-2,1]))
+@
 
 Features could be added to Schmidt projection programatically as well:
 
-~~~~{.python}
->>> s = SchmidtNet()
->>> s.add(Fol(150,40))
->>> s.add(Pole(150,40))
->>> s.add(Lin(112,30))
->>> s.show()
-
-~~~~~~~~~~~~~
-
-![](figures/README_figure27_1.png)\
-
+<<term = True, fig = True, width = '8cm', f_pos = "h!">>=
+s = SchmidtNet()
+s.add(Fol(150,40))
+s.add(Pole(150,40))
+s.add(Lin(112,30))
+s.show()
+@
 
 `Dataset` properties as color and name are used during visualization:
 
-~~~~{.python}
->>> s.clear()
->>> d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)], name='
-Test', color='red')
->>> s.add(d)
->>> s.show()
-
-~~~~~~~~~~~~~
-
-![](figures/README_figure28_1.png)\
-
+<<term = True, fig = True, width = '8cm', f_pos = "h!">>=
+s.clear()
+d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)], name='Test', color='red')
+s.add(d)
+s.show()
+@
 
 All mentioned classes could be freely combined:
 
-~~~~{.python}
->>> s.clear()
->>> d = Dataset([ Lin(120,70), Lin(116,42), Lin(132,45), Lin(95,52) ], colo
-r='green')
->>> s.add(d)
->>> s.add(d.resultant)
->>> s.show()
+<<term = True, fig = True, width = '8cm', f_pos = "h!">>=
+s.clear()
+d = Dataset([ Lin(120,70), Lin(116,42), Lin(132,45), Lin(95,52) ], color='green')
+s.add(d)
+s.add(d.resultant)
+s.show()
+@
 
-~~~~~~~~~~~~~
-
-![](figures/README_figure29_1.png)\
