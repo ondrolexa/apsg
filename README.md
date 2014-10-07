@@ -279,7 +279,7 @@ Any `Fol`, `Lin`, `Pole`, `Vec3` or `Dataset` object could be visualized in Schm
 
 ~~~~ {.python}
 >>> SchmidtNet(Fol(214,55), Lin(120,60), Pole(240,60), Vec3([-1,-2,1]))
-<apsg.SchmidtNet object at 0x7f91a3bc82d0>
+<apsg.SchmidtNet object at 0x7f1977bdd2d0>
 ~~~~
 
 ![](figures/apsg_figure27_1.png)
