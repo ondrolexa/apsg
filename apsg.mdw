@@ -315,3 +315,17 @@ s.add(c)
 s.show()
 @
 
+Some tricks
+-----------
+
+<<term = True, fig = True, width = '8cm', f_pos = "h!">>=
+s.clear()
+p = Fol(250,40)
+l = Lin(160,30)
+d = Dataset([p,l], color='blue', lines={'lw': 2}, points={'s': 60})
+d1 = Dataset([l**p, p**l], color='red', name='1CP')
+d2 = Dataset([p**l**p, l**p**l], color='green', name='2CP')
+s.add(d, d1, d2)
+s.show()
+@
+

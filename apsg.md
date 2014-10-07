@@ -411,7 +411,7 @@ be visualized in Schmidt projection:
 
 ~~~~{.python}
 >>> SchmidtNet(Fol(214,55), Lin(120,60), Pole(240,60), Vec3([-1,-2,1]))
-<apsg.SchmidtNet object at 0x7f6abaf5fd50>
+<apsg.SchmidtNet object at 0x7ff2b08b1d90>
 
 ~~~~~~~~~~~~~
 
@@ -465,3 +465,21 @@ All mentioned classes could be freely combined:
 ~~~~~~~~~~~~~
 
 ![](figures/apsg_figure31_1.png)\
+
+
+Some tricks
+-----------
+
+~~~~{.python}
+>>> s.clear()
+>>> p = Fol(250,40)
+>>> l = Lin(160,30)
+>>> d = Dataset([p,l], color='blue', lines={'lw': 2}, points={'s': 60})
+>>> d1 = Dataset([l**p, p**l], color='red', name='1CP')
+>>> d2 = Dataset([p**l**p, l**p**l], color='green', name='2CP')
+>>> s.add(d, d1, d2)
+>>> s.show()
+
+~~~~~~~~~~~~~
+
+![](figures/apsg_figure32_1.png)\
