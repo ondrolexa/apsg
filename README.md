@@ -161,15 +161,6 @@ S:96/53
 L:276/37
 ~~~~
 
-Combined **cross product** could be used to find perpendicular projection of linear feature onto planar one, or project planar feature to pass trough linear feature:
-
-~~~~ {.python}
->>> p2**l2**p2
-L:176/13
->>> l2**p2**l2
-S:223/52
-~~~~
-
 To rotate structural features we can use method `rotate`:
 
 ~~~~ {.python}
@@ -279,19 +270,19 @@ Max. weight: 1.443
 >>> c.plotcountgrid()
 ~~~~
 
-![](figures/apsg_figure27_1.png)
+![](figures/apsg_figure26_1.png)
 
 Schmidt projection
 ==================
 
-Any `Fol`, `Lin`, `Pole`, `Vec3' or`Dataset\` object could be visualized in Schmidt projection:
+Any `Fol`, `Lin`, `Pole`, `Vec3` or `Dataset` object could be visualized in Schmidt projection:
 
 ~~~~ {.python}
 >>> SchmidtNet(Fol(214,55), Lin(120,60), Pole(240,60), Vec3([-1,-2,1]))
-<apsg.SchmidtNet object at 0x7ff2b08b1d90>
+<apsg.SchmidtNet object at 0x7f91a3bc82d0>
 ~~~~
 
-![](figures/apsg_figure28_1.png)
+![](figures/apsg_figure27_1.png)
 
 Features could be added to Schmidt projection programatically as well:
 
@@ -303,7 +294,7 @@ Features could be added to Schmidt projection programatically as well:
 >>> s.show()
 ~~~~
 
-![](figures/apsg_figure29_1.png)
+![](figures/apsg_figure28_1.png)
 
 `Dataset` properties as color and name are used during visualization:
 
@@ -316,7 +307,7 @@ Test')
 >>> s.show()
 ~~~~
 
-![](figures/apsg_figure30_1.png)
+![](figures/apsg_figure29_1.png)
 
 All mentioned classes could be freely combined:
 
@@ -334,10 +325,12 @@ All mentioned classes could be freely combined:
 >>> s.show()
 ~~~~
 
-![](figures/apsg_figure31_1.png)
+![](figures/apsg_figure30_1.png)
 
 Some tricks
 -----------
+
+Double cross product is allowed:
 
 ~~~~ {.python}
 >>> s.clear()
@@ -347,6 +340,19 @@ Some tricks
 >>> d1 = Dataset([l**p, p**l], color='red', name='1CP')
 >>> d2 = Dataset([p**l**p, l**p**l], color='green', name='2CP')
 >>> s.add(d, d1, d2)
+>>> s.show()
+~~~~
+
+![](figures/apsg_figure31_1.png)
+
+Correct measurements of planar linear pairs:
+
+~~~~ {.python}
+>>> p1, l1 = fixpair(p,l)
+>>> s.clear()
+>>> d = Dataset([p, l], color='blue', name='Original')
+>>> d1 = Dataset([p1, l1], color='green', name='Fixed')
+>>> s.add(d, d1)
 >>> s.show()
 ~~~~
 

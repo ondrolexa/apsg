@@ -163,15 +163,6 @@ l2**p2
 p2**l2
 @
 
-Combined **cross product** could be used to find perpendicular
-projection of linear feature onto planar one, or project planar
-feature to pass trough linear feature:
-
-<<term = True>>=
-p2**l2**p2
-l2**p2**l2
-@
-
 To rotate structural features we can use method `rotate`:
 
 <<term = True>>=
@@ -273,7 +264,7 @@ c.plotcountgrid()
 Schmidt projection
 ==================
 
-Any `Fol`, `Lin`, `Pole`, `Vec3' or `Dataset` object could
+Any `Fol`, `Lin`, `Pole`, `Vec3` or `Dataset` object could
 be visualized in Schmidt projection:
 
 <<term = True, fig = True, width = '8cm', f_pos = "h!">>=
@@ -318,6 +309,8 @@ s.show()
 Some tricks
 -----------
 
+Double cross product is allowed:
+
 <<term = True, fig = True, width = '8cm', f_pos = "h!">>=
 s.clear()
 p = Fol(250,40)
@@ -329,3 +322,13 @@ s.add(d, d1, d2)
 s.show()
 @
 
+Correct measurements of planar linear pairs:
+
+<<term = True, fig = True, width = '8cm', f_pos = "h!">>=
+p1, l1 = fixpair(p,l)
+s.clear()
+d = Dataset([p, l], color='blue', name='Original')
+d1 = Dataset([p1, l1], color='green', name='Fixed')
+s.add(d, d1)
+s.show()
+@
