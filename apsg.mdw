@@ -1,6 +1,9 @@
-% Structural geology module for Python
-% Ondrej Lexa <lexa.ondrej@gmail.com>
-% 2014
+---
+title: Structural geology module for Python
+author: Ondrej Lexa
+email: <lexa.ondrej@gmail.com>
+institute: ÚPSG, Charles University
+---
 
 Download and install APSG module
 --------------------------------
