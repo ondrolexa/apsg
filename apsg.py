@@ -867,7 +867,7 @@ class SchmidtNet(object):
             lbl[lbl.index(next(l for l in lbl if l.startswith('0')))] = 'E'
             cb.set_ticklabels(lbl)
         #finish
-        plt.subplots_adjust(left=0.02, bottom=0.05, right=0.78, top=0.95)
+        plt.subplots_adjust(left=0.02, bottom=0.05, right=0.75, top=0.95)
         self.fig.canvas.draw()
         plt.show()
         plt.ioff()
