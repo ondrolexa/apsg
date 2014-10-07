@@ -1,12 +1,12 @@
-First steps with APSG module
-============================
-
-APSG defines several new python classes to easily manage, analyze and visualize orientational structural geology data. Base class `Vec3` is derived from `numpy.array` class and affers several new method which will be explained on following examples.
-
 Download and install APSG module
 --------------------------------
 
 APSG is distributed as a single file with no traditional python install implemented yet. For now, download `apsg.py` file and save it to working directory or to any folder on `PYTHONPATH`.
+
+First steps with APSG module
+============================
+
+APSG defines several new python classes to easily manage, analyze and visualize orientational structural geology data. Base class `Vec3` is derived from `numpy.array` class and affers several new method which will be explained on following examples.
 
 Import APSG module
 ------------------
@@ -253,7 +253,7 @@ Any `Fol`, `Lin`, `Pole`, `Vec3' or`Dataset\` object could be visualized in Schm
 
 ~~~~ {.python}
 >>> SchmidtNet(Fol(214,55), Lin(120,60), Pole(240,60), Vec3([-1,-2,1]))
-<apsg.SchmidtNet object at 0x7f4d1ae010d0>
+<apsg.SchmidtNet object at 0x7f45e14710d0>
 ~~~~
 
 ![](figures/apsg_figure26_1.png)
