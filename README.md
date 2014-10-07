@@ -1,41 +1,39 @@
-% Structural geology toolbox for Python
+% Structural geology module for Python
 % Ondrej Lexa <lexa.ondrej@gmail.com>
 % 2014
 
-First steps with APSG toolbox
-=============================
+First steps with APSG module
+============================
 
-APSG poskytuje několik nových tříd pro práci se strukturními daty a
-jejich vizualizací. Základním kamenem je třída pro práci s vektory
-`vec3`, která je odvozena z třídy `array` knihovny numpy.
-Kromě běžně dostupných metod této třídy poskytuje několik nových.
-Ukážeme si je v následujících příkladech.
+APSG defines several new python classes to easily manage, analyze
+and visualize orientational structural geology data. Base class `Vec3`
+is derived from `numpy.array` class and affers several new method
+which will be explained on following examples.
 
-Stažení a instalace modulu APSG
--------------------------------
+Download and install APSG module
+--------------------------------
 
-Aktuální verzi modulu APSG si můžete stáhnout z adresy:<http://is.gd/apsg_modul>.
-Soubor `apsg.py` uložte do pracovního adresáře, nebo kdekoliv na `PYTHONPATH`.
+APSG is distributed as a single file with no traditional python install
+implemented yet. For now, download `apsg.py` file and save it to
+working directory or to any folder on `PYTHONPATH`.
 
-Načtení modulu APSG
--------------------
+Import APSG module
+------------------
 
-Modul APSG můžeme načíst jak do vlastního jmenného prostoru tak do
-aktivního, což je pro interaktivní práci výhodnejší:
+APSG module could be imported either into own namespace or into
+active one for easier interactive work:
 
 ~~~~{.python}
 >>> from apsg import *
-
 ~~~~~~~~~~~~~
 
-Základy práce s vektory
------------------------
+Basic operation with vectors
+----------------------------
 
-Inicializace objektu vektor je možná z libovolného iterovatelného typu,
-nejčastěji seznamu.
+Vector object of `Vec3` class could be created from any iterable
+object as list, tuple or array:
 
 ~~~~{.python}
 >>> u = Vec3([1, -2, 3])
 >>> v = Vec3([-2, 1, 1])
-
 ~~~~~~~~~~~~~
