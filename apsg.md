@@ -99,7 +99,7 @@ V(-5.000, -7.000, -3.000)
 
 
 
-To project vector $\vec{u}$ onto vector $\vec{v}$ we can use
+To project vector `u` onto vector `v` we can use
 method `proj`:
 
 ~~~~{.python}
@@ -121,8 +121,8 @@ To find angle (in degrees) between to vectors we use method `angle`:
 
 
 Method `rotate` provide possibility to rotate vector around
-another vector. For example, to rotate vector $\vec{u}$ around
-vector $\vec{v}$ for 45°:
+another vector. For example, to rotate vector `u` around
+vector `v` for 45°:
 
 ~~~~{.python}
 >>> u.rotate(v,45)
@@ -364,7 +364,7 @@ be visualized in Schmidt projection:
 
 ~~~~{.python}
 >>> SchmidtNet(Fol(214,55), Lin(120,60), Pole(240,60), Vec3([-1,-2,1]))
-<apsg.SchmidtNet object at 0x7f45e14710d0>
+<apsg.SchmidtNet object at 0x7ffda794a0d0>
 
 ~~~~~~~~~~~~~
 
