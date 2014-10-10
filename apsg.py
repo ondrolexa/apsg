@@ -691,61 +691,28 @@ class Density(object):
 
 class SchmidtNet(object):
     """SchmidtNet class"""
+    # store number of all used figures
+    figlist = []
+
     def __init__(self, *data):
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111)
+        # set figure number
+        if SchmidtNet.figlist:
+            self.fignum = max(SchmidtNet.figlist) + 1
+        else:
+            self.fignum = 1
+        SchmidtNet.figlist.append(self.fignum)
         self.grid = True
         self.data = []
         self.density = None
         for arg in data:
             self.add(arg)
-        if data:
-            self.show()
+        self.refresh()
 
     def clear(self):
         """remove all data from projection"""
         self.data = []
         self.density = None
-        self.show()
-
-    def getlin(self):
-        """get Lin by mouse click"""
-        x, y = plt.ginput(1)[0]
-        return Lin(*getldd(x, y))
-
-    def getfol(self):
-        """get Fol by mouse click"""
-        x, y = plt.ginput(1)[0]
-        return Fol(*getfdd(x, y))
-
-    def getpole(self):
-        """get Pole by mouse click"""
-        x, y = plt.ginput(1)[0]
-        return Pole(*getfdd(x, y))
-
-    def getlins(self):
-        """Collect Dataset of Lin by mouse clicks"""
-        pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
-        l = Dataset()
-        for x, y in pts:
-            l.append(Lin(*getldd(x, y)))
-        return l
-
-    def getfols(self):
-        """Collect Dataset of Fol by mouse clicks"""
-        pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
-        f = Dataset()
-        for x, y in pts:
-            f.append(Fol(*getfdd(x, y)))
-        return f
-
-    def getpoles(self):
-        """Collect Dataset of Pole by mouse clicks"""
-        pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
-        f = Dataset()
-        for x, y in pts:
-            f.append(Pole(*getfdd(x, y)))
-        return f
+        self.refresh()
 
     def add(self, *args):
         """Add data to projection"""
@@ -764,20 +731,21 @@ class SchmidtNet(object):
             else:
                 raise Exception('Wrong argument! '+type(arg) +
                                 ' cannot be plotted as linear feature.')
+        self.refresh()
 
     def set_density(self, density):
         """Set density grid"""
         if type(density) == Density or density == None:
             self.density = density
+            self.refresh()
 
-    def show(self):
+    def refresh(self):
         """Draw figure"""
-        plt.ion()
         # test if closed
-        if not plt._pylab_helpers.Gcf.figs.values():
-            self.fig = plt.figure()
+        if not plt.fignum_exists(self.fignum):
+            self.fig = plt.figure(num=self.fignum, facecolor='white')
+            self.fig.canvas.set_window_title('Schmidt Net %d' % self.fignum)
             self.ax = self.fig.add_subplot(111)
-        # now ok
         self.ax.cla()
         self.ax.set_aspect('equal')
         self.ax.set_autoscale_on(False)
@@ -786,7 +754,7 @@ class SchmidtNet(object):
 
         # Projection circle
         self.ax.text(0, 1.02, 'N', ha='center', fontsize=16)
-        self.ax.add_artist(plt.Circle((0, 0), 1, color='w', zorder=0))
+        #self.ax.add_artist(plt.Circle((0, 0), 1, color='w', zorder=0))
         TH = np.linspace(0, 360, 361)
         self.ax.plot(sind(TH), cosd(TH), 'k')
 
@@ -868,12 +836,64 @@ class SchmidtNet(object):
             cb.set_ticklabels(lbl)
         #finish
         plt.subplots_adjust(left=0.02, bottom=0.05, right=0.75, top=0.95)
-        self.fig.canvas.draw()
-        plt.show()
-        plt.ioff()
+        #self.fig.canvas.draw()
+        plt.draw()
+
+    def show(self, *args, **kw):
+        """Show figure"""
+        if not plt.fignum_exists(self.fignum):
+            self.refresh()
+        plt.show(*args, **kw)
 
     def savefig(self, filename='schmidtnet.pdf'):
+        if not plt.fignum_exists(self.fignum):
+            self.refresh()
         plt.savefig(filename)
+
+    def getlin(self):
+        """get Lin by mouse click"""
+        self.show()
+        x, y = plt.ginput(1)[0]
+        return Lin(*getldd(x, y))
+
+    def getfol(self):
+        """get Fol by mouse click"""
+        self.show()
+        x, y = plt.ginput(1)[0]
+        return Fol(*getfdd(x, y))
+
+    def getpole(self):
+        """get Pole by mouse click"""
+        self.show()
+        x, y = plt.ginput(1)[0]
+        return Pole(*getfdd(x, y))
+
+    def getlins(self):
+        """Collect Dataset of Lin by mouse clicks"""
+        self.show()
+        pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
+        l = Dataset()
+        for x, y in pts:
+            l.append(Lin(*getldd(x, y)))
+        return l
+
+    def getfols(self):
+        """Collect Dataset of Fol by mouse clicks"""
+        self.show()
+        pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
+        f = Dataset()
+        for x, y in pts:
+            f.append(Fol(*getfdd(x, y)))
+        return f
+
+    def getpoles(self):
+        """Collect Dataset of Pole by mouse clicks"""
+        self.show()
+        pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
+        f = Dataset()
+        for x, y in pts:
+            f.append(Pole(*getfdd(x, y)))
+        return f
 
 def fixpair(f, l):
     """Fix pair of planar and linear data, so Lin is within plane Fol::
@@ -905,3 +925,4 @@ if __name__ == "__main__":
                 name='apsg')
     c = Density(d)
     s = SchmidtNet(c, d)
+    s.show()
