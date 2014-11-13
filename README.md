@@ -107,11 +107,11 @@ P:216/62
 or we can create instance from `Vec3` object:
 
 ~~~~ {.python}
->>> u.aslin()
+>>> u.aslin
 L:297/53
->>> u.asfol()
+>>> u.asfol
 S:117/37
->>> u.aspole()
+>>> u.aspole
 P:117/37
 ~~~~
 
@@ -200,14 +200,14 @@ Method `len` returns number of features in dataset:
 5
 ~~~~
 
-To select only linear or planar features we can use methods `getlins` a `getfols`. Properties `numlin` a `numfol` gives number of linear or planar features in dataset.
+To select only linear or planar features we can use methods `lins` and `fols`. Properties `numlins` a `numfols` gives number of linear or planar features in dataset.
 
 ~~~~ {.python}
->>> d.getlins()
+>>> d.lins
 Test data:[L:120/60, L:116/50, L:132/45]
 >>> d.numlins
 3
->>> d.getfols()
+>>> d.fols
 Test data:[S:90/60, S:84/52]
 >>> d.numfols
 2
@@ -216,9 +216,9 @@ Test data:[S:90/60, S:84/52]
 Another property of dataset is `resultant`,which returns mean or resultant of all features in dataset:
 
 ~~~~ {.python}
->>> d.getlins().resultant
+>>> d.lins.resultant
 L:123/52
->>> d.getfols().resultant
+>>> d.fols.resultant
 S:87/56
 ~~~~
 
@@ -244,9 +244,9 @@ Ortensor class
 
 ~~~~ {.python}
 >>> ot = Ortensor(d)
->>> ot.eigenvals()
-(0.97013794785464869, 0.023838538194604419, 0.006023513950748253)
->>> ot.eigenvects()
+>>> ot.eigenvals
+(0.97013794785464802, 0.02383853819460446, 0.006023513950748253)
+>>> ot.eigenvects
 (V(0.269, -0.545, -0.794), V(-0.962, -0.185, -0.199), V(0.038, -0.818, 0.57
 5))
 >>> ot.eigenlins
@@ -279,7 +279,7 @@ Any `Fol`, `Lin`, `Pole`, `Vec3` or `Dataset` object could be visualized in Schm
 
 ~~~~ {.python}
 >>> SchmidtNet(Fol(214,55), Lin(120,60), Pole(240,60), Vec3([-1,-2,1]))
-<apsg.SchmidtNet object at 0x7feeaf297490>
+<apsg.SchmidtNet object at 0x7f1fcfde2290>
 ~~~~
 
 ![](figures/apsg_figure27_1.png)
@@ -294,7 +294,7 @@ Features could be added to Schmidt projection programatically as well:
 >>> s.show()
 ~~~~
 
-![](figures/apsg_figure28_1.png)
+![](figures/apsg_figure28_2.png)
 
 `Dataset` properties as color and name are used during visualization:
 
@@ -307,7 +307,7 @@ Test')
 >>> s.show()
 ~~~~
 
-![](figures/apsg_figure29_1.png)
+![](figures/apsg_figure29_2.png)
 
 All mentioned classes could be freely combined:
 
@@ -315,7 +315,7 @@ All mentioned classes could be freely combined:
 >>> s.clear()
 >>> d = Dataset([Lin(120,70), Lin(116,42), Lin(132,45),
 ...              Lin(95,52), Lin(114,48), Lin(118,58) ],
-...             color='red', name='Test data')
+...              name='Test data', color='red')
 ... 
 >>> s.add(d)
 >>> s.add(d.resultant)
@@ -325,7 +325,7 @@ All mentioned classes could be freely combined:
 >>> s.show()
 ~~~~
 
-![](figures/apsg_figure30_1.png)
+![](figures/apsg_figure30_2.png)
 
 Some tricks
 -----------
@@ -336,25 +336,25 @@ Double cross product is allowed:
 >>> s.clear()
 >>> p = Fol(250,40)
 >>> l = Lin(160,30)
->>> d = Dataset([p,l], color='blue', lines={'lw': 2}, points={'s': 60})
->>> d1 = Dataset([l**p, p**l], color='red', name='1CP')
->>> d2 = Dataset([p**l**p, l**p**l], color='green', name='2CP')
+>>> d = Dataset([p,l], color='blue', fol={'lw': 2}, lin={'s': 60})
+>>> d1 = Dataset([l**p, p**l], name='1CP', color='red')
+>>> d2 = Dataset([p**l**p, l**p**l], name='2CP', color='green')
 >>> s.add(d, d1, d2)
 >>> s.show()
 ~~~~
 
-![](figures/apsg_figure31_1.png)
+![](figures/apsg_figure31_2.png)
 
 Correct measurements of planar linear pairs:
 
 ~~~~ {.python}
 >>> p1, l1 = fixpair(p,l)
 >>> s.clear()
->>> d = Dataset([p, l], color='blue', name='Original')
->>> d1 = Dataset([p1, l1], color='green', name='Fixed')
+>>> d = Dataset([p, l], name='Original', color='blue')
+>>> d1 = Dataset([p1, l1], name='Fixed', color='green')
 >>> s.add(d, d1)
 >>> s.show()
 ~~~~
 
-![](figures/apsg_figure32_1.png)
+![](figures/apsg_figure32_2.png)
 

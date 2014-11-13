@@ -34,6 +34,7 @@ getfdd = lambda x, y: (atan2d(-x, -y) % 360, 2*asind(np.sqrt((x*x + y*y)/2)))
 getldc = lambda u, v: (cosd(u)*cosd(v), sind(u)*cosd(v), sind(v))
 getfdc = lambda u, v: (-cosd(u)*sind(v), -sind(u)*sind(v), cosd(v))
 
+
 class Vec3(np.ndarray):
     """Base class to store 3D vectors derived from numpy.ndarray
     """
@@ -57,7 +58,7 @@ class Vec3(np.ndarray):
         if np.isscalar(other):
             return pow(abs(self), other)
         else:
-            return Vec3(np.cross(self, other))
+            return self.cross(other)
 
     def __eq__(self, other):
         # equal
@@ -67,50 +68,18 @@ class Vec3(np.ndarray):
         # not equal
         return not self == other
 
-    def getuv(self):
+    @property
+    def uv(self):
         """Return unit vector
 
         >>> u = Vec3([1,1,1])
-        >>> u.getuv()
+        >>> u.uv
         V(0.577, 0.577, 0.577)
         """
         return self/abs(self)
 
-    def aslin(self):
-        """Convert vector to Lin object.
-
-        >>> u = Vec3([1,1,1])
-        >>> u.aslin()
-        L:45/35
-        """
-        res = Lin(0, 0)
-        np.copyto(res, self)
-        return res
-
-    def asfol(self):
-        """Convert vector to Fol object.
-
-        >>> u = Vec3([1,1,1])
-        >>> u.asfol()
-        S:225/55
-        """
-        res = Fol(0, 0)
-        np.copyto(res, self)
-        return res
-
-    def aspole(self):
-        """Convert vector to Pole object.
-
-        >>> u = Vec3([1,1,1])
-        >>> u.aspole()
-        P:225/55
-        """
-        res = Pole(0, 0)
-        np.copyto(res, self)
-        return res
-
     def cross(self, other):
-        """Returns cross product of two vectors
+        """Returns cross product of two vectors::
 
         :param vec: vector
         :type name: Vec3
@@ -123,7 +92,7 @@ class Vec3(np.ndarray):
         return Vec3(np.cross(self, other))
 
     def angle(self, other):
-        """Returns angle of two vectors in degrees
+        """Returns angle of two vectors in degrees::
 
         :param vec: vector
         :type name: Vec3
@@ -132,10 +101,10 @@ class Vec3(np.ndarray):
         >>> u.angle(v)
         90.0
         """
-        return acosd(np.dot(self.getuv(), other.getuv()))
+        return acosd(np.dot(self.uv, other.uv))
 
     def rotate(self, axis, phi):
-        """Rotate vector phi degrees about axis
+        """Rotate vector phi degrees about axis::
 
         :param axis: vector
         :type name: Vec3
@@ -145,16 +114,69 @@ class Vec3(np.ndarray):
         >>> v.rotate(u,60)
         V(-2.000, 2.000, -0.000)
         """
-        k = axis.getuv()
-        return cosd(phi)*self + sind(phi)*k.cross(self) + \
-               (1-cosd(phi))*k*(k*self)
+        e = Vec3(self)  # rotate all types as vectors
+        k = axis.uv
+        r = cosd(phi)*e + sind(phi)*k.cross(e) + (1-cosd(phi))*k*(k*e)
+        return r.view(type(self))
 
     def proj(self, other):
-        """Returns projection of vector *u* onto vector *v*::
+        """Return projection of vector *u* onto vector *v*::
 
-            u.proj(v)
+        :param other: vector
+        :type name: Vec3
+        :returns:  Vec3
+
+        >>> u.proj(v)
         """
-        return np.dot(self, other) * other / abs(other) ** 2
+        r = np.dot(self, other)*other / abs(other)**2
+        return r.view(type(self))
+
+    def transform(self, F):
+        """Return affine transformation of vector *u* by matrix *F*::
+
+        :param F: matric
+        :type name: numpy.array
+        :returns:  Vec3
+
+        >>> u.proj(v)
+        """
+        return np.dot(F, self).view(type(self))
+
+    @property
+    def aslin(self):
+        """Convert vector to Lin object.
+
+        >>> u = Vec3([1,1,1])
+        >>> u.aslin
+        L:45/35
+        """
+        res = Lin(0, 0)
+        np.copyto(res, self)
+        return res
+
+    @property
+    def asfol(self):
+        """Convert vector to Fol object.
+        
+        >>> u = Vec3([1,1,1])
+        >>> u.asfol
+        S:225/55
+        """
+        res = Fol(0, 0)
+        np.copyto(res, self)
+        return res
+
+    @property
+    def aspole(self):
+        """Convert vector to Pole object.
+
+        >>> u = Vec3([1,1,1])
+        >>> u.aspole
+        P:225/55
+        """
+        res = Pole(0, 0)
+        np.copyto(res, self)
+        return res
 
 
 class Lin(Vec3):
@@ -197,7 +219,7 @@ class Lin(Vec3):
         if np.isscalar(other):
             return pow(abs(self), other)
         else:
-            return super(Lin, self).cross(other).asfol()
+            return super(Lin, self).cross(other).asfol
 
     def __eq__(self, other):
         # equal
@@ -217,52 +239,36 @@ class Lin(Vec3):
         >>> u.angle(v)
         90.0
         """
-        return acosd(abs(np.dot(self.getuv(), lin.getuv())))
+        return acosd(abs(np.dot(self.uv, lin.uv)))
 
     def cross(self, other):
-        """Returns planar feature defined by two linear
-        features *f* a *g*::
+        """Returns foliaton defined by two lineations
 
-            f.cross(g)
+        :param other: vector
+        :type name: Vec3, Fol, Lin, Pole
+        :returns:  Fol
 
-        Same as::
-
-            f**g
+        >>> l=Lin(120,10)
+        >>> l.cross(Lin(160,30))
+        S:196/35
         """
-        return Vec3(np.cross(self, other)).asfol()
-
-    def rotate(self, axis, phi):
-        """Returns rotated linear feature *l* about angle *phi*
-        around axis *a*::
-
-            l.rotate(a, phi)
-
-        Axis *a* is instance of :class:`apsg.Lin` or :class:`apsg.Vec3`
-        and angle *phi* is given in degrees.
-        """
-        return Vec3(self).rotate(Vec3(axis), phi).aslin()
-
-    def proj(self, other):
-        """Returns vector projection of linear feature *k* on
-        feature *l*::
-
-            k.proj(l)
-        """
-        return np.dot(self, other) * Vec3(other).aslin()
+        return np.cross(self, other).view(Fol)
 
     @property
     def dd(self):
-        n = self.getuv()
+        n = self.uv
         if n[2] < 0:
             n = -n
         azi = atan2d(n[1], n[0]) % 360
         inc = asind(n[2])
         return azi, inc
 
-    def getxy(self):
+    @property
+    def xy(self):
         azi, inc = self.dd
-        return (np.sqrt(2)*sind((90-inc)/2)*sind(azi), 
+        return (np.sqrt(2)*sind((90-inc)/2)*sind(azi),
                 np.sqrt(2)*sind((90-inc)/2)*cosd(azi))
+
 
 class Fol(Vec3):
     """Class for planar features
@@ -299,13 +305,6 @@ class Fol(Vec3):
             other = -other
         return super(Fol, self).__isub__(other)
 
-    def __pow__(self, other):
-        # cross product or power of magnitude
-        if np.isscalar(other):
-            return pow(abs(self), other)
-        else:
-            return super(Fol, self).cross(other).aslin()
-
     def __eq__(self, other):
         # equal
         return abs(self-other) < 1e-15 or abs(self+other) < 1e-15
@@ -324,52 +323,47 @@ class Fol(Vec3):
         >>> u.angle(v)
         90.0
         """
-        return acosd(abs(np.dot(self.getuv(), fol.getuv())))
+        return acosd(abs(np.dot(self.uv, fol.uv)))
 
     def cross(self, other):
-        """Returns linear feature defined as intersection of
-        two planar features *f* a *g*::
+        """Returns lination defined as intersecton of two foliations
 
-            f.cross(g)
+        :param other: vector
+        :type name: Vec3, Fol, Lin, Pole
+        :returns:  Lin
 
-        Same as::
-
-            f**g
+        >>> f=Fol(60,30)
+        >>> f.cross(Fol(120,40))
+        L:72/29
         """
-        return Vec3(np.cross(self, other)).aslin()
+        return np.cross(self, other).view(Lin)
 
-    def rotate(self, axis, phi):
-        """Returns rotated planar feature *f* about angle *phi*
-        around axis *a*::
+    def transform(self, F):
+        """Return affine transformation of foliation by matrix *F*::
 
-            f.rotate(a, phi)
+        :param F: matric
+        :type name: numpy.array
+        :returns:  Fol
 
-        Axis *a* is instance of :class:`apsg.Lin` or :class:`apsg.Vec3`
-        and angle *phi* is given in degrees.
+        >>> f.transform(F)
         """
-        return Vec3(self).rotate(Vec3(axis), phi).asfol()
-
-    def proj(self, other):
-        """Returns vector projection of planar feature *f* on
-        feature *g*::
-
-            f.proj(g)
-        """
-        return np.dot(self, other) * Vec3(other).asfol()
+        return np.dot(np.linalg.inv(F), self).view(type(self))
 
     @property
     def dd(self):
-        n = self.getuv()
+        n = self.uv
         if n[2] < 0:
             n = -n
         azi = (atan2d(n[1], n[0]) + 180) % 360
         inc = 90 - asind(n[2])
         return azi, inc
 
-    def getxy(self):
+    @property
+    def xy(self):
         azi, inc = self.dd
         return (-np.sqrt(2)*sind(inc/2)*sind(azi),
                 -np.sqrt(2)*sind(inc/2)*cosd(azi))
+
 
 class Pole(Fol):
     """Class for planar features represented as poles
@@ -382,28 +376,31 @@ class Pole(Fol):
         azi, inc = self.dd
         return 'P:%d/%d' % (round(azi), round(inc))
 
+
 class Dataset(list):
     """Dataset class
     """
     def __init__(self, data=[],
                  name='Default',
                  color='blue',
-                 lines={'lw':1, 'ls':'-'},
-                 points={'marker':'o', 's':20},
-                 poles={'marker':'v', 's':36, 'facecolors':None},
-                 vecs={'marker':'d', 's':24, 'facecolors':None}):
+                 fol={'lw': 1, 'ls': '-'},
+                 lin={'marker': 'o', 's': 20},
+                 pole={'marker': 'v', 's': 36, 'facecolors': None},
+                 vec={'marker': 'd', 's': 24, 'facecolors': None}):
         if not issubclass(type(data), list):
             data = [data]
         list.__init__(self, data)
         self.name = name
         self.color = color
-        self.lines = lines
-        self.points = points
-        self.poles = poles
-        self.vecs = vecs
+        self.sym = {}
+        self.sym['fol'] = fol
+        self.sym['lin'] = lin
+        self.sym['pole'] = pole
+        self.sym['vec'] = vec
 
     @classmethod
-    def fromcsv(cls, fname, typ=Lin, acol=1, icol=2, name='Default', color='blue'):
+    def fromcsv(cls, fname, typ=Lin, acol=1, icol=2,
+                name='Default', color='blue'):
         """Read dataset from csv"""
         import csv
         with open(fname, 'rb') as csvfile:
@@ -424,63 +421,78 @@ class Dataset(list):
 
     def __add__(self, d2):
         # merge Datasets
-        return Dataset(list(self) + d2, self.name, self.color,
-                       self.lines, self.points, self.poles)
+        d = Dataset(list(self) + d2, self.name, self.color)
+        d.sym = self.sym
+        return d
 
-    def getlins(self):
+    @property
+    def lins(self):
         """return only Lin from Dataset"""
-        return Dataset([d for d in self if type(d) == Lin], self.name,
-                        self.color, self.points)
+        d = Dataset([e for e in self if type(e) == Lin], self.name, self.color)
+        d.sym = self.sym
+        return d
 
-    def getfols(self):
+    @property
+    def fols(self):
         """return only Fol from Dataset"""
-        return Dataset([d for d in self if type(d) == Fol], self.name,
-                        self.color, self.lines)
+        d = Dataset([e for e in self if type(e) == Fol], self.name, self.color)
+        d.sym = self.sym
+        return d
 
-    def getpoles(self):
+    @property
+    def poles(self):
         """return only Poles from Dataset"""
-        return Dataset([d for d in self if type(d) == Pole], self.name,
-                        self.color, self.poles)
+        d = Dataset([e for e in self if type(e) == Pole], self.name, self.color)
+        d.sym = self.sym
+        return d
 
-    def getvecs(self):
+    @property
+    def vecs(self):
         """return only Vec3 from Dataset"""
-        return Dataset([d for d in self if type(d) == Vec3], self.name,
-                        self.color, self.vecs)
+        d = Dataset([e for e in self if type(e) == Vec3], self.name, self.color)
+        d.sym = self.sym
+        return d
 
     @property
     def numlins(self):
         """number of Lin in Dataset"""
-        return len(self.getlins())
+        return len(self.lins)
 
     @property
     def numfols(self):
         """number of Fol in Dataset"""
-        return len(self.getfols())
+        return len(self.fols)
 
     @property
     def numpoles(self):
         """number of Poles in Dataset"""
-        return len(self.getpoles())
+        return len(self.poles)
 
     @property
     def numvecs(self):
         """number of Vec3 in Dataset"""
-        return len(self.getvecs())
+        return len(self.vecs)
 
+    @property
     def aslin(self):
         """Convert all data in Dataset to Lin"""
-        return Dataset([d.aslin() for d in self], self.name, self.color,
-                        self.lines, self.points, self.poles)
+        d = Dataset([e.aslin for e in self], self.name, self.color)
+        d.sym = self.sym
+        return d
 
+    @property
     def asfol(self):
         """Convert all data in Dataset to Fol"""
-        return Dataset([d.asfol() for d in self], self.name, self.color,
-                        self.lines, self.points, self.poles)
+        d = Dataset([e.asfol for e in self], self.name, self.color)
+        d.sym = self.sym
+        return d
 
+    @property
     def aspole(self):
         """Convert all data in Dataset to Pole"""
-        return Dataset([d.aspole() for d in self], self.name, self.color,
-                        self.lines, self.points, self.poles)
+        d = Dataset([e.aspole for e in self], self.name, self.color)
+        d.sym = self.sym
+        return d
 
     @property
     def resultant(self):
@@ -500,7 +512,7 @@ class Dataset(list):
     def cross(self, d=None):
         """return cross products of all pairs in Dataset"""
         res = Dataset(name='Pairs')
-        if d == None:
+        if d is None:
             for i in range(len(self)-1):
                 for j in range(i+1, len(self)):
                     res.append(self[i]**self[j])
@@ -535,6 +547,13 @@ class Dataset(list):
         """return orientation tensor of Dataset"""
         return Ortensor(self)
 
+    def transform(self, F):
+        """Return affine transformation of dataset by matrix *F*"""
+        dt = Dataset(name=self.name, color=self.color)
+        for e in self:
+            dt.append(e.transform(F))
+        return dt
+
     @property
     def dd(self):
         """array of dip directions and dips of Dataset"""
@@ -548,6 +567,31 @@ class Dataset(list):
         """Show Dataset on Schmidt net"""
         return SchmidtNet(self)
 
+    @classmethod
+    def randn_lin(self, N=100, main=Lin(0, 90), sig=20):
+        d = []
+        ta, td = main.getdd()
+        for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
+            d.append(Lin(0, 90).rotate(Lin(azi, 0), dip))
+        return self(d).rotate(Lin(ta+90, 0), 90-td)
+
+    @classmethod
+    def randn_fol(self, N=100, main=Fol(0, 0), sig=20):
+        d = []
+        ta, td = main.getdd()
+        for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
+            d.append(Fol(0, 0).rotate(Lin(azi, 0), dip))
+        return self(d).rotate(Lin(ta-90, 0), td)
+
+    @classmethod
+    def randn_pole(self, N=100, main=Pole(0, 0), sig=20):
+        d = []
+        ta, td = main.getdd()
+        for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
+            d.append(Pole(0, 0).rotate(Lin(azi, 0), dip))
+        return self(d).rotate(Lin(ta-90, 0), td)
+
+
 class Ortensor(object):
     """Ortensor class"""
     def __init__(self, d):
@@ -560,21 +604,25 @@ class Ortensor(object):
         e1, e2, e3 = self.vals / self.n
         self.shape = np.log(e3 / e2) / np.log(e2 / e1)
         self.strength = np.log(e3 / e1)
+        self.norm = True
+        self.scaled = False
 
     def __repr__(self):
         return '(E1:%.4g,E2:%.4g,E3:%.4g)' % tuple(self.vals) + \
             '\n' + repr(self.M)
 
-    def eigenvals(self, norm=True):
-        if norm:
+    @property
+    def eigenvals(self):
+        if self.norm:
             n = self.n
         else:
             n = 1.0
         return self.vals[0] / n, self.vals[1] / n, self.vals[2] / n
 
-    def eigenvects(self, scaled=False, norm=True):
-        if scaled:
-            e1, e2, e3 = self.eigenvals(norm=norm)
+    @property
+    def eigenvects(self):
+        if self.scaled:
+            e1, e2, e3 = self.eigenvals
         else:
             e1 = e2 = e3 = 1.0
         return e1 * Vec3(self.vects[0]),\
@@ -583,19 +631,20 @@ class Ortensor(object):
 
     @property
     def eigenlins(self):
-        v1, v2, v3 = self.eigenvects()
-        d1 = Dataset(v1.aslin(), name='E1', color='red')
-        d2 = Dataset(v2.aslin(), name='E2', color='magenta')
-        d3 = Dataset(v3.aslin(), name='E3', color='green')
+        v1, v2, v3 = self.eigenvects
+        d1 = Dataset(v1.aslin, name='E1', color='red')
+        d2 = Dataset(v2.aslin, name='E2', color='magenta')
+        d3 = Dataset(v3.aslin, name='E3', color='green')
         return d1, d2, d3
 
     @property
     def eigenfols(self):
-        v1, v2, v3 = self.eigenvects()
-        d1 = Dataset(v1.asfol(), name='E1', color='red')
-        d2 = Dataset(v2.asfol(), name='E2', color='magenta')
-        d3 = Dataset(v3.asfol(), name='E3', color='green')
+        v1, v2, v3 = self.eigenvects
+        d1 = Dataset(v1.asfol, name='E1', color='red')
+        d2 = Dataset(v2.asfol, name='E2', color='magenta')
+        d3 = Dataset(v3.asfol, name='E3', color='green')
         return d1, d2, d3
+
 
 class Datasource(object):
     """PySDB database access class"""
@@ -620,6 +669,7 @@ class Datasource(object):
     INNER JOIN structdata ON sites.id = structdata.id_sites   \
     INNER JOIN structype ON structype.id = structdata.id_structype   \
     INNER JOIN units ON units.id = sites.id_units"
+
     def __new__(cls, db=None):
         try:
             cls.con = sqlite3.connect(db)
@@ -631,9 +681,12 @@ class Datasource(object):
             print("Error %s:" % e.args[0])
             raise sqlite3.Error
 
+    def execsql(self, sql):
+        return self.con.execute(sql).fetchall()
+
     @property
     def structures(self):
-        return [element[0] for element in self.con.execute(Datasource.STRUCTSEL).fetchall()]
+        return [el[0] for el in self.execsql(Datasource.STRUCTSEL)]
 
     def select(self, struct=None):
         fsel = Datasource.SELECT + " WHERE structype.planar=1"
@@ -644,9 +697,10 @@ class Datasource(object):
         fsel += " ORDER BY sites.name ASC"
         lsel += " ORDER BY sites.name ASC"
 
-        fol = Dataset([Fol(element[0], element[1]) for element in self.con.execute(fsel).fetchall()])
-        lin = Dataset([Lin(element[0], element[1]) for element in self.con.execute(lsel).fetchall()])
+        fol = Dataset([Fol(el[0], el[1]) for el in self.execsql(fsel)])
+        lin = Dataset([Lin(el[0], el[1]) for el in self.execsql(lsel)])
         return fol + lin
+
 
 class Density(object):
     """Density grid class"""
@@ -688,6 +742,7 @@ class Density(object):
         plt.gca().set_aspect('equal')
         plt.triplot(self.triang, 'bo-')
         plt.show()
+
 
 class SchmidtNet(object):
     """SchmidtNet class"""
@@ -735,7 +790,7 @@ class SchmidtNet(object):
 
     def set_density(self, density):
         """Set density grid"""
-        if type(density) == Density or density == None:
+        if type(density) == Density or density is None:
             self.density = density
             self.refresh()
 
@@ -772,13 +827,13 @@ class SchmidtNet(object):
             for dip in grds:
                 l = Lin(0, dip)
                 gc = map(l.rotate, 91*[a], np.linspace(-89.99, 89.99, 91))
-                x, y = np.array([r.getxy() for r in gc]).T
+                x, y = np.array([r.xy for r in gc]).T
                 self.ax.plot(x, y, 'k:')
             for dip in grds:
                 a = Fol(90, dip)
                 l = Lin(90, dip)
                 gc = map(l.rotate, 81*[a], np.linspace(-80, 80, 81))
-                x, y = np.array([r.getxy() for r in gc]).T
+                x, y = np.array([r.xy for r in gc]).T
                 self.ax.plot(x, y, 'k:')
 
         # init labels
@@ -788,37 +843,37 @@ class SchmidtNet(object):
         # plot data
         for arg in self.data:
             #fol great circle
-            dd = arg.getfols()
+            dd = arg.fols
             if dd:
                 for d in dd:
                     l = Lin(*d.dd)
                     gc = map(l.rotate, 91*[d], np.linspace(-89.99, 89.99, 91))
-                    x, y = np.array([r.getxy() for r in gc]).T
-                    h = self.ax.plot(x, y, color=arg.color, zorder=2, **arg.lines)
+                    x, y = np.array([r.xy for r in gc]).T
+                    h = self.ax.plot(x, y, color=arg.color, zorder=2, **dd.sym['fol'])
                 handles.append(h[0])
                 labels.append('S ' + arg.name)
             #lin point
-            dd = arg.getlins()
+            dd = arg.lins
             if dd:
                 for d in dd:
-                    x, y = d.getxy()
-                    h = self.ax.scatter(x, y, color=arg.color, zorder=4, **arg.points)
+                    x, y = d.xy
+                    h = self.ax.scatter(x, y, color=arg.color, zorder=4, **dd.sym['lin'])
                 handles.append(h)
                 labels.append('L ' + arg.name)
             #pole point
-            dd = arg.getpoles()
+            dd = arg.poles
             if dd:
                 for d in dd:
-                    x, y = d.getxy()
-                    h = self.ax.scatter(x, y, color=arg.color, zorder=3, **arg.poles)
+                    x, y = d.xy
+                    h = self.ax.scatter(x, y, color=arg.color, zorder=3, **dd.sym['pole'])
                 handles.append(h)
                 labels.append('P ' + arg.name)
             #vector point
-            dd = arg.getvecs()
+            dd = arg.vecs
             if dd:
                 for d in dd:
-                    x, y = d.aslin().getxy()
-                    h = self.ax.scatter(x, y, color=arg.color, zorder=3, **arg.vecs)
+                    x, y = d.aslin.xy
+                    h = self.ax.scatter(x, y, color=arg.color, zorder=3, **dd.sym['vec'])
                 handles.append(h)
                 labels.append('V ' + arg.name)
         # legend
@@ -895,6 +950,7 @@ class SchmidtNet(object):
             f.append(Pole(*getfdd(x, y)))
         return f
 
+
 def fixpair(f, l):
     """Fix pair of planar and linear data, so Lin is within plane Fol::
 
@@ -902,7 +958,8 @@ def fixpair(f, l):
     """
     ax = f ** l
     ang = (Vec3(l).angle(f) - 90)/2
-    return Vec3(f).rotate(ax, ang).asfol(), Vec3(l).rotate(ax, -ang).aslin()
+    return Vec3(f).rotate(ax, ang).asfol, Vec3(l).rotate(ax, -ang).aslin
+
 
 def rose(a, bins=13, **kwargs):
     """Plot rose diagram"""

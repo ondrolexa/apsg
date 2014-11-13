@@ -120,9 +120,9 @@ Pole(216,62)
 or we can create instance from `Vec3` object:
 
 <<term = True>>=
-u.aslin()
-u.asfol()
-u.aspole()
+u.aslin
+u.asfol
+u.aspole
 @
 
 Vec3 methods for Fol a Lin
@@ -200,13 +200,13 @@ len(d)
 @
 
 To select only linear or planar features we can use methods
-`getlins` a `getfols`. Properties `numlin` a `numfol` gives
+`lins` and `fols`. Properties `numlins` a `numfols` gives
 number of linear or planar features in dataset.
 
 <<term = True>>=
-d.getlins()
+d.lins
 d.numlins
-d.getfols()
+d.fols
 d.numfols
 @
 
@@ -214,8 +214,8 @@ Another property of dataset is `resultant`,which returns
 mean or resultant of all features in dataset:
 
 <<term = True>>=
-d.getlins().resultant
-d.getfols().resultant
+d.lins.resultant
+d.fols.resultant
 @
 
 To measure angles between all features in dataset and another feature,
@@ -244,8 +244,8 @@ and eigenfols.
 
 <<term = True>>=
 ot = Ortensor(d)
-ot.eigenvals()
-ot.eigenvects()
+ot.eigenvals
+ot.eigenvects
 ot.eigenlins
 ot.eigenfols
 @
@@ -300,7 +300,7 @@ All mentioned classes could be freely combined:
 s.clear()
 d = Dataset([Lin(120,70), Lin(116,42), Lin(132,45),
              Lin(95,52), Lin(114,48), Lin(118,58) ],
-            color='red', name='Test data')
+             name='Test data', color='red')
 s.add(d)
 s.add(d.resultant)
 s.add(*d.ortensor.eigenfols)
@@ -318,9 +318,9 @@ Double cross product is allowed:
 s.clear()
 p = Fol(250,40)
 l = Lin(160,30)
-d = Dataset([p,l], color='blue', lines={'lw': 2}, points={'s': 60})
-d1 = Dataset([l**p, p**l], color='red', name='1CP')
-d2 = Dataset([p**l**p, l**p**l], color='green', name='2CP')
+d = Dataset([p,l], color='blue', fol={'lw': 2}, lin={'s': 60})
+d1 = Dataset([l**p, p**l], name='1CP', color='red')
+d2 = Dataset([p**l**p, l**p**l], name='2CP', color='green')
 s.add(d, d1, d2)
 s.show()
 @
@@ -330,8 +330,8 @@ Correct measurements of planar linear pairs:
 <<term = True, fig = True, width = '8cm', f_pos = "h!">>=
 p1, l1 = fixpair(p,l)
 s.clear()
-d = Dataset([p, l], color='blue', name='Original')
-d1 = Dataset([p1, l1], color='green', name='Fixed')
+d = Dataset([p, l], name='Original', color='blue')
+d1 = Dataset([p1, l1], name='Fixed', color='green')
 s.add(d, d1)
 s.show()
 @
