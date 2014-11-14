@@ -386,17 +386,24 @@ class Dataset(list):
                  fol={'lw': 1, 'ls': '-'},
                  lin={'marker': 'o', 's': 20},
                  pole={'marker': 'v', 's': 36, 'facecolors': None},
-                 vec={'marker': 'd', 's': 24, 'facecolors': None}):
+                 vec={'marker': 'd', 's': 24, 'facecolors': None},
+                 tmpl=None):
         if not issubclass(type(data), list):
             data = [data]
         list.__init__(self, data)
-        self.name = name
-        self.color = color
-        self.sym = {}
-        self.sym['fol'] = fol
-        self.sym['lin'] = lin
-        self.sym['pole'] = pole
-        self.sym['vec'] = vec
+        if tmpl is None:
+            self.name = name
+            self.color = color
+            self.sym = {}
+            self.sym['fol'] = fol
+            self.sym['lin'] = lin
+            self.sym['pole'] = pole
+            self.sym['vec'] = vec
+        else:
+            self.name = tmpl.name
+            self.color = tmpl.color
+            self.sym = tmpl.sym
+
 
     @classmethod
     def fromcsv(cls, fname, typ=Lin, acol=1, icol=2,
@@ -421,37 +428,27 @@ class Dataset(list):
 
     def __add__(self, d2):
         # merge Datasets
-        d = Dataset(list(self) + d2, self.name, self.color)
-        d.sym = self.sym
-        return d
+        return Dataset(list(self) + d2, tmpl=self)
 
     @property
     def lins(self):
         """return only Lin from Dataset"""
-        d = Dataset([e for e in self if type(e) == Lin], self.name, self.color)
-        d.sym = self.sym
-        return d
+        return Dataset([e for e in self if type(e) == Lin], tmpl=self)
 
     @property
     def fols(self):
         """return only Fol from Dataset"""
-        d = Dataset([e for e in self if type(e) == Fol], self.name, self.color)
-        d.sym = self.sym
-        return d
+        return Dataset([e for e in self if type(e) == Fol], tmpl=self)
 
     @property
     def poles(self):
         """return only Poles from Dataset"""
-        d = Dataset([e for e in self if type(e) == Pole], self.name, self.color)
-        d.sym = self.sym
-        return d
+        return Dataset([e for e in self if type(e) == Pole], tmpl=self)
 
     @property
     def vecs(self):
         """return only Vec3 from Dataset"""
-        d = Dataset([e for e in self if type(e) == Vec3], self.name, self.color)
-        d.sym = self.sym
-        return d
+        return Dataset([e for e in self if type(e) == Vec3], tmpl=self)
 
     @property
     def numlins(self):
@@ -476,23 +473,17 @@ class Dataset(list):
     @property
     def aslin(self):
         """Convert all data in Dataset to Lin"""
-        d = Dataset([e.aslin for e in self], self.name, self.color)
-        d.sym = self.sym
-        return d
+        return Dataset([e.aslin for e in self], tmpl=self)
 
     @property
     def asfol(self):
         """Convert all data in Dataset to Fol"""
-        d = Dataset([e.asfol for e in self], self.name, self.color)
-        d.sym = self.sym
-        return d
+        return Dataset([e.asfol for e in self], tmpl=self)
 
     @property
     def aspole(self):
         """Convert all data in Dataset to Pole"""
-        d = Dataset([e.aspole for e in self], self.name, self.color)
-        d.sym = self.sym
-        return d
+        return Dataset([e.aspole for e in self], tmpl=self)
 
     @property
     def resultant(self):
@@ -511,7 +502,8 @@ class Dataset(list):
 
     def cross(self, d=None):
         """return cross products of all pairs in Dataset"""
-        res = Dataset(name='Pairs')
+        res = Dataset(tmpl=self)
+        res.name = 'Pairs'
         if d is None:
             for i in range(len(self)-1):
                 for j in range(i+1, len(self)):
@@ -524,7 +516,7 @@ class Dataset(list):
 
     def rotate(self, axis, phi):
         """rotate Dataset"""
-        dr = Dataset(name='R-' + self.name, color=self.color)
+        dr = Dataset(tmpl=self)
         for e in self:
             dr.append(e.rotate(axis, phi))
         return dr
@@ -549,7 +541,7 @@ class Dataset(list):
 
     def transform(self, F):
         """Return affine transformation of dataset by matrix *F*"""
-        dt = Dataset(name=self.name, color=self.color)
+        dt = Dataset(tmpl=self)
         for e in self:
             dt.append(e.transform(F))
         return dt
@@ -570,7 +562,7 @@ class Dataset(list):
     @classmethod
     def randn_lin(self, N=100, main=Lin(0, 90), sig=20):
         d = []
-        ta, td = main.getdd()
+        ta, td = main.dd
         for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
             d.append(Lin(0, 90).rotate(Lin(azi, 0), dip))
         return self(d).rotate(Lin(ta+90, 0), 90-td)
@@ -578,7 +570,7 @@ class Dataset(list):
     @classmethod
     def randn_fol(self, N=100, main=Fol(0, 0), sig=20):
         d = []
-        ta, td = main.getdd()
+        ta, td = main.dd
         for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
             d.append(Fol(0, 0).rotate(Lin(azi, 0), dip))
         return self(d).rotate(Lin(ta-90, 0), td)
@@ -586,7 +578,7 @@ class Dataset(list):
     @classmethod
     def randn_pole(self, N=100, main=Pole(0, 0), sig=20):
         d = []
-        ta, td = main.getdd()
+        ta, td = main.dd
         for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
             d.append(Pole(0, 0).rotate(Lin(azi, 0), dip))
         return self(d).rotate(Lin(ta-90, 0), td)
