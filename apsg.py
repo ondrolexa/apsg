@@ -751,6 +751,28 @@ class SchmidtNet(object):
         self.grid = True
         self.data = []
         self.density = None
+        # calc grid
+        grds = list(range(10, 100, 10)) + list(range(-80, 0, 10))
+        self.xg = []
+        self.yg = []
+        a = Lin(0, 0)
+        for dip in grds:
+            l = Lin(0, dip)
+            b = Fol(90, dip)
+            t = Lin(90, dip)
+            gc = map(l.rotate, 91*[a], np.linspace(-89.99, 89.99, 91))
+            x, y = np.array([r.xy for r in gc]).T
+            self.xg.extend(x)
+            self.xg.append(np.nan)
+            self.yg.extend(y)
+            self.yg.append(np.nan)
+            gc = map(t.rotate, 81*[b], np.linspace(-80, 80, 81))
+            x, y = np.array([r.xy for r in gc]).T
+            self.xg.extend(x)
+            self.xg.append(np.nan)
+            self.yg.extend(y)
+            self.yg.append(np.nan)
+        # add arguments
         for arg in data:
             self.add(arg)
         self.refresh()
@@ -814,19 +836,7 @@ class SchmidtNet(object):
 
         #grid
         if self.grid:
-            grds = list(range(10, 100, 10)) + list(range(-80, 0, 10))
-            a = Lin(0, 0)
-            for dip in grds:
-                l = Lin(0, dip)
-                gc = map(l.rotate, 91*[a], np.linspace(-89.99, 89.99, 91))
-                x, y = np.array([r.xy for r in gc]).T
-                self.ax.plot(x, y, 'k:')
-            for dip in grds:
-                a = Fol(90, dip)
-                l = Lin(90, dip)
-                gc = map(l.rotate, 81*[a], np.linspace(-80, 80, 81))
-                x, y = np.array([r.xy for r in gc]).T
-                self.ax.plot(x, y, 'k:')
+            self.ax.plot(self.xg, self.yg, 'k:')
 
         # init labels
         handles = []
@@ -847,25 +857,22 @@ class SchmidtNet(object):
             #lin point
             dd = arg.lins
             if dd:
-                for d in dd:
-                    x, y = d.xy
-                    h = self.ax.scatter(x, y, color=arg.color, zorder=4, **dd.sym['lin'])
+                x, y = np.array([e.xy for e in dd]).T
+                h = self.ax.scatter(x, y, color=arg.color, zorder=4, **dd.sym['lin'])
                 handles.append(h)
                 labels.append('L ' + arg.name)
             #pole point
             dd = arg.poles
             if dd:
-                for d in dd:
-                    x, y = d.xy
-                    h = self.ax.scatter(x, y, color=arg.color, zorder=3, **dd.sym['pole'])
+                x, y = np.array([e.xy for e in dd]).T
+                h = self.ax.scatter(x, y, color=arg.color, zorder=3, **dd.sym['pole'])
                 handles.append(h)
                 labels.append('P ' + arg.name)
             #vector point
             dd = arg.vecs
             if dd:
-                for d in dd:
-                    x, y = d.aslin.xy
-                    h = self.ax.scatter(x, y, color=arg.color, zorder=3, **dd.sym['vec'])
+                x, y = np.array([e.xy for e in dd]).T
+                h = self.ax.scatter(x, y, color=arg.color, zorder=3, **dd.sym['vec'])
                 handles.append(h)
                 labels.append('V ' + arg.name)
         # legend
