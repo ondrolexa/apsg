@@ -51,7 +51,7 @@ class Vec3(np.ndarray):
 
     def __eq__(self, other):
         # equal
-        return abs(self - other) < 1e-15
+        return bool(abs(self - other) < 1e-15)
 
     def __ne__(self, other):
         # not equal
@@ -127,7 +127,7 @@ class Vec3(np.ndarray):
         :type name: numpy.array
         :returns:  Vec3
 
-        >>> u.proj(v)
+        >>> u.transform(F)
         """
         return np.dot(F, self).view(type(self))
 
@@ -212,7 +212,7 @@ class Lin(Vec3):
 
     def __eq__(self, other):
         # equal
-        return abs(self-other) < 1e-15 or abs(self+other) < 1e-15
+        return bool(abs(self-other) < 1e-15 or abs(self+other) < 1e-15)
 
     def __ne__(self, other):
         # not equal
@@ -296,7 +296,7 @@ class Fol(Vec3):
 
     def __eq__(self, other):
         # equal
-        return abs(self-other) < 1e-15 or abs(self+other) < 1e-15
+        return bool(abs(self-other) < 1e-15 or abs(self+other) < 1e-15)
 
     def __ne__(self, other):
         # not equal
@@ -336,7 +336,7 @@ class Fol(Vec3):
 
         >>> f.transform(F)
         """
-        return np.dot(np.linalg.inv(F), self).view(type(self))
+        return np.dot(self, np.linalg.inv(F)).view(type(self))
 
     @property
     def dd(self):
@@ -364,6 +364,7 @@ class Pole(Fol):
     def __repr__(self):
         azi, inc = self.dd
         return 'P:%d/%d' % (round(azi), round(inc))
+
 
 class Group(list):
     """Group class
@@ -637,60 +638,6 @@ class Dataset(list):
         return len(self.vecs)
 
 
-class Ortensor(object):
-    """Ortensor class"""
-    def __init__(self, d):
-        self.M = np.dot(np.array(d).T, np.array(d))
-        self.n = len(d)
-        vc, vv = np.linalg.eig(self.M)
-        ix = np.argsort(vc)[::-1]
-        self.vals = vc[ix]
-        self.vects = vv.T[ix]
-        e1, e2, e3 = self.vals / self.n
-        self.shape = np.log(e3 / e2) / np.log(e2 / e1)
-        self.strength = np.log(e3 / e1)
-        self.norm = True
-        self.scaled = False
-
-    def __repr__(self):
-        return '(E1:%.4g,E2:%.4g,E3:%.4g)' % tuple(self.vals) + \
-            '\n' + repr(self.M)
-
-    @property
-    def eigenvals(self):
-        if self.norm:
-            n = self.n
-        else:
-            n = 1.0
-        return self.vals[0] / n, self.vals[1] / n, self.vals[2] / n
-
-    @property
-    def eigenvects(self):
-        if self.scaled:
-            e1, e2, e3 = self.eigenvals
-        else:
-            e1 = e2 = e3 = 1.0
-        return e1 * Vec3(self.vects[0]),\
-               e2 * Vec3(self.vects[1]),\
-               e3 * Vec3(self.vects[2])
-
-    @property
-    def eigenlins(self):
-        v1, v2, v3 = self.eigenvects
-        d1 = Dataset(v1.aslin, name='E1', color='red')
-        d2 = Dataset(v2.aslin, name='E2', color='magenta')
-        d3 = Dataset(v3.aslin, name='E3', color='green')
-        return d1, d2, d3
-
-    @property
-    def eigenfols(self):
-        v1, v2, v3 = self.eigenvects
-        d1 = Dataset(v1.asfol, name='E1', color='red')
-        d2 = Dataset(v2.asfol, name='E2', color='magenta')
-        d3 = Dataset(v3.asfol, name='E3', color='green')
-        return d1, d2, d3
-
-
 class Datasource(object):
     """PySDB database access class"""
     TESTSEL = "SELECT sites.id, sites.name, sites.x_coord, sites.y_coord, \
@@ -742,6 +689,120 @@ class Datasource(object):
         else:
             res = Group([Lin(el[0], el[1]) for el in self.execsql(dtsel)], name=struct)
         return res
+
+
+class DefGrad(np.ndarray):
+    """class to store deformation gradient tensor derived from numpy.ndarray
+    """
+    def __new__(cls, array):
+        # casting to our class
+        assert np.shape(array) == (3,3), 'DefGrad must be 3x3 2D array'
+        obj = np.asarray(array).view(cls)
+        return obj
+
+    def __repr__(self):
+        return 'DefGrad:\n' + str(self)
+
+    def __mul__(self, other):
+        assert np.shape(other) == (3,3), 'DefGrad could by multiplied with 3x3 2D array'
+        return np.dot(self, other)
+
+    def __pow__(self, n):
+        # cross product or power of magnitude
+        assert np.isscalar(n), 'Exponent must be integer.'
+        return np.linalg.matrix_power(self, n)
+
+    def __eq__(self, other):
+        # equal
+        return bool(np.sum(np.abs(self - other)) < 1e-14)
+
+    def __ne__(self, other):
+        # not equal
+        return not self == other
+
+    @classmethod
+    def from_axis(cls, vector, theta):
+        x, y, z = vector.uv
+        c, s = cosd(theta), sind(theta)
+        xs, ys, zs = x*s, y*s, z*s
+        xc, yc, zc = x*(1-c), y*(1-c), z*(1-c)
+        xyc, yzc, zxc = x*yc, y*zc, z*xc
+        return cls([
+                [ x*xc+c,   xyc-zs,   zxc+ys ],
+                [ xyc+zs,   y*yc+c,   yzc-xs ],
+                [ zxc-ys,   yzc+xs,   z*zc+c ]])
+
+    @classmethod
+    def from_comp(cls,
+                  xx=1, xy=0, xz=0,
+                  yx=0, yy=1, yz=0,
+                  zx=0, zy=0, zz=1):
+        return cls([
+                [ xx, xy, xz ],
+                [ yx, yy, yz ],
+                [ zx, zy, zz ]])
+
+    @property
+    def I(self):
+        return np.linalg.inv(self)
+
+    def rotate(self, vector, theta):
+        R = DefGrad.from_axis(vector, theta)
+        return R*self*R.T
+
+
+class Ortensor(object):
+    """Ortensor class"""
+    def __init__(self, d):
+        self.M = np.dot(np.array(d).T, np.array(d))
+        self.n = len(d)
+        vc, vv = np.linalg.eig(self.M)
+        ix = np.argsort(vc)[::-1]
+        self.vals = vc[ix]
+        self.vects = vv.T[ix]
+        e1, e2, e3 = self.vals / self.n
+        self.shape = np.log(e3 / e2) / np.log(e2 / e1)
+        self.strength = np.log(e3 / e1)
+        self.norm = True
+        self.scaled = False
+
+    def __repr__(self):
+        return 'Ortensor:\n(E1:%.4g,E2:%.4g,E3:%.4g)' % tuple(self.vals) + \
+            '\n' + str(self.M)
+
+    @property
+    def eigenvals(self):
+        if self.norm:
+            n = self.n
+        else:
+            n = 1.0
+        return self.vals[0] / n, self.vals[1] / n, self.vals[2] / n
+
+    @property
+    def eigenvects(self):
+        if self.scaled:
+            e1, e2, e3 = self.eigenvals
+        else:
+            e1 = e2 = e3 = 1.0
+        return e1 * Vec3(self.vects[0]),\
+               e2 * Vec3(self.vects[1]),\
+               e3 * Vec3(self.vects[2])
+
+    @property
+    def eigenlins(self):
+        v1, v2, v3 = self.eigenvects
+        d1 = Dataset(v1.aslin, name='E1', color='red')
+        d2 = Dataset(v2.aslin, name='E2', color='magenta')
+        d3 = Dataset(v3.aslin, name='E3', color='green')
+        return d1, d2, d3
+
+    @property
+    def eigenfols(self):
+        v1, v2, v3 = self.eigenvects
+        d1 = Dataset(v1.asfol, name='E1', color='red')
+        d2 = Dataset(v2.asfol, name='E2', color='magenta')
+        d3 = Dataset(v3.asfol, name='E3', color='green')
+        return d1, d2, d3
 
 
 class Density(object):
