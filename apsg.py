@@ -2,17 +2,6 @@
 """
 Python module to manipulate, analyze and visualize structural geology data
 
-Example::
-
-    from apsg import *
-    d=Dataset(name='lineace')
-    d.append(Lin(120,40))
-    d.append(Lin(153,18))
-    d.append(Lin(140,35))
-    s=SchmidtNet(d)
-    s.add(d[0]**d[1])
-    s.show()
-
 """
 
 # import modulu
@@ -376,9 +365,205 @@ class Pole(Fol):
         azi, inc = self.dd
         return 'P:%d/%d' % (round(azi), round(inc))
 
+class Group(list):
+    """Group class
+    Group is homogeneous group of Vec3, Fol, Lin or Pole data
+    """
+    def __init__(self, data,
+                 name='Default',
+                 color='blue',
+                 fol={'lw': 1, 'ls': '-'},
+                 lin={'marker': 'o', 's': 20},
+                 pole={'marker': 'v', 's': 36, 'facecolors': None},
+                 vec={'marker': 'd', 's': 24, 'facecolors': None},
+                 tmpl=None):
+        if not issubclass(type(data), list):
+            data = [data]
+        assert len(data) > 0, 'Empty group is not allowed.'
+        tp = type(data[0])
+        assert issubclass(tp, Vec3), \
+               'Data must be Fol, Lin, Pole or Vec3 type.'
+        assert all([isinstance(e, tp) for e in data]), \
+               'All data in group must be of same type.'
+        super(Group, self).__init__(data)
+        self.type = tp
+        if tmpl is None:
+            self.name = name
+            self.color = color
+            self.sym = {}
+            self.sym['fol'] = fol
+            self.sym['lin'] = lin
+            self.sym['pole'] = pole
+            self.sym['vec'] = vec
+        else:
+            self.name = tmpl.name
+            self.color = tmpl.color
+            self.sym = tmpl.sym
+
+    def __repr__(self):
+        return '%s: %g %s' % (self.name, len(self), self.type.__name__)
+
+    def __add__(self, other):
+        # merge Datasets
+        assert isinstance(other, Group), 'Only groups could be merged'        
+        assert self.type is other.type, 'Only same type groups could be merged'
+        return Group(list(self) + other, tmpl=self)
+
+    def __setitem__(self, key, value):
+        assert isinstance(value, self.type), 'item is not of type %s' % self.type.__name__
+        super(Group, self).__setitem__(key, value)
+
+    def append(self, item):
+        assert isinstance(item, self.type), 'item is not of type %s' % self.type.__name__
+        super(Group, self).append(item)
+
+    def extend(self, items = ()):
+        for item in items:
+            self.append(item)
+
+    @classmethod
+    def fromcsv(cls, fname, typ=Lin, acol=1, icol=2,
+                name='Default', color='blue'):
+        """Read dataset from csv"""
+        import csv
+        with open(fname, 'rb') as csvfile:
+            sniffer = csv.Sniffer()
+            dialect = sniffer.sniff(csvfile.read(1024))
+            csvfile.seek(0)
+            data = []
+            reader = csv.reader(csvfile, dialect)
+            if sniffer.has_header:
+                reader.next()
+            for row in reader:
+                if len(row) > 1:
+                    data.append(typ(float(row[acol-1]), float(row[icol-1])))
+            return cls(data, name=name, color=color)
+
+    @property
+    def aslin(self):
+        """Convert all data in Group to Lin"""
+        return Group([e.aslin for e in self], tmpl=self)
+
+    @property
+    def asfol(self):
+        """Convert all data in Group to Fol"""
+        return Group([e.asfol for e in self], tmpl=self)
+
+    @property
+    def aspole(self):
+        """Convert all data in Group to Pole"""
+        return Group([e.aspole for e in self], tmpl=self)
+
+    @property
+    def resultant(self):
+        """calculate resultant vector of Group"""
+        r = deepcopy(self[0])
+        for v in self[1:]:
+            r += v
+        return r
+
+    @property
+    def rdegree(self):
+        """degree of preffered orientation od Group"""
+        r = self.resultant
+        n = len(self)
+        return 100*(2*abs(r) - n)/n
+
+    def cross(self, other=None):
+        """return cross products of all pairs in Group"""
+        res = []
+        if other is None:
+            for i in range(len(self)-1):
+                for j in range(i+1, len(self)):
+                    res.append(self[i]**self[j])
+        elif isinstance(other, Group):
+            for e in self:
+                for f in other:
+                    res.append(e**f)
+        elif issubclass(other, Vec3):
+            for e in self:
+                res.append(e**other)
+        else:
+            raise TypeError('Wrong argument type!')
+        return Group(res, tmpl=self)
+
+    def rotate(self, axis, phi):
+        """rotate Group"""
+        return Group([e.rotate(axis, phi) for e in self], tmpl=self)
+
+    def center(self):
+        """rotate E3 direction of Group to vertical"""
+        ot = self.ortensor
+        azi, inc = ot.eigenlins[2][0].dd
+        return self.rotate(Lin(azi - 90, 0), 90 - inc)
+
+    def angle(self, other=None):
+        """return angles of all pairs in Group"""
+        res = []
+        if other is None:
+            for i in range(len(self)-1):
+                for j in range(i+1, len(self)):
+                    res.append(self[i].angle(self[j]))
+        elif isinstance(other, Group):
+            for e in self:
+                for f in other:
+                    res.append(e.angle(f))
+        elif issubclass(other, Vec3):
+            for e in self:
+                res.append(e.angle(other))
+        else:
+            raise TypeError('Wrong argument type!')
+        return np.array(res)
+
+    @property
+    def ortensor(self):
+        """return orientation tensor of Group"""
+        return Ortensor(self)
+
+    def transform(self, F):
+        """Return affine transformation of Group by matrix *F*"""
+        return Group([e.transform(F) for e in self], tmpl=self)
+
+    @property
+    def dd(self):
+        """array of dip directions and dips of Group"""
+        return np.array([d.dd for d in self]).T
+
+    def density(self, k=100, npoints=180):
+        """calculate density of Group"""
+        return Density(self, k, npoints)
+
+    def plot(self):
+        """Show Group on Schmidt net"""
+        return SchmidtNet(self)
+
+    @classmethod
+    def randn_lin(cls, N=100, main=Lin(0, 90), sig=20):
+        data = []
+        ta, td = main.dd
+        for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
+            data.append(Lin(0, 90).rotate(Lin(azi, 0), dip))
+        return cls(data).rotate(Lin(ta+90, 0), 90-td)
+
+    @classmethod
+    def randn_fol(cls, N=100, main=Fol(0, 0), sig=20):
+        data = []
+        ta, td = main.dd
+        for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
+            data.append(Fol(0, 0).rotate(Lin(azi, 0), dip))
+        return cls(d).rotate(Lin(ta-90, 0), td)
+
+    @classmethod
+    def randn_pole(cls, N=100, main=Pole(0, 0), sig=20):
+        data = []
+        ta, td = main.dd
+        for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
+            data.append(Pole(0, 0).rotate(Lin(azi, 0), dip))
+        return cls(d).rotate(Lin(ta-90, 0), td)
+
 
 class Dataset(list):
-    """Dataset class
+    """Dataset class TODO
     """
     def __init__(self, data=[],
                  name='Default',
@@ -403,25 +588,6 @@ class Dataset(list):
             self.name = tmpl.name
             self.color = tmpl.color
             self.sym = tmpl.sym
-
-
-    @classmethod
-    def fromcsv(cls, fname, typ=Lin, acol=1, icol=2,
-                name='Default', color='blue'):
-        """Read dataset from csv"""
-        import csv
-        with open(fname, 'rb') as csvfile:
-            sniffer = csv.Sniffer()
-            dialect = sniffer.sniff(csvfile.read(1024))
-            csvfile.seek(0)
-            d = cls(name=name, color=color)
-            reader = csv.reader(csvfile, dialect)
-            if sniffer.has_header:
-                reader.next()
-            for row in reader:
-                if len(row) > 1:
-                    d.append(typ(float(row[acol-1]), float(row[icol-1])))
-            return d
 
     def __repr__(self):
         return self.name + ':' + repr(list(self))
@@ -469,119 +635,6 @@ class Dataset(list):
     def numvecs(self):
         """number of Vec3 in Dataset"""
         return len(self.vecs)
-
-    @property
-    def aslin(self):
-        """Convert all data in Dataset to Lin"""
-        return Dataset([e.aslin for e in self], tmpl=self)
-
-    @property
-    def asfol(self):
-        """Convert all data in Dataset to Fol"""
-        return Dataset([e.asfol for e in self], tmpl=self)
-
-    @property
-    def aspole(self):
-        """Convert all data in Dataset to Pole"""
-        return Dataset([e.aspole for e in self], tmpl=self)
-
-    @property
-    def resultant(self):
-        """calculate resultant vector of Dataset"""
-        r = deepcopy(self[0])
-        for v in self[1:]:
-            r += v
-        return r
-
-    @property
-    def rdegree(self):
-        """degree of preffered orientation od Dataset"""
-        r = self.resultant
-        n = len(self)
-        return 100*(2*abs(r) - n)/n
-
-    def cross(self, d=None):
-        """return cross products of all pairs in Dataset"""
-        res = Dataset(tmpl=self)
-        res.name = 'Pairs'
-        if d is None:
-            for i in range(len(self)-1):
-                for j in range(i+1, len(self)):
-                    res.append(self[i]**self[j])
-        else:
-            for i in range(len(self)):
-                for j in range(len(d)):
-                    res.append(self[i]**d[j])
-        return res
-
-    def rotate(self, axis, phi):
-        """rotate Dataset"""
-        dr = Dataset(tmpl=self)
-        for e in self:
-            dr.append(e.rotate(axis, phi))
-        return dr
-
-    def center(self):
-        """rotate E3 direction of Dataset to vertical"""
-        ot = self.ortensor
-        azi, inc = ot.eigenlins[2][0].dd
-        return self.rotate(Lin(azi - 90, 0), 90 - inc)
-
-    def angle(self, other):
-        """list of angles between given feature and Dataset"""
-        r = []
-        for e in self:
-            r.append(e.angle(other))
-        return np.array(r)
-
-    @property
-    def ortensor(self):
-        """return orientation tensor of Dataset"""
-        return Ortensor(self)
-
-    def transform(self, F):
-        """Return affine transformation of dataset by matrix *F*"""
-        dt = Dataset(tmpl=self)
-        for e in self:
-            dt.append(e.transform(F))
-        return dt
-
-    @property
-    def dd(self):
-        """array of dip directions and dips of Dataset"""
-        return np.array([d.dd for d in self]).T
-
-    def density(self, k=100, npoints=180):
-        """calculate density of Dataset"""
-        return Density(self, k, npoints)
-
-    def plot(self):
-        """Show Dataset on Schmidt net"""
-        return SchmidtNet(self)
-
-    @classmethod
-    def randn_lin(self, N=100, main=Lin(0, 90), sig=20):
-        d = []
-        ta, td = main.dd
-        for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
-            d.append(Lin(0, 90).rotate(Lin(azi, 0), dip))
-        return self(d).rotate(Lin(ta+90, 0), 90-td)
-
-    @classmethod
-    def randn_fol(self, N=100, main=Fol(0, 0), sig=20):
-        d = []
-        ta, td = main.dd
-        for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
-            d.append(Fol(0, 0).rotate(Lin(azi, 0), dip))
-        return self(d).rotate(Lin(ta-90, 0), td)
-
-    @classmethod
-    def randn_pole(self, N=100, main=Pole(0, 0), sig=20):
-        d = []
-        ta, td = main.dd
-        for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
-            d.append(Pole(0, 0).rotate(Lin(azi, 0), dip))
-        return self(d).rotate(Lin(ta-90, 0), td)
 
 
 class Ortensor(object):
@@ -647,7 +700,7 @@ class Datasource(object):
     structype.structcode, structype.groupcode  \
     FROM sites \
     INNER JOIN structdata ON sites.id = structdata.id_sites \
-    INNER JOIN structype ON structype.id = structdatnumlinsa.id_structype \
+    INNER JOIN structype ON structype.id = structdata.id_structype \
     LIMIT 1"
     STRUCTSEL = "SELECT structype.structure  \
     FROM sites  \
@@ -681,17 +734,14 @@ class Datasource(object):
         return [el[0] for el in self.execsql(Datasource.STRUCTSEL)]
 
     def select(self, struct=None):
-        fsel = Datasource.SELECT + " WHERE structype.planar=1"
-        lsel = Datasource.SELECT + " WHERE structype.planar=0"
-        if struct:
-            fsel += " AND structype.structure='%s'" % struct
-            lsel += " AND structype.structure='%s'" % struct
-        fsel += " ORDER BY sites.name ASC"
-        lsel += " ORDER BY sites.name ASC"
-
-        fol = Dataset([Fol(el[0], el[1]) for el in self.execsql(fsel)])
-        lin = Dataset([Lin(el[0], el[1]) for el in self.execsql(lsel)])
-        return fol + lin
+        tpsel = "SELECT planar FROM structype WHERE structure='%s'" % struct
+        dtsel = Datasource.SELECT + " WHERE structype.structure='%s'" % struct
+        tp = self.execsql(tpsel)[0][0]
+        if tp:
+            res = Group([Fol(el[0], el[1]) for el in self.execsql(dtsel)], name=struct)
+        else:
+            res = Group([Lin(el[0], el[1]) for el in self.execsql(dtsel)], name=struct)
+        return res
 
 
 class Density(object):
@@ -790,15 +840,15 @@ class SchmidtNet(object):
         for arg in args:
             if type(arg) == Density:
                 self.set_density(arg)
-            elif type(arg) == Dataset:
+            elif type(arg) == Group:
                 self.data.append(arg)
-            elif type(arg) == Lin or type(arg) == Fol or type(arg) == Pole or type(arg) == Vec3:
-                self.data.append(Dataset(arg))
+            elif issubclass(type(arg), Vec3):
+                self.data.append(Group(arg))
             elif type(arg) == Ortensor:
                 for v in arg.eigenlins:
                     self.data.append(v)
             else:
-                raise Exception('Wrong argument! '+type(arg) +
+                raise TypeError('Wrong argument! '+type(arg) +
                                 ' cannot be plotted as linear feature.')
         self.refresh()
 
@@ -843,38 +893,36 @@ class SchmidtNet(object):
         labels = []
 
         # plot data
-        for arg in self.data:
-            #fol great circle
-            dd = arg.fols
-            if dd:
-                for d in dd:
-                    l = Lin(*d.dd)
-                    gc = map(l.rotate, 91*[d], np.linspace(-89.99, 89.99, 91))
-                    x, y = np.array([r.xy for r in gc]).T
-                    h = self.ax.plot(x, y, color=arg.color, zorder=2, **dd.sym['fol'])
-                handles.append(h[0])
-                labels.append('S ' + arg.name)
-            #lin point
-            dd = arg.lins
-            if dd:
-                x, y = np.array([e.xy for e in dd]).T
-                h = self.ax.scatter(x, y, color=arg.color, zorder=4, **dd.sym['lin'])
-                handles.append(h)
-                labels.append('L ' + arg.name)
-            #pole point
-            dd = arg.poles
-            if dd:
-                x, y = np.array([e.xy for e in dd]).T
-                h = self.ax.scatter(x, y, color=arg.color, zorder=3, **dd.sym['pole'])
-                handles.append(h)
-                labels.append('P ' + arg.name)
-            #vector point
-            dd = arg.vecs
-            if dd:
-                x, y = np.array([e.xy for e in dd]).T
-                h = self.ax.scatter(x, y, color=arg.color, zorder=3, **dd.sym['vec'])
-                handles.append(h)
-                labels.append('V ' + arg.name)
+        for dt in self.data:
+            if isinstance(dt, Group):
+                labels.append(dt.name)
+                #fol great circle
+                if dt.type == Fol:
+                    for d in dt:
+                        l = Lin(*d.dd)
+                        gc = map(l.rotate, 91*[d], np.linspace(-89.99, 89.99, 91))
+                        x, y = np.array([r.xy for r in gc]).T
+                        h = self.ax.plot(x, y, color=dt.color, zorder=2, **dt.sym['fol'])
+                    handles.append(h[0])
+                    #labels.append('S ' + dt.name)
+                #lin point
+                elif dt.type == Lin:
+                    x, y = np.array([e.xy for e in dt]).T
+                    h = self.ax.scatter(x, y, color=dt.color, zorder=4, **dt.sym['lin'])
+                    handles.append(h)
+                    #labels.append('L ' + dt.name)
+                #pole point
+                elif dt.type == Pole:
+                    x, y = np.array([e.xy for e in dt]).T
+                    h = self.ax.scatter(x, y, color=dt.color, zorder=3, **dt.sym['pole'])
+                    handles.append(h)
+                    #labels.append('P ' + dt.name)
+                #vector point
+                elif dt.type == Vec3:
+                    x, y = np.array([e.xy for e in dt]).T
+                    h = self.ax.scatter(x, y, color=dt.color, zorder=3, **dt.sym['vec'])
+                    handles.append(h)
+                    #labels.append('V ' + dt.name)
         # legend
         if handles:
             self.ax.legend(handles, labels, bbox_to_anchor=(1.03, 1), loc=2,
@@ -926,28 +974,19 @@ class SchmidtNet(object):
         """Collect Dataset of Lin by mouse clicks"""
         self.show()
         pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
-        l = Dataset()
-        for x, y in pts:
-            l.append(Lin(*getldd(x, y)))
-        return l
+        return Group([Lin(*getldd(x, y)) for x, y in pts])
 
     def getfols(self):
         """Collect Dataset of Fol by mouse clicks"""
         self.show()
         pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
-        f = Dataset()
-        for x, y in pts:
-            f.append(Fol(*getfdd(x, y)))
-        return f
+        return Group([Fol(*getfdd(x, y)) for x, y in pts])
 
     def getpoles(self):
         """Collect Dataset of Pole by mouse clicks"""
         self.show()
         pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
-        f = Dataset()
-        for x, y in pts:
-            f.append(Pole(*getfdd(x, y)))
-        return f
+        return Group([Pole(*getfdd(x, y)) for x, y in pts])
 
 
 def fixpair(f, l):
@@ -962,7 +1001,7 @@ def fixpair(f, l):
 
 def rose(a, bins=13, **kwargs):
     """Plot rose diagram"""
-    if isinstance(a, Dataset):
+    if isinstance(a, Group):
         a, _ = a.dd
     fig = plt.figure()
     ax = fig.add_subplot(111, polar=True)
@@ -974,11 +1013,11 @@ def rose(a, bins=13, **kwargs):
 
 
 if __name__ == "__main__":
-    d = Dataset([Fol(0, 60),
+    d = Group([Fol(0, 60),
                  Fol(90, 60),
                  Fol(180, 60),
                  Fol(270, 60)],
-                name='apsg')
+                name='APSG')
     c = Density(d)
-    s = SchmidtNet(c, d)
+    s = SchmidtNet(c, d, d.cross())
     s.show()
