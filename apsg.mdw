@@ -95,8 +95,8 @@ vector `v` for 45°:
 u.rotate(v,45)
 @
 
-Classes Fol a Lin
-=================
+Classes Lin, Fol and Pole
+=========================
 
 To work with orientational data in structural geology, APSG
 provide two classes derived from `Vec3` class. There is `Fol`
@@ -108,7 +108,7 @@ data are commonly axial in nature. The special class `Pole` is
 derived from `Fol` and only differs in way how it is visualized
 on stereographic projection.
 
-To create instance of `Fol` or `Lin` class, we have to provide
+To create instance of `Lin`, `Fol` or `Pole` class, we have to provide
 dip direction and dip, both in degrees:
 
 <<term = True>>=
@@ -125,8 +125,8 @@ u.asfol
 u.aspole
 @
 
-Vec3 methods for Fol a Lin
---------------------------
+Vec3 methods for Lin, Fol and Pole
+----------------------------------
 
 To find angle between two linear or planar features:
 
@@ -172,66 +172,51 @@ To rotate structural features we can use method `rotate`:
 p2.rotate(l2,45)
 @
 
-Dataset class
-=============
+Group class
+===========
 
-`Dataset` class serve as list or container of `Fol` or `Lin` objects. It allows
-grouping of features either for visualization or batch analysis.
+`Group` class serve as a homogeneous container for `Lin`, `Fol` or `Pole`
+objects. It allows grouping of features either for visualization or batch analysis.
 
 <<term = True>>=
-d = Dataset(name='Test data')
-for dd in [Lin(120,60), Lin(116,50), Lin(132,45), Fol(90,60), Fol(84,52)]:
-    d.append(dd)
+d = Group([Lin(120,60), Lin(116,50), Lin(132,45),
+           Lin(90,60), Lin(84,52)], name='L1')
 print(d)
 @
 
-Same dataset could be created in simple way as:
-
-<<term = True>>=
-d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45),
-             Fol(90,60), Fol(84,52)], name='Test data')
-print(d)
-@
-
-Method `len` returns number of features in dataset:
+Method `len` returns number of features in group:
 
 <<term = True>>=
 len(d)
 @
 
-To select only linear or planar features we can use methods
-`lins` and `fols`. Properties `numlins` a `numfols` gives
-number of linear or planar features in dataset.
+Property `resultant` gives mean or resultant of all features in group:
 
 <<term = True>>=
-d.lins
-d.numlins
-d.fols
-d.numfols
+d.resultant
 @
 
-Another property of dataset is `resultant`,which returns
-mean or resultant of all features in dataset:
-
-<<term = True>>=
-d.lins.resultant
-d.fols.resultant
-@
-
-To measure angles between all features in dataset and another feature,
+To measure angles between all features in group and another feature,
 we can use method `angle`:
 
 <<term = True>>=
-d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)])
 d.angle(d.resultant)
 @
 
-To rotate all features in dataset around another feature,
+To rotate all features in group around another feature,
 we can use method `rotate`:
 
 <<term = True>>=
-d.rotate(l1, 45)
+d.rotate(Lin(150, 30), 45)
 @
+
+To calculate orientation tensor of all features in group,
+we can use method `ortensor`:
+
+<<term = True>>=
+d.ortensor
+@
+
 
 Ortensor class
 ==============
@@ -267,7 +252,7 @@ c.plotcountgrid()
 Schmidt projection
 ==================
 
-Any `Fol`, `Lin`, `Pole`, `Vec3` or `Dataset` object could
+Any `Fol`, `Lin`, `Pole`, `Vec3` or `Group` object could
 be visualized in Schmidt projection:
 
 <<term = True, fig = True, width = '8cm', f_pos = "h!">>=
@@ -288,7 +273,7 @@ s.show()
 
 <<term = True, fig = True, width = '8cm', f_pos = "h!">>=
 s.clear()
-d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)], name='Test')
+d = Group([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)], name='Test')
 s.add(d)
 s.add(d.ortensor)
 s.show()
@@ -298,9 +283,9 @@ All mentioned classes could be freely combined:
 
 <<term = True, fig = True, width = '8cm', f_pos = "h!">>=
 s.clear()
-d = Dataset([Lin(120,70), Lin(116,42), Lin(132,45),
+d = Group([Lin(120,70), Lin(116,42), Lin(132,45),
              Lin(95,52), Lin(114,48), Lin(118,58) ],
-             name='Test data', color='red')
+             name='G1', color='red')
 s.add(d)
 s.add(d.resultant)
 s.add(*d.ortensor.eigenfols)
@@ -318,10 +303,9 @@ Double cross product is allowed:
 s.clear()
 p = Fol(250,40)
 l = Lin(160,30)
-d = Dataset([p,l], color='blue', fol={'lw': 2}, lin={'s': 60})
-d1 = Dataset([l**p, p**l], name='1CP', color='red')
-d2 = Dataset([p**l**p, l**p**l], name='2CP', color='green')
-s.add(d, d1, d2)
+s.add(p,l)
+s.add(l**p,p**l)
+s.add(l**p**l,p**l**p)
 s.show()
 @
 
@@ -330,8 +314,7 @@ Correct measurements of planar linear pairs:
 <<term = True, fig = True, width = '8cm', f_pos = "h!">>=
 p1, l1 = fixpair(p,l)
 s.clear()
-d = Dataset([p, l], name='Original', color='blue')
-d1 = Dataset([p1, l1], name='Fixed', color='green')
-s.add(d, d1)
+s.add(p,l)
+s.add(p1,l1)
 s.show()
 @

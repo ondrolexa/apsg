@@ -88,12 +88,12 @@ Method `rotate` provide possibility to rotate vector around another vector. For 
 V(2.248, 0.558, 2.939)
 ~~~~
 
-Classes Fol a Lin
-=================
+Classes Lin, Fol and Pole
+=========================
 
 To work with orientational data in structural geology, APSG provide two classes derived from `Vec3` class. There is `Fol` class to represent planar features by planes and `Lin` class to represent linear feature by lines. Both classes provide all `Vec3` methods, but they differ in way how instance is created and how some operations are calculated, as structural geology data are commonly axial in nature. The special class `Pole` is derived from `Fol` and only differs in way how it is visualized on stereographic projection.
 
-To create instance of `Fol` or `Lin` class, we have to provide dip direction and dip, both in degrees:
+To create instance of `Lin`, `Fol` or `Pole` class, we have to provide dip direction and dip, both in degrees:
 
 ~~~~ {.python}
 >>> Lin(120,60)
@@ -115,8 +115,8 @@ S:117/37
 P:117/37
 ~~~~
 
-Vec3 methods for Fol a Lin
---------------------------
+Vec3 methods for Lin, Fol and Pole
+----------------------------------
 
 To find angle between two linear or planar features:
 
@@ -168,73 +168,57 @@ To rotate structural features we can use method `rotate`:
 S:269/78
 ~~~~
 
-Dataset class
-=============
+Group class
+===========
 
-`Dataset` class serve as list or container of `Fol` or `Lin` objects. It allows grouping of features either for visualization or batch analysis.
-
-~~~~ {.python}
->>> d = Dataset(name='Test data')
->>> for dd in [Lin(120,60), Lin(116,50), Lin(132,45), Fol(90,60), Fol(84,52
-)]:
-...     d.append(dd)
-... 
->>> print(d)
-Test data:[L:120/60, L:116/50, L:132/45, S:90/60, S:84/52]
-~~~~
-
-Same dataset could be created in simple way as:
+`Group` class serve as a homogeneous container for `Lin`, `Fol` or `Pole` objects. It allows grouping of features either for visualization or batch analysis.
 
 ~~~~ {.python}
->>> d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45),
-...              Fol(90,60), Fol(84,52)], name='Test data')
+>>> d = Group([Lin(120,60), Lin(116,50), Lin(132,45),
+...            Lin(90,60), Lin(84,52)], name='L1')
 ... 
 >>> print(d)
-Test data:[L:120/60, L:116/50, L:132/45, S:90/60, S:84/52]
+L1: 5 Lin
 ~~~~
 
-Method `len` returns number of features in dataset:
+Method `len` returns number of features in group:
 
 ~~~~ {.python}
 >>> len(d)
 5
 ~~~~
 
-To select only linear or planar features we can use methods `lins` and `fols`. Properties `numlins` a `numfols` gives number of linear or planar features in dataset.
+Property `resultant` gives mean or resultant of all features in group:
 
 ~~~~ {.python}
->>> d.lins
-Test data:[L:120/60, L:116/50, L:132/45]
->>> d.numlins
-3
->>> d.fols
-Test data:[S:90/60, S:84/52]
->>> d.numfols
-2
+>>> d.resultant
+L:110/55
 ~~~~
 
-Another property of dataset is `resultant`,which returns mean or resultant of all features in dataset:
+To measure angles between all features in group and another feature, we can use method `angle`:
 
 ~~~~ {.python}
->>> d.lins.resultant
-L:123/52
->>> d.fols.resultant
-S:87/56
-~~~~
-
-To measure angles between all features in dataset and another feature, we can use method `angle`:
-
-~~~~ {.python}
->>> d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)])
 >>> d.angle(d.resultant)
-array([  7.74624256,   2.54411184,  12.80183755,  12.94898331])
+array([  7.60329482,   6.24648167,  17.37186861,  11.6536752 ,  15.3996262 
+])
 ~~~~
 
-To rotate all features in dataset around another feature, we can use method `rotate`:
+To rotate all features in group around another feature, we can use method `rotate`:
 
 ~~~~ {.python}
->>> d.rotate(l1, 45)
-R-Default:[L:90/57, L:103/50, L:120/55, L:89/41]
+>>> d.rotate(Lin(150, 30), 45)
+L1: 5 Lin
+~~~~
+
+To calculate orientation tensor of all features in group, we can use method `ortensor`:
+
+~~~~ {.python}
+>>> d.ortensor
+Ortensor:
+(E1:4.77,E2:0.2011,E3:0.02874)
+[[ 0.36990905 -0.48027385 -0.71621555]
+ [-0.48027385  1.42230591  2.10464496]
+ [-0.71621555  2.10464496  3.20778504]]
 ~~~~
 
 Ortensor class
@@ -245,14 +229,14 @@ Ortensor class
 ~~~~ {.python}
 >>> ot = Ortensor(d)
 >>> ot.eigenvals
-(0.97013794785464802, 0.02383853819460446, 0.006023513950748253)
+(0.95403846865963882, 0.040212749461964618, 0.0057487818783964056)
 >>> ot.eigenvects
-(V(0.269, -0.545, -0.794), V(-0.962, -0.185, -0.199), V(0.038, -0.818, 0.57
-5))
+(V(0.192, -0.542, -0.818), V(-0.981, -0.082, -0.176), V(-0.028, -0.836, 0.5
+47))
 >>> ot.eigenlins
-(E1:[L:116/53], E2:[L:11/11], E3:[L:273/35])
+(E1: 1 Lin, E2: 1 Lin, E3: 1 Lin)
 >>> ot.eigenfols
-(E1:[S:296/37], E2:[S:191/79], E3:[S:93/55])
+(E1: 1 Fol, E2: 1 Fol, E3: 1 Fol)
 ~~~~
 
 Density class
@@ -263,26 +247,26 @@ Density class
 ~~~~ {.python}
 >>> c = Density(d, npoints=90)
 >>> c
-Density grid from 4 data with 6 contours.
+Density grid from 5 data with 6 contours.
 Gridded on 90 points.
-Values: k=100 E=0.04 s=0.14
-Max. weight: 1.443
+Values: k=100 E=0.05 s=0.1565
+Max. weight: 1.422
 >>> c.plotcountgrid()
 ~~~~
 
-![](figures/apsg_figure26_1.png)
+![](figures/apsg_figure25_1.png)
 
 Schmidt projection
 ==================
 
-Any `Fol`, `Lin`, `Pole`, `Vec3` or `Dataset` object could be visualized in Schmidt projection:
+Any `Fol`, `Lin`, `Pole`, `Vec3` or `Group` object could be visualized in Schmidt projection:
 
 ~~~~ {.python}
 >>> SchmidtNet(Fol(214,55), Lin(120,60), Pole(240,60), Vec3([-1,-2,1]))
-<apsg.SchmidtNet object at 0x7f1fcfde2290>
+<apsg.SchmidtNet object at 0x7f071f0bdf50>
 ~~~~
 
-![](figures/apsg_figure27_1.png)
+![](figures/apsg_figure26_1.png)
 
 Features could be added to Schmidt projection programatically as well:
 
@@ -294,28 +278,28 @@ Features could be added to Schmidt projection programatically as well:
 >>> s.show()
 ~~~~
 
-![](figures/apsg_figure28_2.png)
+![](figures/apsg_figure27_2.png)
 
 `Dataset` properties as color and name are used during visualization:
 
 ~~~~ {.python}
 >>> s.clear()
->>> d = Dataset([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)], name='
-Test')
+>>> d = Group([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)], name='Te
+st')
 >>> s.add(d)
 >>> s.add(d.ortensor)
 >>> s.show()
 ~~~~
 
-![](figures/apsg_figure29_2.png)
+![](figures/apsg_figure28_2.png)
 
 All mentioned classes could be freely combined:
 
 ~~~~ {.python}
 >>> s.clear()
->>> d = Dataset([Lin(120,70), Lin(116,42), Lin(132,45),
+>>> d = Group([Lin(120,70), Lin(116,42), Lin(132,45),
 ...              Lin(95,52), Lin(114,48), Lin(118,58) ],
-...              name='Test data', color='red')
+...              name='G1', color='red')
 ... 
 >>> s.add(d)
 >>> s.add(d.resultant)
@@ -325,7 +309,7 @@ All mentioned classes could be freely combined:
 >>> s.show()
 ~~~~
 
-![](figures/apsg_figure30_2.png)
+![](figures/apsg_figure29_2.png)
 
 Some tricks
 -----------
@@ -336,25 +320,23 @@ Double cross product is allowed:
 >>> s.clear()
 >>> p = Fol(250,40)
 >>> l = Lin(160,30)
->>> d = Dataset([p,l], color='blue', fol={'lw': 2}, lin={'s': 60})
->>> d1 = Dataset([l**p, p**l], name='1CP', color='red')
->>> d2 = Dataset([p**l**p, l**p**l], name='2CP', color='green')
->>> s.add(d, d1, d2)
+>>> s.add(p,l)
+>>> s.add(l**p,p**l)
+>>> s.add(l**p**l,p**l**p)
 >>> s.show()
 ~~~~
 
-![](figures/apsg_figure31_2.png)
+![](figures/apsg_figure30_2.png)
 
 Correct measurements of planar linear pairs:
 
 ~~~~ {.python}
 >>> p1, l1 = fixpair(p,l)
 >>> s.clear()
->>> d = Dataset([p, l], name='Original', color='blue')
->>> d1 = Dataset([p1, l1], name='Fixed', color='green')
->>> s.add(d, d1)
+>>> s.add(p,l)
+>>> s.add(p1,l1)
 >>> s.show()
 ~~~~
 
-![](figures/apsg_figure32_2.png)
+![](figures/apsg_figure31_2.png)
 

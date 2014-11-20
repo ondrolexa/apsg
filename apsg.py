@@ -481,7 +481,7 @@ class Group(list):
             for e in self:
                 for f in other:
                     res.append(e**f)
-        elif issubclass(other, Vec3):
+        elif issubclass(type(other), Vec3):
             for e in self:
                 res.append(e**other)
         else:
@@ -509,7 +509,7 @@ class Group(list):
             for e in self:
                 for f in other:
                     res.append(e.angle(f))
-        elif issubclass(other, Vec3):
+        elif issubclass(type(other), Vec3):
             for e in self:
                 res.append(e.angle(other))
         else:
@@ -791,17 +791,17 @@ class Ortensor(object):
     @property
     def eigenlins(self):
         v1, v2, v3 = self.eigenvects
-        d1 = Dataset(v1.aslin, name='E1', color='red')
-        d2 = Dataset(v2.aslin, name='E2', color='magenta')
-        d3 = Dataset(v3.aslin, name='E3', color='green')
+        d1 = Group(v1.aslin, name='E1', color='red')
+        d2 = Group(v2.aslin, name='E2', color='magenta')
+        d3 = Group(v3.aslin, name='E3', color='green')
         return d1, d2, d3
 
     @property
     def eigenfols(self):
         v1, v2, v3 = self.eigenvects
-        d1 = Dataset(v1.asfol, name='E1', color='red')
-        d2 = Dataset(v2.asfol, name='E2', color='magenta')
-        d3 = Dataset(v3.asfol, name='E3', color='green')
+        d1 = Group(v1.asfol, name='E1', color='red')
+        d2 = Group(v2.asfol, name='E2', color='magenta')
+        d3 = Group(v3.asfol, name='E3', color='green')
         return d1, d2, d3
 
 
@@ -980,7 +980,7 @@ class SchmidtNet(object):
                     #labels.append('P ' + dt.name)
                 #vector point
                 elif dt.type == Vec3:
-                    x, y = np.array([e.xy for e in dt]).T
+                    x, y = np.array([e.aslin.xy for e in dt]).T
                     h = self.ax.scatter(x, y, color=dt.color, zorder=3, **dt.sym['vec'])
                     handles.append(h)
                     #labels.append('V ' + dt.name)
