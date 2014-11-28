@@ -11,6 +11,10 @@ import sqlite3
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+try:
+    import mplstereonet
+except ImportError:
+    pass
 
 # lambda funkce
 sind = lambda x: np.sin(np.deg2rad(x))
@@ -253,6 +257,11 @@ class Lin(Vec3):
         return azi, inc
 
     @property
+    def rhr(self):
+        azi, inc = self.dd
+        return (azi - 90) % 360, inc
+
+    @property
     def xy(self):
         azi, inc = self.dd
         return (np.sqrt(2)*sind((90-inc)/2)*sind(azi),
@@ -346,6 +355,11 @@ class Fol(Vec3):
         azi = (atan2d(n[1], n[0]) + 180) % 360
         inc = 90 - asind(n[2])
         return azi, inc
+
+    @property
+    def rhr(self):
+        azi, inc = self.dd
+        return (azi - 90) % 360, inc
 
     @property
     def xy(self):
@@ -529,6 +543,11 @@ class Group(list):
     def dd(self):
         """array of dip directions and dips of Group"""
         return np.array([d.dd for d in self]).T
+
+    @property
+    def rhr(self):
+        """array of strikes and dips of Group"""
+        return np.array([d.rhr for d in self]).T
 
     def density(self, k=100, npoints=180):
         """calculate density of Group"""
@@ -845,6 +864,43 @@ class Density(object):
         plt.gca().set_aspect('equal')
         plt.triplot(self.triang, 'bo-')
         plt.show()
+
+
+class StereoNet(object):
+    """API to mplstereonet"""
+    def __init__(self, *args, **kwargs):
+        _, self._ax = mplstereonet.subplots(*args, **kwargs)
+        self._grid_state = False
+
+    def plane(self, obj, *args, **kwargs):
+        strike, dip = obj.rhr
+        self._ax.plane(strike, dip, *args, **kwargs)
+        plt.draw()
+
+    def pole(self, obj, *args, **kwargs):
+        strike, dip = obj.rhr
+        self._ax.pole(strike, dip, *args, **kwargs)
+        plt.draw()
+
+    def rake(self, obj, rake_angle, *args, **kwargs):
+        strike, dip = obj.rhr
+        self._ax.rake(strike, dip, rake_angle, *args, **kwargs)
+        plt.draw()
+
+    def line(self, obj, *args, **kwargs):
+        bearing, plunge = obj.rhr
+        self._ax.line(plunge, bearing, *args, **kwargs)
+        plt.draw()
+
+    def cla(self):
+        self._ax.cla()
+        self._ax.grid(self._grid_state)
+        plt.draw()
+
+    def grid(self, state=True):
+        self._ax.grid(state)
+        self._grid_state = state
+        plt.draw()
 
 
 class SchmidtNet(object):
