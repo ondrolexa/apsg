@@ -269,8 +269,8 @@ To make density contours plots, a `density_contour` and `density_contourf` metho
 ~~~~ {.python}
 >>> s = StereoNet()
 >>> g = Group.randn_lin(mean=Lin(40,30))
->>> s.density_contourf(g, levels=range(1,40,5), cmap='gray_r')
->>> s.density_contour(g, levels=range(1,40,5), colors='k')
+>>> s.density_contourf(g, levels=range(1,50,5), cmap='gray_r')
+>>> s.density_contour(g, levels=range(1,50,5), colors='k')
 >>> s.line(g, 'k.')
 >>> plt.show()
 ~~~~
