@@ -252,12 +252,6 @@ class Lin(Vec3):
     def rhr(self):
         return self.dd
 
-    @property
-    def xy(self):
-        azi, inc = self.dd
-        return (np.sqrt(2)*sind((90-inc)/2)*sind(azi),
-                np.sqrt(2)*sind((90-inc)/2)*cosd(azi))
-
 
 class Fol(Vec3):
     """Class for planar features
@@ -351,12 +345,6 @@ class Fol(Vec3):
     def rhr(self):
         azi, inc = self.dd
         return (azi - 90) % 360, inc
-
-    @property
-    def xy(self):
-        azi, inc = self.dd
-        return (-np.sqrt(2)*sind(inc/2)*sind(azi),
-                -np.sqrt(2)*sind(inc/2)*cosd(azi))
 
 
 class Group(list):
@@ -719,46 +707,55 @@ class StereoNet(object):
         _, self._ax = mplstereonet.subplots(*args, **kwargs)
         self._grid_state = False
 
+    def draw(self):
+        h,l = self._ax.get_legend_handles_labels()
+        if h:
+            plt.legend(bbox_to_anchor=(1.12, 1), loc=2, borderaxespad=0., numpoints=1, scatterpoints=1)
+            plt.subplots_adjust(right=0.75)
+        else:
+            plt.subplots_adjust(right=0.9)
+        plt.draw()
+
     def cla(self):
         self._ax.cla()
         self._ax.grid(self._grid_state)
-        plt.draw()
+        self.draw()
 
     def grid(self, state=True):
         self._ax.grid(state)
         self._grid_state = state
-        plt.draw()
+        self.draw()
 
     def plane(self, obj, *args, **kwargs):
         assert obj.type is Fol, 'Only Fol instance could be plotted as plane.'
         strike, dip = obj.rhr
         self._ax.plane(strike, dip, *args, **kwargs)
-        plt.draw()
+        self.draw()
 
     def pole(self, obj, *args, **kwargs):
         assert obj.type is Fol, 'Only Fol instance could be plotted as pole.'
         strike, dip = obj.rhr
         self._ax.pole(strike, dip, *args, **kwargs)
-        plt.draw()
+        self.draw()
 
     def rake(self, obj, rake_angle, *args, **kwargs):
         assert obj.type is Fol, 'Only Fol instance could be used with rake.'
         strike, dip = obj.rhr
         self._ax.rake(strike, dip, rake_angle, *args, **kwargs)
-        plt.draw()
+        self.draw()
 
     def line(self, obj, *args, **kwargs):
         assert obj.type is Lin, 'Only Lin instance could be plotted as line.'
         bearing, plunge = obj.rhr
         self._ax.line(plunge, bearing, *args, **kwargs)
-        plt.draw()
+        self.draw()
 
     def cone(self, obj, angle, segments=100, bidirectional=True, **kwargs):
         assert obj.type is Lin, 'Only Lin instance could be used as cone axis.'
         bearing, plunge = obj.rhr
         self._ax.cone(plunge, bearing, angle, segments=segments,
                       bidirectional=bidirectional, **kwargs)
-        plt.draw()
+        self.draw()
 
     def density_contour(self, group, *args, **kwargs):
         assert type(group) is Group, 'Only group of data could be used for contouring.'
@@ -790,9 +787,7 @@ class StereoNet(object):
         else:
             raise 'Only Fol or Lin group is allowed.'
 
-    def savefig(self, filename='schmidtnet.pdf'):
-        if not plt.fignum_exists(self.fignum):
-            self.refresh()
+    def savefig(self, filename='stereonet.pdf'):
         plt.savefig(filename)
 
     def getlin(self):
@@ -844,11 +839,11 @@ def rose(a, bins=13, **kwargs):
 
 
 if __name__ == "__main__":
-    d = Group([Fol(0, 60),
-                 Fol(90, 60),
-                 Fol(180, 60),
-                 Fol(270, 60)],
-                name='APSG')
-    c = Density(d)
-    s = SchmidtNet(c, d, d.cross())
-    s.show()
+    g = Group([Fol(0, 60),
+               Fol(90, 60),
+               Fol(180, 60),
+               Fol(270, 60)], name='APSG')
+    s = StereoNet()
+    s.plane(g, 'k')
+    s.line(g.cross(), 'go')
+    plt.show()
