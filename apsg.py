@@ -163,18 +163,6 @@ class Vec3(np.ndarray):
         np.copyto(res, self)
         return res
 
-    @property
-    def aspole(self):
-        """Convert vector to Pole object.
-
-        >>> u = Vec3([1,1,1])
-        >>> u.aspole
-        P:225/55
-        """
-        res = Pole(0, 0)
-        np.copyto(res, self)
-        return res
-
 
 class Lin(Vec3):
     """Class for linear features
@@ -242,7 +230,7 @@ class Lin(Vec3):
         """Returns foliaton defined by two lineations
 
         :param other: vector
-        :type name: Vec3, Fol, Lin, Pole
+        :type name: Vec3, Fol, Lin
         :returns:  Fol
 
         >>> l=Lin(120,10)
@@ -262,8 +250,7 @@ class Lin(Vec3):
 
     @property
     def rhr(self):
-        azi, inc = self.dd
-        return (azi - 90) % 360, inc
+        return self.dd
 
     @property
     def xy(self):
@@ -331,7 +318,7 @@ class Fol(Vec3):
         """Returns lination defined as intersecton of two foliations
 
         :param other: vector
-        :type name: Vec3, Fol, Lin, Pole
+        :type name: Vec3, Fol, Lin
         :returns:  Lin
 
         >>> f=Fol(60,30)
@@ -372,28 +359,15 @@ class Fol(Vec3):
                 -np.sqrt(2)*sind(inc/2)*cosd(azi))
 
 
-class Pole(Fol):
-    """Class for planar features represented as poles
-    """
-    def __new__(cls, azi, inc):
-        # casting to our class
-        return Vec3(getfdc(azi, inc)).view(cls)
-
-    def __repr__(self):
-        azi, inc = self.dd
-        return 'P:%d/%d' % (round(azi), round(inc))
-
-
 class Group(list):
     """Group class
-    Group is homogeneous group of Vec3, Fol, Lin or Pole data
+    Group is homogeneous group of Vec3, Fol or Lin
     """
     def __init__(self, data,
                  name='Default',
                  color='blue',
                  fol={'lw': 1, 'ls': '-'},
                  lin={'marker': 'o', 's': 20},
-                 pole={'marker': 'v', 's': 36, 'facecolors': None},
                  vec={'marker': 'd', 's': 24, 'facecolors': None},
                  tmpl=None):
         if not issubclass(type(data), list):
@@ -401,7 +375,7 @@ class Group(list):
         assert len(data) > 0, 'Empty group is not allowed.'
         tp = type(data[0])
         assert issubclass(tp, Vec3), \
-               'Data must be Fol, Lin, Pole or Vec3 type.'
+               'Data must be Fol, Lin or Vec3 type.'
         assert all([isinstance(e, tp) for e in data]), \
                'All data in group must be of same type.'
         super(Group, self).__init__(data)
@@ -412,7 +386,6 @@ class Group(list):
             self.sym = {}
             self.sym['fol'] = fol
             self.sym['lin'] = lin
-            self.sym['pole'] = pole
             self.sym['vec'] = vec
         else:
             self.name = tmpl.name
@@ -467,11 +440,6 @@ class Group(list):
     def asfol(self):
         """Convert all data in Group to Fol"""
         return Group([e.asfol for e in self], tmpl=self)
-
-    @property
-    def aspole(self):
-        """Convert all data in Group to Pole"""
-        return Group([e.aspole for e in self], tmpl=self)
 
     @property
     def resultant(self):
@@ -576,89 +544,6 @@ class Group(list):
         for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
             data.append(Fol(0, 0).rotate(Lin(azi, 0), dip))
         return cls(d).rotate(Lin(ta-90, 0), td)
-
-    @classmethod
-    def randn_pole(cls, N=100, mean=Pole(0, 0), sig=20):
-        data = []
-        ta, td = mean.dd
-        for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
-            data.append(Pole(0, 0).rotate(Lin(azi, 0), dip))
-        return cls(d).rotate(Lin(ta-90, 0), td)
-
-
-class Dataset(list):
-    """Dataset class TODO
-    """
-    def __init__(self, data=[],
-                 name='Default',
-                 color='blue',
-                 fol={'lw': 1, 'ls': '-'},
-                 lin={'marker': 'o', 's': 20},
-                 pole={'marker': 'v', 's': 36, 'facecolors': None},
-                 vec={'marker': 'd', 's': 24, 'facecolors': None},
-                 tmpl=None):
-        if not issubclass(type(data), list):
-            data = [data]
-        list.__init__(self, data)
-        if tmpl is None:
-            self.name = name
-            self.color = color
-            self.sym = {}
-            self.sym['fol'] = fol
-            self.sym['lin'] = lin
-            self.sym['pole'] = pole
-            self.sym['vec'] = vec
-        else:
-            self.name = tmpl.name
-            self.color = tmpl.color
-            self.sym = tmpl.sym
-
-    def __repr__(self):
-        return self.name + ':' + repr(list(self))
-
-    def __add__(self, d2):
-        # merge Datasets
-        return Dataset(list(self) + d2, tmpl=self)
-
-    @property
-    def lins(self):
-        """return only Lin from Dataset"""
-        return Dataset([e for e in self if type(e) == Lin], tmpl=self)
-
-    @property
-    def fols(self):
-        """return only Fol from Dataset"""
-        return Dataset([e for e in self if type(e) == Fol], tmpl=self)
-
-    @property
-    def poles(self):
-        """return only Poles from Dataset"""
-        return Dataset([e for e in self if type(e) == Pole], tmpl=self)
-
-    @property
-    def vecs(self):
-        """return only Vec3 from Dataset"""
-        return Dataset([e for e in self if type(e) == Vec3], tmpl=self)
-
-    @property
-    def numlins(self):
-        """number of Lin in Dataset"""
-        return len(self.lins)
-
-    @property
-    def numfols(self):
-        """number of Fol in Dataset"""
-        return len(self.fols)
-
-    @property
-    def numpoles(self):
-        """number of Poles in Dataset"""
-        return len(self.poles)
-
-    @property
-    def numvecs(self):
-        """number of Vec3 in Dataset"""
-        return len(self.vecs)
 
 
 class Datasource(object):
@@ -828,48 +713,6 @@ class Ortensor(object):
         return d1, d2, d3
 
 
-class Density(object):
-    """Density grid class"""
-    def __init__(self, d, k=100, npoints=180, nc=6, cmap=plt.cm.Greys):
-        self.dcdata = np.asarray(d)
-        self.k = k
-        self.npoints = npoints
-        self.nc = nc
-        self.cm = cmap
-        self.calculate()
-
-    def __repr__(self):
-        return ('Density grid from %d data with %d contours.\n' + \
-                'Gridded on %d points.\n' + \
-                'Values: k=%.4g E=%.4g s=%.4g\n' + \
-                'Max. weight: %.4g') % (self.n, self.nc, self.npoints,
-                                        self.k, self.E, self.s, self.weights.max())
-
-    def calculate(self):
-        import matplotlib.tri as tri
-        self.xg = 0
-        self.yg = 0
-        for rho in np.linspace(0, 1, np.round(self.npoints/2/np.pi)):
-            theta = np.linspace(0, 360, np.round(self.npoints*rho + 1))[:-1]
-            self.xg = np.hstack((self.xg, rho*sind(theta)))
-            self.yg = np.hstack((self.yg, rho*cosd(theta)))
-        self.dcgrid = np.asarray(getldc(*getldd(self.xg, self.yg)))
-        self.n = len(self.dcdata)
-        self.E = self.n/self.k  # some points on periphery are equivalent
-        self.s = np.sqrt((self.n*(0.5 - 1/self.k)/self.k))
-        self.weights = np.zeros(len(self.xg))
-        for i in range(self.n):
-            self.weights += np.exp(self.k*(np.abs(np.dot(self.dcdata[i], self.dcgrid))-1))
-        self.density = (self.weights - self.E)/self.s
-        self.triang = tri.Triangulation(self.xg, self.yg)
-
-    def plotcountgrid(self):
-        plt.figure()
-        plt.gca().set_aspect('equal')
-        plt.triplot(self.triang, 'bo-')
-        plt.show()
-
-
 class StereoNet(object):
     """API to mplstereonet"""
     def __init__(self, *args, **kwargs):
@@ -947,168 +790,6 @@ class StereoNet(object):
         else:
             raise 'Only Fol or Lin group is allowed.'
 
-
-class SchmidtNet(object):
-    """SchmidtNet class"""
-    # store number of all used figures
-    figlist = []
-
-    def __init__(self, *data):
-        # set figure number
-        if SchmidtNet.figlist:
-            self.fignum = max(SchmidtNet.figlist) + 1
-        else:
-            self.fignum = 1
-        SchmidtNet.figlist.append(self.fignum)
-        self.grid = True
-        self.data = []
-        self.density = None
-        # calc grid
-        grds = list(range(10, 100, 10)) + list(range(-80, 0, 10))
-        self.xg = []
-        self.yg = []
-        a = Lin(0, 0)
-        for dip in grds:
-            l = Lin(0, dip)
-            b = Fol(90, dip)
-            t = Lin(90, dip)
-            gc = map(l.rotate, 91*[a], np.linspace(-89.99, 89.99, 91))
-            x, y = np.array([r.xy for r in gc]).T
-            self.xg.extend(x)
-            self.xg.append(np.nan)
-            self.yg.extend(y)
-            self.yg.append(np.nan)
-            gc = map(t.rotate, 81*[b], np.linspace(-80, 80, 81))
-            x, y = np.array([r.xy for r in gc]).T
-            self.xg.extend(x)
-            self.xg.append(np.nan)
-            self.yg.extend(y)
-            self.yg.append(np.nan)
-        # add arguments
-        for arg in data:
-            self.add(arg)
-        self.refresh()
-
-    def clear(self):
-        """remove all data from projection"""
-        self.data = []
-        self.density = None
-        self.refresh()
-
-    def add(self, *args):
-        """Add data to projection"""
-        if not issubclass(type(args), tuple):
-            args = tuple(args)
-        for arg in args:
-            if type(arg) == Density:
-                self.set_density(arg)
-            elif type(arg) == Group:
-                self.data.append(arg)
-            elif issubclass(type(arg), Vec3):
-                self.data.append(Group(arg))
-            elif type(arg) == Ortensor:
-                for v in arg.eigenlins:
-                    self.data.append(v)
-            else:
-                raise TypeError('Wrong argument! '+type(arg) +
-                                ' cannot be plotted as linear feature.')
-        self.refresh()
-
-    def set_density(self, density):
-        """Set density grid"""
-        if type(density) == Density or density is None:
-            self.density = density
-            self.refresh()
-
-    def refresh(self):
-        """Draw figure"""
-        # test if closed
-        if not plt.fignum_exists(self.fignum):
-            self.fig = plt.figure(num=self.fignum, facecolor='white')
-            self.fig.canvas.set_window_title('Schmidt Net %d' % self.fignum)
-            self.ax = self.fig.add_subplot(111)
-        self.ax.cla()
-        self.ax.set_aspect('equal')
-        self.ax.set_autoscale_on(False)
-        self.ax.axis([-1.05, 1.05, -1.05, 1.05])
-        self.ax.set_axis_off()
-
-        # Projection circle
-        self.ax.text(0, 1.02, 'N', ha='center', fontsize=16)
-        #self.ax.add_artist(plt.Circle((0, 0), 1, color='w', zorder=0))
-        TH = np.linspace(0, 360, 361)
-        self.ax.plot(sind(TH), cosd(TH), 'k')
-
-        #density grid
-        if self.density:
-            cs = self.ax.tricontourf(self.density.triang, self.density.density,
-                                     self.density.nc, cmap=self.density.cm, zorder=1)
-            self.ax.tricontour(self.density.triang, self.density.density,
-                               self.density.nc, colors='k', zorder=1)
-
-        #grid
-        if self.grid:
-            self.ax.plot(self.xg, self.yg, 'k:')
-
-        # init labels
-        handles = []
-        labels = []
-
-        # plot data
-        for dt in self.data:
-            if isinstance(dt, Group):
-                labels.append(dt.name)
-                #fol great circle
-                if dt.type == Fol:
-                    for d in dt:
-                        l = Lin(*d.dd)
-                        gc = map(l.rotate, 91*[d], np.linspace(-89.99, 89.99, 91))
-                        x, y = np.array([r.xy for r in gc]).T
-                        h = self.ax.plot(x, y, color=dt.color, zorder=2, **dt.sym['fol'])
-                    handles.append(h[0])
-                    #labels.append('S ' + dt.name)
-                #lin point
-                elif dt.type == Lin:
-                    x, y = np.array([e.xy for e in dt]).T
-                    h = self.ax.scatter(x, y, color=dt.color, zorder=4, **dt.sym['lin'])
-                    handles.append(h)
-                    #labels.append('L ' + dt.name)
-                #pole point
-                elif dt.type == Pole:
-                    x, y = np.array([e.xy for e in dt]).T
-                    h = self.ax.scatter(x, y, color=dt.color, zorder=3, **dt.sym['pole'])
-                    handles.append(h)
-                    #labels.append('P ' + dt.name)
-                #vector point
-                elif dt.type == Vec3:
-                    x, y = np.array([e.aslin.xy for e in dt]).T
-                    h = self.ax.scatter(x, y, color=dt.color, zorder=3, **dt.sym['vec'])
-                    handles.append(h)
-                    #labels.append('V ' + dt.name)
-        # legend
-        if handles:
-            self.ax.legend(handles, labels, bbox_to_anchor=(1.03, 1), loc=2,
-                           borderaxespad=0., numpoints=1, scatterpoints=1)
-        #density grid contours
-        if self.density:
-            divider = make_axes_locatable(self.ax)
-            cax = divider.append_axes("left", size="5%", pad=0.5)
-            cb = plt.colorbar(cs, cax=cax)
-            # modify tick labels
-            lbl = [item.get_text()+'S' for item in cb.ax.get_yticklabels()]
-            lbl[lbl.index(next(l for l in lbl if l.startswith('0')))] = 'E'
-            cb.set_ticklabels(lbl)
-        #finish
-        plt.subplots_adjust(left=0.02, bottom=0.05, right=0.75, top=0.95)
-        #self.fig.canvas.draw()
-        plt.draw()
-
-    def show(self, *args, **kw):
-        """Show figure"""
-        if not plt.fignum_exists(self.fignum):
-            self.refresh()
-        plt.show(*args, **kw)
-
     def savefig(self, filename='schmidtnet.pdf'):
         if not plt.fignum_exists(self.fignum):
             self.refresh()
@@ -1126,12 +807,6 @@ class SchmidtNet(object):
         x, y = plt.ginput(1)[0]
         return Fol(*getfdd(x, y))
 
-    def getpole(self):
-        """get Pole by mouse click"""
-        self.show()
-        x, y = plt.ginput(1)[0]
-        return Pole(*getfdd(x, y))
-
     def getlins(self):
         """Collect Dataset of Lin by mouse clicks"""
         self.show()
@@ -1143,12 +818,6 @@ class SchmidtNet(object):
         self.show()
         pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
         return Group([Fol(*getfdd(x, y)) for x, y in pts])
-
-    def getpoles(self):
-        """Collect Dataset of Pole by mouse clicks"""
-        self.show()
-        pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
-        return Group([Pole(*getfdd(x, y)) for x, y in pts])
 
 
 def fixpair(f, l):

@@ -88,20 +88,18 @@ Method `rotate` provide possibility to rotate vector around another vector. For 
 V(2.248, 0.558, 2.939)
 ~~~~
 
-Classes Lin, Fol and Pole
-=========================
+Classes Lin and Fol
+===================
 
-To work with orientational data in structural geology, APSG provide two classes derived from `Vec3` class. There is `Fol` class to represent planar features by planes and `Lin` class to represent linear feature by lines. Both classes provide all `Vec3` methods, but they differ in way how instance is created and how some operations are calculated, as structural geology data are commonly axial in nature. The special class `Pole` is derived from `Fol` and only differs in way how it is visualized on stereographic projection.
+To work with orientational data in structural geology, APSG provide two classes derived from `Vec3` class. There is `Fol` class to represent planar features by planes and `Lin` class to represent linear feature by lines. Both classes provide all `Vec3` methods, but they differ in way how instance is created and how some operations are calculated, as structural geology data are commonly axial in nature.
 
-To create instance of `Lin`, `Fol` or `Pole` class, we have to provide dip direction and dip, both in degrees:
+To create instance of `Lin` or `Fol` class, we have to provide dip direction and dip, both in degrees:
 
 ~~~~ {.python}
 >>> Lin(120,60)
 L:120/60
 >>> Fol(216,62)
 S:216/62
->>> Pole(216,62)
-P:216/62
 ~~~~
 
 or we can create instance from `Vec3` object:
@@ -111,12 +109,10 @@ or we can create instance from `Vec3` object:
 L:297/53
 >>> u.asfol
 S:117/37
->>> u.aspole
-P:117/37
 ~~~~
 
-Vec3 methods for Lin, Fol and Pole
-----------------------------------
+Vec3 methods for Lin and Fol
+----------------------------
 
 To find angle between two linear or planar features:
 
@@ -171,7 +167,7 @@ S:269/78
 Group class
 ===========
 
-`Group` class serve as a homogeneous container for `Lin`, `Fol` or `Pole` objects. It allows grouping of features either for visualization or batch analysis.
+`Group` class serve as a homogeneous container for `Lin` or `Fol` objects. It allows grouping of features either for visualization or batch analysis.
 
 ~~~~ {.python}
 >>> d = Group([Lin(120,60), Lin(116,50), Lin(132,45),
@@ -239,77 +235,47 @@ Ortensor class
 (E1: 1 Fol, E2: 1 Fol, E3: 1 Fol)
 ~~~~
 
-Density class
-=============
+StereoNet class
+===============
 
-`Density` class represents Gaussian point density distribution of features from dataset. Parameters of calculation could be defined by parameter `k` and by amount of counting points `npoints`. Number of countours and color map could be modified by `nc` and `cm` properties.
+Any `Fol`, `Lin`, `Vec3` or `Group` object could be visualized in stereographic projection using mplstereonet (https://github.com/joferkington/mplstereonet), which must be accessible on current PYTHONPATH. Hi-level commands are adopted for APSG objects, while all original `mplstereonet` methods and properties are accessible trough 'ax' property.
 
 ~~~~ {.python}
->>> c = Density(d, npoints=90)
->>> c
-Density grid from 5 data with 6 contours.
-Gridded on 90 points.
-Values: k=100 E=0.05 s=0.1565
-Max. weight: 1.422
->>> c.plotcountgrid()
+>>> s = StereoNet()
+>>> s.plane(Fol(150,40))
+>>> s.pole(Fol(150,40))
+>>> s.line(Lin(112,30))
+>>> s.grid()
+>>> plt.show()
 ~~~~
 
 ![](figures/apsg_figure25_1.png)
 
-Schmidt projection
-==================
-
-Any `Fol`, `Lin`, `Pole`, `Vec3` or `Group` object could be visualized in Schmidt projection:
+A `Group` object could be plotted as well.
 
 ~~~~ {.python}
->>> SchmidtNet(Fol(214,55), Lin(120,60), Pole(240,60), Vec3([-1,-2,1]))
-<apsg.SchmidtNet object at 0x7f071f0bdf50>
+>>> s = StereoNet()
+>>> g = Group([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)], name='Te
+st')
+>>> s.line(g, 'ro')
+>>> s.grid()
+>>> plt.show()
 ~~~~
 
 ![](figures/apsg_figure26_1.png)
 
-Features could be added to Schmidt projection programatically as well:
+To make density contours plots, a `density_contour` and `density_contourf` methods are available.
 
 ~~~~ {.python}
->>> s = SchmidtNet()
->>> s.add(Fol(150,40))
->>> s.add(Pole(150,40))
->>> s.add(Lin(112,30))
->>> s.show()
+>>> s = StereoNet()
+>>> g = Group.randn_lin(mean=Lin(40,30))
+>>> s.density_contourf(g, levels=range(1,40,5), cmap='gray_r')
+>>> s.density_contour(g, levels=range(1,40,5), colors='k')
+>>> s.line(g, 'k.')
+>>> plt.show()
 ~~~~
 
-![](figures/apsg_figure27_2.png)
-
-`Dataset` properties as color and name are used during visualization:
-
-~~~~ {.python}
->>> s.clear()
->>> d = Group([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)], name='Te
-st')
->>> s.add(d)
->>> s.add(d.ortensor)
->>> s.show()
-~~~~
-
-![](figures/apsg_figure28_2.png)
-
-All mentioned classes could be freely combined:
-
-~~~~ {.python}
->>> s.clear()
->>> d = Group([Lin(120,70), Lin(116,42), Lin(132,45),
-...              Lin(95,52), Lin(114,48), Lin(118,58) ],
-...              name='G1', color='red')
-... 
->>> s.add(d)
->>> s.add(d.resultant)
->>> s.add(*d.ortensor.eigenfols)
->>> c = Density(d, nc=8)
->>> s.add(c)
->>> s.show()
-~~~~
-
-![](figures/apsg_figure29_2.png)
+![](figures/apsg_figure27_1.png)
 
 Some tricks
 -----------
@@ -317,26 +283,31 @@ Some tricks
 Double cross product is allowed:
 
 ~~~~ {.python}
->>> s.clear()
+>>> s = StereoNet()
 >>> p = Fol(250,40)
->>> l = Lin(160,30)
->>> s.add(p,l)
->>> s.add(l**p,p**l)
->>> s.add(l**p**l,p**l**p)
->>> s.show()
+>>> l = Lin(160,25)
+>>> s.plane(p, 'b')
+>>> s.line(l, 'bo')
+>>> s.plane(l**p, 'g')
+>>> s.line(p**l, 'go')
+>>> s.plane(l**p**l, 'r')
+>>> s.line(p**l**p, 'ro')
+>>> plt.show()
 ~~~~
 
-![](figures/apsg_figure30_2.png)
+![](figures/apsg_figure28_1.png)
 
 Correct measurements of planar linear pairs:
 
 ~~~~ {.python}
 >>> p1, l1 = fixpair(p,l)
->>> s.clear()
->>> s.add(p,l)
->>> s.add(p1,l1)
->>> s.show()
+>>> s = StereoNet()
+>>> s.plane(p, 'b')
+>>> s.line(l, 'bo')
+>>> s.plane(p1, 'g')
+>>> s.line(l1, 'go')
+>>> plt.show()
 ~~~~
 
-![](figures/apsg_figure31_2.png)
+![](figures/apsg_figure29_1.png)
 
