@@ -62,6 +62,10 @@ class Vec3(np.ndarray):
         return not self == other
 
     @property
+    def type(self):
+        return type(self)
+
+    @property
     def uv(self):
         """Return unit vector
 
@@ -558,25 +562,25 @@ class Group(list):
         return SchmidtNet(self)
 
     @classmethod
-    def randn_lin(cls, N=100, main=Lin(0, 90), sig=20):
+    def randn_lin(cls, N=100, mean=Lin(0, 90), sig=20):
         data = []
-        ta, td = main.dd
+        ta, td = mean.dd
         for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
             data.append(Lin(0, 90).rotate(Lin(azi, 0), dip))
         return cls(data).rotate(Lin(ta+90, 0), 90-td)
 
     @classmethod
-    def randn_fol(cls, N=100, main=Fol(0, 0), sig=20):
+    def randn_fol(cls, N=100, mean=Fol(0, 0), sig=20):
         data = []
-        ta, td = main.dd
+        ta, td = mean.dd
         for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
             data.append(Fol(0, 0).rotate(Lin(azi, 0), dip))
         return cls(d).rotate(Lin(ta-90, 0), td)
 
     @classmethod
-    def randn_pole(cls, N=100, main=Pole(0, 0), sig=20):
+    def randn_pole(cls, N=100, mean=Pole(0, 0), sig=20):
         data = []
-        ta, td = main.dd
+        ta, td = mean.dd
         for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
             data.append(Pole(0, 0).rotate(Lin(azi, 0), dip))
         return cls(d).rotate(Lin(ta-90, 0), td)
@@ -872,26 +876,6 @@ class StereoNet(object):
         _, self._ax = mplstereonet.subplots(*args, **kwargs)
         self._grid_state = False
 
-    def plane(self, obj, *args, **kwargs):
-        strike, dip = obj.rhr
-        self._ax.plane(strike, dip, *args, **kwargs)
-        plt.draw()
-
-    def pole(self, obj, *args, **kwargs):
-        strike, dip = obj.rhr
-        self._ax.pole(strike, dip, *args, **kwargs)
-        plt.draw()
-
-    def rake(self, obj, rake_angle, *args, **kwargs):
-        strike, dip = obj.rhr
-        self._ax.rake(strike, dip, rake_angle, *args, **kwargs)
-        plt.draw()
-
-    def line(self, obj, *args, **kwargs):
-        bearing, plunge = obj.rhr
-        self._ax.line(plunge, bearing, *args, **kwargs)
-        plt.draw()
-
     def cla(self):
         self._ax.cla()
         self._ax.grid(self._grid_state)
@@ -901,6 +885,67 @@ class StereoNet(object):
         self._ax.grid(state)
         self._grid_state = state
         plt.draw()
+
+    def plane(self, obj, *args, **kwargs):
+        assert obj.type is Fol, 'Only Fol instance could be plotted as plane.'
+        strike, dip = obj.rhr
+        self._ax.plane(strike, dip, *args, **kwargs)
+        plt.draw()
+
+    def pole(self, obj, *args, **kwargs):
+        assert obj.type is Fol, 'Only Fol instance could be plotted as pole.'
+        strike, dip = obj.rhr
+        self._ax.pole(strike, dip, *args, **kwargs)
+        plt.draw()
+
+    def rake(self, obj, rake_angle, *args, **kwargs):
+        assert obj.type is Fol, 'Only Fol instance could be used with rake.'
+        strike, dip = obj.rhr
+        self._ax.rake(strike, dip, rake_angle, *args, **kwargs)
+        plt.draw()
+
+    def line(self, obj, *args, **kwargs):
+        assert obj.type is Lin, 'Only Lin instance could be plotted as line.'
+        bearing, plunge = obj.rhr
+        self._ax.line(plunge, bearing, *args, **kwargs)
+        plt.draw()
+
+    def cone(self, obj, angle, segments=100, bidirectional=True, **kwargs):
+        assert obj.type is Lin, 'Only Lin instance could be used as cone axis.'
+        bearing, plunge = obj.rhr
+        self._ax.cone(plunge, bearing, angle, segments=segments,
+                      bidirectional=bidirectional, **kwargs)
+        plt.draw()
+
+    def density_contour(self, group, *args, **kwargs):
+        assert type(group) is Group, 'Only group of data could be used for contouring.'
+        if group.type is Lin:
+            bearings, plunges = group.rhr
+            kwargs['measurement'] = 'lines'
+            self._ax.density_contour(plunges, bearings, *args, **kwargs)
+            plt.draw()
+        elif group.type is Fol:
+            strikes, dips = group.rhr
+            kwargs['measurement'] = 'poles'
+            self._ax.density_contour(strikes, dips, *args, **kwargs)
+            plt.draw()
+        else:
+            raise 'Only Fol or Lin group is allowed.'
+
+    def density_contourf(self, group, *args, **kwargs):
+        assert type(group) is Group, 'Only group of data could be used for contouring.'
+        if group.type is Lin:
+            bearings, plunges = group.rhr
+            kwargs['measurement'] = 'lines'
+            self._ax.density_contourf(plunges, bearings, *args, **kwargs)
+            plt.draw()
+        elif group.type is Fol:
+            strikes, dips = group.rhr
+            kwargs['measurement'] = 'poles'
+            self._ax.density_contourf(strikes, dips, *args, **kwargs)
+            plt.draw()
+        else:
+            raise 'Only Fol or Lin group is allowed.'
 
 
 class SchmidtNet(object):
