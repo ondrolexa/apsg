@@ -247,10 +247,6 @@ class Lin(Vec3):
         inc = asind(n[2])
         return azi, inc
 
-    @property
-    def rhr(self):
-        return self.dd
-
 
 class Fol(Vec3):
     """Class for planar features
@@ -384,7 +380,7 @@ class Group(list):
 
     def __add__(self, other):
         # merge Datasets
-        assert isinstance(other, Group), 'Only groups could be merged'        
+        assert isinstance(other, Group), 'Only groups could be merged'
         assert self.type is other.type, 'Only same type groups could be merged'
         return Group(list(self) + other, tmpl=self)
 
@@ -396,14 +392,14 @@ class Group(list):
         assert isinstance(item, self.type), 'item is not of type %s' % self.type.__name__
         super(Group, self).append(item)
 
-    def extend(self, items = ()):
+    def extend(self, items=()):
         for item in items:
             self.append(item)
 
     @classmethod
     def fromcsv(cls, fname, typ=Lin, acol=1, icol=2,
                 name='Default', color='blue'):
-        """Read dataset from csv"""
+        """Read group from csv file"""
         import csv
         with open(fname, 'rb') as csvfile:
             sniffer = csv.Sniffer()
@@ -417,6 +413,15 @@ class Group(list):
                 if len(row) > 1:
                     data.append(typ(float(row[acol-1]), float(row[icol-1])))
             return cls(data, name=name, color=color)
+
+    @classmethod
+    def fromarray(cls, dipdirs, dips, typ=Lin,
+                  name='Default', color='blue'):
+        """Create dataset from arrays of dip directions and dips"""
+        data = []
+        for dipdir, dip in zip(dipdirs, dips):
+            data.append(typ(dipdir, dip))
+        return cls(data, name=name, color=color)
 
     @property
     def aslin(self):
@@ -679,25 +684,19 @@ class Ortensor(object):
             e1, e2, e3 = self.eigenvals
         else:
             e1 = e2 = e3 = 1.0
-        return e1 * Vec3(self.vects[0]),\
-               e2 * Vec3(self.vects[1]),\
-               e3 * Vec3(self.vects[2])
+        return Group([e1 * Vec3(self.vects[0]),
+                      e2 * Vec3(self.vects[1]),
+                      e3 * Vec3(self.vects[2])])
 
     @property
     def eigenlins(self):
         v1, v2, v3 = self.eigenvects
-        d1 = Group(v1.aslin, name='E1', color='red')
-        d2 = Group(v2.aslin, name='E2', color='magenta')
-        d3 = Group(v3.aslin, name='E3', color='green')
-        return d1, d2, d3
+        return Group([v1.aslin, v2.aslin, v3.aslin])
 
     @property
     def eigenfols(self):
         v1, v2, v3 = self.eigenvects
-        d1 = Group(v1.asfol, name='E1', color='red')
-        d2 = Group(v2.asfol, name='E2', color='magenta')
-        d3 = Group(v3.asfol, name='E3', color='green')
-        return d1, d2, d3
+        return Group([v1.asfol, v2.asfol, v3.asfol])
 
 
 class StereoNet(object):
@@ -749,13 +748,13 @@ class StereoNet(object):
 
     def line(self, obj, *args, **kwargs):
         assert obj.type is Lin, 'Only Lin instance could be plotted as line.'
-        bearing, plunge = obj.rhr
+        bearing, plunge = obj.dd
         self._ax.line(plunge, bearing, *args, **kwargs)
         self.draw()
 
     def cone(self, obj, angle, segments=100, bidirectional=True, **kwargs):
         assert obj.type is Lin, 'Only Lin instance could be used as cone axis.'
-        bearing, plunge = obj.rhr
+        bearing, plunge = obj.dd
         self._ax.cone(plunge, bearing, angle, segments=segments,
                       bidirectional=bidirectional, **kwargs)
         self.draw()
@@ -763,7 +762,7 @@ class StereoNet(object):
     def density_contour(self, group, *args, **kwargs):
         assert type(group) is Group, 'Only group of data could be used for contouring.'
         if group.type is Lin:
-            bearings, plunges = group.rhr
+            bearings, plunges = group.dd
             kwargs['measurement'] = 'lines'
             self._cax = self._ax.density_contour(plunges, bearings, *args, **kwargs)
             plt.draw()
@@ -778,7 +777,7 @@ class StereoNet(object):
     def density_contourf(self, group, *args, **kwargs):
         assert type(group) is Group, 'Only group of data could be used for contouring.'
         if group.type is Lin:
-            bearings, plunges = group.rhr
+            bearings, plunges = group.dd
             kwargs['measurement'] = 'lines'
             self._cax = self._ax.density_contourf(plunges, bearings, *args, **kwargs)
             plt.draw()
@@ -800,30 +799,6 @@ class StereoNet(object):
             self._ax.figure.savefig(filename)
         else:
             self._ax.figure.savefig(filename, bbox_extra_artists=(self._lgd,), bbox_inches='tight')
-
-    def getlin(self):
-        """get Lin by mouse click"""
-        self.show()
-        x, y = plt.ginput(1)[0]
-        return Lin(*getldd(x, y))
-
-    def getfol(self):
-        """get Fol by mouse click"""
-        self.show()
-        x, y = plt.ginput(1)[0]
-        return Fol(*getfdd(x, y))
-
-    def getlins(self):
-        """Collect Dataset of Lin by mouse clicks"""
-        self.show()
-        pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
-        return Group([Lin(*getldd(x, y)) for x, y in pts])
-
-    def getfols(self):
-        """Collect Dataset of Fol by mouse clicks"""
-        self.show()
-        pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
-        return Group([Fol(*getfdd(x, y)) for x, y in pts])
 
 
 def fixpair(f, l):
