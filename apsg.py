@@ -10,7 +10,6 @@ from copy import deepcopy
 import sqlite3
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 try:
     import mplstereonet
 except ImportError:
@@ -706,11 +705,13 @@ class StereoNet(object):
     def __init__(self, *args, **kwargs):
         _, self._ax = mplstereonet.subplots(*args, **kwargs)
         self._grid_state = False
+        self._cax = None
+        self._lgd = None
 
     def draw(self):
         h,l = self._ax.get_legend_handles_labels()
         if h:
-            plt.legend(bbox_to_anchor=(1.12, 1), loc=2, borderaxespad=0., numpoints=1, scatterpoints=1)
+            self._lgd = self._ax.legend(h, l, bbox_to_anchor=(1.12, 1), loc=2, borderaxespad=0., numpoints=1, scatterpoints=1)
             plt.subplots_adjust(right=0.75)
         else:
             plt.subplots_adjust(right=0.9)
@@ -719,6 +720,8 @@ class StereoNet(object):
     def cla(self):
         self._ax.cla()
         self._ax.grid(self._grid_state)
+        self._cax = None
+        self._lgd = None
         self.draw()
 
     def grid(self, state=True):
@@ -762,12 +765,12 @@ class StereoNet(object):
         if group.type is Lin:
             bearings, plunges = group.rhr
             kwargs['measurement'] = 'lines'
-            self._ax.density_contour(plunges, bearings, *args, **kwargs)
+            self._cax = self._ax.density_contour(plunges, bearings, *args, **kwargs)
             plt.draw()
         elif group.type is Fol:
             strikes, dips = group.rhr
             kwargs['measurement'] = 'poles'
-            self._ax.density_contour(strikes, dips, *args, **kwargs)
+            self._cax = self._ax.density_contour(strikes, dips, *args, **kwargs)
             plt.draw()
         else:
             raise 'Only Fol or Lin group is allowed.'
@@ -777,18 +780,26 @@ class StereoNet(object):
         if group.type is Lin:
             bearings, plunges = group.rhr
             kwargs['measurement'] = 'lines'
-            self._ax.density_contourf(plunges, bearings, *args, **kwargs)
+            self._cax = self._ax.density_contourf(plunges, bearings, *args, **kwargs)
             plt.draw()
         elif group.type is Fol:
             strikes, dips = group.rhr
             kwargs['measurement'] = 'poles'
-            self._ax.density_contourf(strikes, dips, *args, **kwargs)
+            self._cax = self._ax.density_contourf(strikes, dips, *args, **kwargs)
             plt.draw()
         else:
             raise 'Only Fol or Lin group is allowed.'
 
+    def colorbar(self):
+        if self._cax is not None:
+            cbaxes = self._ax.figure.add_axes([0.015, 0.2, 0.02, 0.6]) 
+            cb = plt.colorbar(self._cax, cax = cbaxes) 
+
     def savefig(self, filename='stereonet.pdf'):
-        plt.savefig(filename)
+        if self._lgd is None:
+            self._ax.figure.savefig(filename)
+        else:
+            self._ax.figure.savefig(filename, bbox_extra_artists=(self._lgd,), bbox_inches='tight')
 
     def getlin(self):
         """get Lin by mouse click"""
