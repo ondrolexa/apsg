@@ -4,28 +4,11 @@ Python module to manipulate, analyze and visualize structural geology data
 
 """
 
-# import modulu
 from __future__ import division, print_function
 from copy import deepcopy
-import sqlite3
+
 import numpy as np
-import matplotlib.pyplot as plt
-try:
-    import mplstereonet
-except ImportError:
-    pass
-
-# lambda funkce
-sind = lambda x: np.sin(np.deg2rad(x))
-cosd = lambda x: np.cos(np.deg2rad(x))
-asind = lambda x: np.rad2deg(np.arcsin(x))
-acosd = lambda x: np.rad2deg(np.arccos(x))
-atan2d = lambda x1, x2: np.rad2deg(np.arctan2(x1, x2))
-getldd = lambda x, y: (atan2d(x, y) % 360, 90-2*asind(np.sqrt((x*x + y*y)/2)))
-getfdd = lambda x, y: (atan2d(-x, -y) % 360, 2*asind(np.sqrt((x*x + y*y)/2)))
-getldc = lambda u, v: (cosd(u)*cosd(v), sind(u)*cosd(v), sind(v))
-getfdc = lambda u, v: (-cosd(u)*sind(v), -sind(u)*sind(v), cosd(v))
-
+from .helpers import *
 
 class Vec3(np.ndarray):
     """Base class to store 3D vectors derived from numpy.ndarray
@@ -538,119 +521,6 @@ class Group(list):
         return cls(d).rotate(Lin(ta-90, 0), td)
 
 
-class Datasource(object):
-    """PySDB database access class"""
-    TESTSEL = "SELECT sites.id, sites.name, sites.x_coord, sites.y_coord, \
-    sites.description, structdata.id, structdata.id_sites, \
-    structdata.id_structype, structdata.azimuth, structdata.inclination, \
-    structype.id, structype.structure, structype.description, \
-    structype.structcode, structype.groupcode  \
-    FROM sites \
-    INNER JOIN structdata ON sites.id = structdata.id_sites \
-    INNER JOIN structype ON structype.id = structdata.id_structype \
-    LIMIT 1"
-    STRUCTSEL = "SELECT structype.structure  \
-    FROM sites  \
-    INNER JOIN structdata ON sites.id = structdata.id_sites  \
-    INNER JOIN structype ON structype.id = structdata.id_structype  \
-    INNER JOIN units ON units.id = sites.id_units  \
-    GROUP BY structype.structure  \
-    ORDER BY structype.structure ASC"
-    SELECT = "SELECT structdata.azimuth, structdata.inclination   \
-    FROM sites   \
-    INNER JOIN structdata ON sites.id = structdata.id_sites   \
-    INNER JOIN structype ON structype.id = structdata.id_structype   \
-    INNER JOIN units ON units.id = sites.id_units"
-
-    def __new__(cls, db=None):
-        try:
-            cls.con = sqlite3.connect(db)
-            cls.con.execute("pragma encoding='UTF-8'")
-            cls.con.execute(Datasource.TESTSEL)
-            print("Connected. PySDB version: %s" % cls.con.execute("SELECT value FROM meta WHERE name='version'").fetchall()[0][0])
-            return super(Datasource, cls).__new__(cls)
-        except sqlite3.Error as e:
-            print("Error %s:" % e.args[0])
-            raise sqlite3.Error
-
-    def execsql(self, sql):
-        return self.con.execute(sql).fetchall()
-
-    @property
-    def structures(self):
-        return [el[0] for el in self.execsql(Datasource.STRUCTSEL)]
-
-    def select(self, struct=None):
-        tpsel = "SELECT planar FROM structype WHERE structure='%s'" % struct
-        dtsel = Datasource.SELECT + " WHERE structype.structure='%s'" % struct
-        tp = self.execsql(tpsel)[0][0]
-        if tp:
-            res = Group([Fol(el[0], el[1]) for el in self.execsql(dtsel)], name=struct)
-        else:
-            res = Group([Lin(el[0], el[1]) for el in self.execsql(dtsel)], name=struct)
-        return res
-
-
-class DefGrad(np.ndarray):
-    """class to store deformation gradient tensor derived from numpy.ndarray
-    """
-    def __new__(cls, array):
-        # casting to our class
-        assert np.shape(array) == (3,3), 'DefGrad must be 3x3 2D array'
-        obj = np.asarray(array).view(cls)
-        return obj
-
-    def __repr__(self):
-        return 'DefGrad:\n' + str(self)
-
-    def __mul__(self, other):
-        assert np.shape(other) == (3,3), 'DefGrad could by multiplied with 3x3 2D array'
-        return np.dot(self, other)
-
-    def __pow__(self, n):
-        # cross product or power of magnitude
-        assert np.isscalar(n), 'Exponent must be integer.'
-        return np.linalg.matrix_power(self, n)
-
-    def __eq__(self, other):
-        # equal
-        return bool(np.sum(np.abs(self - other)) < 1e-14)
-
-    def __ne__(self, other):
-        # not equal
-        return not self == other
-
-    @classmethod
-    def from_axis(cls, vector, theta):
-        x, y, z = vector.uv
-        c, s = cosd(theta), sind(theta)
-        xs, ys, zs = x*s, y*s, z*s
-        xc, yc, zc = x*(1-c), y*(1-c), z*(1-c)
-        xyc, yzc, zxc = x*yc, y*zc, z*xc
-        return cls([
-                [ x*xc+c,   xyc-zs,   zxc+ys ],
-                [ xyc+zs,   y*yc+c,   yzc-xs ],
-                [ zxc-ys,   yzc+xs,   z*zc+c ]])
-
-    @classmethod
-    def from_comp(cls,
-                  xx=1, xy=0, xz=0,
-                  yx=0, yy=1, yz=0,
-                  zx=0, zy=0, zz=1):
-        return cls([
-                [ xx, xy, xz ],
-                [ yx, yy, yz ],
-                [ zx, zy, zz ]])
-
-    @property
-    def I(self):
-        return np.linalg.inv(self)
-
-    def rotate(self, vector, theta):
-        R = DefGrad.from_axis(vector, theta)
-        return R*self*R.T
-
-
 class Ortensor(object):
     """Ortensor class"""
     def __init__(self, d):
@@ -699,108 +569,6 @@ class Ortensor(object):
         return Group([v1.asfol, v2.asfol, v3.asfol])
 
 
-class StereoNet(object):
-    """API to mplstereonet"""
-    def __init__(self, *args, **kwargs):
-        _, self._ax = mplstereonet.subplots(*args, **kwargs)
-        self._grid_state = False
-        self._cax = None
-        self._lgd = None
-
-    def draw(self):
-        h,l = self._ax.get_legend_handles_labels()
-        if h:
-            self._lgd = self._ax.legend(h, l, bbox_to_anchor=(1.12, 1), loc=2, borderaxespad=0., numpoints=1, scatterpoints=1)
-            plt.subplots_adjust(right=0.75)
-        else:
-            plt.subplots_adjust(right=0.9)
-        plt.draw()
-
-    def cla(self):
-        self._ax.cla()
-        self._ax.grid(self._grid_state)
-        self._cax = None
-        self._lgd = None
-        self.draw()
-
-    def grid(self, state=True):
-        self._ax.grid(state)
-        self._grid_state = state
-        self.draw()
-
-    def plane(self, obj, *args, **kwargs):
-        assert obj.type is Fol, 'Only Fol instance could be plotted as plane.'
-        strike, dip = obj.rhr
-        self._ax.plane(strike, dip, *args, **kwargs)
-        self.draw()
-
-    def pole(self, obj, *args, **kwargs):
-        assert obj.type is Fol, 'Only Fol instance could be plotted as pole.'
-        strike, dip = obj.rhr
-        self._ax.pole(strike, dip, *args, **kwargs)
-        self.draw()
-
-    def rake(self, obj, rake_angle, *args, **kwargs):
-        assert obj.type is Fol, 'Only Fol instance could be used with rake.'
-        strike, dip = obj.rhr
-        self._ax.rake(strike, dip, rake_angle, *args, **kwargs)
-        self.draw()
-
-    def line(self, obj, *args, **kwargs):
-        assert obj.type is Lin, 'Only Lin instance could be plotted as line.'
-        bearing, plunge = obj.dd
-        self._ax.line(plunge, bearing, *args, **kwargs)
-        self.draw()
-
-    def cone(self, obj, angle, segments=100, bidirectional=True, **kwargs):
-        assert obj.type is Lin, 'Only Lin instance could be used as cone axis.'
-        bearing, plunge = obj.dd
-        self._ax.cone(plunge, bearing, angle, segments=segments,
-                      bidirectional=bidirectional, **kwargs)
-        self.draw()
-
-    def density_contour(self, group, *args, **kwargs):
-        assert type(group) is Group, 'Only group of data could be used for contouring.'
-        if group.type is Lin:
-            bearings, plunges = group.dd
-            kwargs['measurement'] = 'lines'
-            self._cax = self._ax.density_contour(plunges, bearings, *args, **kwargs)
-            plt.draw()
-        elif group.type is Fol:
-            strikes, dips = group.rhr
-            kwargs['measurement'] = 'poles'
-            self._cax = self._ax.density_contour(strikes, dips, *args, **kwargs)
-            plt.draw()
-        else:
-            raise 'Only Fol or Lin group is allowed.'
-
-    def density_contourf(self, group, *args, **kwargs):
-        assert type(group) is Group, 'Only group of data could be used for contouring.'
-        if group.type is Lin:
-            bearings, plunges = group.dd
-            kwargs['measurement'] = 'lines'
-            self._cax = self._ax.density_contourf(plunges, bearings, *args, **kwargs)
-            plt.draw()
-        elif group.type is Fol:
-            strikes, dips = group.rhr
-            kwargs['measurement'] = 'poles'
-            self._cax = self._ax.density_contourf(strikes, dips, *args, **kwargs)
-            plt.draw()
-        else:
-            raise 'Only Fol or Lin group is allowed.'
-
-    def colorbar(self):
-        if self._cax is not None:
-            cbaxes = self._ax.figure.add_axes([0.015, 0.2, 0.02, 0.6]) 
-            cb = plt.colorbar(self._cax, cax = cbaxes) 
-
-    def savefig(self, filename='stereonet.pdf'):
-        if self._lgd is None:
-            self._ax.figure.savefig(filename)
-        else:
-            self._ax.figure.savefig(filename, bbox_extra_artists=(self._lgd,), bbox_inches='tight')
-
-
 def fixpair(f, l):
     """Fix pair of planar and linear data, so Lin is within plane Fol::
 
@@ -809,19 +577,6 @@ def fixpair(f, l):
     ax = f ** l
     ang = (Vec3(l).angle(f) - 90)/2
     return Vec3(f).rotate(ax, ang).asfol, Vec3(l).rotate(ax, -ang).aslin
-
-
-def rose(a, bins=13, **kwargs):
-    """Plot rose diagram"""
-    if isinstance(a, Group):
-        a, _ = a.dd
-    fig = plt.figure()
-    ax = fig.add_subplot(111, polar=True)
-    ax.set_theta_direction(-1)
-    ax.set_theta_zero_location('N')
-    arad = a * np.pi / 180
-    erad = np.linspace(0, 360, bins) * np.pi / 180
-    plt.hist(arad, bins=erad, **kwargs)
 
 
 if __name__ == "__main__":
