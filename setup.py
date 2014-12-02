@@ -12,9 +12,9 @@ readme = open('README.rst').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 requirements = [
-    'numpy',
-    'matplotlib',
-    'mplstereonet',
+    'numpy >= 1.8',
+    'matplotlib >= 1.2',
+    'mplstereonet >= 0.4'
 ]
 
 test_requirements = [

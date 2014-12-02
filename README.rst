@@ -203,7 +203,7 @@ Ortensor class
 or linear features. Eigenvalues and eigenvectors could be obtained
 by methods ``eigenvals`` and ``eigenvects``. Eigenvectors could be also
 represented by linear or planar features using properties eigenlins
-and eigenfols.
+and eigenfols::
 
     >>> ot = Ortensor(d)
     >>> ot.eigenvals
@@ -222,7 +222,7 @@ Any ``Fol``, ``Lin``, ``Vec3`` or ``Group`` object could be visualized
 in stereographic projection using mplstereonet (https://github.com/joferkington/mplstereonet),
 which must be accessible on current PYTHONPATH. Hi-level commands are adopted
 for APSG objects, while all original ``mplstereonet`` methods and properties
-are accessible trough 'ax' property.
+are accessible trough 'ax' property::
 
     >>> s = StereoNet()
     >>> s.plane(Fol(150,40))
@@ -235,7 +235,7 @@ are accessible trough 'ax' property.
     :alt: A basic stereonet with a plane, line and pole
     :align: center
 
-A ``Group`` object could be plotted as well.
+A ``Group`` object could be plotted as well::
 
     >>> s = StereoNet()
     >>> g = Group([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)], name='Test')
@@ -247,7 +247,8 @@ A ``Group`` object could be plotted as well.
     :alt: A basic stereonet group of linear features
     :align: center
 
-To make density contours plots, a ``density_contour`` and ``density_contourf`` methods are available.
+To make density contours plots, a ``density_contour`` and ``density_contourf``
+methods are available::
 
     >>> s = StereoNet()
     >>> g = Group.randn_lin(mean=Lin(40,30))
