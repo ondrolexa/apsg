@@ -1,6 +1,6 @@
-===============================
-APSG
-===============================
+==============================================
+APSG - python module for structural geologists
+==============================================
 
 .. image:: https://badge.fury.io/gh/ondrolexa%2Fapsg.png
     :target: http://badge.fury.io/gh/ondrolexa%2Fapsg
@@ -10,10 +10,7 @@ APSG defines several new python classes to easily manage, analyze and visualize 
 * Free software: BSD license
 * Documentation: https://apsg.readthedocs.org.
 
-APSG - python module for structural geologists
-==============================================
-
-APSG defines several new python classes to easily manage, analyze
+**APSG** defines several new python classes to easily manage, analyze
 and visualize orientational structural geology data. Base class ``Vec3``
 is derived from ``numpy.array`` class and affers several new method
 which will be explained on following examples.
