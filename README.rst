@@ -5,16 +5,6 @@ APSG
 .. image:: https://badge.fury.io/gh/ondrolexa%2Fapsg.png
     :target: http://badge.fury.io/gh/ondrolexa%2Fapsg
 
-.. image:: https://badge.fury.io/py/apsg.png
-    :target: http://badge.fury.io/py/apsg
-
-.. image:: https://travis-ci.org/ondrolexa/apsg.png?branch=master
-        :target: https://travis-ci.org/ondrolexa/apsg
-
-.. image:: https://pypip.in/d/apsg/badge.png
-        :target: https://pypi.python.org/pypi/apsg
-
-
 APSG defines several new python classes to easily manage, analyze and visualize orientational structural geology data.
 
 * Free software: BSD license
@@ -244,7 +234,7 @@ are accessible trough 'ax' property.
     >>> s.grid()
     >>> plt.show()
 
-.. http://ondrolexa.github.io/apsg/images/plane-line-pole.png
+.. image:: http://ondrolexa.github.io/apsg/images/plane-line-pole.png
     :alt: A basic stereonet with a plane, line and pole
     :align: center
 
@@ -256,7 +246,7 @@ A `Group` object could be plotted as well.
     >>> s.grid()
     >>> plt.show()
 
-.. http://ondrolexa.github.io/apsg/images/group.png
+.. image:: http://ondrolexa.github.io/apsg/images/group.png
     :alt: A basic stereonet group of linear features
     :align: center
 
