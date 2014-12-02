@@ -12,7 +12,9 @@ readme = open('README.rst').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 requirements = [
-    # TODO: put package requirements here
+    'numpy',
+    'matplotlib',
+    'mplstereonet',
 ]
 
 test_requirements = [
@@ -22,7 +24,7 @@ test_requirements = [
 setup(
     name='apsg',
     version='0.1.0',
-    description='APSG defines several new python classes to easily manage, analyze and visualize orientational structural geology data.',
+    description='APSG - structural geology module for Python',
     long_description=readme + '\n\n' + history,
     author='Ondrej Lexa',
     author_email='lexa.ondrej@gmail.com',
@@ -38,16 +40,12 @@ setup(
     zip_safe=False,
     keywords='apsg',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
-        'Intended Audience :: Developers',
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
     ],
     test_suite='tests',
     tests_require=test_requirements
