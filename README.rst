@@ -14,8 +14,8 @@ APSG - python module for structural geologists
 ==============================================
 
 APSG defines several new python classes to easily manage, analyze
-and visualize orientational structural geology data. Base class `Vec3`
-is derived from `numpy.array` class and affers several new method
+and visualize orientational structural geology data. Base class ``Vec3``
+is derived from ``numpy.array`` class and affers several new method
 which will be explained on following examples.
 
 Basic usage
@@ -29,7 +29,7 @@ active one for easier interactive work::
 Basic operations with vectors
 -----------------------------
 
-Instance of vector object `Vec3` could be created from any iterable
+Instance of vector object ``Vec3`` could be created from any iterable
 object as list, tuple or array::
 
     >>> u = Vec3([1, -2, 3])
@@ -46,42 +46,42 @@ or special methods using dot notation::
     V(7.000, -8.000, 7.000)
 
 Its magnitude or length is most commonly defined as its Euclidean norm
-and could be calculated using `abs`::
+and could be calculated using ``abs``::
 
     >>> abs(v)
     2.4494897427831779
     >>> abs(u+v)
     4.2426406871192848
 
-For *dot product* we can use multiplification operator `*`
-or `dot` method::
+For *dot product* we can use multiplification operator ``*``
+or ``dot`` method::
 
     >>> u*v
     -1
     >>> u.dot(v)
     -1
 
-For *cross product* we can use operator `**` or method `cross`::
+For *cross product* we can use operator ``**`` or method ``cross``::
 
     >>> u**v
     V(-5.000, -7.000, -3.000)
     >>> u.cross(v)
     V(-5.000, -7.000, -3.000)
 
-To project vector `u` onto vector `v` we can use
-method `proj`::
+To project vector ``u`` onto vector ``v`` we can use
+method ``proj``::
 
     >>> u.proj(v)
     V(0.333, -0.167, -0.167)
 
-To find angle (in degrees) between to vectors we use method `angle`::
+To find angle (in degrees) between to vectors we use method ``angle``::
 
     >>> u.angle(v)
     96.263952719927218
 
-Method `rotate` provide possibility to rotate vector around
-another vector. For example, to rotate vector `u` around
-vector `v` for 45°::
+Method ``rotate`` provide possibility to rotate vector around
+another vector. For example, to rotate vector ``u`` around
+vector ``v`` for 45°::
 
     >>> u.rotate(v,45)
     V(2.248, 0.558, 2.939)
@@ -90,14 +90,14 @@ Classes Lin and Fol
 -------------------
 
 To work with orientational data in structural geology, APSG
-provide two classes derived from `Vec3` class. There is `Fol`
-class to represent planar features by planes and `Lin` class
+provide two classes derived from ``Vec3`` class. There is ``Fol``
+class to represent planar features by planes and ``Lin`` class
 to represent linear feature by lines. Both classes provide all
-`Vec3` methods, but they differ in way how instance is created
+``Vec3`` methods, but they differ in way how instance is created
 and how some operations are calculated, as structural geology
 data are commonly axial in nature.
 
-To create instance of `Lin` or `Fol` class, we have to provide
+To create instance of ``Lin`` or ``Fol`` class, we have to provide
 dip direction and dip, both in degrees::
 
     >>> Lin(120,60)
@@ -105,8 +105,8 @@ dip direction and dip, both in degrees::
     >>> Fol(216,62)
     S:216/62
 
-or we can create instance from `Vec3` object using `aslin`
-and `asfol` properties::
+or we can create instance from ``Vec3`` object using ``aslin``
+and ``asfol`` properties::
 
     >>> u.aslin
     L:297/53
@@ -148,7 +148,7 @@ or to find perpendicular linear feature on given plane::
     >>> p2**l2
     L:276/37
 
-To rotate structural features we can use method `rotate`::
+To rotate structural features we can use method ``rotate``::
 
     >>> p2.rotate(l2,45)
     
@@ -156,41 +156,41 @@ To rotate structural features we can use method `rotate`::
 Group class
 -----------
 
-`Group` class serve as a homogeneous container for `Lin` or `Fol` objects.
+``Group`` class serve as a homogeneous container for ``Lin`` or ``Fol`` objects.
 It allows grouping of features either for visualization or batch analysis.
 
     >>> d = Group([Lin(120,60), Lin(116,50), Lin(132,45), Lin(90,60), Lin(84,52)], name='L1')
     >>> d
     L1: 5 Lin
 
-Method `len` returns number of features in group::
+Method ``len`` returns number of features in group::
 
     >>> len(d)
     5
 
-Property `resultant` gives mean or resultant of all features in group::
+Property ``resultant`` gives mean or resultant of all features in group::
 
     >>> d.resultant
     L:110/55
 
 To measure angles between all features in group and another feature,
-we can use method `angle`::
+we can use method ``angle``::
 
     >>> d.angle(d.resultant)
     array([  7.60329482,   6.24648167,  17.37186861,  11.6536752 ,  15.3996262 ])
 
 To rotate all features in group around another feature,
-we can use method `rotate`::
+we can use method ``rotate``::
 
     >>> dr = d.rotate(Lin(150, 30), 45)
 
-To show data in list you can convert it to python `list`::
+To show data in list you can convert it to python ``list``::
 
     >>> list(dr)
     [L:107/35, L:113/26, L:126/30, L:93/26, L:94/18]
 
 To calculate orientation tensor of all features in group,
-we can use method `ortensor`::
+we can use method ``ortensor``::
 
     >>> d.ortensor
     Ortensor:
@@ -202,9 +202,9 @@ we can use method `ortensor`::
 Ortensor class
 --------------
 
-`Ortensor` class represents orientation tensor of set of planar
+``Ortensor`` class represents orientation tensor of set of planar
 or linear features. Eigenvalues and eigenvectors could be obtained
-by methods `eigenvals` and `eigenvects`. Eigenvectors could be also
+by methods ``eigenvals`` and ``eigenvects``. Eigenvectors could be also
 represented by linear or planar features using properties eigenlins
 and eigenfols.
 
@@ -221,10 +221,10 @@ and eigenfols.
 StereoNet class
 ---------------
 
-Any `Fol`, `Lin`, `Vec3` or `Group` object could be visualized
+Any ``Fol``, ``Lin``, ``Vec3`` or ``Group`` object could be visualized
 in stereographic projection using mplstereonet (https://github.com/joferkington/mplstereonet),
 which must be accessible on current PYTHONPATH. Hi-level commands are adopted
-for APSG objects, while all original `mplstereonet` methods and properties
+for APSG objects, while all original ``mplstereonet`` methods and properties
 are accessible trough 'ax' property.
 
     >>> s = StereoNet()
@@ -238,7 +238,7 @@ are accessible trough 'ax' property.
     :alt: A basic stereonet with a plane, line and pole
     :align: center
 
-A `Group` object could be plotted as well.
+A ``Group`` object could be plotted as well.
 
     >>> s = StereoNet()
     >>> g = Group([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)], name='Test')
@@ -250,7 +250,7 @@ A `Group` object could be plotted as well.
     :alt: A basic stereonet group of linear features
     :align: center
 
-To make density contours plots, a `density_contour` and `density_contourf` methods are available.
+To make density contours plots, a ``density_contour`` and ``density_contourf`` methods are available.
 
     >>> s = StereoNet()
     >>> g = Group.randn_lin(mean=Lin(40,30))
