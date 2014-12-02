@@ -109,6 +109,9 @@ class StereoNet(object):
         else:
             self._ax.figure.savefig(filename, bbox_extra_artists=(self._lgd,), bbox_inches='tight')
 
+    def show(self):
+        plt.show()
+
 
 def rose(a, bins=13, **kwargs):
     """Plot rose diagram"""

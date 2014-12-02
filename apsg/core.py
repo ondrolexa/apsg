@@ -496,14 +496,6 @@ class Group(list):
         """array of strikes and dips of Group"""
         return np.array([d.rhr for d in self]).T
 
-    def density(self, k=100, npoints=180):
-        """calculate density of Group"""
-        return Density(self, k, npoints)
-
-    def plot(self):
-        """Show Group on Schmidt net"""
-        return SchmidtNet(self)
-
     @classmethod
     def randn_lin(cls, N=100, mean=Lin(0, 90), sig=20):
         data = []
@@ -578,13 +570,3 @@ def fixpair(f, l):
     ang = (Vec3(l).angle(f) - 90)/2
     return Vec3(f).rotate(ax, ang).asfol, Vec3(l).rotate(ax, -ang).aslin
 
-
-if __name__ == "__main__":
-    g = Group([Fol(0, 60),
-               Fol(90, 60),
-               Fol(180, 60),
-               Fol(270, 60)], name='APSG')
-    s = StereoNet()
-    s.plane(g, 'k')
-    s.line(g.cross(), 'go')
-    plt.show()
