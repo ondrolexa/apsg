@@ -1,34 +1,37 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
+
   <head>
-    <meta charset="utf-8">
+    <meta charset='utf-8'>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>APSG by ondrolexa</title>
+    <meta name="description" content="APSG : Structural geology module for Python">
 
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <script src="javascripts/scale.fix.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
 
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+    <title>APSG</title>
   </head>
+
   <body>
-    <div class="wrapper">
-      <header>
-        <h1>APSG</h1>
-        <p>Structural geology module for Python</p>
-        <p class="view"><a href="https://github.com/ondrolexa/apsg">View the Project on GitHub <small>ondrolexa/apsg</small></a></p>
-        <ul>
-          <li><a href="https://github.com/ondrolexa/apsg/zipball/master">Download <strong>ZIP File</strong></a></li>
-          <li><a href="https://github.com/ondrolexa/apsg/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/ondrolexa/apsg">View On <strong>GitHub</strong></a></li>
-        </ul>
-      </header>
-      <section>
-        <h2>
-<a id="apsg" class="anchor" href="#apsg" aria-hidden="true"><span class="octicon octicon-link"></span></a>APSG</h2>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/ondrolexa/apsg">View on GitHub</a>
+
+          <h1 id="project_title">APSG</h1>
+          <h2 id="project_tagline">Structural geology module for Python</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/ondrolexa/apsg/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/ondrolexa/apsg/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p><a href="http://badge.fury.io/py/apsg"><img src="https://badge.fury.io/py/apsg.png" alt="PyPI version"></a></p>
 
 <p>APSG is python module which defines several new classes to easily manage, analyze and visualize orientational structural geology data.</p>
 
@@ -43,11 +46,16 @@
 <p>Base class <code>Vec3</code> is derived from <code>numpy.array</code> class and offers several new methods for simple vector manipulation. To work with orientational data in structural geology, APSG provide two classes derived from <code>Vec3</code> class. There is <code>Fol</code> class to represent planar features by planes and <code>Lin</code> class to represent linear feature by lines. Both classes provide all <code>Vec3</code> methods, but they differ in way how instance is created and how some calculations are evaluated, as structural geology data are commonly axial in nature.</p>
       </section>
     </div>
-    <footer>
-      <p>Project maintained by <a href="https://github.com/ondrolexa">ondrolexa</a></p>
-      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
-    </footer>
-    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">APSG maintained by <a href="https://github.com/ondrolexa">ondrolexa</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
     
+
   </body>
 </html>
