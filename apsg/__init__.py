@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .core import Vec3, Fol, Lin, Group, Ortensor
+from .core import Vec3, Fol, Lin, Pair, Fault, Group, Ortensor
 from .plotting import StereoNet
 
 __author__ = 'Ondrej Lexa'
