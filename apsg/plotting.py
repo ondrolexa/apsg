@@ -61,6 +61,15 @@ class StereoNet(object):
         self._ax.line(plunge, bearing, *args, **kwargs)
         self.draw()
 
+    def arrow(self, obj, sense, *args, **kwargs):
+        assert obj.type is Lin, 'Only Lin instance could be plotted as quiver.'
+        bearing, plunge = obj.dd
+        xx, yy = mplstereonet.line(plunge, bearing)
+        xx1, yy1 = mplstereonet.line(plunge - 5, bearing)
+        for x, y, x1, y1 in zip(xx, yy, xx1, yy1):
+            self._ax.arrow(x, y, sense*(x1-x), sense*(y1-y))
+        self.draw()
+
     def cone(self, obj, angle, segments=100, bidirectional=True, **kwargs):
         assert obj.type is Lin, 'Only Lin instance could be used as cone axis.'
         bearing, plunge = obj.dd
@@ -105,7 +114,7 @@ class StereoNet(object):
 
     def savefig(self, filename='stereonet.pdf'):
         if self._lgd is None:
-            self._ax.figure.savefig(filename)
+            self._ax.figure.savefig(filen1ame)
         else:
             self._ax.figure.savefig(filename, bbox_extra_artists=(self._lgd,), bbox_inches='tight')
 
