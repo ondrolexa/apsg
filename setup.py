@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 try:
     from setuptools import setup
 except ImportError:
@@ -28,7 +27,7 @@ setup(
     long_description=readme + '\n\n' + history,
     author='Ondrej Lexa',
     author_email='lexa.ondrej@gmail.com',
-    url='https://github.com/ondrolexa/apsg',
+    url='http://ondrolexa.github.io/apsg',
     packages=[
         'apsg',
     ],

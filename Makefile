@@ -44,7 +44,7 @@ coverage:
 	coverage run --source apsg setup.py test
 	coverage report -m
 	coverage html
-	open htmlcov/index.html
+	xdg-open htmlcov/index.html
 
 docs:
 	rm -f docs/apsg.rst
@@ -52,13 +52,11 @@ docs:
 	sphinx-apidoc -o docs/ apsg
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
-	open docs/_build/html/index.html
+	xdg-open docs/_build/html/index.html
 
 release: clean
 	python setup.py sdist upload
-	python setup.py bdist_wheel upload
 
 dist: clean
 	python setup.py sdist
-	python setup.py bdist_wheel
 	ls -l dist
