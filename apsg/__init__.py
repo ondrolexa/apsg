@@ -5,4 +5,4 @@ from .plotting import StereoNet
 
 __author__ = 'Ondrej Lexa'
 __email__ = 'lexa.ondrej@gmail.com'
-__version__ = '0.1.0'
+__version__ = '0.2.0devel'

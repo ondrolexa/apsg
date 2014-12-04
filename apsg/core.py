@@ -557,6 +557,31 @@ class Group(list):
             data.append(Fol(0, 0).rotate(Lin(azi, 0), dip))
         return cls(d).rotate(Lin(ta-90, 0), td)
 
+    @classmethod
+    def uniform_lin(cls, N=500):
+        n = 2*np.ceil(np.sqrt(N)/0.564)
+        azi = 0
+        inc = 90
+        for rho in np.linspace(0, 1, np.round(n/2/np.pi))[:-1]:
+            theta = np.linspace(0, 2*np.pi, np.round(n*rho + 1))[:-1]
+            x, y = rho*np.sin(theta), rho*np.cos(theta)
+            azi = np.hstack((azi, np.rad2deg(np.arctan2(x, y))))
+            inc = np.hstack((inc, 90 - 2*np.rad2deg(np.arcsin(np.sqrt((x*x + y*y)/2)))))
+        # no antipodal
+        theta = np.linspace(0, 2*np.pi, n + 1)[:-1]
+        x, y = np.sin(theta), np.cos(theta)
+        azi = np.hstack((azi, np.rad2deg(np.arctan2(x, y))[::2]))
+        inc = np.hstack((inc, 90 - 2*np.rad2deg(np.arcsin(np.sqrt((x*x + y*y)/2)))[::2]))
+        # fix
+        inc[inc<0] = 0
+        return cls.fromarray(azi, inc, typ=Lin)
+
+    @classmethod
+    def uniform_fol(cls, N=500):
+        l = cls.uniform_lin(N=N)
+        azi, inc = l.dd
+        return cls.fromarray(azi+180, 90-inc, typ=Fol)
+
 
 class Ortensor(object):
     """Ortensor class"""

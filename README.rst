@@ -2,8 +2,8 @@
 APSG - python module for structural geologists
 ==============================================
 
-.. image:: https://badge.fury.io/gh/ondrolexa%2Fapsg.png
-    :target: http://badge.fury.io/gh/ondrolexa%2Fapsg
+.. image:: https://badge.fury.io/py/apsg.svg
+    :target: http://badge.fury.io/py/apsg
 
 APSG defines several new python classes to easily manage, analyze and visualize orientational structural geology data.
 
