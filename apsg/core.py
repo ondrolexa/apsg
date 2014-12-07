@@ -327,6 +327,51 @@ class Fol(Vec3):
         return (azi - 90) % 360, inc
 
 
+class Pair(object):
+    """Pair class store related Fol and Lin instances"""
+    def __init__(self, fol, lin):
+        assert isinstance(fol, Fol), 'First fol parameter must be instance of Fol'
+        assert isinstance(lin, Lin), 'Second lin parameter must be instance of Lin'
+        self.fol = fol
+        self.lin = lin
+
+    def __repr__(self):
+        fazi, finc = self.fol.dd
+        lazi, linc = self.lin.dd
+        return 'P:%d/%d-%d/%d' % (round(fazi), round(finc), round(lazi), round(linc))
+
+    @property
+    def misfit(self):
+        return 90 - self.fol.angle(self.lin)
+
+    def fit(self):
+        """Correct pair of planar and linear data.
+        Both planar and linear feature is rotated, so linear feature perfectly
+        fit onto planar one::
+
+            p.fit()
+        """
+        ax = self.fol ** self.lin
+        ang = (Vec3(self.lin).angle(self.fol) - 90)/2
+        self.fol = self.fol.rotate(ax, ang)
+        self.lin = self.lin.rotate(ax, -ang)
+
+
+class Fault(Pair):
+    """Fault class store related Fol and Lin instances with sense of movement"""
+    def __init__(self, fol, lin, sense):
+        assert isinstance(sense, int), 'Third sense parameter must be positive or negative integer'
+        super(Fault, self).__init__(fol, lin)
+        misfit = 90 - self.fol.angle(self.lin) 
+        assert misfit < 15, 'Lin deviate too much from Fol'
+        self.sense = 2*int(sense>0) - 1
+
+    def __repr__(self):
+        fazi, finc = self.fol.dd
+        lazi, linc = self.lin.dd
+        return 'F:%d/%d-%d/%d %s' % (round(fazi), round(finc), round(lazi), round(linc), ['-','','+'][self.sense + 1])
+
+
 class Group(list):
     """Group class
     Group is homogeneous group of Vec3, Fol or Lin
@@ -500,6 +545,31 @@ class Group(list):
             data.append(Fol(0, 0).rotate(Lin(azi, 0), dip))
         return cls(d).rotate(Lin(ta-90, 0), td)
 
+    @classmethod
+    def uniform_lin(cls, N=500):
+        n = 2*np.ceil(np.sqrt(N)/0.564)
+        azi = 0
+        inc = 90
+        for rho in np.linspace(0, 1, np.round(n/2/np.pi))[:-1]:
+            theta = np.linspace(0, 2*np.pi, np.round(n*rho + 1))[:-1]
+            x, y = rho*np.sin(theta), rho*np.cos(theta)
+            azi = np.hstack((azi, np.rad2deg(np.arctan2(x, y))))
+            inc = np.hstack((inc, 90 - 2*np.rad2deg(np.arcsin(np.sqrt((x*x + y*y)/2)))))
+        # no antipodal
+        theta = np.linspace(0, 2*np.pi, n + 1)[:-1]
+        x, y = np.sin(theta), np.cos(theta)
+        azi = np.hstack((azi, np.rad2deg(np.arctan2(x, y))[::2]))
+        inc = np.hstack((inc, 90 - 2*np.rad2deg(np.arcsin(np.sqrt((x*x + y*y)/2)))[::2]))
+        # fix
+        inc[inc<0] = 0
+        return cls.fromarray(azi, inc, typ=Lin)
+
+    @classmethod
+    def uniform_fol(cls, N=500):
+        l = cls.uniform_lin(N=N)
+        azi, inc = l.dd
+        return cls.fromarray(azi+180, 90-inc, typ=Fol)
+
 
 class Ortensor(object):
     """Ortensor class"""
@@ -548,13 +618,4 @@ class Ortensor(object):
         v1, v2, v3 = self.eigenvects
         return Group([v1.asfol, v2.asfol, v3.asfol])
 
-
-def fixpair(f, l):
-    """Fix pair of planar and linear data, so Lin is within plane Fol::
-
-        fok,lok = fixpair(f,l)
-    """
-    ax = f ** l
-    ang = (Vec3(l).angle(f) - 90)/2
-    return Vec3(f).rotate(ax, ang).asfol, Vec3(l).rotate(ax, -ang).aslin
 
