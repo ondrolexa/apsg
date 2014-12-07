@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from .core import Vec3, Fol, Lin, Group, Ortensor
-from .plotting import StereoNet
+from .plotting import StereoNet, SchmidtNet
 
 __author__ = 'Ondrej Lexa'
 __email__ = 'lexa.ondrej@gmail.com'

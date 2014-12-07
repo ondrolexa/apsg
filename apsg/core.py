@@ -151,7 +151,8 @@ class Lin(Vec3):
     """
     def __new__(cls, azi, inc):
         # casting to our class
-        return Vec3(getldc(azi, inc)).view(cls)
+        v = [cosd(azi)*cosd(inc), sind(azi)*cosd(inc), sind(inc)]
+        return Vec3(v).view(cls)
 
     def __repr__(self):
         azi, inc = self.dd
@@ -236,7 +237,8 @@ class Fol(Vec3):
     """
     def __new__(cls, azi, inc):
         # casting to our class
-        return Vec3(getfdc(azi, inc)).view(cls)
+        v = [-cosd(azi)*sind(inc), -sind(azi)*sind(inc), cosd(inc)]
+        return Vec3(v).view(cls)
 
     def __repr__(self):
         azi, inc = self.dd
@@ -329,15 +331,8 @@ class Group(list):
     """Group class
     Group is homogeneous group of Vec3, Fol or Lin
     """
-    def __init__(self, data,
-                 name='Default',
-                 color='blue',
-                 fol={'lw': 1, 'ls': '-'},
-                 lin={'marker': 'o', 's': 20},
-                 vec={'marker': 'd', 's': 24, 'facecolors': None},
-                 tmpl=None):
-        if not issubclass(type(data), list):
-            data = [data]
+    def __init__(self, data, name='Default'):
+        assert issubclass(type(data), list), 'Argument must be list of data.'
         assert len(data) > 0, 'Empty group is not allowed.'
         tp = type(data[0])
         assert issubclass(tp, Vec3), \
@@ -346,17 +341,7 @@ class Group(list):
                'All data in group must be of same type.'
         super(Group, self).__init__(data)
         self.type = tp
-        if tmpl is None:
-            self.name = name
-            self.color = color
-            self.sym = {}
-            self.sym['fol'] = fol
-            self.sym['lin'] = lin
-            self.sym['vec'] = vec
-        else:
-            self.name = tmpl.name
-            self.color = tmpl.color
-            self.sym = tmpl.sym
+        self.name = name
 
     def __repr__(self):
         return '%s: %g %s' % (self.name, len(self), self.type.__name__)
@@ -365,7 +350,7 @@ class Group(list):
         # merge Datasets
         assert isinstance(other, Group), 'Only groups could be merged'
         assert self.type is other.type, 'Only same type groups could be merged'
-        return Group(list(self) + other, tmpl=self)
+        return Group(list(self) + other, name=self.name)
 
     def __setitem__(self, key, value):
         assert isinstance(value, self.type), 'item is not of type %s' % self.type.__name__
@@ -379,11 +364,15 @@ class Group(list):
         for item in items:
             self.append(item)
 
+    @property
+    def data(self):
+        return list(self)
+
     @classmethod
-    def fromcsv(cls, fname, typ=Lin, acol=1, icol=2,
-                name='Default', color='blue'):
+    def fromcsv(cls, fname, typ=Lin, acol=1, icol=2):
         """Read group from csv file"""
         import csv
+        from os.path import basename
         with open(fname, 'rb') as csvfile:
             sniffer = csv.Sniffer()
             dialect = sniffer.sniff(csvfile.read(1024))
@@ -395,26 +384,25 @@ class Group(list):
             for row in reader:
                 if len(row) > 1:
                     data.append(typ(float(row[acol-1]), float(row[icol-1])))
-            return cls(data, name=name, color=color)
+            return cls(data, name=basename(fname))
 
     @classmethod
-    def fromarray(cls, dipdirs, dips, typ=Lin,
-                  name='Default', color='blue'):
+    def fromarray(cls, azis, incs, typ=Lin, name='Default'):
         """Create dataset from arrays of dip directions and dips"""
         data = []
-        for dipdir, dip in zip(dipdirs, dips):
-            data.append(typ(dipdir, dip))
-        return cls(data, name=name, color=color)
+        for azi, inc in zip(azis, incs):
+            data.append(typ(azi, inc))
+        return cls(data, name=name)
 
     @property
     def aslin(self):
         """Convert all data in Group to Lin"""
-        return Group([e.aslin for e in self], tmpl=self)
+        return Group([e.aslin for e in self], name=self.name)
 
     @property
     def asfol(self):
         """Convert all data in Group to Fol"""
-        return Group([e.asfol for e in self], tmpl=self)
+        return Group([e.asfol for e in self], name=self.name)
 
     @property
     def resultant(self):
@@ -447,11 +435,11 @@ class Group(list):
                 res.append(e**other)
         else:
             raise TypeError('Wrong argument type!')
-        return Group(res, tmpl=self)
+        return Group(res, name=self.name)
 
     def rotate(self, axis, phi):
         """rotate Group"""
-        return Group([e.rotate(axis, phi) for e in self], tmpl=self)
+        return Group([e.rotate(axis, phi) for e in self], name=self.name)
 
     def center(self):
         """rotate E3 direction of Group to vertical"""
@@ -484,7 +472,7 @@ class Group(list):
 
     def transform(self, F):
         """Return affine transformation of Group by matrix *F*"""
-        return Group([e.transform(F) for e in self], tmpl=self)
+        return Group([e.transform(F) for e in self], name=self.name)
 
     @property
     def dd(self):
