@@ -10,6 +10,7 @@ from copy import deepcopy
 import numpy as np
 from .helpers import *
 
+
 class Vec3(np.ndarray):
     """Base class to store 3D vectors derived from numpy.ndarray
     """
@@ -19,7 +20,7 @@ class Vec3(np.ndarray):
         return obj
 
     def __repr__(self):
-        return 'V' + '(%.3f, %.3f, %.3f)' % tuple(self)
+        return 'V({:.3f}, {:.3f}, {:.3f})'.format(*self)
 
     def __mul__(self, other):
         return np.dot(self, other)
@@ -136,7 +137,7 @@ class Vec3(np.ndarray):
     @property
     def asfol(self):
         """Convert vector to Fol object.
-        
+
         >>> u = Vec3([1,1,1])
         >>> u.asfol
         S:225/55
@@ -151,11 +152,11 @@ class Lin(Vec3):
     """
     def __new__(cls, azi, inc):
         # casting to our class
-        return Vec3(getldc(azi, inc)).view(cls)
+        v = [cosd(azi)*cosd(inc), sind(azi)*cosd(inc), sind(inc)]
+        return Vec3(v).view(cls)
 
     def __repr__(self):
-        azi, inc = self.dd
-        return 'L:%d/%d' % (round(azi), round(inc))
+        return 'L:{:.0f}/{:.0f}'.format(*self.dd)
 
     def __add__(self, other):
         # add axial data
@@ -236,11 +237,11 @@ class Fol(Vec3):
     """
     def __new__(cls, azi, inc):
         # casting to our class
-        return Vec3(getfdc(azi, inc)).view(cls)
+        v = [-cosd(azi)*sind(inc), -sind(azi)*sind(inc), cosd(inc)]
+        return Vec3(v).view(cls)
 
     def __repr__(self):
-        azi, inc = self.dd
-        return 'S:%d/%d' % (round(azi), round(inc))
+        return 'S:{:.0f}/{:.0f}'.format(*self.dd)
 
     def __add__(self, other):
         # add axial data
@@ -328,15 +329,16 @@ class Fol(Vec3):
 class Pair(object):
     """Pair class store related Fol and Lin instances"""
     def __init__(self, fol, lin):
-        assert isinstance(fol, Fol), 'First fol parameter must be instance of Fol'
-        assert isinstance(lin, Lin), 'Second lin parameter must be instance of Lin'
+        assert isinstance(fol, Fol), \
+            'First fol parameter must be instance of Fol'
+        assert isinstance(lin, Lin), \
+            'Second lin parameter must be instance of Lin'
         self.fol = fol
         self.lin = lin
 
     def __repr__(self):
-        fazi, finc = self.fol.dd
-        lazi, linc = self.lin.dd
-        return 'P:%d/%d-%d/%d' % (round(fazi), round(finc), round(lazi), round(linc))
+        vals = self.fol.dd + self.lin.dd
+        return 'P:{:.0f}/{:.0f}-{:.0f}/{:.0f}'.format(*vals)
 
     @property
     def misfit(self):
@@ -356,110 +358,93 @@ class Pair(object):
 
 
 class Fault(Pair):
-    """Fault class store related Fol and Lin instances with sense of movement"""
+    """Fault class for related Fol and Lin instances with sense of movement"""
     def __init__(self, fol, lin, sense):
-        assert isinstance(sense, int), 'Third sense parameter must be positive or negative integer'
+        assert isinstance(sense, int), \
+            'Third sense parameter must be positive or negative integer'
         super(Fault, self).__init__(fol, lin)
-        misfit = 90 - self.fol.angle(self.lin) 
+        misfit = 90 - self.fol.angle(self.lin)
         assert misfit < 15, 'Lin deviate too much from Fol'
-        self.sense = 2*int(sense>0) - 1
+        self.sense = 2*int(sense > 0) - 1
 
     def __repr__(self):
-        fazi, finc = self.fol.dd
-        lazi, linc = self.lin.dd
-        return 'F:%d/%d-%d/%d %s' % (round(fazi), round(finc), round(lazi), round(linc), ['-','','+'][self.sense + 1])
+        vals = self.fol.dd + self.lin.dd + ([' -', '', ' +'][self.sense + 1],)
+        return 'F:{:.0f}/{:.0f}-{:.0f}/{:.0f}{:s}'.format(*vals)
 
 
 class Group(list):
     """Group class
     Group is homogeneous group of Vec3, Fol or Lin
     """
-    def __init__(self, data,
-                 name='Default',
-                 color='blue',
-                 fol={'lw': 1, 'ls': '-'},
-                 lin={'marker': 'o', 's': 20},
-                 vec={'marker': 'd', 's': 24, 'facecolors': None},
-                 tmpl=None):
-        if not issubclass(type(data), list):
-            data = [data]
+    def __init__(self, data, name='Default'):
+        assert issubclass(type(data), list), 'Argument must be list of data.'
         assert len(data) > 0, 'Empty group is not allowed.'
         tp = type(data[0])
-        assert issubclass(tp, Vec3), \
-               'Data must be Fol, Lin or Vec3 type.'
+        assert issubclass(tp, Vec3), 'Data must be Fol, Lin or Vec3 type.'
         assert all([isinstance(e, tp) for e in data]), \
-               'All data in group must be of same type.'
+            'All data in group must be of same type.'
         super(Group, self).__init__(data)
         self.type = tp
-        if tmpl is None:
-            self.name = name
-            self.color = color
-            self.sym = {}
-            self.sym['fol'] = fol
-            self.sym['lin'] = lin
-            self.sym['vec'] = vec
-        else:
-            self.name = tmpl.name
-            self.color = tmpl.color
-            self.sym = tmpl.sym
+        self.name = name
 
     def __repr__(self):
         return '%s: %g %s' % (self.name, len(self), self.type.__name__)
+
+    def __abs__(self):
+        # abs returns array of euclidean norms
+        return np.asarray([abs(e) for e in self])
 
     def __add__(self, other):
         # merge Datasets
         assert isinstance(other, Group), 'Only groups could be merged'
         assert self.type is other.type, 'Only same type groups could be merged'
-        return Group(list(self) + other, tmpl=self)
+        return Group(list(self) + other, name=self.name)
 
     def __setitem__(self, key, value):
-        assert isinstance(value, self.type), 'item is not of type %s' % self.type.__name__
+        assert isinstance(value, self.type), \
+            'item is not of type %s' % self.type.__name__
         super(Group, self).__setitem__(key, value)
 
     def append(self, item):
-        assert isinstance(item, self.type), 'item is not of type %s' % self.type.__name__
+        assert isinstance(item, self.type), \
+            'item is not of type %s' % self.type.__name__
         super(Group, self).append(item)
 
     def extend(self, items=()):
         for item in items:
             self.append(item)
 
-    @classmethod
-    def fromcsv(cls, fname, typ=Lin, acol=1, icol=2,
-                name='Default', color='blue'):
-        """Read group from csv file"""
-        import csv
-        with open(fname, 'rb') as csvfile:
-            sniffer = csv.Sniffer()
-            dialect = sniffer.sniff(csvfile.read(1024))
-            csvfile.seek(0)
-            data = []
-            reader = csv.reader(csvfile, dialect)
-            if sniffer.has_header:
-                reader.next()
-            for row in reader:
-                if len(row) > 1:
-                    data.append(typ(float(row[acol-1]), float(row[icol-1])))
-            return cls(data, name=name, color=color)
+    @property
+    def data(self):
+        return list(self)
 
     @classmethod
-    def fromarray(cls, dipdirs, dips, typ=Lin,
-                  name='Default', color='blue'):
+    def fromcsv(cls, fname, typ=Lin, delimiter=',', acol=1, icol=2):
+        """Read group from csv file"""
+        from os.path import basename
+        dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
+        return cls.fromarray(dt[acol-1], dt[icol-1], typ=typ, name=basename(fname))
+
+    def tocsv(self, fname, delimiter=','):
+        np.savetxt(fname, self.dd.T, fmt='%g', delimiter=',', header=self.name)
+
+    @classmethod
+    def fromarray(cls, azis, incs, typ=Lin, name='Default'):
         """Create dataset from arrays of dip directions and dips"""
         data = []
-        for dipdir, dip in zip(dipdirs, dips):
-            data.append(typ(dipdir, dip))
-        return cls(data, name=name, color=color)
+        for azi, inc in zip(azis, incs):
+            data.append(typ(azi, inc))
+        return cls(data, name=name)
 
     @property
     def aslin(self):
         """Convert all data in Group to Lin"""
-        return Group([e.aslin for e in self], tmpl=self)
+        return Group([e.aslin for e in self], name=self.name)
 
     @property
     def asfol(self):
         """Convert all data in Group to Fol"""
-        return Group([e.asfol for e in self], tmpl=self)
+        return Group([e.asfol for e in self], name=self.name)
 
     @property
     def resultant(self):
@@ -492,17 +477,21 @@ class Group(list):
                 res.append(e**other)
         else:
             raise TypeError('Wrong argument type!')
-        return Group(res, tmpl=self)
+        return Group(res, name=self.name)
 
     def rotate(self, axis, phi):
         """rotate Group"""
-        return Group([e.rotate(axis, phi) for e in self], tmpl=self)
+        return Group([e.rotate(axis, phi) for e in self], name=self.name)
 
     def center(self):
         """rotate E3 direction of Group to vertical"""
         ot = self.ortensor
         azi, inc = ot.eigenlins[2][0].dd
         return self.rotate(Lin(azi - 90, 0), 90 - inc)
+
+    def normalized(self):
+        """return Group with normalized elements"""
+        return Group([e/abs(e) for e in self], name=self.name)
 
     def angle(self, other=None):
         """return angles of all pairs in Group"""
@@ -529,7 +518,7 @@ class Group(list):
 
     def transform(self, F):
         """Return affine transformation of Group by matrix *F*"""
-        return Group([e.transform(F) for e in self], tmpl=self)
+        return Group([e.transform(F) for e in self], name=self.name)
 
     @property
     def dd(self):
@@ -573,7 +562,7 @@ class Group(list):
         azi = np.hstack((azi, np.rad2deg(np.arctan2(x, y))[::2]))
         inc = np.hstack((inc, 90 - 2*np.rad2deg(np.arcsin(np.sqrt((x*x + y*y)/2)))[::2]))
         # fix
-        inc[inc<0] = 0
+        inc[inc < 0] = 0
         return cls.fromarray(azi, inc, typ=Lin)
 
     @classmethod

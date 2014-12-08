@@ -12,8 +12,7 @@ history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 requirements = [
     'numpy >= 1.8',
-    'matplotlib >= 1.2',
-    'mplstereonet >= 0.4'
+    'matplotlib >= 1.2'
 ]
 
 test_requirements = [
