@@ -193,17 +193,13 @@ Property ``R`` gives mean or resultant of all features in group::
     L:39/21
 
 ``Group`` class offers several methods to infer spherical statistics as
-spherical variance, Fisher's concentration parameter, confidence cones on
-resultant or data etc.::
+spherical variance, Fisher's statistics, confidence cones on
+data etc.::
 
     >>> g.var
-    0.0637103650496047
-    >>> g.kappa
-    15.539072790262443
-    >>> g.conf_cone()
-    3.7054492756018123
-    >>> g.csd
-    20.548142386914282
+    0.063710393842001833
+    >>> g.fisher_stats
+    {'csd': 20.548142386914282, 'a95': 3.7054501701829596, 'k': 15.539065767748088}
     >>> g.delta
     20.562501451172906
 
@@ -212,10 +208,10 @@ we can use method ``ortensor``::
 
     >>> g.ortensor
     Ortensor:
-    (E1:4.77,E2:0.2011,E3:0.02874)
-    [[ 0.36990905 -0.48027385 -0.71621555]
-     [-0.48027385  1.42230591  2.10464496]
-     [-0.71621555  2.10464496  3.20778504]]
+    (E1:88.4,E2:7.338,E3:4.266)
+    [[ 49.53851     35.19161279  22.15886785]
+     [ 35.19161279  34.90101673  16.01083238]
+     [ 22.15886785  16.01083238  15.56047326]]
 
 Ortensor class
 --------------
@@ -228,13 +224,13 @@ and eigenfols::
 
     >>> ot = Ortensor(g)
     >>> ot.eigenvals
-    (0.95403846865963882, 0.040212749461964618, 0.0057487818783964056)
+    (0.88395980871958957, 0.073383662044666884, 0.042656529235744325)
     >>> ot.eigenvects.data
-    [V(0.192, -0.542, -0.818), V(-0.981, -0.082, -0.176), V(-0.028, -0.836, 0.547)]
+    [V(-0.731, -0.586, -0.351), V(0.345, -0.760, 0.550), V(-0.589, 0.280, 0.758)]
     >>> ot.eigenlins.data
-    [L:110/55, L:5/10, L:268/33]
+    [L:39/21, L:294/33, L:155/49]
     >>> ot.eigenfols.data
-    [S:290/35, S:185/80, S:88/57]
+    [S:219/69, S:114/57, S:335/41]
 
 StereoNet class
 ---------------
@@ -257,8 +253,8 @@ A cones (or small circles) could be plotted as well::
     >>> s = StereoNet()
     >>> g = Group.randn_lin(mean=Lin(40, 15))
     >>> s.line(g, 'k.')
-    >>> s.cone(g.R, g.conf_cone(), 'r')  # confidence cone on resultant
-    >>> s.cone(g.R, g.csd, 'g')          # confidence cone on 63% of data
+    >>> s.cone(g.R, g.fisher_stats['a95'], 'r')  # confidence cone on resultant
+    >>> s.cone(g.R, g.fisher_stats['csd'], 'g')  # confidence cone on 63% of data
     >>> s.show()
 
 .. image:: http://ondrolexa.github.io/apsg/images/group_dev.png

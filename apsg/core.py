@@ -456,41 +456,32 @@ class Group(list):
         return r
 
     @property
-    def Rbar(self):
-        """magnitude of resultant """
-        return abs(self.R)
-
-    @property
     def var(self):
         """Spherical variance"""
-        return 1 - self.Rbar/len(self)
+        return 1 - abs(self.R)/len(self)
 
     @property
-    def kappa(self):
+    def fisher_stats(self):
         """Fisher's concentration parameter"""
+        stats = {'k': np.inf, 'a95': 180.0, 'csd': 0.0}
         N = len(self)
-        return (N - 1)/(N - self.Rbar)
-
-    def conf_cone(self, p=0.05):
-        """confidence cone about the resultant"""
-        N = len(self)
-        return acosd(1 - ((N - self.Rbar)/self.Rbar)*((1/p)**(1/(N-1)) - 1))
-
-    @property
-    def csd(self):
-        """cone containing ~63% of the data"""
-        return 81/np.sqrt(self.kappa)
+        R = abs(self.R)
+        if N != R:
+            stats['k'] = (N - 1)/(N - R)
+            stats['csd'] = 81/np.sqrt(stats['k'])
+        stats['a95'] = acosd(1 - ((N - R)/R)*(20**(1/(N-1)) - 1))
+        return stats
 
     @property
     def delta(self):
         """cone containing ~63% of the data"""
-        return acosd(self.Rbar/len(self))
+        return acosd(abs(self.R)/len(self))
 
     @property
     def rdegree(self):
         """degree of preffered orientation od Group"""
         N = len(self)
-        return 100*(2*self.Rbar - N)/N
+        return 100*(2*abs(self.R) - N)/N
 
     def cross(self, other=None):
         """return cross products of all pairs in Group"""
