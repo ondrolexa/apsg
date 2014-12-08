@@ -391,6 +391,10 @@ class Group(list):
     def __repr__(self):
         return '%s: %g %s' % (self.name, len(self), self.type.__name__)
 
+    def __abs__(self):
+        # abs returns array of euclidian norms
+        return np.asarray([abs(e) for e in self])
+
     def __add__(self, other):
         # merge Datasets
         assert isinstance(other, Group), 'Only groups could be merged'
@@ -414,22 +418,14 @@ class Group(list):
         return list(self)
 
     @classmethod
-    def fromcsv(cls, fname, typ=Lin, acol=1, icol=2):
+    def fromcsv(cls, fname, typ=Lin, delimiter=',', acol=1, icol=2):
         """Read group from csv file"""
-        import csv
         from os.path import basename
-        with open(fname, 'rb') as csvfile:
-            sniffer = csv.Sniffer()
-            dialect = sniffer.sniff(csvfile.read(1024))
-            csvfile.seek(0)
-            data = []
-            reader = csv.reader(csvfile, dialect)
-            if sniffer.has_header:
-                reader.next()
-            for row in reader:
-                if len(row) > 1:
-                    data.append(typ(float(row[acol-1]), float(row[icol-1])))
-            return cls(data, name=basename(fname))
+        dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
+        return cls.fromarray(dt[acol-1], dt[icol-1], typ=typ, name=basename(fname))
+
+    def tocsv(self, fname, delimiter=','):
+        np.savetxt(fname, self.dd.T, fmt='%g', delimiter=',', header=self.name)
 
     @classmethod
     def fromarray(cls, azis, incs, typ=Lin, name='Default'):
@@ -491,6 +487,10 @@ class Group(list):
         ot = self.ortensor
         azi, inc = ot.eigenlins[2][0].dd
         return self.rotate(Lin(azi - 90, 0), 90 - inc)
+
+    def normalized(self):
+        """return Group with normalized elements"""
+        return Group([e/abs(e) for e in self], name=self.name)
 
     def angle(self, other=None):
         """return angles of all pairs in Group"""

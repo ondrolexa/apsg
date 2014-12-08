@@ -4,10 +4,12 @@ from __future__ import division, print_function
 
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import mplstereonet
 
 from .core import Vec3, Fol, Lin, Group, Ortensor
 from .helpers import *
+
 
 class StereoNet(object):
     """API to mplstereonet"""
@@ -18,7 +20,7 @@ class StereoNet(object):
         self._lgd = None
 
     def draw(self):
-        h,l = self._ax.get_legend_handles_labels()
+        h, l = self._ax.get_legend_handles_labels()
         if h:
             self._lgd = self._ax.legend(h, l, bbox_to_anchor=(1.12, 1), loc=2, borderaxespad=0., numpoints=1, scatterpoints=1)
             plt.subplots_adjust(right=0.75)
@@ -101,8 +103,8 @@ class StereoNet(object):
 
     def colorbar(self):
         if self._cax is not None:
-            cbaxes = self._ax.figure.add_axes([0.015, 0.2, 0.02, 0.6]) 
-            cb = plt.colorbar(self._cax, cax = cbaxes) 
+            cbaxes = self._ax.figure.add_axes([0.015, 0.2, 0.02, 0.6])
+            cb = plt.colorbar(self._cax, cax=cbaxes) 
 
     def savefig(self, filename='stereonet.pdf'):
         if self._lgd is None:
@@ -122,68 +124,72 @@ class SchmidtNet(object):
         self.ax.format_coord = format_coord
         self.grid = kwargs.get('grid', True)
         self.grid_style = kwargs.get('grid_style', 'k:')
-        self.cm = kwargs.get('cmap', plt.cm.Greys)
         self.cla()
-    
+
     def cla(self):
         """Clear projection"""
         # now ok
         self.ax.cla()
         self.ax.set_aspect('equal')
         self.ax.set_autoscale_on(False)
-        self.ax.axis([-1.05,1.05,-1.05,1.05])
+        self.ax.axis([-1.05, 1.05, -1.05, 1.05])
         self.ax.set_axis_off()
-        
+
         # Projection circle
         self.ax.text(0, 1.02, 'N', ha='center', va='baseline', fontsize=16)
-        self.ax.add_artist(plt.Circle((0, 0), 1, color='w', ec='k', zorder=0))
-        
+        self.ax.add_artist(plt.Circle((0, 0), 1, color='w', zorder=0))
+        self.ax.add_artist(plt.Circle((0, 0), 1, color='None', ec='k', zorder=3))
+
         if self.grid:
             # Main cross
-            self.ax.plot([-1,1,np.nan,0,0], [0,0,np.    nan,-1,1], self.grid_style, zorder=2)
+            self.ax.plot([-1, 1, np.nan, 0, 0],
+                         [0, 0, np.nan, -1, 1],
+                         self.grid_style, zorder=3)
             # Latitudes
-            lat_n = np.array([self._cone(l2v(0,0), l2v(0,a), limit=89.9999, res=91) for a in range(10,90,10)])
-            self.ax.plot(lat_n[:,0,:].T, lat_n[:,1,:].T, self.grid_style, zorder=2)
-            lat_s = np.array([self._cone(l2v(180,0), l2v(180,a), limit=89.9999, res=91) for a in range(10,90,10)])
-            self.ax.plot(lat_s[:,0,:].T, lat_s[:,1,:].T, self.grid_style, zorder=2)
+            lat_n = np.array([self._cone(l2v(0, 0), l2v(0, a), limit=89.9999, res=91) for a in range(10,90,10)])
+            self.ax.plot(lat_n[:, 0, :].T, lat_n[:, 1, :].T, self.grid_style, zorder=3)
+            lat_s = np.array([self._cone(l2v(180, 0), l2v(180, a), limit=89.9999, res=91) for a in range(10,90,10)])
+            self.ax.plot(lat_s[:, 0, :].T, lat_s[:, 1, :].T, self.grid_style, zorder=3)
             # Longitudes
-            lon_e = np.array([self._cone(p2v(90,a), l2v(90,a), limit=80, res=91) for a in range(10,90,10)])
-            self.ax.plot(lon_e[:,0,:].T, lon_e[:,1,:].T, self.grid_style, zorder=2)
-            lon_w = np.array([self._cone(p2v(270,a), l2v(270,a), limit=80, res=91) for a in range(10,90,10)])
-            self.ax.plot(lon_w[:,0,:].T, lon_w[:,1,:].T, self.grid_style, zorder=2)
+            lon_e = np.array([self._cone(p2v(90, a), l2v(90, a), limit=80, res=91) for a in range(10,90,10)])
+            self.ax.plot(lon_e[:, 0, :].T, lon_e[:, 1, :].T, self.grid_style, zorder=3)
+            lon_w = np.array([self._cone(p2v(270, a), l2v(270, a), limit=80, res=91) for a in range(10,90,10)])
+            self.ax.plot(lon_w[:, 0, :].T, lon_w[:, 1, :].T, self.grid_style, zorder=3)
 
         # ticks
-        a = np.arange(0,360,30)
+        a = np.arange(0, 360, 30)
         tt = np.array([0.98, 1])
         x = np.outer(tt, sind(a))
         y = np.outer(tt, cosd(a))
-        self.ax.plot(x, y, 'k', zorder=3)
+        self.ax.plot(x, y, 'k', zorder=4)
         # Middle cross
-        self.ax.plot([-0.02,0.02,np.nan,0,0], [0,0,np.    nan,-0.02,0.02], 'k', zorder=3)
+        self.ax.plot([-0.02, 0.02, np.nan, 0, 0],
+                     [0, 0, np.nan, -0.02, 0.02],
+                     'k', zorder=4)
 
     def getlin(self):
         """get Lin by mouse click"""
-        x,y = plt.ginput(1)[0]
-        return Lin(*getldd(x,y))
+        x, y = plt.ginput(1)[0]
+        return Lin(*getldd(x, y))
         
     def getfol(self):
         """get Fol by mouse click"""
-        x,y = plt.ginput(1)[0]
-        return Fol(*getfdd(x,y))
+        x, y = plt.ginput(1)[0]
+        return Fol(*getfdd(x, y))
     
     def getlins(self):
         """vrati Lin Dataset pomoci kliknuti mysi"""
         pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
-        return Group([Lin(*getldd(x,y)) for x,y in pts])
+        return Group([Lin(*getldd(x, y)) for x, y in pts])
 
     def getfols(self):
         """vrati Fol Dataset pomoci kliknuti mysi"""
         pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
-        return Group([Fol(*getldd(x,y)) for x,y in pts])
+        return Group([Fol(*getldd(x, y)) for x, y in pts])
     
     def set_density(self, density):
         """Nastavi density grid"""
-        if type(density)==Density or density==None:
+        if type(density) == Density or density == None:
             self.density = density
 
     def _cone(self, axis, vector, limit=180, res=361):
@@ -195,7 +201,7 @@ class SchmidtNet(object):
         if isinstance(obj, Group):
             x = []
             y = []
-            for azi,inc in obj.dd.T:
+            for azi, inc in obj.dd.T:
                 xx, yy = self._cone(p2v(azi, inc), l2v(azi, inc), limit=89.9999, res=cosd(inc)*179+2)
                 x = np.hstack((x, xx, np.nan))
                 y = np.hstack((y, yy, np.nan))
@@ -221,13 +227,12 @@ class SchmidtNet(object):
         plt.draw()
         return h
 
-
     def cone(self, obj, alpha):
         assert obj.type is Lin, 'Only Lin instance could be used as cone axis.'
         if isinstance(obj, Group):
             x = []
             y = []
-            for azi,inc in obj.dd.T:
+            for azi, inc in obj.dd.T:
                 xx, yy = self._cone(l2v(azi, inc), l2v(azi, inc-alpha), limit=180, res=sind(alpha)*358+3)    
                 x = np.hstack((x, xx, np.nan))
                 y = np.hstack((y, yy, np.nan))
@@ -240,95 +245,40 @@ class SchmidtNet(object):
         plt.draw()
         return h
 
+    def contourf(self, obj, **kwargs):
+        nc = kwargs.get('nc', 6)
+        cmap = kwargs.get('cmap', 'Greys')
+        d = Density(obj, **kwargs)
+        cs = self.ax.tricontourf(d.triang, d.density, nc, cmap=cmap, zorder=1)
+        if kwargs.get('contours', True):
+            self.ax.tricontour(d.triang, d.density, nc, colors='k', zorder=1)
+        if kwargs.get('legend', True):
+            self._add_colorbar(cs)
+        plt.draw()
+
+    def contour(self, obj, **kwargs):
+        nc = kwargs.get('nc', 6)
+        cmap = kwargs.get('cmap', plt.cm.Greys)
+        d = Density(obj, **kwargs)
+        cs = self.ax.tricontour(d.triang, d.density, nc, cmap=cmap, zorder=2)
+        if kwargs.get('legend', True):
+            self._add_colorbar(cs)
+        plt.draw()
+
+    def _add_colorbar(self, cs):
+        divider = make_axes_locatable(self.ax)
+        cax = divider.append_axes("left", size="5%", pad=0.5)
+        cb = plt.colorbar(cs, cax=cax)
+        # modify tick labels
+        #lbl = [item.get_text()+'S' for item in cb.ax.get_yticklabels()]
+        #lbl[lbl.index(next(l for l in lbl if l.startswith('0')))] = 'E'
+        #cb.set_ticklabels(lbl)
 
     def show(self):
+        #legend adjustment
+        #self.ax.legend(handles, labels, bbox_to_anchor=(1.03, 1), loc=2, borderaxespad=0., numpoints=1, scatterpoints=1)
+        #plt.subplots_adjust(left=0.02, bottom=0.05, right=0.78, top=0.95)
         plt.show()
-
-    def old_show(self):
-        """Draw figure"""
-        plt.ion()
-        # test if closed
-        if not plt._pylab_helpers.Gcf.figs.values():
-            self.fig = plt.figure()
-            self.ax = self.fig.add_subplot(111)
-            self.ax.format_coord = format_coord
-        
-        #density grid
-        if self.density:
-            cs = self.ax.tricontourf(self.density.triang, self.density.density, self.nc, cmap=self.cm, zorder=1)
-            self.ax.tricontour(self.density.triang, self.density.density, self.nc, colors='k', zorder=1)
-        
-        #grid
-        if self.grid:
-            grds = list(range(10,100,10)) + list(range(-80,0,10))
-            a = Lin(0,0)
-            for dip in grds:
-                l = Lin(0,dip)
-                gc = map(l.rotate, 91*[a], np.linspace(-89.99, 89.99, 91))
-                x, y = np.array([r.toxy() for r in gc]).T
-                self.ax.plot(x,y,'k:')
-            for dip in grds:
-                a = Fol(90,dip)
-                l = Lin(90,dip)
-                gc = map(l.rotate, 81*[a], np.linspace(-80, 80, 81))
-                x, y = np.array([r.toxy() for r in gc]).T
-                self.ax.plot(x,y,'k:')
-        
-        # init labels
-        handles = []
-        labels = []
-        
-        # plot data
-        for arg in self.data:
-            
-            #fol great circle
-            dd = arg.getfols()
-            if dd:
-                for d in dd:
-                    l = Lin(*d.getdd())
-                    gc = map(l.rotate, 91*[d], np.linspace(-89.99,89.99,91))
-                    x, y = np.array([r.toxy() for r in gc]).T
-                    h = self.ax.plot(x, y, color=arg.color, zorder=2, **arg.lines)
-                handles.append(h[0])
-                labels.append('S ' + arg.name)
-            
-            #lin point
-            dd = arg.getlins()
-            if dd:
-                for d in dd:
-                    x, y = d.toxy()
-                    h = self.ax.scatter(x, y, color=arg.color, zorder=4, **arg.points)
-                handles.append(h)
-                labels.append('L ' + arg.name)
-            
-            #pole point
-            dd = arg.getpoles()
-            if dd:
-                for d in dd:
-                    x, y = d.toxy()
-                    h = self.ax.scatter(x, y, color=arg.color, zorder=3, **arg.poles)
-                handles.append(h)
-                labels.append('P ' + arg.name)
-        
-        # legend
-        if handles:
-            self.ax.legend(handles, labels, bbox_to_anchor=(1.03, 1), loc=2, borderaxespad=0., numpoints=1, scatterpoints=1)
-        
-        #density grid contours
-        if self.density:
-            divider = make_axes_locatable(self.ax)
-            cax = divider.append_axes("left", size="5%", pad=0.5)
-            cb = plt.colorbar(cs, cax=cax)
-            # modify tick labels
-            lbl = [item.get_text()+'S' for item in cb.ax.get_yticklabels()]
-            lbl[lbl.index(next(l for l in lbl if l.startswith('0')))] = 'E'
-            cb.set_ticklabels(lbl)
-        
-        #finish
-        plt.subplots_adjust(left=0.02,bottom=0.05,right=0.78,top=0.95)
-        self.fig.canvas.draw()
-        plt.show()
-        plt.ioff()
 
     def savefig(self, filename='schmidtnet.pdf'):
         plt.savefig(filename)
@@ -336,28 +286,43 @@ class SchmidtNet(object):
 
 class Density(object):
     """trida Density"""
-    def __init__(self, d, k=100, npoints=180):
+    def __init__(self, d, **kwargs):
         self.dcdata = np.asarray(d)
-        self.calculate(k, npoints)
+        self.calculate(**kwargs)
 
-    def calculate(self,k, npoints=180):
+    def calculate(self, **kwargs):
         import matplotlib.tri as tri
-        self.xg = 0
-        self.yg = 0
-        for rho in np.linspace(0,1,np.round(npoints/2/np.pi)):
-            theta = np.linspace(0,360,np.round(npoints*rho + 1))[:-1]
-            self.xg = np.hstack((self.xg,rho*sind(theta)))
-            self.yg = np.hstack((self.yg,rho*cosd(theta)))
-        self.dcgrid = np.asarray(getldc(*getldd(self.xg,self.yg)))
-        n = len(self.dcdata)
-        E = n/k  # some points on periphery are equivalent
-        s = np.sqrt((n*(0.5-1/k)/k)) 
-        w = np.zeros(len(self.xg))
+        # parse options
+        sigma = kwargs.get('sigma', 3)
+        ctn_points = kwargs.get('cnt_points', 180)
+        method = kwargs.get('method', 'exponential_kamb')
+
+        func = {'linear_kamb': _linear_inverse_kamb,
+                'square_kamb': _square_inverse_kamb,
+                'schmidt': _schmidt_count,
+                'kamb': _kamb_count,
+                'exponential_kamb': _exponential_kamb,
+                }[method]
+
+        self.xg = self.yg = 0
+        for rho in np.linspace(0, 1, np.round(ctn_points/2/np.pi)):
+            theta = np.linspace(0, 360, np.round(ctn_points*rho + 1))[:-1]
+            self.xg = np.hstack((self.xg, rho*sind(theta)))
+            self.yg = np.hstack((self.yg, rho*cosd(theta)))
+        self.dcgrid = l2v(*getldd(self.xg, self.yg)).T
+        n = self.dcgrid.shape[0]
+        self.density = np.zeros(n, dtype=np.float)
+        # weights are given by euclidean norms of data
+        weights = np.linalg.norm(self.dcdata, axis=1)
+        weights /= weights.mean()
         for i in range(n):
-            w += np.exp(k*(np.abs(np.dot(self.dcdata[i],self.dcgrid))-1))
-        self.density = (w-E)/s
+            dist = np.abs(np.dot(self.dcgrid[i], self.dcdata.T))
+            count, scale = func(dist, sigma)
+            count *= weights
+            self.density[i] = (count.sum() - 0.5) / scale
+        self.density[self.density < 0] = 0
         self.triang = tri.Triangulation(self.xg, self.yg)
-        
+
     def plot(self, N=6, cm=plt.cm.jet):
         plt.figure()
         plt.gca().set_aspect('equal')
@@ -365,19 +330,85 @@ class Density(object):
         plt.colorbar()
         plt.tricontour(self.triang, self.density, N, colors='k')
         plt.show()
-        
+
     def plotcountgrid(self):
         plt.figure()
         plt.gca().set_aspect('equal')
         plt.triplot(self.triang, 'bo-')
         plt.show()
 
+#----------------------------------------------------------------
+# Following counting routines are from Joe Kington's mplstereonet
+# https://github.com/joferkington/mplstereonet
+
+
+def _kamb_radius(n, sigma):
+    """Radius of kernel for Kamb-style smoothing."""
+    a = sigma**2 / (float(n) + sigma**2)
+    return (1 - a)
+
+
+def _kamb_units(n, radius):
+    """Normalization function for Kamb-style counting."""
+    return np.sqrt(n * radius * (1 - radius))
+
+
+# All of the following kernel functions return an _unsummed_ distribution and
+# a normalization factor
+def _exponential_kamb(cos_dist, sigma=3):
+    """Kernel function from Vollmer for exponential smoothing."""
+    n = float(cos_dist.size)
+    f = 2 * (1.0 + n / sigma**2)
+    count = np.exp(f * (cos_dist - 1))
+    units = np.sqrt(n * (f/2.0 - 1) / f**2)
+    return count, units
+
+
+def _linear_inverse_kamb(cos_dist, sigma=3):
+    """Kernel function from Vollmer for linear smoothing."""
+    n = float(cos_dist.size)
+    radius = _kamb_radius(n, sigma)
+    f = 2 / (1 - radius)
+    #cos_dist = cos_dist[cos_dist >= radius]
+    count = (f * (cos_dist - radius))
+    count[cos_dist < radius] = 0
+    return count, _kamb_units(n, radius)
+
+
+def _square_inverse_kamb(cos_dist, sigma=3):
+    """Kernel function from Vollemer for inverse square smoothing."""
+    n = float(cos_dist.size)
+    radius = _kamb_radius(n, sigma)
+    f = 3 / (1 - radius)**2
+    #cos_dist = cos_dist[cos_dist >= radius]
+    count = (f * (cos_dist - radius)**2)
+    count[cos_dist < radius] = 0
+    return count, _kamb_units(n, radius)
+
+
+def _kamb_count(cos_dist, sigma=3):
+    """Original Kamb kernel function (raw count within radius)."""
+    n = float(cos_dist.size)
+    dist = _kamb_radius(n, sigma)
+    count = (cos_dist >= dist)
+    return count, _kamb_units(n, dist)
+
+
+def _schmidt_count(cos_dist, sigma=None):
+    """Schmidt (a.k.a. 1%) counting kernel function."""
+    radius = 0.01
+    count = ((1 - cos_dist) <= radius)
+    # To offset the count.sum() - 0.5 required for the kamb methods...
+    count = 0.5 / count.size + count
+    return count, (cos_dist.size * radius)
+#------------------------------------------------------------------
+
 
 def format_coord(x, y):
-    if np.hypot(x,y) > 1:
+    if np.hypot(x, y) > 1:
         return ''
     else:
-        return 'S:{:0>3.0f}/{:0>2.0f}'.format(*getfdd(x,y)) + ' L:{:0>3.0f}/{:0>2.0f}'.format(*getldd(x,y))
+        return 'S:{:0>3.0f}/{:0>2.0f}'.format(*getfdd(x, y)) + ' L:{:0>3.0f}/{:0>2.0f}'.format(*getldd(x, y))
 
 
 def rose(a, bins=13, **kwargs):
@@ -391,4 +422,3 @@ def rose(a, bins=13, **kwargs):
     arad = a * np.pi / 180
     erad = np.linspace(0, 360, bins) * np.pi / 180
     plt.hist(arad, bins=erad, **kwargs)
-
