@@ -423,7 +423,8 @@ class Group(list):
         """Read group from csv file"""
         from os.path import basename
         dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
-        return cls.fromarray(dt[acol-1], dt[icol-1], typ=typ, name=basename(fname))
+        return cls.fromarray(dt[acol-1], dt[icol-1],
+                             typ=typ, name=basename(fname))
 
     def tocsv(self, fname, delimiter=','):
         np.savetxt(fname, self.dd.T, fmt='%g', delimiter=',', header=self.name)
@@ -447,7 +448,7 @@ class Group(list):
         return Group([e.asfol for e in self], name=self.name)
 
     @property
-    def resultant(self):
+    def R(self):
         """calculate resultant vector of Group"""
         r = deepcopy(self[0])
         for v in self[1:]:
@@ -455,11 +456,41 @@ class Group(list):
         return r
 
     @property
+    def Rbar(self):
+        """magnitude of resultant """
+        return abs(self.R)
+
+    @property
+    def var(self):
+        """Spherical variance"""
+        return 1 - self.Rbar/len(self)
+
+    @property
+    def kappa(self):
+        """Fisher's concentration parameter"""
+        N = len(self)
+        return (N - 1)/(N - self.Rbar)
+
+    def conf_cone(self, p=0.05):
+        """confidence cone about the resultant"""
+        N = len(self)
+        return acosd(1 - ((N - self.Rbar)/self.Rbar)*((1/p)**(1/(N-1)) - 1))
+
+    @property
+    def csd(self):
+        """cone containing ~63% of the data"""
+        return 81/np.sqrt(self.kappa)
+
+    @property
+    def delta(self):
+        """cone containing ~63% of the data"""
+        return acosd(self.Rbar/len(self))
+
+    @property
     def rdegree(self):
         """degree of preffered orientation od Group"""
-        r = self.resultant
-        n = len(self)
-        return 100*(2*abs(r) - n)/n
+        N = len(self)
+        return 100*(2*self.Rbar - N)/N
 
     def cross(self, other=None):
         """return cross products of all pairs in Group"""
@@ -552,15 +583,15 @@ class Group(list):
         azi = 0
         inc = 90
         for rho in np.linspace(0, 1, np.round(n/2/np.pi))[:-1]:
-            theta = np.linspace(0, 2*np.pi, np.round(n*rho + 1))[:-1]
-            x, y = rho*np.sin(theta), rho*np.cos(theta)
-            azi = np.hstack((azi, np.rad2deg(np.arctan2(x, y))))
-            inc = np.hstack((inc, 90 - 2*np.rad2deg(np.arcsin(np.sqrt((x*x + y*y)/2)))))
+            theta = np.linspace(0, 360, np.round(n*rho + 1))[:-1]
+            x, y = rho*sind(theta), rho*cosd(theta)
+            azi = np.hstack((azi, atan2d(x, y)))
+            inc = np.hstack((inc, 90 - 2*asind(np.sqrt((x*x + y*y)/2))))
         # no antipodal
-        theta = np.linspace(0, 2*np.pi, n + 1)[:-1]
-        x, y = np.sin(theta), np.cos(theta)
-        azi = np.hstack((azi, np.rad2deg(np.arctan2(x, y))[::2]))
-        inc = np.hstack((inc, 90 - 2*np.rad2deg(np.arcsin(np.sqrt((x*x + y*y)/2)))[::2]))
+        theta = np.linspace(0, 360, n + 1)[:-1]
+        x, y = sind(theta), cosd(theta)
+        azi = np.hstack((azi, atan2d(x, y))[::2])
+        inc = np.hstack((inc, 90 - 2*asind(np.sqrt((x*x + y*y)/2)))[::2])
         # fix
         inc[inc < 0] = 0
         return cls.fromarray(azi, inc, typ=Lin)
@@ -574,7 +605,7 @@ class Group(list):
 
 class Ortensor(object):
     """Ortensor class"""
-    def __init__(self, d):
+    def __init__(self, d, **kwargs):
         self.M = np.dot(np.array(d).T, np.array(d))
         self.n = len(d)
         vc, vv = np.linalg.eig(self.M)
@@ -584,8 +615,8 @@ class Ortensor(object):
         e1, e2, e3 = self.vals / self.n
         self.shape = np.log(e3 / e2) / np.log(e2 / e1)
         self.strength = np.log(e3 / e1)
-        self.norm = True
-        self.scaled = False
+        self.norm = kwargs.get('norm', True)
+        self.scaled = kwargs.get('scaled', False)
 
     def __repr__(self):
         return 'Ortensor:\n(E1:%.4g,E2:%.4g,E3:%.4g)' % tuple(self.vals) + \

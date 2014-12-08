@@ -226,9 +226,15 @@ class StereoNet(object):
         pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
         return Group([Fol(*getldd(x, y)) for x, y in pts])
 
-    def _cone(self, axis, vector, limit=180, res=361):
+    def _cone(self, axis, vector, limit=180, res=361, split=False):
         a = np.linspace(-limit, limit, res)
-        return l2xy(*v2l(rodrigues(axis, vector, a)))
+        x, y = l2xy(*v2l(rodrigues(axis, vector, a)))
+        if split:
+            dist = np.hypot(np.diff(x), np.diff(y))
+            ix = np.nonzero(dist > 1)[0]
+            x = np.insert(x, ix + 1, np.nan)
+            y = np.insert(y, ix + 1, np.nan)
+        return x, y
 
     def plane(self, obj, *args, **kwargs):
         assert obj.type is Fol, 'Only Fol instance could be plotted as plane.'
@@ -276,14 +282,15 @@ class StereoNet(object):
         self.draw()
         return h
 
-    def cone(self, obj, alpha):
+    def cone(self, obj, alpha, *args, **kwargs):
         assert obj.type is Lin, 'Only Lin instance could be used as cone axis.'
         if isinstance(obj, Group):
             x = []
             y = []
             for azi, inc in obj.dd.T:
                 xx, yy = self._cone(l2v(azi, inc), l2v(azi, inc-alpha),
-                                    limit=180, res=sind(alpha)*358+3)
+                                    limit=180, res=sind(alpha)*358+3,
+                                    split=True)
                 x = np.hstack((x, xx, np.nan))
                 y = np.hstack((y, yy, np.nan))
             x = x[:-1]
@@ -291,7 +298,7 @@ class StereoNet(object):
         else:
             azi, inc = obj.dd
             x, y = self._cone(l2v(azi, inc), l2v(azi, inc-alpha),
-                              limit=180, res=sind(alpha)*358+3)
+                              limit=180, res=sind(alpha)*358+3, split=True)
         h = self.ax.plot(x, y, *args, **kwargs)
         self.draw()
         return h

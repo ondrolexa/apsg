@@ -5,6 +5,9 @@ APSG - python module for structural geologists
 .. image:: https://badge.fury.io/py/apsg.svg
     :target: http://badge.fury.io/py/apsg
 
+.. image:: https://badge.fury.io/gh/ondrolexa%2Fapsg.svg
+    :target: http://badge.fury.io/gh/ondrolexa%2Fapsg
+
 APSG defines several new python classes to easily manage, analyze and visualize orientational structural geology data.
 
 * Free software: BSD license
@@ -155,7 +158,7 @@ Group class
 -----------
 
 ``Group`` class serve as a homogeneous container for ``Lin`` or ``Fol`` objects.
-It allows grouping of features either for visualization or batch analysis.
+It allows grouping of features either for visualization or batch analysis::
 
     >>> g = Group([Lin(120,60), Lin(116,50), Lin(132,45), Lin(90,60), Lin(84,52)],
                   name='L1')
@@ -167,16 +170,11 @@ Method ``len`` returns number of features in group::
     >>> len(g)
     5
 
-Property ``resultant`` gives mean or resultant of all features in group::
-
-    >>> g.resultant
-    L:110/55
-
 To measure angles between all features in group and another feature,
 we can use method ``angle``::
 
-    >>> g.angle(g.resultant)
-    array([  7.60329482,   6.24648167,  17.37186861,  11.6536752 ,  15.3996262 ])
+    >>> g.angle(Lin(110,50))
+    array([ 11.49989817,   3.85569115,  15.61367789,  15.11039885,  16.3947936 ])
 
 To rotate all features in group around another feature,
 we can use method ``rotate``::
@@ -187,6 +185,27 @@ To show data in list you can use ``data`` method::
 
     >>> gr.data
     [L:107/35, L:113/26, L:126/30, L:93/26, L:94/18]
+
+Property ``R`` gives mean or resultant of all features in group::
+
+    >>> g = Group.randn_lin(mean=Lin(40, 20))
+    >>> g.R
+    L:39/21
+
+``Group`` class offers several methods to infer spherical statistics as
+spherical variance, Fisher's concentration parameter, confidence cones on
+resultant or data etc:
+
+    >>> g.var
+    0.0637103650496047
+    >>> g.kappa
+    15.539072790262443
+    >>> g.conf_cone()
+    3.7054492756018123
+    >>> g.csd
+    20.548142386914282
+    >>> g.delta
+    20.562501451172906
 
 To calculate orientation tensor of all features in group,
 we can use method ``ortensor``::
@@ -220,11 +239,8 @@ and eigenfols::
 StereoNet class
 ---------------
 
-Any ``Fol``, ``Lin``, ``Vec3`` or ``Group`` object could be visualized
-in stereographic projection using mplstereonet (https://github.com/joferkington/mplstereonet),
-which must be accessible on current PYTHONPATH. Hi-level commands are adopted
-for APSG objects, while all original ``mplstereonet`` methods and properties
-are accessible trough 'ax' property::
+Any ``Fol``, ``Lin`` or ``Group`` object could be visualized as plane,
+line or pole in stereographic projection using StereoNet class::
 
     >>> s = StereoNet()
     >>> s.plane(Fol(150, 40))
@@ -236,11 +252,13 @@ are accessible trough 'ax' property::
     :alt: A basic stereonet with a plane, line and pole
     :align: center
 
-A ``Group`` object could be plotted as well::
+A cones (or small circles) could be plotted as well::
 
     >>> s = StereoNet()
-    >>> g = Group([Lin(120,60), Lin(116,50), Lin(132,45), Lin(95,52)])
-    >>> s.line(g, 'ro')
+    >>> g = Group.randn_lin(mean=Lin(40, 20))
+    >>> s.line(g, 'k.')
+    >>> s.cone(g.R, g.conf_cone(), 'r')  # confidence cone on resultant
+    >>> s.cone(g.R, g.csd, 'g')          # confidence cone on 63% of data
     >>> s.show()
 
 .. image:: http://ondrolexa.github.io/apsg/images/group.png

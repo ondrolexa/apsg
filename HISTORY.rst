@@ -17,5 +17,5 @@ History
 * new Pair and Fault classes to manipulate attached data
 * new uniform_lin and uniform_fol Group methods
 * abs for Group implemented to calculate euclidean norms
-* normalized method for group
-
+* new Group method normalized
+* new Group properties and methods to calculate spherical statistics
