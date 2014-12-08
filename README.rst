@@ -194,7 +194,7 @@ Property ``R`` gives mean or resultant of all features in group::
 
 ``Group`` class offers several methods to infer spherical statistics as
 spherical variance, Fisher's concentration parameter, confidence cones on
-resultant or data etc:
+resultant or data etc.::
 
     >>> g.var
     0.0637103650496047
@@ -248,20 +248,20 @@ line or pole in stereographic projection using StereoNet class::
     >>> s.line(Lin(112, 30))
     >>> s.show()
 
-.. image:: http://ondrolexa.github.io/apsg/images/plane-line-pole.png
+.. image:: http://ondrolexa.github.io/apsg/images/plane-line-pole_dev.png
     :alt: A basic stereonet with a plane, line and pole
     :align: center
 
 A cones (or small circles) could be plotted as well::
 
     >>> s = StereoNet()
-    >>> g = Group.randn_lin(mean=Lin(40, 20))
+    >>> g = Group.randn_lin(mean=Lin(40, 15))
     >>> s.line(g, 'k.')
     >>> s.cone(g.R, g.conf_cone(), 'r')  # confidence cone on resultant
     >>> s.cone(g.R, g.csd, 'g')          # confidence cone on 63% of data
     >>> s.show()
 
-.. image:: http://ondrolexa.github.io/apsg/images/group.png
+.. image:: http://ondrolexa.github.io/apsg/images/group_dev.png
     :alt: A basic stereonet group of linear features
     :align: center
 
@@ -275,7 +275,7 @@ methods are available::
     >>> s.line(g, 'wo')
     >>> s.show()
 
-.. image:: http://ondrolexa.github.io/apsg/images/density.png
+.. image:: http://ondrolexa.github.io/apsg/images/density_dev.png
     :alt: A density contour plot
     :align: center
 
@@ -295,7 +295,7 @@ Double cross product is allowed::
     >>> s.line(p**l**p, 'ro')
     >>> s.show()
 
-.. image:: http://ondrolexa.github.io/apsg/images/cross.png
+.. image:: http://ondrolexa.github.io/apsg/images/cross_dev.png
     :alt: A cross product tricks
     :align: center
 
@@ -312,6 +312,6 @@ Correct measurements of planar linear pairs::
     >>> s.line(pl.lin, 'go')
     >>> s.show()
 
-.. image:: http://ondrolexa.github.io/apsg/images/fixpair.png
+.. image:: http://ondrolexa.github.io/apsg/images/fixpair_dev.png
     :alt: Fix pair of plane and line
     :align: center
