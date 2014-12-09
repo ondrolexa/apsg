@@ -134,7 +134,7 @@ class StereoNetJK(object):
 
 class StereoNet(object):
     """StereoNet class for Schmidt net lower hemisphere plotting"""
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111)
         self.ax.format_coord = format_coord
@@ -142,6 +142,14 @@ class StereoNet(object):
         self.grid_style = kwargs.get('grid_style', 'k:')
         self._lgd = None
         self.cla()
+        # optionally immidiately plot passed objects
+        if args:
+            for n, arg in enumerate(args):
+                if type(arg) is Lin:
+                    self.line(arg, label='arg:%d'%(n + 1))
+                if type(arg) is Fol:
+                    self.plane(arg, label='arg:%d'%(n + 1))
+            self.show()
 
     def draw(self):
         h, l = self.ax.get_legend_handles_labels()

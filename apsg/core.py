@@ -81,7 +81,7 @@ class Vec3(np.ndarray):
         >>> u.angle(v)
         90.0
         """
-        return acosd(np.dot(self.uv, other.uv))
+        return acosd(np.clip(np.dot(self.uv, other.uv), -1, 1))
 
     def rotate(self, axis, phi):
         """Rotate vector phi degrees about axis::
@@ -207,7 +207,7 @@ class Lin(Vec3):
         >>> u.angle(v)
         90.0
         """
-        return acosd(abs(np.dot(self.uv, lin.uv)))
+        return acosd(abs(np.clip(np.dot(self.uv, lin.uv), -1, 1)))
 
     def cross(self, other):
         """Returns foliaton defined by two lineations
@@ -285,7 +285,7 @@ class Fol(Vec3):
         >>> u.angle(v)
         90.0
         """
-        return acosd(abs(np.dot(self.uv, fol.uv)))
+        return acosd(abs(np.clip(np.dot(self.uv, fol.uv), -1, 1)))
 
     def cross(self, other):
         """Returns lination defined as intersecton of two foliations
@@ -327,49 +327,87 @@ class Fol(Vec3):
 
 
 class Pair(object):
-    """Pair class store related Fol and Lin instances"""
-    def __init__(self, fol, lin):
-        assert isinstance(fol, Fol), \
-            'First fol parameter must be instance of Fol'
-        assert isinstance(lin, Lin), \
-            'Second lin parameter must be instance of Lin'
-        self.fol = fol
-        self.lin = lin
+    """Pair class store related Fol and Lin instances.
+    Both planar and linear feature is rotated, so linear feature perfectly
+    fit onto planar one.
+    """
+    def __init__(self, fazi, finc, lazi, linc):
+        fol = Fol(fazi, finc)
+        lin = Lin(lazi, linc)
+        misfit = 90 - fol.angle(lin)
+        if misfit > 20:
+            import warnings
+            warnings.warn('Warning: Misfit angle is %.1f degrees.' % misfit)
+        ax = fol**lin
+        ang = (Vec3(lin).angle(fol) - 90)/2
+        fol = fol.rotate(ax, ang)
+        lin = lin.rotate(ax, -ang)
+        self.fvec = Vec3(fol)
+        self.lvec = Vec3(lin)
+        self.misfit = misfit
 
     def __repr__(self):
         vals = self.fol.dd + self.lin.dd
         return 'P:{:.0f}/{:.0f}-{:.0f}/{:.0f}'.format(*vals)
 
+    def rotate(self, axis, phi):
+        rot = deepcopy(self)
+        rot.fvec = self.fvec.rotate(axis, phi)
+        rot.lvec = self.lvec.rotate(axis, phi)
+        return rot
+
     @property
-    def misfit(self):
-        return 90 - self.fol.angle(self.lin)
+    def fol(self):
+        return Fol(*self.fvec.asfol.dd)
 
-    def fit(self):
-        """Correct pair of planar and linear data.
-        Both planar and linear feature is rotated, so linear feature perfectly
-        fit onto planar one::
-
-            p.fit()
-        """
-        ax = self.fol ** self.lin
-        ang = (Vec3(self.lin).angle(self.fol) - 90)/2
-        self.fol = self.fol.rotate(ax, ang)
-        self.lin = self.lin.rotate(ax, -ang)
+    @property
+    def lin(self):
+        return Lin(*self.lvec.aslin.dd)
 
 
 class Fault(Pair):
     """Fault class for related Fol and Lin instances with sense of movement"""
-    def __init__(self, fol, lin, sense):
+    def __init__(self, fazi, finc, lazi, linc, sense):
         assert isinstance(sense, int), \
             'Third sense parameter must be positive or negative integer'
-        super(Fault, self).__init__(fol, lin)
-        misfit = 90 - self.fol.angle(self.lin)
-        assert misfit < 15, 'Lin deviate too much from Fol'
-        self.sense = 2*int(sense > 0) - 1
+        super(Fault, self).__init__(fazi, finc, lazi, linc)
+        sense = 2*int(sense > 0) - 1
+        ax = self.fvec**self.lvec
+        self.lvec = sense*self.lvec
+        self.pvec = self.fvec.rotate(ax, -45*sense)
+        self.tvec = self.fvec.rotate(ax, 45*sense)
 
     def __repr__(self):
-        vals = self.fol.dd + self.lin.dd + ([' -', '', ' +'][self.sense + 1],)
-        return 'F:{:.0f}/{:.0f}-{:.0f}/{:.0f}{:s}'.format(*vals)
+        s = ['', '+', '-'][self.sense]
+        vals = self.fol.dd + self.lin.dd + (s,)
+        return 'F:{:.0f}/{:.0f}-{:.0f}/{:.0f} {:s}'.format(*vals)
+
+    def rotate(self, axis, phi):
+        rot = deepcopy(self)
+        rot.fvec = self.fvec.rotate(axis, phi)
+        rot.lvec = self.lvec.rotate(axis, phi)
+        rot.pvec = self.pvec.rotate(axis, phi)
+        rot.tvec = self.tvec.rotate(axis, phi)
+        return rot
+
+    @property
+    def sense(self):
+        return 2*int(self.fvec**self.lvec == Vec3(self.fol**self.lin)) - 1
+
+    @property
+    def p(self):
+        """return P axis"""
+        return self.pvec.aslin
+
+    @property
+    def t(self):
+        """return T axis"""
+        return self.tvec.aslin
+
+    @property
+    def m(self):
+        """return kinematic M-plane"""
+        return (self.fvec**self.lvec).asfol
 
 
 class Group(list):
@@ -506,10 +544,8 @@ class Group(list):
         return Group([e.rotate(axis, phi) for e in self], name=self.name)
 
     def center(self):
-        """rotate E3 direction of Group to vertical"""
-        ot = self.ortensor
-        azi, inc = ot.eigenlins[2][0].dd
-        return self.rotate(Lin(azi - 90, 0), 90 - inc)
+        """rotate eigenvectors to axes of coordinate system"""
+        return self.transform(np.asarray(self.ortensor.eigenvects))
 
     def normalized(self):
         """return Group with normalized elements"""

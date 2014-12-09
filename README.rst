@@ -14,14 +14,14 @@ APSG defines several new python classes to easily manage, analyze and visualize 
 * Documentation: https://apsg.readthedocs.org.
 
 **APSG** defines several new python classes to easily manage, analyze
-and visualize orientational structural geology data. Base class ``Vec3``
-is derived from ``numpy.array`` class and affers several new method
+and visualize orientation structural geology data. Base class ``Vec3``
+is derived from ``numpy.array`` class and offers several new method
 which will be explained on following examples.
 
 Basic usage
 -----------
 
-APSG module could be imported either into own namespace or into
+APSG module could be imported either into own name space or into
 active one for easier interactive work::
 
     from apsg import *
@@ -53,7 +53,7 @@ and could be calculated using ``abs``::
     >>> abs(u+v)
     4.2426406871192848
 
-For *dot product* we can use multiplification operator ``*``
+For *dot product* we can use multiplication operator ``*``
 or ``dot`` method::
 
     >>> u*v
@@ -89,7 +89,7 @@ vector ``v`` for 45°::
 Classes Lin and Fol
 -------------------
 
-To work with orientational data in structural geology, APSG
+To work with orientation data in structural geology, APSG
 provide two classes derived from ``Vec3`` class. There is ``Fol``
 class to represent planar features by planes and ``Lin`` class
 to represent linear feature by lines. Both classes provide all
@@ -152,7 +152,67 @@ To rotate structural features we can use method ``rotate``::
 
     >>> p2.rotate(l2, 45)
     S:269/78
-    
+
+Classes Pair and Fault
+----------------------
+
+To work with paired orientation data like foliations and lineations
+or fault data in structural geology, APSG provide two base ``Pair``
+class and derived ``Fault`` class. Both classes are instantiated
+providing dip direction and dip of planar and linear measurements,
+which are automatically orthogonalized. If misfit is too high,
+warning is raised. The ``Fault`` class expects one more argument
+providing sense of movement information, either 1 or -1. 
+
+To create instance of ``Pair`` class, we have to provide
+dip direction and dip of planar and linear feature, both in degrees::
+
+    >>> p = Pair(120, 40, 162, 28)
+    >>> p
+    P:118/39-163/30
+    >>> p.misfit
+    3.5623168411508175
+    >>> type(p)
+    <class 'apsg.core.Pair'>
+
+Planar and linear features are accessible using ``fol`` and ``lin``
+properties::
+
+    >>> p.fol
+    S:118/39
+    >>> p.lin
+    L:163/30
+    >>> type(p.fol)
+    <class 'apsg.core.Fol'>
+    >>> type(p.lin)
+    <class 'apsg.core.Lin'>
+
+To rotate ``Pair`` instance we can use ``rotate`` method::
+
+    >>> p.rotate(Lin(45, 10), 60)
+    P:314/83-237/61
+
+Instantiation of ``Fault`` class is similar, we just have to provide argument
+to define sense of movement::
+
+    >>> f = Fault(120, 60, 110, 58, -1)  # -1 for normal fault
+    >>> f
+    F:120/59-110/59 -
+
+Note the change in sense of movement after ``Fault`` rotation::
+
+    >>> f.rotate(Lin(45, 10), 60)
+    F:312/62-340/59 +
+
+``Fault`` class also provide ``p``, ``t`` and ``m`` properties to get PT-axes
+and kinematic plane::
+
+    >>> f.p
+    L:315/75
+    >>> f.t
+    L:116/14
+    >>> f.m
+    S:27/85
 
 Group class
 -----------
@@ -219,8 +279,8 @@ Ortensor class
 ``Ortensor`` class represents orientation tensor of set of planar
 or linear features. Eigenvalues and eigenvectors could be obtained
 by methods ``eigenvals`` and ``eigenvects``. Eigenvectors could be also
-represented by linear or planar features using properties eigenlins
-and eigenfols::
+represented by linear or planar features using properties ``eigenlins``
+and ``eigenfols``::
 
     >>> ot = Ortensor(g)
     >>> ot.eigenvals
@@ -244,7 +304,7 @@ line or pole in stereographic projection using StereoNet class::
     >>> s.line(Lin(112, 30))
     >>> s.show()
 
-.. image:: http://ondrolexa.github.io/apsg/images/plane-line-pole_dev.png
+.. image:: http://ondrolexa.github.io/apsg/images/plane-line-pole_020.png
     :alt: A basic stereonet with a plane, line and pole
     :align: center
 
@@ -257,7 +317,7 @@ A cones (or small circles) could be plotted as well::
     >>> s.cone(g.R, g.fisher_stats['csd'], 'g')  # confidence cone on 63% of data
     >>> s.show()
 
-.. image:: http://ondrolexa.github.io/apsg/images/group_dev.png
+.. image:: http://ondrolexa.github.io/apsg/images/group_020.png
     :alt: A basic stereonet group of linear features
     :align: center
 
@@ -271,43 +331,36 @@ methods are available::
     >>> s.line(g, 'wo')
     >>> s.show()
 
-.. image:: http://ondrolexa.github.io/apsg/images/density_dev.png
+.. image:: http://ondrolexa.github.io/apsg/images/density_020.png
     :alt: A density contour plot
     :align: center
 
 Some tricks
 -----------
 
-Double cross product is allowed::
+Double cross product is allowed (note quick plot feature)::
 
-    >>> s = StereoNet()
     >>> p = Fol(250,40)
     >>> l = Lin(160,25)
-    >>> s.plane(p, 'b')
-    >>> s.line(l, 'bo')
-    >>> s.plane(l**p, 'g')
-    >>> s.line(p**l, 'go')
-    >>> s.plane(l**p**l, 'r')
-    >>> s.line(p**l**p, 'ro')
-    >>> s.show()
+    >>> StereoNet(p, l, l**p, p**l, l**p**l, p**l**p)
 
-.. image:: http://ondrolexa.github.io/apsg/images/cross_dev.png
+.. image:: http://ondrolexa.github.io/apsg/images/cross_020.png
     :alt: A cross product tricks
     :align: center
 
-Correct measurements of planar linear pairs::
+Correct measurements of planar linear pairs by instantiation
+of Pair class::
 
-    >>> pl = Pair(p,l)
+    >>> pl = Pair(250, 40, 160, 25)
     >>> pl.misfit
     18.889520432245405
     >>> s = StereoNet()
-    >>> s.plane(pl.fol, 'b')
-    >>> s.line(pl.lin, 'bo')
-    >>> pl.fit()
+    >>> s.plane(Fol(250, 40), 'b')
+    >>> s.line(Lin(160, 25), 'bo')
     >>> s.plane(pl.fol, 'g')
     >>> s.line(pl.lin, 'go')
     >>> s.show()
 
-.. image:: http://ondrolexa.github.io/apsg/images/fixpair_dev.png
+.. image:: http://ondrolexa.github.io/apsg/images/fixpair_020.png
     :alt: Fix pair of plane and line
     :align: center
