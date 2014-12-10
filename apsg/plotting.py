@@ -152,9 +152,9 @@ class StereoNet(object):
                     typ = type(arg)
                     cnt = ''
                 if typ is Lin:
-                    self.line(arg, label='%2d-L' % n + cnt)
+                    self.line(arg, label='%2d-L' % (n + 1) + cnt)
                 if typ is Fol:
-                    self.plane(arg, label='%2d-S' % n + cnt)
+                    self.plane(arg, label='%2d-S' % (n + 1) + cnt)
             self.show()
 
     def draw(self):

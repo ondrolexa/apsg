@@ -20,3 +20,8 @@ History
 * abs for Group implemented to calculate euclidean norms
 * new Group method normalized
 * new Group properties and methods to calculate spherical statistics
+
+0.2.1 (09 Dec 2014)
+---------------------
+
+* Quick plotting of groups fixed.
