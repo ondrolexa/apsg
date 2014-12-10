@@ -145,18 +145,25 @@ class StereoNet(object):
         # optionally immidiately plot passed objects
         if args:
             for n, arg in enumerate(args):
-                if type(arg) is Lin:
-                    self.line(arg, label='arg:%d'%(n + 1))
-                if type(arg) is Fol:
-                    self.plane(arg, label='arg:%d'%(n + 1))
+                if type(arg) is Group:
+                    typ = arg.type
+                    cnt = '(%d)' % len(arg)
+                else:
+                    typ = type(arg)
+                    cnt = ''
+                if typ is Lin:
+                    self.line(arg, label='%2d-L' % n + cnt)
+                if typ is Fol:
+                    self.plane(arg, label='%2d-S' % n + cnt)
             self.show()
 
     def draw(self):
         h, l = self.ax.get_legend_handles_labels()
         if h:
             self._lgd = self.ax.legend(h, l, bbox_to_anchor=(1.12, 1),
-                                       loc=2, borderaxespad=0.,
-                                       numpoints=1, scatterpoints=1)
+                                       prop={'size': 11}, loc=2,
+                                       borderaxespad=0, scatterpoints=1,
+                                       numpoints=1)
             plt.subplots_adjust(right=0.75)
         else:
             plt.subplots_adjust(right=0.9)
@@ -343,9 +350,6 @@ class StereoNet(object):
         #cb.set_ticklabels(lbl)
 
     def show(self):
-        #legend adjustment
-        #self.ax.legend(handles, labels, bbox_to_anchor=(1.03, 1), loc=2, borderaxespad=0., numpoints=1, scatterpoints=1)
-        #plt.subplots_adjust(left=0.02, bottom=0.05, right=0.78, top=0.95)
         plt.show()
 
     def savefig(self, filename='apsg_stereonet.pdf'):
