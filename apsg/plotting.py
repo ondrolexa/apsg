@@ -11,7 +11,7 @@ try:
 except ImportError:
     pass
 
-from .core import Vec3, Fol, Lin, Group, Ortensor
+from .core import Vec3, Fol, Lin, Pair, Fault, Group, Ortensor
 from .helpers import *
 
 
@@ -87,31 +87,35 @@ class StereoNetJK(object):
         self.draw()
 
     def density_contour(self, group, *args, **kwargs):
-        assert type(group) is Group, 'Only group of data could be used for contouring.'
+        assert type(group) is Group, 'Only group could be used for contouring.'
         if group.type is Lin:
             bearings, plunges = group.dd
             kwargs['measurement'] = 'lines'
-            self._cax = self._ax.density_contour(plunges, bearings, *args, **kwargs)
+            self._cax = self._ax.density_contour(plunges, bearings,
+                                                 *args, **kwargs)
             plt.draw()
         elif group.type is Fol:
             strikes, dips = group.rhr
             kwargs['measurement'] = 'poles'
-            self._cax = self._ax.density_contour(strikes, dips, *args, **kwargs)
+            self._cax = self._ax.density_contour(strikes, dips,
+                                                 *args, **kwargs)
             plt.draw()
         else:
             raise 'Only Fol or Lin group is allowed.'
 
     def density_contourf(self, group, *args, **kwargs):
-        assert type(group) is Group, 'Only group of data could be used for contouring.'
+        assert type(group) is Group, 'Only group could be used for contouring.'
         if group.type is Lin:
             bearings, plunges = group.dd
             kwargs['measurement'] = 'lines'
-            self._cax = self._ax.density_contourf(plunges, bearings, *args, **kwargs)
+            self._cax = self._ax.density_contourf(plunges, bearings,
+                                                  *args, **kwargs)
             plt.draw()
         elif group.type is Fol:
             strikes, dips = group.rhr
             kwargs['measurement'] = 'poles'
-            self._cax = self._ax.density_contourf(strikes, dips, *args, **kwargs)
+            self._cax = self._ax.density_contourf(strikes, dips,
+                                                  *args, **kwargs)
             plt.draw()
         else:
             raise 'Only Fol or Lin group is allowed.'
@@ -251,6 +255,17 @@ class StereoNet(object):
             y = np.insert(y, ix + 1, np.nan)
         return x, y
 
+    def _arrow(self, pos_lin,  dir_lin=None, sense=1): 
+        x, y = l2xy(*pos_lin.dd)
+        if dir_lin is None:
+            dx, dy = -x, -y
+        else:
+            ax, ay = l2xy(*dir_lin.dd)
+            dx, dy = -ax, -ay
+        mag = np.hypot(dx, dy)
+        u, v = sense * dx / mag, sense * dy / mag
+        arrows = self.ax.quiver(x, y, u, v, width=1, headwidth=4, units='dots')
+
     def plane(self, obj, *args, **kwargs):
         assert obj.type is Fol, 'Only Fol instance could be plotted as plane.'
         if isinstance(obj, Group):
@@ -317,6 +332,19 @@ class StereoNet(object):
         h = self.ax.plot(x, y, *args, **kwargs)
         self.draw()
         return h
+
+    def fault(self, obj, *arg, **kwargs):
+        """Plot a fault-and-striae plot"""
+        assert obj.type is Fault, 'Only Fault instance could be used.'
+        self.plane(obj.fol, *arg, **kwargs)
+        self._arrow(obj.lin, sense = obj.sense)
+        self.draw()
+
+    def hoeppner(self, obj, *arg, **kwargs):
+        """Plot a tangent lineation plot"""
+        assert obj.type is Fault, 'Only Fault instance could be used.'
+        self._arrow(obj.fvec.aslin, dir_lin=obj.lin, sense = -obj.sense)
+        self.draw()
 
     def contourf(self, obj, *args, **kwargs):
         if 'cmap' not in kwargs and 'colors' not in kwargs:

@@ -30,7 +30,7 @@ class TestApsg(unittest.TestCase):
         self.assertTrue(np.allclose(g.rotate(Lin(45, 45), 90).rdegree, g.rdegree))
 
     def test_resultant_rdegree(self):
-        g = Group.fromarray([45, 135, 225, 315], [45, 45, 45, 45])
+        g = Group.from_array([45, 135, 225, 315], [45, 45, 45, 45])
         c1 = g.resultant.uv == Lin(0, 90)
         c2 = np.allclose(abs(g.resultant), np.sqrt(8))
         c3 = np.allclose((g.rdegree/100 + 1)**2, 2)

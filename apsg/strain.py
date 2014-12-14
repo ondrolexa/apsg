@@ -19,7 +19,8 @@ class DefGrad(np.ndarray):
         return 'DefGrad:\n' + str(self)
 
     def __mul__(self, other):
-        assert np.shape(other) == (3, 3), 'DefGrad could by multiplied with 3x3 2D array'
+        assert np.shape(other) == (3, 3), \
+               'DefGrad could by multiplied with 3x3 2D array'
         return np.dot(self, other)
 
     def __pow__(self, n):

@@ -357,6 +357,10 @@ class Pair(object):
         return rot
 
     @property
+    def type(self):
+        return type(self)
+
+    @property
     def fol(self):
         return Fol(*self.fvec.asfol.dd)
 
@@ -457,18 +461,18 @@ class Group(list):
         return list(self)
 
     @classmethod
-    def fromcsv(cls, fname, typ=Lin, delimiter=',', acol=1, icol=2):
+    def from_csv(cls, fname, typ=Lin, delimiter=',', acol=1, icol=2):
         """Read group from csv file"""
         from os.path import basename
         dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
-        return cls.fromarray(dt[acol-1], dt[icol-1],
+        return cls.from_array(dt[acol-1], dt[icol-1],
                              typ=typ, name=basename(fname))
 
-    def tocsv(self, fname, delimiter=','):
+    def to_csv(self, fname, delimiter=','):
         np.savetxt(fname, self.dd.T, fmt='%g', delimiter=',', header=self.name)
 
     @classmethod
-    def fromarray(cls, azis, incs, typ=Lin, name='Default'):
+    def from_array(cls, azis, incs, typ=Lin, name='Default'):
         """Create dataset from arrays of dip directions and dips"""
         data = []
         for azi, inc in zip(azis, incs):
@@ -621,13 +625,110 @@ class Group(list):
         inc = np.hstack((inc, 90 - 2*asind(np.sqrt((x*x + y*y)/2)))[::2])
         # fix
         inc[inc < 0] = 0
-        return cls.fromarray(azi, inc, typ=Lin)
+        return cls.from_array(azi, inc, typ=Lin)
 
     @classmethod
     def uniform_fol(cls, N=500):
         l = cls.uniform_lin(N=N)
         azi, inc = l.dd
-        return cls.fromarray(azi+180, 90-inc, typ=Fol)
+        return cls.from_array(azi+180, 90-inc, typ=Fol)
+
+
+class FaultSet(list):
+    """FaultSet class
+    FaultSet is group of Pair or Fault
+    """
+    def __init__(self, data, name='Default'):
+        assert issubclass(type(data), list), 'Argument must be list of data.'
+        assert len(data) > 0, 'Empty FaultSet is not allowed.'
+        tp = type(data[0])
+        assert issubclass(tp, Pair), 'Data must be Pair or Fault type.'
+        assert all([isinstance(e, tp) for e in data]), \
+            'All data in FaultSet must be of same type.'
+        super(FaultSet, self).__init__(data)
+        self.type = tp
+        self.name = name
+
+    def __repr__(self):
+        return '%s: %g %s' % (self.name, len(self), self.type.__name__)
+
+    def __add__(self, other):
+        # merge Datasets
+        assert isinstance(other, FaultSet), 'Only FaultSets could be merged'
+        assert self.type is other.type, 'Only FaultSet could be merged'
+        return FaultSet(list(self) + other, name=self.name)
+
+    def __setitem__(self, key, value):
+        assert isinstance(value, self.type), \
+            'item is not of type %s' % self.type.__name__
+        super(FaultSet, self).__setitem__(key, value)
+
+    def append(self, item):
+        assert isinstance(item, self.type), \
+            'item is not of type %s' % self.type.__name__
+        super(FaultSet, self).append(item)
+
+    def extend(self, items=()):
+        for item in items:
+            self.append(item)
+
+    @property
+    def data(self):
+        return list(self)
+
+    def rotate(self, axis, phi):
+        """rotate Group"""
+        return FaultSet([f.rotate(axis, phi) for f in self], name=self.name)
+
+    # TODO
+    @classmethod
+    def from_csv(cls, fname, typ=Lin, delimiter=',',
+                facol=1, ficol=2, lacol=3, licol=4):
+        """Read FaultSet from csv file"""
+        from os.path import basename
+        dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
+        return cls.from_array(dt[acol-1], dt[icol-1],
+                             typ=typ, name=basename(fname))
+
+    def to_csv(self, fname, delimiter=','):
+        np.savetxt(fname, self.dd.T, fmt='%g', delimiter=',', header=self.name)
+
+    @classmethod
+    def from_array(cls, azis, incs, typ=Lin, name='Default'):
+        """Create dataset from arrays of dip directions and dips"""
+        data = []
+        for azi, inc in zip(azis, incs):
+            data.append(typ(azi, inc))
+        return cls(data, name=name)
+
+    @property
+    def lin(self):
+        """Return Lin part of pair as Group"""
+        return Group([e.lin for e in self], name=self.name)
+
+    @property
+    def fol(self):
+        """Return Fol part of pair as Group"""
+        return Group([e.fol for e in self], name=self.name)
+
+    @property
+    def sense(self):
+        return np.array([f.sense for f in self])
+
+    @property
+    def p(self):
+        """Return p-axes of pair as Group"""
+        return Group([e.p for e in self], name=self.name)
+
+    @property
+    def t(self):
+        """Return t-axes of pa6ir as Group"""
+        return Group([e.t for e in self], name=self.name)
+
+    @property
+    def m(self):
+        """Return m-planes of pair as Group"""
+        return Group([e.m for e in self], name=self.name)
 
 
 class Ortensor(object):
