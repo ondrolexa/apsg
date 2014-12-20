@@ -368,6 +368,12 @@ class Pair(object):
     def lin(self):
         return Lin(*self.lvec.aslin.dd)
 
+    def transform(self, F):
+        t = deepcopy(self)
+        t.lvec = np.dot(F, t.lvec).view(Vec3)
+        t.fvec = np.dot(t.fvec, np.linalg.inv(F)).view(Vec3)
+        return t
+        
 
 class Fault(Pair):
     """Fault class for related Fol and Lin instances with sense of movement"""
@@ -653,7 +659,7 @@ class FaultSet(list):
         return '%s: %g %s' % (self.name, len(self), self.type.__name__)
 
     def __add__(self, other):
-        # merge Datasets
+        # merge sets
         assert isinstance(other, FaultSet), 'Only FaultSets could be merged'
         assert self.type is other.type, 'Only FaultSet could be merged'
         return FaultSet(list(self) + other, name=self.name)

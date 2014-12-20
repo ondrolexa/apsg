@@ -66,3 +66,42 @@ class DefGrad(np.ndarray):
         R = DefGrad.from_axis(vector, theta)
         return R*self*R.T
 
+
+class VelGrad(np.ndarray):
+    """class to store  velocity gradient tensor derived from numpy.ndarray
+    """
+    def __new__(cls, array):
+        # casting to our class
+        assert np.shape(array) == (3, 3), 'VelGrad must be 3x3 2D array'
+        obj = np.asarray(array).view(cls)
+        return obj
+
+    def __repr__(self):
+        return 'DefGrad:\n' + str(self)
+
+    def __pow__(self, n):
+        # cross product or power of magnitude
+        assert np.isscalar(n), 'Exponent must be integer.'
+        return np.linalg.matrix_power(self, n)
+
+    def __eq__(self, other):
+        # equal
+        return bool(np.sum(abs(self-other)) < 1e-14)
+
+    def __ne__(self, other):
+        # not equal
+        return not self == other
+
+    @classmethod
+    def from_comp(cls,
+                  xx=0, xy=0, xz=0,
+                  yx=0, yy=0, yz=0,
+                  zx=0, zy=0, zz=0):
+        return cls([
+                [xx, xy, xz],
+                [yx, yy, yz],
+                [zx, zy, zz]])
+
+    def defgrad(self, time=1):
+        from scipy.linalg import expm
+        return DefGrad(expm(self*time))
