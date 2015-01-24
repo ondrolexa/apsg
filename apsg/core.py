@@ -612,7 +612,7 @@ class Group(list):
         ta, td = mean.dd
         for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
             data.append(Fol(0, 0).rotate(Lin(azi, 0), dip))
-        return cls(d).rotate(Lin(ta-90, 0), td)
+        return cls(data).rotate(Lin(ta-90, 0), td)
 
     @classmethod
     def uniform_lin(cls, N=500):
