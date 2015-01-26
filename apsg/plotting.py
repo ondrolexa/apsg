@@ -11,8 +11,8 @@ try:
 except ImportError:
     pass
 
-from .core import Vec3, Fol, Lin, Pair, Fault, Group, Ortensor
-from .helpers import *
+from .core import Fol, Lin, Fault, Group
+from .helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 
 
 class StereoNetJK(object):
@@ -123,11 +123,11 @@ class StereoNetJK(object):
     def colorbar(self):
         if self._cax is not None:
             cbaxes = self._ax.figure.add_axes([0.015, 0.2, 0.02, 0.6])
-            cb = plt.colorbar(self._cax, cax=cbaxes)
+            plt.colorbar(self._cax, cax=cbaxes)
 
     def savefig(self, filename='stereonet.pdf'):
         if self._lgd is None:
-            self._ax.figure.savefig(filen1ame)
+            self._ax.figure.savefig(filename)
         else:
             self._ax.figure.savefig(filename, bbox_extra_artists=(self._lgd,),
                                     bbox_inches='tight')
@@ -141,7 +141,7 @@ class StereoNet(object):
     def __init__(self, *args, **kwargs):
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111)
-        self.ax.format_coord = format_coord
+        self.ax.format_coord = self.format_coord
         self.grid = kwargs.get('grid', True)
         self.grid_style = kwargs.get('grid_style', 'k:')
         self._lgd = None
@@ -255,7 +255,7 @@ class StereoNet(object):
             y = np.insert(y, ix + 1, np.nan)
         return x, y
 
-    def _arrow(self, pos_lin,  dir_lin=None, sense=1): 
+    def _arrow(self, pos_lin,  dir_lin=None, sense=1):
         x, y = l2xy(*pos_lin.dd)
         if dir_lin is None:
             dx, dy = -x, -y
@@ -264,7 +264,7 @@ class StereoNet(object):
             dx, dy = -ax, -ay
         mag = np.hypot(dx, dy)
         u, v = sense * dx / mag, sense * dy / mag
-        arrows = self.ax.quiver(x, y, u, v, width=1, headwidth=4, units='dots')
+        self.ax.quiver(x, y, u, v, width=1, headwidth=4, units='dots')
 
     def plane(self, obj, *args, **kwargs):
         assert obj.type is Fol, 'Only Fol instance could be plotted as plane.'
@@ -337,13 +337,13 @@ class StereoNet(object):
         """Plot a fault-and-striae plot"""
         assert obj.type is Fault, 'Only Fault instance could be used.'
         self.plane(obj.fol, *arg, **kwargs)
-        self._arrow(obj.lin, sense = obj.sense)
+        self._arrow(obj.lin, sense=obj.sense)
         self.draw()
 
     def hoeppner(self, obj, *arg, **kwargs):
         """Plot a tangent lineation plot"""
         assert obj.type is Fault, 'Only Fault instance could be used.'
-        self._arrow(obj.fvec.aslin, dir_lin=obj.lin, sense = -obj.sense)
+        self._arrow(obj.fvec.aslin, dir_lin=obj.lin, sense=-obj.sense)
         self.draw()
 
     def contourf(self, obj, *args, **kwargs):
@@ -371,8 +371,9 @@ class StereoNet(object):
     def _add_colorbar(self, cs):
         divider = make_axes_locatable(self.ax)
         cax = divider.append_axes("left", size="5%", pad=0.5)
-        cb = plt.colorbar(cs, cax=cax)
+        plt.colorbar(cs, cax=cax)
         # modify tick labels
+        #cb = plt.colorbar(cs, cax=cax)
         #lbl = [item.get_text()+'S' for item in cb.ax.get_yticklabels()]
         #lbl[lbl.index(next(l for l in lbl if l.startswith('0')))] = 'E'
         #cb.set_ticklabels(lbl)
@@ -382,11 +383,18 @@ class StereoNet(object):
 
     def savefig(self, filename='apsg_stereonet.pdf'):
         if self._lgd is None:
-            self.ax.figure.savefig(filen1ame)
+            self.ax.figure.savefig(filename)
         else:
             self.ax.figure.savefig(filename, bbox_extra_artists=(self._lgd,),
                                    bbox_inches='tight')
         plt.savefig(filename)
+
+    def format_coord(self, x, y):
+        if np.hypot(x, y) > 1:
+            return ''
+        else:
+            vals = getfdd(x, y) + getldd(x, y)
+            return 'S:{:0>3.0f}/{:0>2.0f} L:{:0>3.0f}/{:0>2.0f}'.format(*vals)
 
 
 class Density(object):
@@ -507,14 +515,6 @@ def _schmidt_count(cos_dist, sigma=None):
     count = 0.5 / count.size + count
     return count, (cos_dist.size * radius)
 #------------------------------------------------------------------
-
-
-def format_coord(x, y):
-    if np.hypot(x, y) > 1:
-        return ''
-    else:
-        vals = getfdd(x, y) + getldd(x, y)
-        return 'S:{:0>3.0f}/{:0>2.0f} L:{:0>3.0f}/{:0>2.0f}'.format(*vals)
 
 
 def rose(a, bins=13, **kwargs):

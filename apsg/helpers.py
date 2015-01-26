@@ -48,5 +48,5 @@ def l2xy(azi, inc):
 
 
 def rodrigues(k, v, theta):
-     return v*cosd(theta) + np.cross(k.T, v.T).T*sind(theta) + \
-            k*np.dot(k.T, v) * (1-cosd(theta))
+    return v*cosd(theta) + np.cross(k.T, v.T).T*sind(theta) + \
+        k*np.dot(k.T, v) * (1-cosd(theta))

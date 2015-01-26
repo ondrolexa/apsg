@@ -8,7 +8,7 @@ from __future__ import division, print_function
 from copy import deepcopy
 
 import numpy as np
-from .helpers import *
+from .helpers import sind, cosd, acosd, asind, atan2d
 
 
 class Vec3(np.ndarray):
@@ -373,7 +373,7 @@ class Pair(object):
         t.lvec = np.dot(F, t.lvec).view(Vec3)
         t.fvec = np.dot(t.fvec, np.linalg.inv(F)).view(Vec3)
         return t
-        
+
 
 class Fault(Pair):
     """Fault class for related Fol and Lin instances with sense of movement"""
@@ -472,7 +472,7 @@ class Group(list):
         from os.path import basename
         dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
         return cls.from_array(dt[acol-1], dt[icol-1],
-                             typ=typ, name=basename(fname))
+                              typ=typ, name=basename(fname))
 
     def to_csv(self, fname, delimiter=','):
         np.savetxt(fname, self.dd.T, fmt='%g', delimiter=',', header=self.name)
@@ -686,15 +686,15 @@ class FaultSet(list):
         """rotate Group"""
         return FaultSet([f.rotate(axis, phi) for f in self], name=self.name)
 
-    # TODO
+    # TODO from_csv and from_array
     @classmethod
     def from_csv(cls, fname, typ=Lin, delimiter=',',
-                facol=1, ficol=2, lacol=3, licol=4):
+                 facol=1, ficol=2, lacol=3, licol=4):
         """Read FaultSet from csv file"""
         from os.path import basename
         dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
-        return cls.from_array(dt[acol-1], dt[icol-1],
-                             typ=typ, name=basename(fname))
+        return cls.from_array(dt[facol-1], dt[ficol-1],
+                              typ=typ, name=basename(fname))
 
     def to_csv(self, fname, delimiter=','):
         np.savetxt(fname, self.dd.T, fmt='%g', delimiter=',', header=self.name)
@@ -776,10 +776,8 @@ class Ortensor(object):
 
     @property
     def eigenlins(self):
-        v1, v2, v3 = self.eigenvects
-        return Group([v1.aslin, v2.aslin, v3.aslin])
+        return self.eigenvects.aslin
 
     @property
     def eigenfols(self):
-        v1, v2, v3 = self.eigenvects
-        return Group([v1.asfol, v2.asfol, v3.asfol])
+        return self.eigenvects.asfol

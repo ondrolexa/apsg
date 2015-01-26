@@ -3,7 +3,8 @@
 from __future__ import division, print_function
 
 import numpy as np
-from .helpers import *
+from .core import Vec3, Group
+from .helpers import sind, cosd
 
 
 class DefGrad(np.ndarray):
@@ -20,7 +21,7 @@ class DefGrad(np.ndarray):
 
     def __mul__(self, other):
         assert np.shape(other) == (3, 3), \
-               'DefGrad could by multiplied with 3x3 2D array'
+            'DefGrad could by multiplied with 3x3 2D array'
         return np.dot(self, other)
 
     def __pow__(self, n):
@@ -44,9 +45,9 @@ class DefGrad(np.ndarray):
         xc, yc, zc = x*(1-c), y*(1-c), z*(1-c)
         xyc, yzc, zxc = x*yc, y*zc, z*xc
         return cls([
-                [x*xc+c, xyc-zs, zxc+ys],
-                [xyc+zs, y*yc+c, yzc-xs],
-                [zxc-ys, yzc+xs, z*zc+c]])
+            [x*xc+c, xyc-zs, zxc+ys],
+            [xyc+zs, y*yc+c, yzc-xs],
+            [zxc-ys, yzc+xs, z*zc+c]])
 
     @classmethod
     def from_comp(cls,
@@ -54,9 +55,9 @@ class DefGrad(np.ndarray):
                   yx=0, yy=1, yz=0,
                   zx=0, zy=0, zz=1):
         return cls([
-                [xx, xy, xz],
-                [yx, yy, yz],
-                [zx, zy, zz]])
+            [xx, xy, xz],
+            [yx, yy, yz],
+            [zx, zy, zz]])
 
     @property
     def I(self):
@@ -65,6 +66,26 @@ class DefGrad(np.ndarray):
     def rotate(self, vector, theta):
         R = DefGrad.from_axis(vector, theta)
         return R*self*R.T
+
+    @property
+    def eigenvals(self):
+        _, vals, _ = np.linalg.svd(self)
+        return tuple(vals)
+
+    @property
+    def eigenvects(self):
+        U, _, _ = np.linalg.svd(self)
+        return Group([Vec3(U.T[0]),
+                      Vec3(U.T[1]),
+                      Vec3(U.T[2])])
+
+    @property
+    def eigenlins(self):
+        return self.eigenvects.aslin
+
+    @property
+    def eigenfols(self):
+        return self.eigenvects.asfol
 
 
 class VelGrad(np.ndarray):
@@ -77,7 +98,7 @@ class VelGrad(np.ndarray):
         return obj
 
     def __repr__(self):
-        return 'DefGrad:\n' + str(self)
+        return 'VelGrad:\n' + str(self)
 
     def __pow__(self, n):
         # cross product or power of magnitude
@@ -98,9 +119,9 @@ class VelGrad(np.ndarray):
                   yx=0, yy=0, yz=0,
                   zx=0, zy=0, zz=0):
         return cls([
-                [xx, xy, xz],
-                [yx, yy, yz],
-                [zx, zy, zz]])
+            [xx, xy, xz],
+            [yx, yy, yz],
+            [zx, zy, zz]])
 
     def defgrad(self, time=1):
         from scipy.linalg import expm
