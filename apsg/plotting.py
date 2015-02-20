@@ -151,14 +151,14 @@ class StereoNet(object):
             for n, arg in enumerate(args):
                 if type(arg) is Group:
                     typ = arg.type
-                    cnt = '(%d)' % len(arg)
+                    cnt = '({:d}})'.format(len(arg))
                 else:
                     typ = type(arg)
-                    cnt = ''
+                    cnt = ':{:.0f}/{:.0f}'.format(*arg.dd)
                 if typ is Lin:
-                    self.line(arg, label='%2d-L' % (n + 1) + cnt)
+                    self.line(arg, label='{:2d}-L'.format(n + 1) + cnt)
                 if typ is Fol:
-                    self.plane(arg, label='%2d-S' % (n + 1) + cnt)
+                    self.plane(arg, label='{:2d}-S'.format(n + 1) + cnt)
             self.show()
 
     def draw(self):
