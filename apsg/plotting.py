@@ -151,7 +151,7 @@ class StereoNet(object):
             for n, arg in enumerate(args):
                 if type(arg) is Group:
                     typ = arg.type
-                    cnt = '({:d}})'.format(len(arg))
+                    cnt = '({:d})'.format(len(arg))
                 else:
                     typ = type(arg)
                     cnt = ':{:.0f}/{:.0f}'.format(*arg.dd)
