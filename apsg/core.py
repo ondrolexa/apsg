@@ -468,7 +468,7 @@ class Group(list):
 
     @classmethod
     def from_csv(cls, fname, typ=Lin, delimiter=',', acol=1, icol=2):
-        """Read group from csv file"""
+        """Create group from csv file"""
         from os.path import basename
         dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
         return cls.from_array(dt[acol-1], dt[icol-1],
@@ -479,10 +479,9 @@ class Group(list):
 
     @classmethod
     def from_array(cls, azis, incs, typ=Lin, name='Default'):
-        """Create dataset from arrays of dip directions and dips"""
+        """Create group from arrays of dip directions and dips"""
         data = []
-        for azi, inc in zip(azis, incs):
-            data.append(typ(azi, inc))
+        data = [typ(azi, inc) for azi, inc in zip(azis, incs)]
         return cls(data, name=name)
 
     @property
@@ -781,3 +780,12 @@ class Ortensor(object):
     @property
     def eigenfols(self):
         return self.eigenvects.asfol
+
+
+# HELPERS #
+def G(s, typ=Lin, name='Default'):
+    """Create group from space separated string of dip directions and dips"""
+    vals = np.fromstring(s, sep=' ')
+    return Group.from_array(vals[::2], vals[1::2],
+                            typ=typ, name=name)
+
