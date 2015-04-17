@@ -43,3 +43,6 @@ output/*/index.html
 docs/_build
 
 .ipynb_checkpoints/*
+
+# gedit backups
+*~

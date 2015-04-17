@@ -25,3 +25,10 @@ History
 ---------------------
 
 * Quick plotting of groups fixed.
+
+0.2.2 (17 Apr 2015)
+---------------------
+
+* FaultSet class added. Fault and Hoeppner methods of StereoNet implemented
+* VelGrad and DefGrad classes used for transformations added
+* G class to quickly create groups from strings added.

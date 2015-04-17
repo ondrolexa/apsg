@@ -6,12 +6,15 @@
 Welcome to APSG's documentation!
 ======================================
 
+APSG defines several new python classes to easily manage, analyze and visualize orientational structural geology data. It is under active developement, so until
+stable release, you can go trough tutorial to see what APSG can do for you.
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-   readme
+   tutorial
    installation
    usage
    contributing
