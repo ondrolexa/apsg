@@ -15,9 +15,20 @@ __all__ = ['Vec3', 'Lin', 'Fol', 'Pair', 'Fault', 'Group', 'FaultSet', 'Ortensor
 
 class Vec3(np.ndarray):
     """Base class to store 3D vectors derived from numpy.ndarray
+
+    Args:
+      a (array_like): Input data, in any form that can be converted to an array.
+        This includes lists, lists of tuples, tuples, tuples of tuples, tuples
+        of lists and ndarrays.
+
+    Example:
+      >>> v = Vec3([0.67, 1.2, 0.73])
+
     """
     def __new__(cls, array):
-        # casting to our class
+        """Convert the input to 3D vector.
+
+        """
         obj = np.asarray(array).view(cls)
         return obj
 
@@ -25,25 +36,36 @@ class Vec3(np.ndarray):
         return 'V({:.3f}, {:.3f}, {:.3f})'.format(*self)
 
     def __mul__(self, other):
+        """Returns dot product of two vectors.
+
+        """
         return np.dot(self, other)
 
     def __abs__(self):
-        # abs returns euclidian norm
+        """Returns the 2-norm or Euclidean norm of vector.
+
+        """
         return np.sqrt(self * self)
 
     def __pow__(self, other):
-        # cross product or power of magnitude
+        """Return cross product if argument is vector or power of vector
+
+        """
         if np.isscalar(other):
             return pow(abs(self), other)
         else:
             return self.cross(other)
 
     def __eq__(self, other):
-        # equal
+        """Returns True if vectors are equal.
+
+        """
         return bool(abs(self - other) < 1e-15)
 
     def __ne__(self, other):
-        # not equal
+        """Returns False if vectors are equal.
+
+        """
         return not self == other
 
     @property
@@ -52,49 +74,48 @@ class Vec3(np.ndarray):
 
     @property
     def uv(self):
-        """Return unit vector
+        """Returns unit vector
 
-        >>> u = Vec3([1,1,1])
-        >>> u.uv
-        V(0.577, 0.577, 0.577)
+        Example:
+          >>> u = Vec3([1,1,1])
+          >>> u.uv
+          V(0.577, 0.577, 0.577)
+
         """
         return self/abs(self)
 
     def cross(self, other):
         """Returns cross product of two vectors::
 
-        :param vec: vector
-        :type name: Vec3
-        :returns:  Vec3
+        Example:
+          >>> v=Vec3([0,2,-2])
+          >>> u.cross(v)
+          V(-4.000, 2.000, 2.000)
 
-        >>> v=Vec3([0,2,-2])
-        >>> u.cross(v)
-        V(-4.000, 2.000, 2.000)
         """
         return Vec3(np.cross(self, other))
 
     def angle(self, other):
         """Returns angle of two vectors in degrees::
 
-        :param vec: vector
-        :type name: Vec3
-        :returns:  Vec3
+        Example:
+          >>> u.angle(v)
+          90.0
 
-        >>> u.angle(v)
-        90.0
         """
         return acosd(np.clip(np.dot(self.uv, other.uv), -1, 1))
 
     def rotate(self, axis, phi):
-        """Rotate vector phi degrees about axis::
+        """Rotates vector `phi` degrees about `axis`::
 
-        :param axis: vector
-        :type name: Vec3
-        :param phi: angle of rotation
-        :returns:  Vec3
+        Args:
+          axis: axis of rotation
+          phi: angle of rotation in degrees
 
-        >>> v.rotate(u,60)
-        V(-2.000, 2.000, -0.000)
+        Example:
+          >>> v.rotate(u,60)
+          V(-2.000, 2.000, -0.000)
+
         """
         e = Vec3(self)  # rotate all types as vectors
         k = axis.uv
@@ -102,35 +123,39 @@ class Vec3(np.ndarray):
         return r.view(type(self))
 
     def proj(self, other):
-        """Return projection of vector *u* onto vector *v*::
+        """Returns projection of vector *u* onto vector *v*::
 
-        :param other: vector
-        :type name: Vec3
-        :returns:  Vec3
+        Example:
+          >>> u.proj(v)
 
-        >>> u.proj(v)
         """
         r = np.dot(self, other)*other / abs(other)**2
         return r.view(type(self))
 
     def transform(self, F):
-        """Return affine transformation of vector *u* by matrix *F*::
+        """Returns affine transformation of vector *u* by matrix *F*::
 
-        :param F: matric
-        :type name: numpy.array
-        :returns:  Vec3
+        Args:
+          F: Transformation matrix. Should be array-like value e.g. ``DefGrad``
 
-        >>> u.transform(F)
+        Example:
+          >>> u.transform(F)
+
+        See Also:
+          ``strain.DefGrad``
+
         """
         return np.dot(F, self).view(type(self))
 
     @property
     def aslin(self):
-        """Convert vector to Lin object.
+        """Returns vector as ``Lin`` object.
 
-        >>> u = Vec3([1,1,1])
-        >>> u.aslin
-        L:45/35
+        Example:
+          >>> u = Vec3([1,1,1])
+          >>> u.aslin
+          L:45/35
+
         """
         res = Lin(0, 0)
         np.copyto(res, self)
@@ -140,9 +165,11 @@ class Vec3(np.ndarray):
     def asfol(self):
         """Convert vector to Fol object.
 
-        >>> u = Vec3([1,1,1])
-        >>> u.asfol
-        S:225/55
+        Example:
+          >>> u = Vec3([1,1,1])
+          >>> u.asfol
+          S:225/55
+
         """
         res = Fol(0, 0)
         np.copyto(res, self)
@@ -150,10 +177,20 @@ class Vec3(np.ndarray):
 
 
 class Lin(Vec3):
-    """Class for linear features
+    """Class to store linear feature.
+
+    Args:
+      azi: Dip direction of linear feature in degrees
+      inc: dip of linear feature in degrees
+
+    Example:
+      >>> l = Lin(120, 60)
+
     """
     def __new__(cls, azi, inc):
-        # casting to our class
+        """Create linear feature.
+
+        """
         v = [cosd(azi)*cosd(inc), sind(azi)*cosd(inc), sind(inc)]
         return Vec3(v).view(cls)
 
@@ -161,71 +198,69 @@ class Lin(Vec3):
         return 'L:{:.0f}/{:.0f}'.format(*self.dd)
 
     def __add__(self, other):
-        # add axial data
+        """Sum of axial data
+
+        """
         if self * other < 0:
             other = -other
         return super(Lin, self).__add__(other)
 
     def __iadd__(self, other):
-        # add axial data
         if self * other < 0:
             other = -other
         return super(Lin, self).__iadd__(other)
 
     def __sub__(self, other):
-        # substract axial data
+        """Substract axial data
+
+        """
         if self * other < 0:
             other = -other
         return super(Lin, self).__sub__(other)
 
     def __isub__(self, other):
-        # substract axial data
         if self * other < 0:
             other = -other
         return super(Lin, self).__isub__(other)
 
-    def __pow__(self, other):
-        # cross product or power of magnitude
-        if np.isscalar(other):
-            return pow(abs(self), other)
-        else:
-            return super(Lin, self).cross(other).asfol
-
     def __eq__(self, other):
-        # equal
+        """Returns True if linear features are equal.
+
+        """
         return bool(abs(self-other) < 1e-15 or abs(self+other) < 1e-15)
 
     def __ne__(self, other):
-        # not equal
+        """Returns False if linear features are equal.
+
+        """
         return not (self == other or self == -other)
 
-    def angle(self, lin):
-        """Returns angle of two lineations in degrees
+    def angle(self, other):
+        """Returns angle of two linear features in degrees
 
-        :param lin: lineation
-        :type name: Lin
-        :returns:  angle
+        Example:
+          >>> u.angle(v)
+          90.0
 
-        >>> u.angle(v)
-        90.0
         """
-        return acosd(abs(np.clip(np.dot(self.uv, lin.uv), -1, 1)))
+        return acosd(abs(np.clip(np.dot(self.uv, other.uv), -1, 1)))
 
     def cross(self, other):
-        """Returns foliaton defined by two lineations
+        """Returns planar feature defined by two linear features
 
-        :param other: vector
-        :type name: Vec3, Fol, Lin
-        :returns:  Fol
+        Example:
+          >>> l=Lin(120,10)
+          >>> l.cross(Lin(160,30))
+          S:196/35
 
-        >>> l=Lin(120,10)
-        >>> l.cross(Lin(160,30))
-        S:196/35
         """
         return np.cross(self, other).view(Fol)
 
     @property
     def dd(self):
+        """ Return dip-direction, dip tuple
+
+        """
         n = self.uv
         if n[2] < 0:
             n = -n
@@ -235,10 +270,20 @@ class Lin(Vec3):
 
 
 class Fol(Vec3):
-    """Class for planar features
+    """Class to store planar feature.
+
+    Args:
+      azi: Dip direction of planar feature in degrees
+      inc: dip of planar feature in degrees
+
+    Example:
+      >>> f = Fol(120, 60)
+
     """
     def __new__(cls, azi, inc):
-        # casting to our class
+        """Create planar feature.
+
+        """
         v = [-cosd(azi)*sind(inc), -sind(azi)*sind(inc), cosd(inc)]
         return Vec3(v).view(cls)
 
@@ -246,75 +291,84 @@ class Fol(Vec3):
         return 'S:{:.0f}/{:.0f}'.format(*self.dd)
 
     def __add__(self, other):
-        # add axial data
+        """Sum of axial data
+
+        """
         if self * other < 0:
             other = -other
         return super(Fol, self).__add__(other)
 
     def __iadd__(self, other):
-        # add axial data
         if self * other < 0:
             other = -other
         return super(Fol, self).__iadd__(other)
 
     def __sub__(self, other):
-        # substract axial data
+        """Substract axial data
+
+        """
         if self * other < 0:
             other = -other
         return super(Fol, self).__sub__(other)
 
     def __isub__(self, other):
-        # substract axial data
         if self * other < 0:
             other = -other
         return super(Fol, self).__isub__(other)
 
     def __eq__(self, other):
-        # equal
+        """Returns True if planar features are equal.
+
+        """
         return bool(abs(self-other) < 1e-15 or abs(self+other) < 1e-15)
 
     def __ne__(self, other):
-        # not equal
+        """Returns False if planar features are equal.
+
+        """
         return not (self == other or self == -other)
 
     def angle(self, fol):
-        """Returns angle of two foliations in degrees
+        """Returns angle of two planar features in degrees
 
-        :param lin: foliation
-        :type name: Fol
-        :returns:  angle
+        Example:
+          >>> u.angle(v)
+          90.0
 
-        >>> u.angle(v)
-        90.0
         """
         return acosd(abs(np.clip(np.dot(self.uv, fol.uv), -1, 1)))
 
     def cross(self, other):
-        """Returns lination defined as intersecton of two foliations
+        """Returns linear feature defined as intersection of two planar features
 
-        :param other: vector
-        :type name: Vec3, Fol, Lin
-        :returns:  Lin
+        Example:
+          >>> f=Fol(60,30)
+          >>> f.cross(Fol(120,40))
+          L:72/29
 
-        >>> f=Fol(60,30)
-        >>> f.cross(Fol(120,40))
-        L:72/29
         """
         return np.cross(self, other).view(Lin)
 
     def transform(self, F):
-        """Return affine transformation of foliation by matrix *F*::
+        """Returns affine transformation of planar feature by matrix *F*::
 
-        :param F: matric
-        :type name: numpy.array
-        :returns:  Fol
+        Args:
+          F: Transformation matrix. Should be array-like value e.g. ``DefGrad``
 
-        >>> f.transform(F)
+        Example:
+          >>> f.transform(F)
+
+        See Also:
+          ``strain.DefGrad``
+
         """
         return np.dot(self, np.linalg.inv(F)).view(type(self))
 
     @property
     def dd(self):
+        """ Return dip-direction, dip tuple
+
+        """
         n = self.uv
         if n[2] < 0:
             n = -n
@@ -324,16 +378,33 @@ class Fol(Vec3):
 
     @property
     def rhr(self):
+        """ Return strike and dip tuple (right-hand-rule)
+
+        """
         azi, inc = self.dd
         return (azi - 90) % 360, inc
 
 
 class Pair(object):
-    """Pair class store related Fol and Lin instances.
-    Both planar and linear feature is rotated, so linear feature perfectly
-    fit onto planar one.
+    """Class to store pair of planar and linear feature.
+
+    When ``Pair`` object is created, both planar and linear feature are adjusted, so linear feature
+    perfectly fit onto planar one. Warning is issued, when misfit angle is bigger than 20 degrees.
+
+    Args:
+      fazi: Dip direction of planar feature in degrees
+      finc: dip of planar feature in degrees
+      lazi: Dip direction of linear feature in degrees
+      linc: dip of linear feature in degrees
+
+    Example:
+      >>> p = Pair(140,30,110,26)
+
     """
     def __init__(self, fazi, finc, lazi, linc):
+        """Create ``Pair`` object.
+
+        """
         fol = Fol(fazi, finc)
         lin = Lin(lazi, linc)
         misfit = 90 - fol.angle(lin)
@@ -353,6 +424,17 @@ class Pair(object):
         return 'P:{:.0f}/{:.0f}-{:.0f}/{:.0f}'.format(*vals)
 
     def rotate(self, axis, phi):
+        """Rotates ``Pair`` by `phi` degrees about `axis`::
+
+        Args:
+          axis: axis of rotation
+          phi: angle of rotation in degrees
+
+        Example:
+          >>> v.rotate(u,60)
+          V(-2.000, 2.000, -0.000)
+
+        """
         rot = deepcopy(self)
         rot.fvec = self.fvec.rotate(axis, phi)
         rot.lvec = self.lvec.rotate(axis, phi)
@@ -364,13 +446,31 @@ class Pair(object):
 
     @property
     def fol(self):
+        """Returns planar feature of ``Pair`` as ``Fol``.
+
+        """
         return Fol(*self.fvec.asfol.dd)
 
     @property
     def lin(self):
+        """Returns linear feature of ``Pair`` as ``Lin``.
+
+        """
         return Lin(*self.lvec.aslin.dd)
 
     def transform(self, F):
+        """Returns affine transformation of ``Pair`` by matrix *F*::
+
+        Args:
+          F: Transformation matrix. Should be array-like value e.g. ``DefGrad``
+
+        Example:
+          >>> p.transform(F)
+
+        See Also:
+          ``strain.DefGrad``
+
+        """
         t = deepcopy(self)
         t.lvec = np.dot(F, t.lvec).view(Vec3)
         t.fvec = np.dot(t.fvec, np.linalg.inv(F)).view(Vec3)
