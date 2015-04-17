@@ -41,8 +41,6 @@ sys.path.insert(0, project_root)
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
-    'matplotlib.sphinxext.mathmpl',
-    'matplotlib.sphinxext.only_directives',
     'matplotlib.sphinxext.plot_directive',
     ]
 
