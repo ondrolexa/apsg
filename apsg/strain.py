@@ -6,6 +6,8 @@ import numpy as np
 from .core import Vec3, Group
 from .helpers import sind, cosd
 
+__all__ = ['DefGrad', 'VelGrad']
+
 
 class DefGrad(np.ndarray):
     """class to store deformation gradient tensor derived from numpy.ndarray

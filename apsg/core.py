@@ -10,6 +10,8 @@ from copy import deepcopy
 import numpy as np
 from .helpers import sind, cosd, acosd, asind, atan2d
 
+__all__ = ['Vec3', 'Lin', 'Fol', 'Pair', 'Fault', 'Group', 'FaultSet', 'Ortensor', 'G']
+
 
 class Vec3(np.ndarray):
     """Base class to store 3D vectors derived from numpy.ndarray

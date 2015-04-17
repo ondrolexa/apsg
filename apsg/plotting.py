@@ -14,6 +14,8 @@ except ImportError:
 from .core import Fol, Lin, Fault, Group
 from .helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 
+__all__ = ['StereoNet', 'Density', 'rose']
+
 
 class StereoNetJK(object):
     """API to Joe Kington mplstereonet"""
