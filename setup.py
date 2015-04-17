@@ -12,7 +12,8 @@ history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 requirements = [
     'numpy >= 1.8',
-    'matplotlib >= 1.2'
+    'matplotlib >= 1.2',
+    'scipy'
 ]
 
 test_requirements = [
@@ -21,7 +22,7 @@ test_requirements = [
 
 setup(
     name='apsg',
-    version='0.2.1',
+    version='0.2.2',
     description='APSG - structural geology module for Python',
     long_description=readme + '\n\n' + history,
     author='Ondrej Lexa',
