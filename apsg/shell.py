@@ -1,11 +1,14 @@
 #!/usr/bin/python
 
+from pylab import *
 from apsg import *
 
 from subprocess import call
 import platform
 import webbrowser
 import sys
+
+ion()
 
 try:
   from apsg import __version__ as APSG_VERSION
@@ -52,7 +55,7 @@ def setup_shell():
         raise("ERROR: IPython Failed to load")
 
     try:
-        from IPython.config.loader import Config
+        from traitlets.config import Config
         from IPython.terminal.embed import InteractiveShellEmbed
 
         cfg = Config()

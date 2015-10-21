@@ -245,7 +245,7 @@ class StereoNet(object):
     def getfols(self):
         """get Group of Fol by mouse"""
         pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
-        return Group([Fol(*getldd(x, y)) for x, y in pts])
+        return Group([Fol(*getfdd(x, y)) for x, y in pts])
 
     def _cone(self, axis, vector, limit=180, res=361, split=False):
         a = np.linspace(-limit, limit, res)

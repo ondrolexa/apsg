@@ -4,5 +4,5 @@ import numpy as np
 from IPython import embed
 from apsg import *
 plt.ion()
-embed(header='APSG imported in current namespace.')
+embed(header='APSG and Pylab imported into current namespace.')
 
