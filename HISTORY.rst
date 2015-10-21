@@ -32,3 +32,10 @@ History
 * FaultSet class added. Fault and Hoeppner methods of StereoNet implemented
 * VelGrad and DefGrad classes used for transformations added
 * G class to quickly create groups from strings added.
+
+0.2.3 (21 Oct 2015)
+---------------------
+
+* New Docstrings format
+* StereoNet.getfols method bug fixed.
+* Shell scripts to run interactive session improved.
