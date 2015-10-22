@@ -10,14 +10,15 @@ from copy import deepcopy
 import numpy as np
 from .helpers import sind, cosd, acosd, asind, atan2d
 
-__all__ = ['Vec3', 'Lin', 'Fol', 'Pair', 'Fault', 'Group', 'FaultSet', 'Ortensor', 'Cluster', 'G']
+__all__ = ['Vec3', 'Lin', 'Fol', 'Pair', 'Fault',
+           'Group', 'FaultSet', 'Ortensor', 'Cluster', 'G']
 
 
 class Vec3(np.ndarray):
     """Base class to store 3D vectors derived from numpy.ndarray
 
     Args:
-      a (array_like): Input data, in any form that can be converted to an array.
+      a (array_like): Input data, that can be converted to an array.
         This includes lists, lists of tuples, tuples, tuples of tuples, tuples
         of lists and ndarrays.
 
@@ -388,8 +389,9 @@ class Fol(Vec3):
 class Pair(object):
     """Class to store pair of planar and linear feature.
 
-    When ``Pair`` object is created, both planar and linear feature are adjusted, so linear feature
-    perfectly fit onto planar one. Warning is issued, when misfit angle is bigger than 20 degrees.
+    When ``Pair`` object is created, both planar and linear feature are
+    adjusted, so linear feature perfectly fit onto planar one. Warning
+    is issued, when misfit angle is bigger than 20 degrees.
 
     Args:
       fazi: Dip direction of planar feature in degrees
@@ -921,6 +923,7 @@ class Cluster(object):
         self.angle = kwargs.get('angle', self.angle)
         self.method = kwargs.get('method', self.method)
         self.criterion = kwargs.get('criterion', self.criterion)
+
         if self.method == 'kmeans':
             from itertools import combinations
             from matplotlib.cbook import flatten
@@ -930,7 +933,7 @@ class Cluster(object):
             if self.criterion == 'n':
                 while len(data) > self.n:
                     ang = data.angle()
-                    res = list(combinations(range(len(data)),2))
+                    res = list(combinations(range(len(data)), 2))
                     self.minangle = ang.min()
                     i2, i1 = res[ang.argmin()]
                     data.append(Group([data.pop(i1), data.pop(i2)]).R)
@@ -938,14 +941,15 @@ class Cluster(object):
             elif self.criterion == 'angle':
                 ang = data.angle()
                 while ang.min() < self.angle:
-                    res = list(combinations(range(len(data)),2))
+                    res = list(combinations(range(len(data)), 2))
                     self.minangle = ang.min()
                     i2, i1 = res[ang.argmin()]
                     data.append(Group([data.pop(i1), data.pop(i2)]).R)
                     index.append([index.pop(i1), index.pop(i2)])
                     ang = data.angle()
             else:
-                raise TypeError('Criterion "%s" not implemented!' % self.criterion)
+                raise TypeError('Criterion "%s" not implemented!'
+                                % self.criterion)
 
             self.index = [list(flatten(ix)) for ix in index]
             self.groups = [self.data[ix] for ix in self.index]
@@ -953,17 +957,13 @@ class Cluster(object):
             raise TypeError('Method "%s" not implemented!' % self.method)
 
     @property
-    def numgroups(self):
+    def count(self):
         """Return number of clusters"""
         return len(self.groups)
 
-    def getgroup(self, n):
-        """Return cluster n as Group"""
-        return self.groups[n]
-
-    def getindex(self, n):
-        """Return indexes of original data belonging to cluster n"""
-        return self.index[n]
+    @property
+    def R(self):
+        return Group([group.R for group in self.groups])
 
 
 # HELPERS #
