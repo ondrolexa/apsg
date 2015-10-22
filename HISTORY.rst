@@ -39,3 +39,10 @@ History
 * New Docstrings format
 * StereoNet.getfols method bug fixed.
 * Shell scripts to run interactive session improved.
+
+0.2.4 (22 Oct 2015)
+---------------------
+
+* Group could be indexed by sequences of indexes like list, tuple or array
+* Cluster class with k-means clustering implemented
+* Group to_file and from_file methods implemented to store data in file

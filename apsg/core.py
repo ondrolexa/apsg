@@ -10,7 +10,7 @@ from copy import deepcopy
 import numpy as np
 from .helpers import sind, cosd, acosd, asind, atan2d
 
-__all__ = ['Vec3', 'Lin', 'Fol', 'Pair', 'Fault', 'Group', 'FaultSet', 'Ortensor', 'G']
+__all__ = ['Vec3', 'Lin', 'Fol', 'Pair', 'Fault', 'Group', 'FaultSet', 'Ortensor', 'Cluster', 'G']
 
 
 class Vec3(np.ndarray):
@@ -555,6 +555,12 @@ class Group(list):
             'item is not of type %s' % self.type.__name__
         super(Group, self).__setitem__(key, value)
 
+    def __getitem__(self, key):
+        if hasattr(key, '__iter__'):
+            return Group([self[i] for i in key])
+        else:
+            return super(Group, self).__getitem__(key)
+
     def append(self, item):
         assert isinstance(item, self.type), \
             'item is not of type %s' % self.type.__name__
@@ -740,6 +746,20 @@ class Group(list):
         azi, inc = l.dd
         return cls.from_array(azi+180, 90-inc, typ=Fol)
 
+    def to_file(self, filename='group.dat'):
+        import pickle
+        with open(filename, 'wb') as file:
+            pickle.dump(self, file)
+        print('Group saved to file %s' % filename)
+
+    @classmethod
+    def from_file(cls, filename='group.dat'):
+        import pickle
+        with open(filename, 'rb') as file:
+            data = pickle.load(file)
+        print('Group loaded from file %s' % filename)
+        return cls(data, name=filename)
+
 
 class FaultSet(list):
     """FaultSet class
@@ -882,6 +902,68 @@ class Ortensor(object):
     @property
     def eigenfols(self):
         return self.eigenvects.asfol
+
+
+class Cluster(object):
+    """Clustering class"""
+    def __init__(self, d, **kwargs):
+        assert isinstance(d, Group), 'Only groups could be clustered'
+        self.data = Group(d.copy())
+        self.n = kwargs.get('n', 2)
+        self.angle = kwargs.get('angle', 40)
+        self.method = kwargs.get('method', 'kmeans')
+        self.criterion = kwargs.get('criterion', 'n')
+        self.cluster()
+
+    def cluster(self, **kwargs):
+        """Do clustering on data"""
+        self.n = kwargs.get('n', self.n)
+        self.angle = kwargs.get('angle', self.angle)
+        self.method = kwargs.get('method', self.method)
+        self.criterion = kwargs.get('criterion', self.criterion)
+        if self.method == 'kmeans':
+            from itertools import combinations
+            from matplotlib.cbook import flatten
+            data = Group(self.data.copy())
+            index = [[i] for i in range(len(data))]
+
+            if self.criterion == 'n':
+                while len(data) > self.n:
+                    ang = data.angle()
+                    res = list(combinations(range(len(data)),2))
+                    self.minangle = ang.min()
+                    i2, i1 = res[ang.argmin()]
+                    data.append(Group([data.pop(i1), data.pop(i2)]).R)
+                    index.append([index.pop(i1), index.pop(i2)])
+            elif self.criterion == 'angle':
+                ang = data.angle()
+                while ang.min() < self.angle:
+                    res = list(combinations(range(len(data)),2))
+                    self.minangle = ang.min()
+                    i2, i1 = res[ang.argmin()]
+                    data.append(Group([data.pop(i1), data.pop(i2)]).R)
+                    index.append([index.pop(i1), index.pop(i2)])
+                    ang = data.angle()
+            else:
+                raise TypeError('Criterion "%s" not implemented!' % self.criterion)
+
+            self.index = [list(flatten(ix)) for ix in index]
+            self.groups = [self.data[ix] for ix in self.index]
+        else:
+            raise TypeError('Method "%s" not implemented!' % self.method)
+
+    @property
+    def numgroups(self):
+        """Return number of clusters"""
+        return len(self.groups)
+
+    def getgroup(self, n):
+        """Return cluster n as Group"""
+        return self.groups[n]
+
+    def getindex(self, n):
+        """Return indexes of original data belonging to cluster n"""
+        return self.index[n]
 
 
 # HELPERS #
