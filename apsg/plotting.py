@@ -11,7 +11,7 @@ try:
 except ImportError:
     pass
 
-from .core import Fol, Lin, Fault, Group
+from .core import Vec3, Fol, Lin, Fault, Group
 from .helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 
 __all__ = ['StereoNet', 'Density', 'rose']
@@ -156,11 +156,16 @@ class StereoNet(object):
                     cnt = '({:d})'.format(len(arg))
                 else:
                     typ = type(arg)
-                    cnt = ':{:.0f}/{:.0f}'.format(*arg.dd)
+                    if typ is Vec3:
+                        cnt = ''
+                    else:
+                        cnt = ':{:.0f}/{:.0f}'.format(*arg.dd)
                 if typ is Lin:
                     self.line(arg, label='{:2d}-L'.format(n + 1) + cnt)
                 if typ is Fol:
                     self.plane(arg, label='{:2d}-S'.format(n + 1) + cnt)
+                if typ is Vec3:
+                    self.line(arg.aslin, label='{:2d}-Vec3'.format(n + 1) + cnt)
             self.show()
 
     def draw(self):

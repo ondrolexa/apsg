@@ -46,3 +46,4 @@ History
 * Group could be indexed by sequences of indexes like list, tuple or array
 * Cluster class with k-means clustering implemented
 * Group to_file and from_file methods implemented to store data in file
+* StereoNet now accept Vec3 or groups of Vec3
