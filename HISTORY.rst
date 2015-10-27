@@ -47,3 +47,5 @@ History
 * Cluster class with k-means clustering implemented
 * Group to_file and from_file methods implemented to store data in file
 * StereoNet now accept Vec3 or groups of Vec3
+* Ortensor updated with new properties E1,E2,E3
+  and Vollmer(1989) parameters P,G,R and C

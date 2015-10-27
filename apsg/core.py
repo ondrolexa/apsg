@@ -863,8 +863,10 @@ class FaultSet(list):
 class Ortensor(object):
     """Ortensor class"""
     def __init__(self, d, **kwargs):
+        assert isinstance(d, Group), 'Only group could be passed to Ortensor'
         self.M = np.dot(np.array(d).T, np.array(d))
         self.n = len(d)
+        self.name = d.name
         vc, vv = np.linalg.eig(self.M)
         ix = np.argsort(vc)[::-1]
         self.vals = vc[ix]
@@ -876,8 +878,13 @@ class Ortensor(object):
         self.scaled = kwargs.get('scaled', False)
 
     def __repr__(self):
-        return 'Ortensor:\n(E1:%.4g,E2:%.4g,E3:%.4g)' % tuple(self.vals) + \
-            '\n' + str(self.M)
+        if self.norm:
+            n = self.n
+        else:
+            n = 1.0
+        return 'Ortensor: %s\n' % self.name + \
+            '(E1:%.4g,E2:%.4g,E3:%.4g)\n' % tuple(self.vals/n) + \
+            str(self.M)
 
     @property
     def eigenvals(self):
@@ -886,6 +893,18 @@ class Ortensor(object):
         else:
             n = 1.0
         return self.vals[0] / n, self.vals[1] / n, self.vals[2] / n
+
+    @property
+    def E1(self):
+        return self.eigenvals[0]
+
+    @property
+    def E2(self):
+        return self.eigenvals[1]
+
+    @property
+    def E3(self):
+        return self.eigenvals[2]
 
     @property
     def eigenvects(self):
@@ -905,11 +924,27 @@ class Ortensor(object):
     def eigenfols(self):
         return self.eigenvects.asfol
 
+    @property
+    def P(self):
+        return (self.vals[0] - self.vals[1])/self.n
+
+    @property
+    def G(self):
+        return 2*(self.vals[1] - self.vals[2])/self.n
+
+    @property
+    def R(self):
+        return 3*self.vals[2]/self.n
+
+    @property
+    def C(self):
+        return self.P + self.G
+
 
 class Cluster(object):
     """Clustering class"""
     def __init__(self, d, **kwargs):
-        assert isinstance(d, Group), 'Only groups could be clustered'
+        assert isinstance(d, Group), 'Only group could be clustered'
         self.data = Group(d.copy())
         self.n = kwargs.get('n', 2)
         self.angle = kwargs.get('angle', 40)
