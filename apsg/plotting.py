@@ -11,7 +11,7 @@ try:
 except ImportError:
     pass
 
-from .core import Vec3, Fol, Lin, Fault, Group
+from .core import Vec3, Fol, Lin, Fault, Group, FaultSet
 from .helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 
 __all__ = ['StereoNet', 'Density', 'rose']
@@ -150,22 +150,21 @@ class StereoNet(object):
         self.cla()
         # optionally immidiately plot passed objects
         if args:
-            for n, arg in enumerate(args):
-                if type(arg) is Group:
+            for arg in args:
+                if type(arg) in [Group, FaultSet]:
                     typ = arg.type
-                    cnt = '({:d})'.format(len(arg))
                 else:
                     typ = type(arg)
-                    if typ is Vec3:
-                        cnt = ''
-                    else:
-                        cnt = ':{:.0f}/{:.0f}'.format(*arg.dd)
                 if typ is Lin:
-                    self.line(arg, label='{:2d}-L'.format(n + 1) + cnt)
-                if typ is Fol:
-                    self.plane(arg, label='{:2d}-S'.format(n + 1) + cnt)
-                if typ is Vec3:
-                    self.line(arg.aslin, label='{:2d}-Vec3'.format(n + 1) + cnt)
+                    self.line(arg, label=repr(arg))
+                elif typ is Fol:
+                    self.plane(arg, label=repr(arg))
+                elif typ is Vec3:
+                    self.line(arg.aslin, label=repr(arg))
+                elif typ is Fault:
+                    self.fault(arg, label=repr(arg))
+                else:
+                    raise TypeError('%s argument is not supported!' % typ)
             self.show()
 
     def draw(self):

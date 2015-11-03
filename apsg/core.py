@@ -150,7 +150,7 @@ class Vec3(np.ndarray):
 
     @property
     def aslin(self):
-        """Returns vector as ``Lin`` object.
+        """Convert to ``Lin`` object.
 
         Example:
           >>> u = Vec3([1,1,1])
@@ -158,13 +158,11 @@ class Vec3(np.ndarray):
           L:45/35
 
         """
-        res = Lin(0, 0)
-        np.copyto(res, self)
-        return res
+        return self.copy().view(Lin)
 
     @property
     def asfol(self):
-        """Convert vector to Fol object.
+        """Convert to ``Fol`` object.
 
         Example:
           >>> u = Vec3([1,1,1])
@@ -172,9 +170,19 @@ class Vec3(np.ndarray):
           S:225/55
 
         """
-        res = Fol(0, 0)
-        np.copyto(res, self)
-        return res
+        return self.copy().view(Fol)
+
+    @property
+    def asvec3(self):
+        """Convert to ``Vec3`` object.
+
+        Example:
+          >>> l = Lin(120,50)
+          >>> l.asvec3
+          V(-0.321, 0.557, 0.766)
+
+        """
+        return self.copy().view(Vec3)
 
 
 class Lin(Vec3):
@@ -526,7 +534,7 @@ class Fault(Pair):
 
 class Group(list):
     """Group class
-    Group is homogeneous group of Vec3, Fol or Lin
+    Group is homogeneous group of ``Vec3``, ``Fol`` or ``Lin`` objects
     """
     def __init__(self, data, name='Default'):
         assert issubclass(type(data), list), 'Argument must be list of data.'
@@ -540,7 +548,7 @@ class Group(list):
         self.name = name
 
     def __repr__(self):
-        return '%s: %g %s' % (self.name, len(self), self.type.__name__)
+        return '%s\n%g %s' % (self.name, len(self), self.type.__name__)
 
     def __abs__(self):
         # abs returns array of euclidean norms
@@ -603,6 +611,11 @@ class Group(list):
     def asfol(self):
         """Convert all data in Group to Fol"""
         return Group([e.asfol for e in self], name=self.name)
+
+    @property
+    def asvec3(self):
+        """Convert all data in Group to Vec3"""
+        return Group([e.asvec3 for e in self], name=self.name)
 
     @property
     def R(self):
@@ -765,7 +778,7 @@ class Group(list):
 
 class FaultSet(list):
     """FaultSet class
-    FaultSet is group of Pair or Fault
+    FaultSet is group of ``Pair`` or ``Fault`` objects
     """
     def __init__(self, data, name='Default'):
         assert issubclass(type(data), list), 'Argument must be list of data.'
@@ -779,12 +792,12 @@ class FaultSet(list):
         self.name = name
 
     def __repr__(self):
-        return '%s: %g %s' % (self.name, len(self), self.type.__name__)
+        return '%s\n%g %s' % (self.name, len(self), self.type.__name__)
 
     def __add__(self, other):
         # merge sets
         assert isinstance(other, FaultSet), 'Only FaultSets could be merged'
-        assert self.type is other.type, 'Only FaultSet could be merged'
+        assert self.type is other.type, 'Only same type could be merged'
         return FaultSet(list(self) + other, name=self.name)
 
     def __setitem__(self, key, value):
@@ -1018,4 +1031,3 @@ def G(s, typ=Lin, name='Default'):
     vals = np.fromstring(s, sep=' ')
     return Group.from_array(vals[::2], vals[1::2],
                             typ=typ, name=name)
-
