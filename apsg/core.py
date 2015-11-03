@@ -734,10 +734,10 @@ class Group(list):
             azi = np.hstack((azi, atan2d(x, y)))
             inc = np.hstack((inc, 90 - 2*asind(np.sqrt((x*x + y*y)/2))))
         # no antipodal
-        theta = np.linspace(0, 360, n + 1)[:-1]
+        theta = np.linspace(0, 360, n + 1)[:-1:2]
         x, y = sind(theta), cosd(theta)
-        azi = np.hstack((azi, atan2d(x, y))[::2])
-        inc = np.hstack((inc, 90 - 2*asind(np.sqrt((x*x + y*y)/2)))[::2])
+        azi = np.hstack((azi, atan2d(x, y)))
+        inc = np.hstack((inc, 90 - 2*asind(np.sqrt((x*x + y*y)/2))))
         # fix
         inc[inc < 0] = 0
         return cls.from_array(azi, inc, typ=Lin)
