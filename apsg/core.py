@@ -871,9 +871,6 @@ class Ortensor(object):
         ix = np.argsort(vc)[::-1]
         self.vals = vc[ix]
         self.vects = vv.T[ix]
-        e1, e2, e3 = self.vals / self.n
-        self.shape = np.log(e3 / e2) / np.log(e2 / e1)
-        self.strength = np.log(e3 / e1)
         self.norm = kwargs.get('norm', True)
         self.scaled = kwargs.get('scaled', False)
 
@@ -925,19 +922,33 @@ class Ortensor(object):
         return self.eigenvects.asfol
 
     @property
+    def C(self):
+        """Woodcock strength"""
+        return np.log(self.E1 / self.E3)
+
+    @property
+    def shape(self):
+        """Woodcock shape"""
+        return np.log(self.E1 / self.E2) / np.log(self.E2 / self.E3)
+
+    @property
     def P(self):
+        """Point index"""
         return (self.vals[0] - self.vals[1])/self.n
 
     @property
     def G(self):
+        """Girdle index"""
         return 2*(self.vals[1] - self.vals[2])/self.n
 
     @property
     def R(self):
+        """Random index"""
         return 3*self.vals[2]/self.n
 
     @property
-    def C(self):
+    def B(self):
+        """Cylindricity index"""
         return self.P + self.G
 
 

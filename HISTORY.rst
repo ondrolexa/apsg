@@ -48,5 +48,5 @@ History
 * Group to_file and from_file methods implemented to store data in file
 * StereoNet now accept Vec3 or groups of Vec3
 * Ortensor updated with new properties E1,E2,E3
-  and Vollmer(1989) parameters P,G,R and C
+  and Vollmer(1989) parameters P,G,R and B. Shape and strenght fixed.
 * uniform_lin and uniform_fol improved.
