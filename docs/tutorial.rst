@@ -343,7 +343,6 @@ methods are available::
     s.line(g, 'wo')
     s.show()
 
-
 Cluster class
 -------------
 
@@ -403,7 +402,6 @@ Finally we can do clustering and plot created clusters::
     cl = Cluster(g)
     cl.cluster(maxclust=3)
     StereoNet(*cl.groups)
-
 
 Some tricks
 -----------
