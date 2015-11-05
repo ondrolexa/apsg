@@ -966,6 +966,64 @@ class Ortensor(object):
 
 
 class Cluster(object):
+    """Hierarchical clustering class"""
+    from scipy.cluster import hierarchy as hcl
+    from scipy.spatial.distance import pdist
+    angle_metric = lambda u, v: np.degrees(np.arccos(np.abs(np.dot(u,v))))
+
+    def __init__(self, d, **kwargs):
+        assert isinstance(d, Group), 'Only group could be clustered'
+        self.data = Group(d.copy())
+        self.maxclust = kwargs.get('maxclust', 2)
+        self.distance = kwargs.get('angle', 40)
+        self.method = kwargs.get('method', 'average')
+        self.criterion = kwargs.get('criterion', 'maxclust')
+        self.pdist = pdist(self.data, angle_metric)
+
+    def __repr__(self):
+        if hasattr(self, 'groups'):
+            info = 'Already %d clusters created.' % self.count
+        else:
+            info = 'Not yet clustered. Use cluster() method.'
+        return 'Clustering object\n' + \
+            'Number of data:%d\n' % len(self.data) + \
+            'Method:%s\nCriterion:%s\nSettings: n=%d, angle=%.4g\n' \
+            % (self.method, self.criterion, self.n, self.angle) + info
+
+    def cluster(self, **kwargs):
+        """Do clustering on data"""
+        self.maxclust = kwargs.get('maxclust', 2)
+        self.distance = kwargs.get('angle', 40)
+        self.criterion = kwargs.get('criterion', 'maxclust')
+        idx = fcluster(self.Z, getattr(self, self.criterion), criterion=self.criterion)
+
+    def linkage(self, **kwargs):
+        """Do lionkage of distance matrix"""
+        self.method = kwargs.get('method', 'average')
+        self.Z = hcl.linkage(self.pdist, method=self.method, metric=angle_metric)
+
+    def explain(self):
+        from matplotlib.cbook import flatten
+        n = list(range(len(self.data), 0, -1))
+        total_var = self.data.var
+        exp_var = []
+        for c in n:
+            index = [list(flatten(ix)) for ix in self.link[c][1]]
+            groups = [self.data[ix] for ix in index]
+            exp_var.append(Group([group.R for group in groups]).var/total_var)
+        return n,exp_var
+
+    @property
+    def count(self):
+        """Return number of clusters"""
+        return len(self.groups)
+
+    @property
+    def R(self):
+        return Group([group.R for group in self.groups])
+
+
+class Cluster2(object):
     """Clustering class"""
     def __init__(self, d, **kwargs):
         assert isinstance(d, Group), 'Only group could be clustered'
@@ -974,46 +1032,70 @@ class Cluster(object):
         self.angle = kwargs.get('angle', 40)
         self.method = kwargs.get('method', 'kmeans')
         self.criterion = kwargs.get('criterion', 'n')
-        self.cluster()
+        self.linkage()
+
+    def __repr__(self):
+        if hasattr(self, 'groups'):
+            info = 'Already %d clusters created.' % self.count
+        else:
+            info = 'Not yet clustered. Use cluster() method.'
+        return 'Clustering object\n' + \
+            'Number of data:%d\n' % len(self.data) + \
+            'Method:%s\nCriterion:%s\nSettings: n=%d, angle=%.4g\n' \
+            % (self.method, self.criterion, self.n, self.angle) + info
 
     def cluster(self, **kwargs):
         """Do clustering on data"""
+        from matplotlib.cbook import flatten
         self.n = kwargs.get('n', self.n)
         self.angle = kwargs.get('angle', self.angle)
-        self.method = kwargs.get('method', self.method)
         self.criterion = kwargs.get('criterion', self.criterion)
+        if self.criterion == 'n':
+            self.index = [list(flatten(ix)) for ix in self.link[self.n][1]]
+            self.groups = [self.data[ix] for ix in self.index]
+            self.linkangle = self.link[self.n][0]
+
+        elif self.criterion == 'angle':
+            n = len(self.data)
+            while (self.link[n][0] < self.angle) or (n < 2):
+                n -= 1
+            self.index = [list(flatten(ix)) for ix in self.link[n][1]]
+            self.groups = [self.data[ix] for ix in self.index]
+            self.linkangle = self.link[n][0]
+
+        else:
+            raise TypeError('Criterion "%s" not implemented!'
+                            % self.criterion)
+
+    def linkage(self, **kwargs):
+        from itertools import combinations
+        self.method = kwargs.get('method', self.method)
 
         if self.method == 'kmeans':
-            from itertools import combinations
-            from matplotlib.cbook import flatten
             data = Group(self.data.copy())
             index = [[i] for i in range(len(data))]
-
-            if self.criterion == 'n':
-                while len(data) > self.n:
-                    ang = data.angle()
-                    res = list(combinations(range(len(data)), 2))
-                    self.minangle = ang.min()
-                    i2, i1 = res[ang.argmin()]
-                    data.append(Group([data.pop(i1), data.pop(i2)]).R)
-                    index.append([index.pop(i1), index.pop(i2)])
-            elif self.criterion == 'angle':
+            self.link = {len(data):(0,index.copy())}
+            while len(data) > 1:
                 ang = data.angle()
-                while ang.min() < self.angle:
-                    res = list(combinations(range(len(data)), 2))
-                    self.minangle = ang.min()
-                    i2, i1 = res[ang.argmin()]
-                    data.append(Group([data.pop(i1), data.pop(i2)]).R)
-                    index.append([index.pop(i1), index.pop(i2)])
-                    ang = data.angle()
-            else:
-                raise TypeError('Criterion "%s" not implemented!'
-                                % self.criterion)
+                res = list(combinations(range(len(data)), 2))
+                i2, i1 = res[ang.argmin()]
+                data.append(Group([data.pop(i1), data.pop(i2)]).R)
+                index.append([index.pop(i1), index.pop(i2)])
+                self.link[len(data)] = (ang.min(), index.copy())
 
-            self.index = [list(flatten(ix)) for ix in index]
-            self.groups = [self.data[ix] for ix in self.index]
         else:
             raise TypeError('Method "%s" not implemented!' % self.method)
+
+    def explain(self):
+        from matplotlib.cbook import flatten
+        n = list(range(len(self.data), 0, -1))
+        total_var = self.data.var
+        exp_var = []
+        for c in n:
+            index = [list(flatten(ix)) for ix in self.link[c][1]]
+            groups = [self.data[ix] for ix in index]
+            exp_var.append(Group([group.R for group in groups]).var/total_var)
+        return n,exp_var
 
     @property
     def count(self):
