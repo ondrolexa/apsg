@@ -146,6 +146,7 @@ class StereoNet(object):
         self.ax.format_coord = self.format_coord
         self.grid = kwargs.get('grid', True)
         self.grid_style = kwargs.get('grid_style', 'k:')
+        self.fol_plot = kwargs.get('fol_plot', 'plane')
         self._lgd = None
         self.cla()
         # optionally immidiately plot passed objects
@@ -158,7 +159,7 @@ class StereoNet(object):
                 if typ is Lin:
                     self.line(arg, label=repr(arg))
                 elif typ is Fol:
-                    self.plane(arg, label=repr(arg))
+                    getattr(self, self.fol_plot)(arg, label=repr(arg))
                 elif typ is Vec3:
                     self.line(arg.aslin, label=repr(arg))
                 elif typ is Fault:
@@ -178,6 +179,7 @@ class StereoNet(object):
         else:
             plt.subplots_adjust(right=0.9)
         plt.draw()
+        plt.pause(0.001)
 
     def cla(self):
         """Clear projection"""

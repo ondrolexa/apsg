@@ -8,7 +8,7 @@ from __future__ import division, print_function
 from copy import deepcopy
 
 import numpy as np
-from .helpers import sind, cosd, acosd, asind, atan2d
+from .helpers import sind, cosd, acosd, asind, atan2d, angle_metric
 
 __all__ = ['Vec3', 'Lin', 'Fol', 'Pair', 'Fault',
            'Group', 'FaultSet', 'Ortensor', 'Cluster', 'G']
@@ -706,6 +706,11 @@ class Group(list):
         """return orientation tensor of Group"""
         return Ortensor(self)
 
+    @property
+    def cluster(self):
+        """return hierarchical clustering of Group"""
+        return Cluster(self)
+
     def transform(self, F):
         """Return affine transformation of Group by matrix *F*"""
         return Group([e.transform(F) for e in self], name=self.name)
@@ -874,7 +879,10 @@ class FaultSet(list):
 
 
 class Ortensor(object):
-    """Ortensor class"""
+    """Ortensor class
+    Ortensor is orientation tensor, which characterize data distribution
+    using eigenvalue method. See (Watson 1966, Scheidegger 1965).
+    """
     def __init__(self, d, **kwargs):
         assert isinstance(d, Group), 'Only group could be passed to Ortensor'
         self.M = np.dot(np.array(d).T, np.array(d))
@@ -898,6 +906,7 @@ class Ortensor(object):
 
     @property
     def eigenvals(self):
+        """Return tuple of eigenvalues. Normalized if norm property is True"""
         if self.norm:
             n = self.n
         else:
@@ -906,18 +915,23 @@ class Ortensor(object):
 
     @property
     def E1(self):
+        """Max eigenvalue"""
         return self.eigenvals[0]
 
     @property
     def E2(self):
+        """Middle eigenvalue"""
         return self.eigenvals[1]
 
     @property
     def E3(self):
+        """Min eigenvalue"""
         return self.eigenvals[2]
 
     @property
     def eigenvects(self):
+        """Return group of eigenvectors. If scaled property is True their
+        length is scaled by eigenvalues, otherwise with unit length."""
         if self.scaled:
             e1, e2, e3 = self.eigenvals
         else:
@@ -928,10 +942,12 @@ class Ortensor(object):
 
     @property
     def eigenlins(self):
+        """Return group of eigenvectors as Lin objects"""
         return self.eigenvects.aslin
 
     @property
     def eigenfols(self):
+        """Return group of eigenvectors as Fol objects"""
         return self.eigenvects.asfol
 
     @property
@@ -966,11 +982,10 @@ class Ortensor(object):
 
 
 class Cluster(object):
-    """Hierarchical clustering class"""
-    from scipy.cluster import hierarchy as hcl
-    from scipy.spatial.distance import pdist
-    angle_metric = lambda u, v: np.degrees(np.arccos(np.abs(np.dot(u,v))))
-
+    """Clustering class
+    Hierarchical clustering using scipy.cluster routines. distance
+    matrix is calculated as angle beetween features, where Fol and
+    Lin use axial angles while Vec3 uses direction angles."""
     def __init__(self, d, **kwargs):
         assert isinstance(d, Group), 'Only group could be clustered'
         self.data = Group(d.copy())
@@ -978,132 +993,85 @@ class Cluster(object):
         self.distance = kwargs.get('angle', 40)
         self.method = kwargs.get('method', 'average')
         self.criterion = kwargs.get('criterion', 'maxclust')
-        self.pdist = pdist(self.data, angle_metric)
-
-    def __repr__(self):
-        if hasattr(self, 'groups'):
-            info = 'Already %d clusters created.' % self.count
-        else:
-            info = 'Not yet clustered. Use cluster() method.'
-        return 'Clustering object\n' + \
-            'Number of data:%d\n' % len(self.data) + \
-            'Method:%s\nCriterion:%s\nSettings: n=%d, angle=%.4g\n' \
-            % (self.method, self.criterion, self.n, self.angle) + info
-
-    def cluster(self, **kwargs):
-        """Do clustering on data"""
-        self.maxclust = kwargs.get('maxclust', 2)
-        self.distance = kwargs.get('angle', 40)
-        self.criterion = kwargs.get('criterion', 'maxclust')
-        idx = fcluster(self.Z, getattr(self, self.criterion), criterion=self.criterion)
-
-    def linkage(self, **kwargs):
-        """Do lionkage of distance matrix"""
-        self.method = kwargs.get('method', 'average')
-        self.Z = hcl.linkage(self.pdist, method=self.method, metric=angle_metric)
-
-    def explain(self):
-        from matplotlib.cbook import flatten
-        n = list(range(len(self.data), 0, -1))
-        total_var = self.data.var
-        exp_var = []
-        for c in n:
-            index = [list(flatten(ix)) for ix in self.link[c][1]]
-            groups = [self.data[ix] for ix in index]
-            exp_var.append(Group([group.R for group in groups]).var/total_var)
-        return n,exp_var
-
-    @property
-    def count(self):
-        """Return number of clusters"""
-        return len(self.groups)
-
-    @property
-    def R(self):
-        return Group([group.R for group in self.groups])
-
-
-class Cluster2(object):
-    """Clustering class"""
-    def __init__(self, d, **kwargs):
-        assert isinstance(d, Group), 'Only group could be clustered'
-        self.data = Group(d.copy())
-        self.n = kwargs.get('n', 2)
-        self.angle = kwargs.get('angle', 40)
-        self.method = kwargs.get('method', 'kmeans')
-        self.criterion = kwargs.get('criterion', 'n')
+        self.pdist = self.data.angle()
         self.linkage()
 
     def __repr__(self):
         if hasattr(self, 'groups'):
-            info = 'Already %d clusters created.' % self.count
+            info = 'Already %d clusters created.' % len(self.groups)
         else:
             info = 'Not yet clustered. Use cluster() method.'
         return 'Clustering object\n' + \
-            'Number of data:%d\n' % len(self.data) + \
-            'Method:%s\nCriterion:%s\nSettings: n=%d, angle=%.4g\n' \
-            % (self.method, self.criterion, self.n, self.angle) + info
+            'Number of data: %d\n' % len(self.data) + \
+            'Linkage method: %s\n' % self.method + \
+            'Criterion: %s\nSettings: maxclust=%d, angle=%.4g\n' \
+            % (self.criterion, self.maxclust, self.distance) + info
 
     def cluster(self, **kwargs):
-        """Do clustering on data"""
-        from matplotlib.cbook import flatten
-        self.n = kwargs.get('n', self.n)
-        self.angle = kwargs.get('angle', self.angle)
-        self.criterion = kwargs.get('criterion', self.criterion)
-        if self.criterion == 'n':
-            self.index = [list(flatten(ix)) for ix in self.link[self.n][1]]
-            self.groups = [self.data[ix] for ix in self.index]
-            self.linkangle = self.link[self.n][0]
+        """Do clustering on data
+        Result is stored as tuple of Groups in groups property.
 
-        elif self.criterion == 'angle':
-            n = len(self.data)
-            while (self.link[n][0] < self.angle) or (n < 2):
-                n -= 1
-            self.index = [list(flatten(ix)) for ix in self.link[n][1]]
-            self.groups = [self.data[ix] for ix in self.index]
-            self.linkangle = self.link[n][0]
-
-        else:
-            raise TypeError('Criterion "%s" not implemented!'
-                            % self.criterion)
+        Args:
+          criterion: The criterion to use in forming flat clusters
+          maxclust: number of clusters
+          angle: maximum cophenetic distance(angle) in clusters
+        """
+        from scipy.cluster.hierarchy import fcluster
+        self.maxclust = kwargs.get('maxclust', 2)
+        self.distance = kwargs.get('angle', 40)
+        self.criterion = kwargs.get('criterion', 'maxclust')
+        idx = fcluster(self.Z, getattr(self, self.criterion),
+                       criterion=self.criterion)
+        self.groups = tuple(self.data[np.flatnonzero(idx == c)]
+                            for c in np.unique(idx))
 
     def linkage(self, **kwargs):
-        from itertools import combinations
-        self.method = kwargs.get('method', self.method)
+        """Do linkage of distance matrix
 
-        if self.method == 'kmeans':
-            data = Group(self.data.copy())
-            index = [[i] for i in range(len(data))]
-            self.link = {len(data):(0,index.copy())}
-            while len(data) > 1:
-                ang = data.angle()
-                res = list(combinations(range(len(data)), 2))
-                i2, i1 = res[ang.argmin()]
-                data.append(Group([data.pop(i1), data.pop(i2)]).R)
-                index.append([index.pop(i1), index.pop(i2)])
-                self.link[len(data)] = (ang.min(), index.copy())
+        Args:
+          method: The linkage algorithm to use
+        """
+        from scipy.cluster.hierarchy import linkage
+        self.method = kwargs.get('method', 'average')
+        self.Z = linkage(self.pdist, method=self.method,
+                         metric=angle_metric)
 
-        else:
-            raise TypeError('Method "%s" not implemented!' % self.method)
+    def dendrogram(self, **kwargs):
+        """Show dendrogram
 
-    def explain(self):
-        from matplotlib.cbook import flatten
-        n = list(range(len(self.data), 0, -1))
+        See ``scipy.cluster.hierarchy.dendrogram`` for possible options
+        """
+        from scipy.cluster.hierarchy import dendrogram
+        import matplotlib.pyplot as plt
+        dendrogram(self.Z, **kwargs)
+        plt.show()
+
+    def explain(self, no_plot=False):
+        """Plot variance explained vs. number of clusters. Elbow criterion
+        could be used to determine number of clusters.
+        """
+        from scipy.cluster.hierarchy import fcluster
+        import matplotlib.pyplot as plt
+        idx = fcluster(self.Z, len(self.data), criterion='maxclust')
         total_var = self.data.var
+        nclust = list(np.arange(1, np.sqrt(idx.max() / 2) + 1, dtype=int))
         exp_var = []
-        for c in n:
-            index = [list(flatten(ix)) for ix in self.link[c][1]]
-            groups = [self.data[ix] for ix in index]
-            exp_var.append(Group([group.R for group in groups]).var/total_var)
-        return n,exp_var
-
-    @property
-    def count(self):
-        """Return number of clusters"""
-        return len(self.groups)
+        for n in nclust:
+            idx = fcluster(self.Z, n, criterion='maxclust')
+            grp = [np.flatnonzero(idx == c) for c in np.unique(idx)]
+            cluster_var = Group([self.data[ix].R for ix in grp]).var
+            exp_var.append(cluster_var / total_var)
+        if not no_plot:
+            plt.plot(nclust, 100 * np.array(exp_var), 'ko-')
+            plt.xlabel('Number of clusters')
+            plt.ylabel('Percent of variance explained')
+            plt.show()
+        else:
+            return nclust, exp_var
 
     @property
     def R(self):
+        """Return group of clusters resultants."""
         return Group([group.R for group in self.groups])
 
 

@@ -44,10 +44,12 @@ History
 ---------------------
 
 * Group could be indexed by sequences of indexes like list, tuple or array
-* Cluster class with k-means clustering implemented
+* Cluster class with hierarchical clustering implemented
 * Group to_file and from_file methods implemented to store data in file
 * StereoNet now accept Vec3 and Fault object as well for instant plotting. 
 * Ortensor updated with new properties E1,E2,E3
   and Vollmer(1989) parameters P,G,R and B. Shape and strenght fixed.
 * uniform_lin and uniform_fol improved.
 * asvec3 method implemented for Fol and Lin
+* fol_plot property of StereoNet allows choose poles or great circles for
+  immediate plotting

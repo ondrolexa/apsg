@@ -50,3 +50,7 @@ def l2xy(azi, inc):
 def rodrigues(k, v, theta):
     return v*cosd(theta) + np.cross(k.T, v.T).T*sind(theta) + \
         k*np.dot(k.T, v) * (1-cosd(theta))
+
+
+def angle_metric(u, v):
+    return np.degrees(np.arccos(np.abs(np.dot(u, v))))

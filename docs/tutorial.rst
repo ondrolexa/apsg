@@ -343,6 +343,68 @@ methods are available::
     s.line(g, 'wo')
     s.show()
 
+
+Cluster class
+-------------
+
+``Cluster`` class provide access to **scipy** hierarchical clustering.
+Distance matrix is calculated as mutual angles of features within Group
+keeping axial and/or vectorial nature in mind. ``Cluster.explain`` method
+allows to explore explained variance versus number of clusters relation.
+Actual cluster is done by ``Cluster.cluster`` method, using distance or
+maxclust criterion. Using of ``Cluster'' is explained in following
+example. We generate some data and plot dendrogram::
+
+    >>> g1 = Group.randn_lin(mean=Lin(45,30))
+    >>> g2 = Group.randn_lin(mean=Lin(320,56))
+    >>> g3 = Group.randn_lin(mean=Lin(150,40))
+    >>> g = g1 + g2 + g3
+    >>> cl = Cluster(g)
+    >>> cl.dendrogram()
+
+.. plot::
+
+    from apsg import *
+    g1 = Group.randn_lin(mean=Lin(45,30))
+    g2 = Group.randn_lin(mean=Lin(320,56))
+    g3 = Group.randn_lin(mean=Lin(150,40))
+    g = g1 + g2 + g3
+    cl = Cluster(g)
+    cl.dendrogram()
+
+Now we can explore explained variance versus number of clusters plot::
+
+   >>> cl.explain()
+
+ .. plot::
+
+    from apsg import *
+    g1 = Group.randn_lin(mean=Lin(45,30))
+    g2 = Group.randn_lin(mean=Lin(320,56))
+    g3 = Group.randn_lin(mean=Lin(150,40))
+    g = g1 + g2 + g3
+    cl = Cluster(g)
+    cl.explain()
+
+Finally we can do clustering and plot created clusters::
+
+   >>> cl.cluster(maxclust=3)
+   >>> cl.R.data  # Restored centres of clusters
+   [L:152/38, L:47/33, L:314/52]
+   >>> StereoNet(*cl.groups)
+
+.. plot::
+
+    from apsg import *
+    g1 = Group.randn_lin(mean=Lin(45,30))
+    g2 = Group.randn_lin(mean=Lin(320,56))
+    g3 = Group.randn_lin(mean=Lin(150,40))
+    g = g1 + g2 + g3
+    cl = Cluster(g)
+    cl.cluster(maxclust=3)
+    StereoNet(*cl.groups)
+
+
 Some tricks
 -----------
 
