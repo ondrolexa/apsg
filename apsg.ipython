@@ -5,4 +5,3 @@ from IPython import embed
 from apsg import *
 plt.ion()
 embed(header='APSG and Pylab imported into current namespace.')
-

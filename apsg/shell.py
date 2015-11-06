@@ -5,39 +5,43 @@ from apsg import *
 
 from subprocess import call
 import platform
-import webbrowser
+# import webbrowser
 import sys
 
 ion()
 
 try:
-  from apsg import __version__ as APSG_VERSION
+    from apsg import __version__ as APSG_VERSION
 except:
-  APSG_VERSION = ''
+    APSG_VERSION = ''
 
-#Command to clear the shell screen
+
+# Command to clear the shell screen
 def shellclear():
-  if platform.system() == "Windows":
-    return
-  call("clear")
+    if platform.system() == "Windows":
+        return
+    call("clear")
+
 
 def magic_clear(self, arg):
-  shellclear()
+    shellclear()
 
-#def magic_docs(self, arg):
-#  webbrowser.open('https://apsg.readthedocs.org/')
+
+# def magic_docs(self, arg):
+#     webbrowser.open('https://apsg.readthedocs.org/')
 
 """
 If you run APSG directly, it will launch an IPython shell
 """
 
+
 def setup_shell():
 
-    banner = '+----------------------------------------------------------------+\n'
+    banner = '+-----------------------------------------------------------+\n'
     banner += ' APSG '
     banner += APSG_VERSION
     banner += ' [interactive shell] - http://ondrolexa.github.io/apsg\n'
-    banner += '+----------------------------------------------------------------+\n'
+    banner += '+-----------------------------------------------------------+\n'
     banner += '\n'
     banner += 'Commands: \n'
     banner += '\t"exit()" or press "Ctrl+ D" to exit the shell\n'
@@ -50,18 +54,14 @@ def setup_shell():
     exit_msg = '\n... [Exiting the APSG interactive shell] ...\n'
 
     try:
-        import IPython
-    except:
-        raise("ERROR: IPython Failed to load")
-
-    try:
         from traitlets.config import Config
         from IPython.terminal.embed import InteractiveShellEmbed
 
         cfg = Config()
         cfg.PromptManager.in_template = "APSG:\\#> "
         cfg.PromptManager.out_template = "APSG:\\#: "
-        apsgShell = InteractiveShellEmbed(config=cfg, banner1=banner, exit_msg = exit_msg)
+        apsgShell = InteractiveShellEmbed(config=cfg, banner1=banner,
+                                          exit_msg = exit_msg)
         apsgShell.define_magic("clear", magic_clear)
         #apsgShell.define_magic("docs", magic_docs)
 
@@ -75,7 +75,7 @@ def setup_shell():
             apsgShell.set_exit_msg(exit_msg)
             apsgShell.IP.api.expose_magic("clear", magic_clear)
         except ImportError:
-            raise
+            raise("ERROR: IPython shell failed to load")
 
     return apsgShell
 

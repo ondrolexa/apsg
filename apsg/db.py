@@ -7,6 +7,7 @@ API to read data from PySDB database
 import sqlite3
 from .core import Fol, Lin, Group
 
+
 class Datasource(object):
     """PySDB database access class"""
     _TESTSEL = "SELECT sites.id, sites.name, sites.x_coord, sites.y_coord, \
@@ -30,13 +31,15 @@ class Datasource(object):
     INNER JOIN structdata ON sites.id = structdata.id_sites   \
     INNER JOIN structype ON structype.id = structdata.id_structype   \
     INNER JOIN units ON units.id = sites.id_units"
+    _VERSEL = "SELECT value FROM meta WHERE name='version'"
 
     def __new__(cls, db=None):
         try:
             cls.con = sqlite3.connect(db)
             cls.con.execute("pragma encoding='UTF-8'")
             cls.con.execute(Datasource._TESTSEL)
-            print("Connected. PySDB version: %s" % cls.con.execute("SELECT value FROM meta WHERE name='version'").fetchall()[0][0])
+            ver = cls.con.execute(Datasource._VERSEL).fetchall()[0][0]
+            print("Connected. PySDB version: %s" % ver)
             return super(Datasource, cls).__new__(cls)
         except sqlite3.Error as e:
             print("Error %s:" % e.args[0])
@@ -54,8 +57,9 @@ class Datasource(object):
         dtsel = Datasource._SELECT + " WHERE structype.structure='%s'" % struct
         tp = self.execsql(tpsel)[0][0]
         if tp:
-            res = Group([Fol(el[0], el[1]) for el in self.execsql(dtsel)], name=struct)
+            res = Group([Fol(el[0], el[1]) for el in self.execsql(dtsel)],
+                        name=struct)
         else:
-            res = Group([Lin(el[0], el[1]) for el in self.execsql(dtsel)], name=struct)
+            res = Group([Lin(el[0], el[1]) for el in self.execsql(dtsel)],
+                        name=struct)
         return res
-

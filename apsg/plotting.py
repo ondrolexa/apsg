@@ -458,7 +458,7 @@ class Density(object):
         plt.triplot(self.triang, 'bo-')
         plt.show()
 
-#----------------------------------------------------------------
+# ----------------------------------------------------------------
 # Following counting routines are from Joe Kington's mplstereonet
 # https://github.com/joferkington/mplstereonet
 
@@ -522,7 +522,7 @@ def _schmidt_count(cos_dist, sigma=None):
     # To offset the count.sum() - 0.5 required for the kamb methods...
     count = 0.5 / count.size + count
     return count, (cos_dist.size * radius)
-#------------------------------------------------------------------
+# ------------------------------------------------------------------
 
 
 def rose(a, bins=13, **kwargs):

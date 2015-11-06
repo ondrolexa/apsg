@@ -2,6 +2,6 @@
 from apsg import shell
 import sys
 if len(sys.argv) > 1:
-	shell.main(sys.argv)
+    shell.main(sys.argv)
 else:
-	shell.main()
+    shell.main()
