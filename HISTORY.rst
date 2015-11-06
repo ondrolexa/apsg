@@ -53,3 +53,5 @@ History
 * asvec3 method implemented for Fol and Lin
 * fol_plot property of StereoNet allows choose poles or great circles for
   immediate plotting
+* bootstrap method of Group provide generator of random resampling with
+  replacements.

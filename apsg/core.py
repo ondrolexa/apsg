@@ -780,6 +780,78 @@ class Group(list):
         print('Group loaded from file %s' % filename)
         return cls(data, name=filename)
 
+    def bootstrap(self, num=100):
+        for ix in np.random.randint(0, len(self), (num, len(self))):
+            yield self[ix]
+
+    @classmethod
+    def examples(cls, name=None):
+        samples = ['B2', 'B4', 'B11']
+        if name is None:
+            print('Available sample datasets:')
+            print(samples)
+        else:
+            return cls.from_array(
+                Group.azis[name],
+                Group.incs[name],
+                Group.typs[name])
+
+    # Sample datasets
+    azis = {}
+    incs = {}
+    typs = {}
+    # Embleton (1970) - Measurements of magnetic remanence in specimens
+    # of Palaeozoic red-beds from Argentina.
+    azis['B2'] = [122.5, 130.5, 132.5, 148.5, 140.0, 133.0, 157.5, 153.0,
+                  140.0, 147.5, 142.0, 163.5, 141.0, 156.0, 139.5, 153.5,
+                  151.5, 147.5, 141.0, 143.5, 131.5, 147.5, 147.0, 149.0,
+                  144.0, 139.5]
+    incs['B2'] = [55.5, 58.0, 44.0, 56.0, 63.0, 64.5, 53.0, 44.5, 61.5,
+                  54.5, 51.0, 56.0, 59.5, 56.5, 54.0, 47.5, 61.0, 58.5,
+                  57.0, 67.5, 62.5, 63.5, 55.5, 62.0, 53.5, 58.0]
+    typs['B2'] = Lin
+    # Cohen (1983) - Facing directions of conically folded planes.
+    azis['B4'] = [269, 265, 271, 272, 268, 267, 265, 265, 265, 263, 267, 267,
+                  270, 270, 265, 95, 100, 95, 90, 271, 267, 272, 270, 273,
+                  271, 269, 270, 267, 266, 268, 269, 270, 269, 270, 272, 271,
+                  271, 270, 273, 271, 270, 274, 275, 274, 270, 268, 97, 95,
+                  90, 95, 94, 93, 93, 93, 95, 96, 100, 104, 102, 108, 99, 112,
+                  110, 100, 95, 93, 91, 92, 92, 95, 89, 93, 100, 270, 261,
+                  275, 276, 275, 277, 276, 273, 273, 271, 275, 277, 275, 276,
+                  279, 277, 278, 280, 275, 270, 275, 276, 255, 105, 99, 253,
+                  96, 93, 92, 91, 91, 90, 89, 89, 96, 105, 90, 76, 91, 91, 91,
+                  90, 95, 90, 92, 92, 95, 100, 135, 98, 92, 90, 99, 175, 220,
+                  266, 235, 231, 256, 272, 276, 276, 275, 273, 266, 276, 274,
+                  275, 274, 272, 273, 270, 103, 95, 98, 96, 111, 96, 92, 91,
+                  90, 90]
+    incs['B4'] = [48, 57, 61, 59, 58, 60, 59, 58, 60, 59, 59, 53, 50, 48, 61,
+                  40, 56, 67, 52, 49, 60, 47, 50, 48, 50, 53, 52, 58, 60, 60,
+                  62, 61, 62, 60, 58, 59, 56, 53, 49, 49, 53, 50, 46, 45, 60,
+                  68, 75, 47, 48, 50, 48, 49, 45, 41, 42, 40, 51, 70, 74, 71,
+                  51, 75, 73, 60, 49, 44, 41, 51, 45, 50, 41, 44, 68, 67, 73,
+                  50, 40, 60, 47, 47, 54, 60, 62, 57, 43, 53, 40, 40, 42, 44,
+                  60, 65, 76, 63, 71, 80, 77, 72, 80, 60, 48, 49, 48, 46, 44,
+                  43, 40, 58, 65, 39, 48, 38, 43, 42, 49, 39, 43, 44, 48, 61,
+                  68, 80, 60, 49, 45, 62, 79, 79, 72, 76, 77, 71, 60, 42, 50,
+                  41, 60, 73, 43, 50, 46, 51, 56, 50, 40, 73, 57, 60, 54, 71,
+                  54, 50, 48, 48, 51]
+    typs['B4'] = Lin
+    # Powell, Cole & Cudahy (1985) - Orientations of axial-plane cleavage
+    # surfaces of F1 folds in Ordovician turbidites.
+    azis['B11'] = [65, 75, 233, 39, 53, 58, 50, 231, 220, 30, 59, 44, 54, 251,
+                   233, 52, 26, 40, 266, 67, 61, 72, 54, 32, 238, 84, 230, 228,
+                   230, 231, 40, 233, 234, 225, 234, 222, 230, 51, 46, 207,
+                   221, 58, 48, 222, 10, 52, 49, 36, 225, 221, 216, 194, 228,
+                   27, 226, 58, 35, 37, 235, 38, 227, 34, 225, 53, 57, 66, 45,
+                   47, 54, 45, 60, 51, 42, 52, 63]
+
+    incs['B11'] = [50, 53, 85, 82, 82, 66, 75, 85, 87, 85, 82, 88, 86, 82, 83,
+                   86, 80, 78, 85, 89, 85, 85, 86, 67, 87, 86, 81, 85, 79, 86,
+                   88, 84, 87, 88, 83, 82, 89, 82, 82, 67, 85, 87, 82, 82, 82,
+                   75, 68, 89, 81, 87, 63, 86, 81, 81, 89, 62, 81, 88, 70, 80,
+                   77, 85, 74, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90]
+    typs['B11'] = Fol
+
 
 class FaultSet(list):
     """FaultSet class
@@ -1046,28 +1118,32 @@ class Cluster(object):
         dendrogram(self.Z, **kwargs)
         plt.show()
 
-    def explain(self, no_plot=False):
-        """Plot variance explained vs. number of clusters. Elbow criterion
-        could be used to determine number of clusters.
+    def elbow(self, no_plot=False):
+        """Plot within groups variance vs. number of clusters.
+        Elbow criterion could be used to determine number of clusters.
         """
         from scipy.cluster.hierarchy import fcluster
         import matplotlib.pyplot as plt
         idx = fcluster(self.Z, len(self.data), criterion='maxclust')
-        total_var = self.data.var
         nclust = list(np.arange(1, np.sqrt(idx.max() / 2) + 1, dtype=int))
-        exp_var = []
+        within_grp_var = []
+        mean_var = []
         for n in nclust:
             idx = fcluster(self.Z, n, criterion='maxclust')
             grp = [np.flatnonzero(idx == c) for c in np.unique(idx)]
-            cluster_var = Group([self.data[ix].R for ix in grp]).var
-            exp_var.append(cluster_var / total_var)
+            # between_grp_var = Group([self.data[ix].R.uv for ix in grp]).var
+            var = [100*self.data[ix].var for ix in grp]
+            within_grp_var.append(var)
+            mean_var.append(np.mean(var))
         if not no_plot:
-            plt.plot(nclust, 100 * np.array(exp_var), 'ko-')
+            plt.boxplot(within_grp_var, positions=nclust)
+            plt.plot(nclust, mean_var, 'k')
             plt.xlabel('Number of clusters')
-            plt.ylabel('Percent of variance explained')
+            plt.ylabel('Variance')
+            plt.title('Within-groups variance vs. number of clusters')
             plt.show()
         else:
-            return nclust, exp_var
+            return nclust, within_grp_var
 
     @property
     def R(self):

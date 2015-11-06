@@ -371,9 +371,11 @@ example. We generate some data and plot dendrogram::
     cl = Cluster(g)
     cl.dendrogram()
 
-Now we can explore explained variance versus number of clusters plot::
+Now we can explore evolution of within-groups variance versus
+number of clusters on Elbow plot (Note change in slope for
+three clusters)::
 
-   >>> cl.explain()
+   >>> cl.elbow()
 
  .. plot::
 
@@ -383,7 +385,7 @@ Now we can explore explained variance versus number of clusters plot::
     g3 = Group.randn_lin(mean=Lin(150,40))
     g = g1 + g2 + g3
     cl = Cluster(g)
-    cl.explain()
+    cl.elbow()
 
 Finally we can do clustering and plot created clusters::
 
