@@ -55,3 +55,4 @@ History
   immediate plotting
 * bootstrap method of Group provide generator of random resampling with
   replacements.
+* Group examples method provide few well-known datasets.
