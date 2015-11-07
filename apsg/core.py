@@ -566,7 +566,14 @@ class Group(list):
         super(Group, self).__setitem__(key, value)
 
     def __getitem__(self, key):
-        if hasattr(key, '__iter__'):
+        """Group fancy indexing"""
+        if isinstance(key, slice):
+            key = np.arange(*key.indices(len(self)))
+        if isinstance(key, list) or isinstance(key, tuple):
+            key = np.asarray(key)
+        if isinstance(key, np.ndarray):
+            if key.dtype == 'bool':
+                key = np.flatnonzero(key)
             return Group([self[i] for i in key])
         else:
             return super(Group, self).__getitem__(key)
@@ -579,6 +586,9 @@ class Group(list):
     def extend(self, items=()):
         for item in items:
             self.append(item)
+
+    def copy(self):
+        return Group(super(Group, self).copy(), self.name)
 
     @property
     def data(self):
@@ -1023,7 +1033,7 @@ class Ortensor(object):
         return self.eigenvects.asfol
 
     @property
-    def C(self):
+    def strength(self):
         """Woodcock strength"""
         return np.log(self.E1 / self.E3)
 
@@ -1048,7 +1058,7 @@ class Ortensor(object):
         return 3*self.vals[2]/self.n
 
     @property
-    def B(self):
+    def C(self):
         """Cylindricity index"""
         return self.P + self.G
 

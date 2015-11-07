@@ -250,7 +250,7 @@ data etc.::
     >>> g.var
     0.02337168447438509
     >>> g.fisher_stats
-    {'csd': 13.844747281750971, 'k': 34.229454059110871, 'a95': 13.264029905117329}
+    {'k': 34.229454059110871, 'a95': 13.264029905117329, 'csd': 13.844747281750971}
     >>> g.delta
     12.411724720740544
 
@@ -258,8 +258,8 @@ To calculate orientation tensor of all features in group,
 we can use method ``ortensor``::
 
     >>> g.ortensor
-    Ortensor:
-    (E1:4.77,E2:0.2011,E3:0.02874)
+    Ortensor: L1
+    (E1:0.954,E2:0.04021,E3:0.005749)
     [[ 0.36990905 -0.48027385 -0.71621555]
      [-0.48027385  1.42230591  2.10464496]
      [-0.71621555  2.10464496  3.20778504]]
@@ -271,17 +271,23 @@ Ortensor class
 or linear features. Eigenvalues and eigenvectors could be obtained
 by methods ``eigenvals`` and ``eigenvects``. Eigenvectors could be also
 represented by linear or planar features using properties ``eigenlins``
-and ``eigenfols``::
+and ``eigenfols``. Several properties to describe orientation distribution
+is also impleneted, e.g. Woodcock's ``shape`` and ``strength`` or Vollmer's
+``P``, ``G``, ``R`` and ``C`` indexes.::
 
     >>> ot = Ortensor(g)
     >>> ot.eigenvals
-    (0.95403846865963859, 0.040212749461964695, 0.0057487818783964082)
+    (0.95403846865963882, 0.040212749461964611, 0.0057487818783963102)
     >>> ot.eigenvects.data
     [V(0.192, -0.542, -0.818), V(-0.981, -0.082, -0.176), V(-0.028, -0.836, 0.547)]
     >>> ot.eigenlins.data
     [L:110/55, L:5/10, L:268/33]
     >>> ot.eigenfols.data
     [S:290/35, S:185/80, S:88/57]
+    >>> ot.strength, ot.shape
+    (5.111716009046873, 1.6278666609093613)
+    >>> ot.P, ot.G, ot.R
+    (0.91382571919767419, 0.068927935167136606, 0.017246345635188932)
 
 StereoNet class
 ---------------

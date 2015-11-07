@@ -40,15 +40,17 @@ History
 * StereoNet.getfols method bug fixed.
 * Shell scripts to run interactive session improved.
 
-0.2.4 (22 Oct 2015)
+0.2.4 (XX XXX 2015)
 ---------------------
 
-* Group could be indexed by sequences of indexes like list, tuple or array
+* Group fancy indexing implemented. Group could be indexed by sequences
+  of indexes like list, tuple or array as well as sliced.
 * Cluster class with hierarchical clustering implemented
 * Group to_file and from_file methods implemented to store data in file
+* Group copy method for shallow copy implemented
 * StereoNet now accept Vec3 and Fault object as well for instant plotting. 
-* Ortensor updated with new properties E1,E2,E3
-  and Vollmer(1989) parameters P,G,R and B. Shape and strenght fixed.
+* Ortensor updated with new properties E1,E2,E3 and Vollmer(1989) indexes
+  P,G,R and C. Bug in Woodcocks's shape and strength values fixed.
 * uniform_lin and uniform_fol improved.
 * asvec3 method implemented for Fol and Lin
 * fol_plot property of StereoNet allows choose poles or great circles for
@@ -56,3 +58,4 @@ History
 * bootstrap method of Group provide generator of random resampling with
   replacements.
 * Group examples method provide few well-known datasets.
+* Matplotlib deprecation warnings are ignored by default

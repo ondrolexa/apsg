@@ -5,6 +5,8 @@ from __future__ import division, print_function
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import warnings
+import matplotlib.cbook as mcb
 
 try:
     import mplstereonet
@@ -15,6 +17,9 @@ from .core import Vec3, Fol, Lin, Fault, Group, FaultSet
 from .helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 
 __all__ = ['StereoNet', 'Density', 'rose']
+
+# ignore matplotlib warnings
+warnings.filterwarnings('ignore', category=mcb.mplDeprecation)
 
 
 class StereoNetJK(object):
