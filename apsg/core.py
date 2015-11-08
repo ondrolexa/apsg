@@ -641,7 +641,7 @@ class Group(list):
 
     @property
     def R(self):
-        """calculate resultant vector of Group"""
+        """Return resultant of Group"""
         r = deepcopy(self[0])
         for v in self[1:]:
             r += v
@@ -697,10 +697,12 @@ class Group(list):
         """rotate Group"""
         return Group([e.rotate(axis, phi) for e in self], name=self.name)
 
-    def center(self):
+    @property
+    def centered(self):
         """rotate eigenvectors to axes of coordinate system"""
         return self.transform(np.asarray(self.ortensor.eigenvects))
 
+    @property
     def normalized(self):
         """return Group with normalized elements"""
         return Group([e/abs(e) for e in self], name=self.name)
