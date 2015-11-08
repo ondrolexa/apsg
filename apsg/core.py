@@ -6,6 +6,7 @@ Python module to manipulate, analyze and visualize structural geology data
 
 from __future__ import division, print_function
 from copy import deepcopy
+import warnings
 
 import numpy as np
 from .helpers import sind, cosd, acosd, asind, atan2d, angle_metric
@@ -419,7 +420,6 @@ class Pair(object):
         lin = Lin(lazi, linc)
         misfit = 90 - fol.angle(lin)
         if misfit > 20:
-            import warnings
             warnings.warn('Warning: Misfit angle is %.1f degrees.' % misfit)
         ax = fol**lin
         ang = (Vec3(lin).angle(fol) - 90)/2
@@ -432,6 +432,12 @@ class Pair(object):
     def __repr__(self):
         vals = self.fol.dd + self.lin.dd
         return 'P:{:.0f}/{:.0f}-{:.0f}/{:.0f}'.format(*vals)
+
+    @classmethod
+    def from_pair(cls, fol, lin):
+        """Create ``Pair`` from Fol and Lin objects"""
+        data = fol.dd + lin.dd
+        return cls(*data)
 
     def rotate(self, axis, phi):
         """Rotates ``Pair`` by `phi` degrees about `axis`::
@@ -459,14 +465,14 @@ class Pair(object):
         """Returns planar feature of ``Pair`` as ``Fol``.
 
         """
-        return Fol(*self.fvec.asfol.dd)
+        return self.fvec.asfol
 
     @property
     def lin(self):
         """Returns linear feature of ``Pair`` as ``Lin``.
 
         """
-        return Lin(*self.lvec.aslin.dd)
+        return self.lvec.aslin
 
     def transform(self, F):
         """Returns affine transformation of ``Pair`` by matrix *F*::
@@ -503,6 +509,12 @@ class Fault(Pair):
         s = ['', '+', '-'][self.sense]
         vals = self.fol.dd + self.lin.dd + (s,)
         return 'F:{:.0f}/{:.0f}-{:.0f}/{:.0f} {:s}'.format(*vals)
+
+    @classmethod
+    def from_pair(cls, fol, lin, sense):
+        """Create ``Fault`` from Fol and Lin objects"""
+        data = fol.dd + lin.dd + (sense,)
+        return cls(*data)
 
     def rotate(self, axis, phi):
         rot = deepcopy(self)
