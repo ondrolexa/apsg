@@ -383,7 +383,7 @@ three clusters)::
 
    >>> cl.elbow()
 
- .. plot::
+.. plot::
 
     from apsg import *
     g1 = Group.randn_lin(mean=Lin(45,30))
