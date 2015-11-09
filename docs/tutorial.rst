@@ -310,7 +310,6 @@ line or pole in stereographic projection using StereoNet class::
     s.line(Lin(112, 30))
     s.show() 
 
-
 A cones (or small circles) could be plotted as well::
 
     >>> s = StereoNet()
@@ -329,7 +328,6 @@ A cones (or small circles) could be plotted as well::
     s.cone(g.R, g.fisher_stats['a95'], 'r')  # confidence cone on resultant
     s.cone(g.R, g.fisher_stats['csd'], 'g')  # confidence cone on 63% of data
     s.show()
-
 
 To make density contours plots, a ``contour`` and ``contourf``
 methods are available::
@@ -350,7 +348,6 @@ methods are available::
     s.contour(g, 8, colors='k')
     s.line(g, 'wo')
     s.show()
-
 
 Cluster class
 -------------
@@ -380,7 +377,6 @@ example. We generate some data and plot dendrogram::
     cl = Cluster(g)
     cl.dendrogram()
 
-
 Now we can explore evolution of within-groups variance versus
 number of clusters on Elbow plot (Note change in slope for
 three clusters)::
@@ -396,7 +392,6 @@ three clusters)::
     g = g1 + g2 + g3
     cl = Cluster(g)
     cl.elbow()
-
 
 Finally we can do clustering and plot created clusters::
 
@@ -416,7 +411,6 @@ Finally we can do clustering and plot created clusters::
     cl.cluster(maxclust=3)
     StereoNet(*cl.groups)
 
-
 Some tricks
 -----------
 
@@ -432,7 +426,6 @@ Double cross product is allowed (note quick plot feature)::
     p = Fol(250,40)
     l = Lin(160,25)
     StereoNet(p, l, l**p, p**l, l**p**l, p**l**p)
-
 
 Correct measurements of planar linear pairs by instantiation
 of Pair class::
@@ -458,5 +451,3 @@ of Pair class::
     s.plane(pl.fol, 'g')
     s.line(pl.lin, 'go')
     s.show()
-
-
