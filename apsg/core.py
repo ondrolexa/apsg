@@ -105,7 +105,10 @@ class Vec3(np.ndarray):
           90.0
 
         """
-        return acosd(np.clip(np.dot(self.uv, other.uv), -1, 1))
+        if isinstance(other, Group):
+            return other.angle(self)
+        else:
+            return acosd(np.clip(np.dot(self.uv, other.uv), -1, 1))
 
     def rotate(self, axis, phi):
         """Rotates vector `phi` degrees about `axis`::
@@ -253,7 +256,10 @@ class Lin(Vec3):
           90.0
 
         """
-        return acosd(abs(np.clip(np.dot(self.uv, other.uv), -1, 1)))
+        if isinstance(other, Group):
+            return other.angle(self)
+        else:
+            return acosd(abs(np.clip(np.dot(self.uv, other.uv), -1, 1)))
 
     def cross(self, other):
         """Returns planar feature defined by two linear features
@@ -264,7 +270,10 @@ class Lin(Vec3):
           S:196/35
 
         """
-        return np.cross(self, other).view(Fol)
+        if isinstance(other, Group):
+            return other.cross(self)
+        else:
+            return np.cross(self, other).view(Fol)
 
     @property
     def dd(self):
@@ -338,7 +347,7 @@ class Fol(Vec3):
         """
         return not (self == other or self == -other)
 
-    def angle(self, fol):
+    def angle(self, other):
         """Returns angle of two planar features in degrees
 
         Example:
@@ -346,7 +355,10 @@ class Fol(Vec3):
           90.0
 
         """
-        return acosd(abs(np.clip(np.dot(self.uv, fol.uv), -1, 1)))
+        if isinstance(other, Group):
+            return other.angle(self)
+        else:
+            return acosd(abs(np.clip(np.dot(self.uv, other.uv), -1, 1)))
 
     def cross(self, other):
         """Returns linear feature defined as intersection of two planar features
@@ -357,7 +369,10 @@ class Fol(Vec3):
           L:72/29
 
         """
-        return np.cross(self, other).view(Lin)
+        if isinstance(other, Group):
+            return other.cross(self)
+        else:
+            return np.cross(self, other).view(Lin)
 
     def transform(self, F):
         """Returns affine transformation of planar feature by matrix *F*::
@@ -810,10 +825,9 @@ class Group(list):
 
     @classmethod
     def examples(cls, name=None):
-        samples = ['B2', 'B4', 'B11']
         if name is None:
             print('Available sample datasets:')
-            print(samples)
+            print(list(Group.typs.keys()))
         else:
             return cls.from_array(
                 Group.azis[name],
@@ -875,7 +889,21 @@ class Group(list):
                    75, 68, 89, 81, 87, 63, 86, 81, 81, 89, 62, 81, 88, 70, 80,
                    77, 85, 74, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90]
     typs['B11'] = Fol
+    # Powell, Cole & Cudahy (1985) - Orientations of axial-plane cleavage
+    # surfaces of F1 folds in Ordovician turbidites.
+    azis['B12'] = [122, 132, 141, 145, 128, 133, 130, 129, 124, 120, 137, 141,
+                   151, 138, 135, 135, 156, 156, 130, 112, 116, 113, 117, 110,
+                   106, 106, 98, 84, 77, 111, 122, 140, 48, 279, 19, 28, 28,
+                   310, 310, 331, 326, 332, 3, 324, 308, 304, 304, 299, 293,
+                   293, 306, 310, 313, 319, 320, 320, 330, 327, 312, 317, 314,
+                   312, 311, 307, 311, 310, 310, 305, 305, 301, 301, 300]
 
+    incs['B12'] = [80, 72, 63, 51, 62, 53, 53, 52, 48, 45, 44, 44, 34, 37, 38,
+                   40, 25, 15, 22, 63, 35, 28, 28, 22, 33, 37, 32, 27, 24, 8,
+                   6, 8, 11, 8, 6, 6, 8, 20, 21, 18, 25, 28, 32, 32, 32, 34,
+                   38, 37, 44, 45, 48, 42, 47, 45, 43, 45, 50, 70, 59, 66, 65,
+                   70, 66, 67, 83, 66, 69, 69, 72, 67, 69, 82]
+    typs['B12'] = Fol
 
 class FaultSet(list):
     """FaultSet class
