@@ -8,6 +8,9 @@ APSG - python module for structural geologists
 .. image:: https://badge.fury.io/gh/ondrolexa%2Fapsg.svg
     :target: http://badge.fury.io/gh/ondrolexa%2Fapsg
 
+.. image:: https://readthedocs.org/projects/apsg/badge/?version=master
+    :target: http://apsg.readthedocs.org/en/master/?badge=master
+
 .. image:: https://anaconda.org/ondrolexa/apsg/badges/version.svg
     :target: https://anaconda.org/ondrolexa/apsg
 
