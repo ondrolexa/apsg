@@ -40,7 +40,7 @@ History
 * StereoNet.getfols method bug fixed.
 * Shell scripts to run interactive session improved.
 
-0.2.4 (09 Nov 2015)
+0.3.0 (09 Nov 2015)
 ---------------------
 
 * Group fancy indexing implemented. Group could be indexed by sequences
