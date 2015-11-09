@@ -184,7 +184,7 @@ class StereoNet(object):
         else:
             plt.subplots_adjust(right=0.9)
         plt.draw()
-        plt.pause(0.001)
+        #plt.pause(0.001)
 
     def cla(self):
         """Clear projection"""
