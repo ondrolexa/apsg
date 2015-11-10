@@ -714,8 +714,9 @@ class Group(list):
 
     @property
     def centered(self):
-        """rotate eigenvectors to axes of coordinate system"""
-        return self.transform(np.asarray(self.ortensor.eigenvects))
+        """rotate eigenvectors to axes of coordinate system
+        E1(vertical), E2(east-west), E3(north-south)"""
+        return self.transform(self.ortensor.vects).rotate(Lin(90,0), 90)
 
     @property
     def normalized(self):
