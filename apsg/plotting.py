@@ -419,7 +419,7 @@ class Density(object):
     def calculate(self, **kwargs):
         import matplotlib.tri as tri
         # parse options
-        sigma = kwargs.get('sigma', 3)
+        sigma = kwargs.get('sigma', 1)
         ctn_points = kwargs.get('cnt_points', 180)
         method = kwargs.get('method', 'exponential_kamb')
 
@@ -446,7 +446,7 @@ class Density(object):
             count, scale = func(dist, sigma)
             count *= weights
             self.density[i] = (count.sum() - 0.5) / scale
-        self.density[self.density < 0] = 0
+        #self.density[self.density < 0] = 0
         self.triang = tri.Triangulation(self.xg, self.yg)
 
     def plot(self, N=6, cm=plt.cm.jet):
