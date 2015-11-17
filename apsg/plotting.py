@@ -184,7 +184,7 @@ class StereoNet(object):
         else:
             plt.subplots_adjust(right=0.9)
         plt.draw()
-        #plt.pause(0.001)
+        # plt.pause(0.001)
 
     def cla(self):
         """Clear projection"""
@@ -386,10 +386,10 @@ class StereoNet(object):
         cax = divider.append_axes("left", size="5%", pad=0.5)
         plt.colorbar(cs, cax=cax)
         # modify tick labels
-        #cb = plt.colorbar(cs, cax=cax)
-        #lbl = [item.get_text()+'S' for item in cb.ax.get_yticklabels()]
-        #lbl[lbl.index(next(l for l in lbl if l.startswith('0')))] = 'E'
-        #cb.set_ticklabels(lbl)
+        # cb = plt.colorbar(cs, cax=cax)
+        # lbl = [item.get_text()+'S' for item in cb.ax.get_yticklabels()]
+        # lbl[lbl.index(next(l for l in lbl if l.startswith('0')))] = 'E'
+        # cb.set_ticklabels(lbl)
 
     def show(self):
         plt.show()
@@ -446,7 +446,7 @@ class Density(object):
             count, scale = func(dist, sigma)
             count *= weights
             self.density[i] = (count.sum() - 0.5) / scale
-        #self.density[self.density < 0] = 0
+        # self.density[self.density < 0] = 0
         self.triang = tri.Triangulation(self.xg, self.yg)
 
     def plot(self, N=6, cm=plt.cm.jet):
@@ -495,7 +495,7 @@ def _linear_inverse_kamb(cos_dist, sigma=3):
     n = float(cos_dist.size)
     radius = _kamb_radius(n, sigma)
     f = 2 / (1 - radius)
-    #cos_dist = cos_dist[cos_dist >= radius]
+    # cos_dist = cos_dist[cos_dist >= radius]
     count = (f * (cos_dist - radius))
     count[cos_dist < radius] = 0
     return count, _kamb_units(n, radius)
@@ -506,7 +506,7 @@ def _square_inverse_kamb(cos_dist, sigma=3):
     n = float(cos_dist.size)
     radius = _kamb_radius(n, sigma)
     f = 3 / (1 - radius)**2
-    #cos_dist = cos_dist[cos_dist >= radius]
+    # cos_dist = cos_dist[cos_dist >= radius]
     count = (f * (cos_dist - radius)**2)
     count[cos_dist < radius] = 0
     return count, _kamb_units(n, radius)

@@ -716,7 +716,7 @@ class Group(list):
     def centered(self):
         """rotate eigenvectors to axes of coordinate system
         E1(vertical), E2(east-west), E3(north-south)"""
-        return self.transform(self.ortensor.vects).rotate(Lin(90,0), 90)
+        return self.transform(self.ortensor.vects).rotate(Lin(90, 0), 90)
 
     @property
     def normalized(self):
@@ -905,6 +905,7 @@ class Group(list):
                    38, 37, 44, 45, 48, 42, 47, 45, 43, 45, 50, 70, 59, 66, 65,
                    70, 66, 67, 83, 66, 69, 69, 72, 67, 69, 82]
     typs['B12'] = Fol
+
 
 class FaultSet(list):
     """FaultSet class
