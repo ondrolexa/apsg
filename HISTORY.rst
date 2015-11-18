@@ -59,3 +59,9 @@ History
   replacements.
 * Group examples method provide few well-known datasets.
 * Matplotlib deprecation warnings are ignored by default
+
+0.3.1 (09 Nov 2015)
+---------------------
+
+* SDB class improved.
+* StereoNet has close method to close figure

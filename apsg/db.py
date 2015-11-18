@@ -37,40 +37,52 @@ class SDB(object):
             print("Error %s:" % e.args[0])
             raise sqlite3.Error
 
-    def execsql(self, sql):
-        return self.conn.execute(sql).fetchall()
-
-    @property
-    def structures(self):
-        dtsel = SDB._SELECT + " GROUP BY structdata.id"
-        return list(set([el['structure'] for el in self.execsql(dtsel)]))
-
-    @property
-    def sites(self):
-        dtsel = SDB._SELECT + " GROUP BY structdata.id"
-        return list(set([el['name'] for el in self.execsql(dtsel)]))
-
-    def select(self, struct, sites=None, units=None):
-        where = ["structype.structure='%s'" % struct]
+    def _make_select(self, structs=None, sites=None, units=None):
+        w = []
+        if structs:
+            if isinstance(structs, str):
+                w.append("structype.structure='%s'" % structs)
+            elif isinstance(structs, (list, tuple)):
+                u = ' OR '.join(["structype.structure='%s'" % struct for struct in structs])
+                w.append("(" + u + ")")
+            else:
+                raise ValueError('Keyword structs must be list or string.')
         if sites:
             if isinstance(sites, str):
-                where.append("sites.name='%s'" % sites)
+                w.append("sites.name='%s'" % sites)
             elif isinstance(sites, (list, tuple)):
-                unf = ' OR '.join(["sites.name='%s'" % site for site in sites])
-                where.append("(" + unf + ")")
+                u = ' OR '.join(["sites.name='%s'" % site for site in sites])
+                w.append("(" + u + ")")
             else:
                 raise ValueError('Keyword sites must be list or string.')
         if units:
             if isinstance(units, str):
-                where.append("unit='%s'" % units)
+                w.append("unit='%s'" % units)
             elif isinstance(units, (list, tuple)):
-                unf = ' OR '.join(["unit='%s'" % unit for unit in units])
-                where.append("(" + unf + ")")
+                u = ' OR '.join(["unit='%s'" % unit for unit in units])
+                w.append("(" + u + ")")
             else:
                 raise ValueError('Keyword units must be list or string.')
+        return SDB._SELECT + " WHERE " + ' AND '.join(w) + " GROUP BY structdata.id"
 
+    def execsql(self, sql):
+        return self.conn.execute(sql).fetchall()
+
+    def structures(self, **kwargs):
+        dtsel = self._make_select(**kwargs)
+        return list(set([el['structure'] for el in self.execsql(dtsel)]))
+
+    def sites(self, **kwargs):
+        dtsel = self._make_select(**kwargs)
+        return list(set([el['name'] for el in self.execsql(dtsel)]))
+
+    def units(self, **kwargs):
+        dtsel = self._make_select(**kwargs)
+        return list(set([el['unit'] for el in self.execsql(dtsel)]))
+
+    def group(self, struct, **kwargs):
+        dtsel = self._make_select(structs=struct, **kwargs)
         tpsel = SDB._TYPSEL + " WHERE structure='%s'" % struct
-        dtsel = SDB._SELECT + " WHERE " + ' AND '.join(where) + " GROUP BY structdata.id"
         tp = self.execsql(tpsel)[0][0]
         if tp:
             res = Group([Fol(el['azimuth'], el['inclination'])

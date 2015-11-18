@@ -173,6 +173,9 @@ class StereoNet(object):
                     raise TypeError('%s argument is not supported!' % typ)
             self.show()
 
+    def close(self):
+        plt.close(self.fig)
+
     def draw(self):
         h, l = self.ax.get_legend_handles_labels()
         if h:
