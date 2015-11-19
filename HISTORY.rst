@@ -63,5 +63,5 @@ History
 0.3.1 (09 Nov 2015)
 ---------------------
 
-* SDB class improved.
+* SDB class improved. Support basic filtering including tags
 * StereoNet has close method to close figure

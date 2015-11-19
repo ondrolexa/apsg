@@ -37,7 +37,7 @@ class SDB(object):
             print("Error %s:" % e.args[0])
             raise sqlite3.Error
 
-    def _make_select(self, structs=None, sites=None, units=None):
+    def _make_select(self, structs=None, sites=None, units=None, tags=None):
         w = []
         if structs:
             if isinstance(structs, str):
@@ -63,24 +63,59 @@ class SDB(object):
                 w.append("(" + u + ")")
             else:
                 raise ValueError('Keyword units must be list or string.')
-        return SDB._SELECT + " WHERE " + ' AND '.join(w) + " GROUP BY structdata.id"
+        if tags:
+            if isinstance(tags, str):
+                w.append("tags.name like '%%%s%%'" % tags)
+            elif isinstance(tags, (list, tuple)):
+                u = ' AND '.join(["tags.name like '%%%s%%'" % tag for tag in tags])
+                w.append("(" + u + ")")
+            else:
+                raise ValueError('Keyword tags must be list or string.')
+        if w:
+            sel = SDB._SELECT + " WHERE " + ' AND '.join(w) + " GROUP BY structdata.id"
+        else:
+            sel = SDB._SELECT + " GROUP BY structdata.id"
+        return sel
 
     def execsql(self, sql):
         return self.conn.execute(sql).fetchall()
 
     def structures(self, **kwargs):
+        """Return list of structures in data. For kwargs see group method."""
         dtsel = self._make_select(**kwargs)
         return list(set([el['structure'] for el in self.execsql(dtsel)]))
 
     def sites(self, **kwargs):
+        """Return list of sites in data. For kwargs see group method."""
         dtsel = self._make_select(**kwargs)
         return list(set([el['name'] for el in self.execsql(dtsel)]))
 
     def units(self, **kwargs):
+        """Return list of units in data. For kwargs see group method."""
         dtsel = self._make_select(**kwargs)
         return list(set([el['unit'] for el in self.execsql(dtsel)]))
 
+    def tags(self, **kwargs):
+        """Return list of tags in data. For kwargs see group method."""
+        dtsel = self._make_select(**kwargs)
+        tags = [el['tags'] for el in self.execsql(dtsel)
+                if el['tags'] is not None]
+        return list(set(','.join(tags).split(',')))
+
     def group(self, struct, **kwargs):
+        """Method to retrieve data from SDB database to apsg.Group
+
+        Args:
+          struct:  name of structure to retrieve
+        Kwargs:
+          sites: name or list of names of sites to retrieve from
+          units: name or list of names of units to retrieve from
+          tags:  tag or list of tags to retrieve
+
+        Example:
+          >>> g = db.group('L2', units=['HG', 'MG'], tags='bos')
+
+        """
         dtsel = self._make_select(structs=struct, **kwargs)
         tpsel = SDB._TYPSEL + " WHERE structure='%s'" % struct
         tp = self.execsql(tpsel)[0][0]
