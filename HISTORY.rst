@@ -60,8 +60,10 @@ History
 * Group examples method provide few well-known datasets.
 * Matplotlib deprecation warnings are ignored by default
 
-0.3.1 (09 Nov 2015)
+0.3.1 (20 Nov 2015)
 ---------------------
 
 * SDB class improved. Support basic filtering including tags
-* StereoNet has close method to close figure
+* StereoNet has close method to close figure and new method
+  to re-initialize figure when closed in interactive mode
+* iapsg shell script added to invoke apsg ipython shell

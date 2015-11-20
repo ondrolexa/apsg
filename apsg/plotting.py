@@ -147,8 +147,7 @@ class StereoNet(object):
     """StereoNet class for Schmidt net lower hemisphere plotting"""
     def __init__(self, *args, **kwargs):
         self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111)
-        self.ax.format_coord = self.format_coord
+        self.fig.canvas.set_window_title('StereoNet - schmidt lower hemisphere projection')
         self.grid = kwargs.get('grid', True)
         self.grid_style = kwargs.get('grid_style', 'k:')
         self.fol_plot = kwargs.get('fol_plot', 'plane')
@@ -176,23 +175,37 @@ class StereoNet(object):
     def close(self):
         plt.close(self.fig)
 
+    @property
+    def closed(self):
+        return not plt.fignum_exists(self.fig.number)
+
     def draw(self):
-        h, l = self.ax.get_legend_handles_labels()
-        if h:
-            self._lgd = self.ax.legend(h, l, bbox_to_anchor=(1.12, 1),
-                                       prop={'size': 11}, loc=2,
-                                       borderaxespad=0, scatterpoints=1,
-                                       numpoints=1)
-            plt.subplots_adjust(right=0.75)
+        if self.closed:
+            print('The StereoNet figure have been closed. Use new() method or create new one.')
         else:
-            plt.subplots_adjust(right=0.9)
-        plt.draw()
-        # plt.pause(0.001)
+            h, l = self.ax.get_legend_handles_labels()
+            if h:
+                self._lgd = self.ax.legend(h, l, bbox_to_anchor=(1.12, 1),
+                                           prop={'size': 11}, loc=2,
+                                           borderaxespad=0, scatterpoints=1,
+                                           numpoints=1)
+                plt.subplots_adjust(right=0.75)
+            else:
+                plt.subplots_adjust(right=0.9)
+            plt.draw()
+            # plt.pause(0.001)
+
+    def new(self):
+        """Re-initialize StereoNet figure"""
+        if self.closed:
+            self.__init__()
 
     def cla(self):
         """Clear projection"""
         # now ok
-        self.ax.cla()
+        self.fig.clear()
+        self.ax = self.fig.add_subplot(111)
+        self.ax.format_coord = self.format_coord
         self.ax.set_aspect('equal')
         self.ax.set_autoscale_on(False)
         self.ax.axis([-1.05, 1.05, -1.05, 1.05])
@@ -300,7 +313,7 @@ class StereoNet(object):
                               limit=89.9999, res=cosd(inc)*179+2)
         h = self.ax.plot(x, y, *args, **kwargs)
         self.draw()
-        return h
+        # return h
 
     def line(self, obj, *args, **kwargs):
         assert obj.type is Lin, 'Only Lin instance could be plotted as line.'
@@ -313,7 +326,7 @@ class StereoNet(object):
         x, y = l2xy(*obj.dd)
         h = self.ax.plot(x, y, *args, **kwargs)
         self.draw()
-        return h
+        # return h
 
     def pole(self, obj, *args, **kwargs):
         assert obj.type is Fol, 'Only Fol instance could be plotted as poles.'
@@ -326,7 +339,7 @@ class StereoNet(object):
         x, y = l2xy(*obj.aslin.dd)
         h = self.ax.plot(x, y, *args, **kwargs)
         self.draw()
-        return h
+        # return h
 
     def cone(self, obj, alpha, *args, **kwargs):
         assert obj.type is Lin, 'Only Lin instance could be used as cone axis.'
@@ -347,7 +360,7 @@ class StereoNet(object):
                               limit=180, res=sind(alpha)*358+3, split=True)
         h = self.ax.plot(x, y, *args, **kwargs)
         self.draw()
-        return h
+        # return h
 
     def fault(self, obj, *arg, **kwargs):
         """Plot a fault-and-striae plot"""
@@ -424,13 +437,13 @@ class Density(object):
         # parse options
         sigma = kwargs.get('sigma', 1)
         ctn_points = kwargs.get('cnt_points', 180)
-        method = kwargs.get('method', 'exponential_kamb')
+        method = kwargs.get('method', 'exp_kamb')
 
         func = {'linear_kamb': _linear_inverse_kamb,
                 'square_kamb': _square_inverse_kamb,
                 'schmidt': _schmidt_count,
                 'kamb': _kamb_count,
-                'exponential_kamb': _exponential_kamb,
+                'exp_kamb': _exponential_kamb,
                 }[method]
 
         self.xg = self.yg = 0
@@ -519,7 +532,8 @@ def _kamb_count(cos_dist, sigma=3):
     """Original Kamb kernel function (raw count within radius)."""
     n = float(cos_dist.size)
     dist = _kamb_radius(n, sigma)
-    count = (cos_dist >= dist)
+    # count = (cos_dist >= dist)
+    count = np.array(cos_dist >= dist, dtype=float)
     return count, _kamb_units(n, dist)
 
 
@@ -529,7 +543,7 @@ def _schmidt_count(cos_dist, sigma=None):
     count = ((1 - cos_dist) <= radius)
     # To offset the count.sum() - 0.5 required for the kamb methods...
     count = 0.5 / count.size + count
-    return count, (cos_dist.size * radius)
+    return count, cos_dist.size * radius
 # ------------------------------------------------------------------
 
 

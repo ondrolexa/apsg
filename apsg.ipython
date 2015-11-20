@@ -1,7 +1,0 @@
-#!/usr/bin/env python
-import matplotlib.pyplot as plt
-import numpy as np
-from IPython import embed
-from apsg import *
-plt.ion()
-embed(header='APSG and Pylab imported into current namespace.')

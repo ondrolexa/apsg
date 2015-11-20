@@ -22,7 +22,7 @@ test_requirements = [
 
 setup(
     name='apsg',
-    version='0.3.0',
+    version='0.3.1',
     description='APSG - structural geology module for Python',
     long_description=readme + '\n\n' + history,
     author='Ondrej Lexa',
@@ -35,9 +35,10 @@ setup(
                  'apsg'},
     include_package_data=True,
     install_requires=requirements,
+    scripts = ['iapsg'],
     license="BSD",
     zip_safe=False,
-    keywords='apsg',
+    keywords='apsg geology',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
