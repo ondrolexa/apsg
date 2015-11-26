@@ -1,0 +1,7 @@
+name: apsg
+channels:
+  - ondrolexa
+  - defaults
+dependencies:
+  - python=3
+  - apsg
