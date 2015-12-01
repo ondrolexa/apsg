@@ -719,9 +719,9 @@ class Group(list):
         return self.transform(self.ortensor.vects).rotate(Lin(90, 0), 90)
 
     @property
-    def normalized(self):
+    def uv(self):
         """return Group with normalized elements"""
-        return Group([e/abs(e) for e in self], name=self.name)
+        return Group([e.uv for e in self], name=self.name)
 
     def angle(self, other=None):
         """return angles of all pairs in Group"""
