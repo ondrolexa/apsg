@@ -1082,6 +1082,11 @@ class Ortensor(object):
         return np.log(self.E1 / self.E3)
 
     @property
+    def C(self):
+        """Cylindricity index"""
+        return self.strength
+
+    @property
     def shape(self):
         """Woodcock shape"""
         return np.log(self.E1 / self.E2) / np.log(self.E2 / self.E3)
@@ -1102,7 +1107,7 @@ class Ortensor(object):
         return 3*self.vals[2]/self.n
 
     @property
-    def C(self):
+    def B(self):
         """Cylindricity index"""
         return self.P + self.G
 
