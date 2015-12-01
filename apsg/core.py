@@ -1079,7 +1079,7 @@ class Ortensor(object):
     @property
     def strength(self):
         """Woodcock strength"""
-        return np.log(self.E1 / self.E3)
+        return np.log(self.E1/self.E3)
 
     @property
     def C(self):
@@ -1089,27 +1089,32 @@ class Ortensor(object):
     @property
     def shape(self):
         """Woodcock shape"""
-        return np.log(self.E1 / self.E2) / np.log(self.E2 / self.E3)
+        return np.log(self.E1/self.E2)/np.log(self.E2/self.E3)
 
     @property
     def P(self):
-        """Point index"""
+        """Point index - Vollmer, 1990"""
         return (self.vals[0] - self.vals[1])/self.n
 
     @property
     def G(self):
-        """Girdle index"""
+        """Girdle index - Vollmer, 1990"""
         return 2*(self.vals[1] - self.vals[2])/self.n
 
     @property
     def R(self):
-        """Random index"""
+        """Random index - Vollmer, 1990"""
         return 3*self.vals[2]/self.n
 
     @property
     def B(self):
-        """Cylindricity index"""
+        """Cylindricity index - Vollmer, 1990"""
         return self.P + self.G
+
+    @property
+    def I(self):
+        """Intensity index - Lisle, 1985"""
+        return 7.5*np.sum((self.vals/self.n - 1/3)**2)
 
 
 class Cluster(object):
