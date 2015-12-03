@@ -67,3 +67,4 @@ History
 * StereoNet has close method to close figure and new method
   to re-initialize figure when closed in interactive mode
 * iapsg shell script added to invoke apsg ipython shell
+* VollmerPlot - triangular fabric plot added

@@ -13,7 +13,7 @@ try:
 except ImportError:
     pass
 
-from .core import Vec3, Fol, Lin, Fault, Group, FaultSet
+from .core import Vec3, Fol, Lin, Fault, Group, FaultSet, Ortensor
 from .helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 
 __all__ = ['StereoNet', 'Density', 'rose']
@@ -424,6 +424,149 @@ class StereoNet(object):
         else:
             vals = getfdd(x, y) + getldd(x, y)
             return 'S:{:0>3.0f}/{:0>2.0f} L:{:0>3.0f}/{:0>2.0f}'.format(*vals)
+
+
+class VollmerPlot(object):
+    """VollmerPlot class for fabric plotting (Vollmer, 1989)"""
+    def __init__(self, *args, **kwargs):
+        self.fig = plt.figure()
+        self.fig.canvas.set_window_title('Vollmer fabric plot')
+        self.grid = kwargs.get('grid', True)
+        self.grid_style = kwargs.get('grid_style', 'k:')
+        self._lgd = None
+        self.A = np.r_[0, 3**0.5/2]
+        self.B = np.r_[1, 3**0.5/2]
+        self.C = np.r_[0.5, 0]
+        self.Ti = np.linalg.inv(np.array([self.A-self.C, self.B-self.C]).T)
+        self.cla()
+        # optionally immidiately plot passed objects
+        if args:
+            for arg in args:
+                if type(arg) is Ortensor:
+                    self.tensor(arg, label=arg.name)
+                elif type(arg) is Group:
+                    self.tensor(arg.ortensor, label=arg.name)
+                else:
+                    raise TypeError('%s argument is not supported!' % typ)
+            self.show()
+
+    def close(self):
+        plt.close(self.fig)
+
+    @property
+    def closed(self):
+        return not plt.fignum_exists(self.fig.number)
+
+    def draw(self):
+        if self.closed:
+            print('The VollmerPlot figure have been closed. Use new() method or create new one.')
+        else:
+            h, l = self.ax.get_legend_handles_labels()
+            if h:
+                self._lgd = self.ax.legend(h, l, bbox_to_anchor=(1.12, 1),
+                                           prop={'size': 11}, loc=2,
+                                           borderaxespad=0, scatterpoints=1,
+                                           numpoints=1)
+                plt.subplots_adjust(right=0.75)
+            else:
+                plt.subplots_adjust(right=0.9)
+            plt.draw()
+            # plt.pause(0.001)
+
+    def new(self):
+        """Re-initialize StereoNet figure"""
+        if self.closed:
+            self.__init__()
+
+    def cla(self):
+        """Clear projection"""
+        # now ok
+        self.fig.clear()
+        self.ax = self.fig.add_subplot(111)
+        self.ax.format_coord = self.format_coord
+        self.ax.set_aspect('equal')
+        self.ax.set_autoscale_on(False)
+        triangle = np.c_[self.A, self.B, self.C, self.A]
+        n = 10
+        tick_size = 0.2
+        margin = 0.05
+        self.ax.set_axis_off()
+        plt.axis([self.A[0]-margin, self.B[0]+margin, self.C[1]-margin, self.A[1]+margin])
+
+        # Projection triangle
+        bg = plt.Polygon([self.A, self.B, self.C], color='w', edgecolor=None)
+        self.ax.add_patch(bg)
+        self.ax.plot(triangle[0], triangle[1], 'k', lw=2) 
+        self.ax.text(self.A[0]-0.02, self.A[1],'P', ha='right', va='bottom', fontsize=14)
+        self.ax.text(self.B[0]+0.02, self.B[1],'G', ha='left', va='bottom', fontsize=14)
+        self.ax.text(self.C[0], self.C[1]-0.02,'R', ha='center', va='top', fontsize=14)
+
+        if self.grid:
+            for l in np.arange(0.1,1,0.1):
+                self._plot([l, l], [0, 1-l], [1-l, 0], 'k:')
+                self._plot([0, 1-l], [l, l], [1-l, 0], 'k:')
+                self._plot([0, 1-l], [1-l, 0], [l, l], 'k:')
+
+        # ticks
+        r = np.linspace(0, 1, n+1)
+        tick = tick_size * (self.B - self.C) / n
+        x = self.A[0] * (1 - r) + self.B[0] * r
+        x = np.vstack((x, x + tick[0]))
+        y = self.A[1] * (1 - r) + self.B[1] * r
+        y = np.vstack((y, y + tick[1]))
+        self.ax.plot(x, y, 'k', lw=1)
+        tick = tick_size * (self.C - self.A) / n
+        x = self.B[0] * (1 - r) + self.C[0] * r
+        x = np.vstack((x, x + tick[0]))
+        y = self.B[1] * (1 - r) + self.C[1] * r
+        y = np.vstack((y, y + tick[1]))
+        self.ax.plot(x, y, 'k', lw=1)
+        tick = tick_size * (self.A - self.B) / n
+        x = self.A[0] * (1 - r) + self.C[0] * r
+        x = np.vstack((x, x + tick[0]))
+        y = self.A[1] * (1 - r) + self.C[1] * r
+        y = np.vstack((y, y + tick[1]))
+        self.ax.plot(x, y, 'k', lw=1)
+        self.draw()
+
+    def _plot(self, a, b, c, *args, **kwargs):
+        a = np.asarray(a)
+        b = np.asarray(b)
+        c = np.asarray(c)
+        x = (a*self.A[0] + b*self.B[0] + c*self.C[0])/(a + b + c)
+        y = (a*self.A[1] + b*self.B[1] + c*self.C[1])/(a + b + c)
+        self.ax.plot(x, y, *args, **kwargs)
+        self.draw()
+
+    def tensor(self, obj, *args, **kwargs):
+        assert type(obj) is Ortensor, 'Only Ortensor instance could be plotted.'
+        # ensure point plot
+        if 'ls' not in kwargs and 'linestyle' not in kwargs:
+            kwargs['linestyle'] = 'none'
+        if not args:
+            if 'marker' not in kwargs:
+                kwargs['marker'] = 'o'
+        self._plot(obj.P, obj.G, obj.R, *args, **kwargs)
+        self.draw()
+
+    def show(self):
+        plt.show()
+
+    def savefig(self, filename='apsg_stereonet.pdf'):
+        if self._lgd is None:
+            self.ax.figure.savefig(filename)
+        else:
+            self.ax.figure.savefig(filename, bbox_extra_artists=(self._lgd,),
+                                   bbox_inches='tight')
+        plt.savefig(filename)
+
+    def format_coord(self, x, y):
+        a, b = self.Ti.dot(np.r_[x, y]-self.C)
+        c = 1 - a - b
+        if a<0 or b<0 or c<0:
+            return ''
+        else:
+            return 'P:{:0.2f} G:{:0.2f} R:{:0.2f}'.format(a,b,c)
 
 
 class Density(object):
