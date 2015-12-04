@@ -148,6 +148,7 @@ class StereoNet(object):
     def __init__(self, *args, **kwargs):
         self.fig = plt.figure()
         self.fig.canvas.set_window_title('StereoNet - schmidt lower hemisphere projection')
+        self.ticks = kwargs.get('ticks', True)
         self.grid = kwargs.get('grid', True)
         self.grid_style = kwargs.get('grid_style', 'k:')
         self.fol_plot = kwargs.get('fol_plot', 'plane')
@@ -243,11 +244,12 @@ class StereoNet(object):
                          self.grid_style, zorder=3)
 
         # ticks
-        a = np.arange(0, 360, 30)
-        tt = np.array([0.98, 1])
-        x = np.outer(tt, sind(a))
-        y = np.outer(tt, cosd(a))
-        self.ax.plot(x, y, 'k', zorder=4)
+        if self.ticks:
+            a = np.arange(0, 360, 30)
+            tt = np.array([0.98, 1])
+            x = np.outer(tt, sind(a))
+            y = np.outer(tt, cosd(a))
+            self.ax.plot(x, y, 'k', zorder=4)
         # Middle cross
         self.ax.plot([-0.02, 0.02, np.nan, 0, 0],
                      [0, 0, np.nan, -0.02, 0.02],
@@ -426,28 +428,24 @@ class StereoNet(object):
             return 'S:{:0>3.0f}/{:0>2.0f} L:{:0>3.0f}/{:0>2.0f}'.format(*vals)
 
 
-class VollmerPlot(object):
-    """VollmerPlot class for fabric plotting (Vollmer, 1989)"""
+class FabricPlot(object):
+    """FabricPlot class for triangular fabric plot (Vollmer, 1989)"""
     def __init__(self, *args, **kwargs):
         self.fig = plt.figure()
         self.fig.canvas.set_window_title('Vollmer fabric plot')
+        self.ticks = kwargs.get('ticks', True)
         self.grid = kwargs.get('grid', True)
         self.grid_style = kwargs.get('grid_style', 'k:')
         self._lgd = None
-        self.A = np.r_[0, 3**0.5/2]
-        self.B = np.r_[1, 3**0.5/2]
-        self.C = np.r_[0.5, 0]
-        self.Ti = np.linalg.inv(np.array([self.A-self.C, self.B-self.C]).T)
+        self.A = np.asarray(kwargs.get('A', [0, 3**0.5/2]))
+        self.B = np.asarray(kwargs.get('B', [1, 3**0.5/2]))
+        self.C = np.asarray(kwargs.get('C', [0.5, 0]))
+        self.Ti = np.linalg.inv(np.array([self.A - self.C, self.B - self.C]).T)
         self.cla()
         # optionally immidiately plot passed objects
         if args:
             for arg in args:
-                if type(arg) is Ortensor:
-                    self.tensor(arg, label=arg.name)
-                elif type(arg) is Group:
-                    self.tensor(arg.ortensor, label=arg.name)
-                else:
-                    raise TypeError('%s argument is not supported!' % typ)
+                self.plot(arg)
             self.show()
 
     def close(self):
@@ -459,17 +457,13 @@ class VollmerPlot(object):
 
     def draw(self):
         if self.closed:
-            print('The VollmerPlot figure have been closed. Use new() method or create new one.')
+            print('The FabricPlot figure have been closed. Use new() method or create new one.')
         else:
             h, l = self.ax.get_legend_handles_labels()
             if h:
-                self._lgd = self.ax.legend(h, l, bbox_to_anchor=(1.12, 1),
-                                           prop={'size': 11}, loc=2,
+                self._lgd = self.ax.legend(h, l, prop={'size': 11}, loc=4,
                                            borderaxespad=0, scatterpoints=1,
                                            numpoints=1)
-                plt.subplots_adjust(right=0.75)
-            else:
-                plt.subplots_adjust(right=0.9)
             plt.draw()
             # plt.pause(0.001)
 
@@ -503,33 +497,35 @@ class VollmerPlot(object):
 
         if self.grid:
             for l in np.arange(0.1,1,0.1):
-                self._plot([l, l], [0, 1-l], [1-l, 0], 'k:')
-                self._plot([0, 1-l], [l, l], [1-l, 0], 'k:')
-                self._plot([0, 1-l], [1-l, 0], [l, l], 'k:')
+                self.triplot([l, l], [0, 1-l], [1-l, 0], 'k:')
+                self.triplot([0, 1-l], [l, l], [1-l, 0], 'k:')
+                self.triplot([0, 1-l], [1-l, 0], [l, l], 'k:')
 
         # ticks
-        r = np.linspace(0, 1, n+1)
-        tick = tick_size * (self.B - self.C) / n
-        x = self.A[0] * (1 - r) + self.B[0] * r
-        x = np.vstack((x, x + tick[0]))
-        y = self.A[1] * (1 - r) + self.B[1] * r
-        y = np.vstack((y, y + tick[1]))
-        self.ax.plot(x, y, 'k', lw=1)
-        tick = tick_size * (self.C - self.A) / n
-        x = self.B[0] * (1 - r) + self.C[0] * r
-        x = np.vstack((x, x + tick[0]))
-        y = self.B[1] * (1 - r) + self.C[1] * r
-        y = np.vstack((y, y + tick[1]))
-        self.ax.plot(x, y, 'k', lw=1)
-        tick = tick_size * (self.A - self.B) / n
-        x = self.A[0] * (1 - r) + self.C[0] * r
-        x = np.vstack((x, x + tick[0]))
-        y = self.A[1] * (1 - r) + self.C[1] * r
-        y = np.vstack((y, y + tick[1]))
-        self.ax.plot(x, y, 'k', lw=1)
+        if self.ticks:
+            r = np.linspace(0, 1, n+1)
+            tick = tick_size * (self.B - self.C) / n
+            x = self.A[0] * (1 - r) + self.B[0] * r
+            x = np.vstack((x, x + tick[0]))
+            y = self.A[1] * (1 - r) + self.B[1] * r
+            y = np.vstack((y, y + tick[1]))
+            self.ax.plot(x, y, 'k', lw=1)
+            tick = tick_size * (self.C - self.A) / n
+            x = self.B[0] * (1 - r) + self.C[0] * r
+            x = np.vstack((x, x + tick[0]))
+            y = self.B[1] * (1 - r) + self.C[1] * r
+            y = np.vstack((y, y + tick[1]))
+            self.ax.plot(x, y, 'k', lw=1)
+            tick = tick_size * (self.A - self.B) / n
+            x = self.A[0] * (1 - r) + self.C[0] * r
+            x = np.vstack((x, x + tick[0]))
+            y = self.A[1] * (1 - r) + self.C[1] * r
+            y = np.vstack((y, y + tick[1]))
+            self.ax.plot(x, y, 'k', lw=1)
+        self.ax.set_title('Fabric plot')
         self.draw()
 
-    def _plot(self, a, b, c, *args, **kwargs):
+    def triplot(self, a, b, c, *args, **kwargs):
         a = np.asarray(a)
         b = np.asarray(b)
         c = np.asarray(c)
@@ -538,21 +534,26 @@ class VollmerPlot(object):
         self.ax.plot(x, y, *args, **kwargs)
         self.draw()
 
-    def tensor(self, obj, *args, **kwargs):
-        assert type(obj) is Ortensor, 'Only Ortensor instance could be plotted.'
+    def plot(self, obj, *args, **kwargs):
+        if type(obj) is Group:
+            obj = obj.ortensor
+        if type(obj) is not Ortensor:
+            raise TypeError('%s argument is not supported!' % type(obj))
         # ensure point plot
         if 'ls' not in kwargs and 'linestyle' not in kwargs:
             kwargs['linestyle'] = 'none'
         if not args:
             if 'marker' not in kwargs:
                 kwargs['marker'] = 'o'
-        self._plot(obj.P, obj.G, obj.R, *args, **kwargs)
+        if 'label' not in kwargs:
+            kwargs['label'] = obj.name
+        self.triplot(obj.P, obj.G, obj.R, *args, **kwargs)
         self.draw()
 
     def show(self):
         plt.show()
 
-    def savefig(self, filename='apsg_stereonet.pdf'):
+    def savefig(self, filename='apsg_fabricplot.pdf'):
         if self._lgd is None:
             self.ax.figure.savefig(filename)
         else:
