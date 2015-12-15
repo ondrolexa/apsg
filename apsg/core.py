@@ -820,8 +820,10 @@ class Group(list):
         print('Group loaded from file %s' % filename)
         return cls(data, name=filename)
 
-    def bootstrap(self, num=100):
-        for ix in np.random.randint(0, len(self), (num, len(self))):
+    def bootstrap(self, num=100, size=None):
+        if size is None:
+            size = len(self)
+        for ix in np.random.randint(0, len(self), (num, size)):
             yield self[ix]
 
     @classmethod
