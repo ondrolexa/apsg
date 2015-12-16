@@ -657,9 +657,21 @@ class Group(list):
     @property
     def R(self):
         """Return resultant of Group"""
-        r = deepcopy(self[0])
-        for v in self[1:]:
-            r += v
+        #r = deepcopy(self[0])
+        #for v in self[1:]:
+        #    r += v
+        #return r
+        # As axial summing is not commutative we use vectorial
+        # summing of centered data
+        if self.type == Lin:
+            cg = Group.from_array(*self.centered.dd, typ=Lin)
+            r = Vec3(np.sum(cg, axis=0)).aslin
+        elif self.type == Fol:
+            cg = Group.from_array(*self.centered.dd, typ=Fol)
+            r = Vec3(np.sum(cg, axis=0)).asfol
+        else:
+            cg = Group.from_array(*self.centered.dd, typ=Lin)
+            r = Vec3(np.sum(cg, axis=0))
         return r
 
     @property
