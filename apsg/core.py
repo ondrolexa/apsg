@@ -188,6 +188,12 @@ class Vec3(np.ndarray):
         """
         return self.copy().view(Vec3)
 
+    @property
+    def V(self):
+        """Convert to ``Vec3`` object.
+        """
+        return self.copy().view(Vec3)
+
 
 class Lin(Vec3):
     """Class to store linear feature.
@@ -655,6 +661,11 @@ class Group(list):
         return Group([e.asvec3 for e in self], name=self.name)
 
     @property
+    def V(self):
+        """Convert all data in Group to Vec3"""
+        return Group([e.asvec3 for e in self], name=self.name)
+
+    @property
     def R(self):
         """Return resultant of Group"""
         #r = deepcopy(self[0])
@@ -663,15 +674,16 @@ class Group(list):
         #return r
         # As axial summing is not commutative we use vectorial
         # summing of centered data
-        if self.type == Lin:
-            cg = Group.from_array(*self.centered.dd, typ=Lin)
-            r = Vec3(np.sum(cg, axis=0)).aslin
-        elif self.type == Fol:
-            cg = Group.from_array(*self.centered.dd, typ=Fol)
-            r = Vec3(np.sum(cg, axis=0)).asfol
+        if self.type == Vec3:
+            r = Vec3(np.sum(self, axis=0))
         else:
-            cg = Group.from_array(*self.centered.dd, typ=Lin)
-            r = Vec3(np.sum(cg, axis=0))
+            irot = np.linalg.inv(self.ortensor.vects)
+            if self.type == Lin:
+                cg = Group.from_array(*self.centered.dd, typ=Lin)
+                r = Vec3(np.sum(cg, axis=0)).aslin.rotate(Lin(90, 0), -90).transform(irot)
+            else:
+                cg = Group.from_array(*self.centered.dd, typ=Fol)
+                r = Vec3(np.sum(cg, axis=0)).asfol.rotate(Lin(90, 0), -90).transform(irot)
         return r
 
     @property
