@@ -26,7 +26,7 @@ class StereoNet(object):
     """StereoNet class for Schmidt net lower hemisphere plotting"""
     def __init__(self, *args, **kwargs):
         self.fig = plt.figure()
-        self.fig.canvas.set_window_title('StereoNet - schmidt lower hemisphere projection')
+        self.fig.canvas.set_window_title('StereoNet - schmidt projection')
         self.ticks = kwargs.get('ticks', True)
         self.grid = kwargs.get('grid', True)
         self.grid_style = kwargs.get('grid_style', 'k:')
@@ -204,20 +204,42 @@ class StereoNet(object):
         if not args:
             if 'marker' not in kwargs:
                 kwargs['marker'] = 'o'
+        x, y = l2xy(*obj.dd)
+        h = self.ax.plot(x, y, *args, **kwargs)
+        self.draw()
+        # return h
+
+    def vector(self, obj, *args, **kwargs):
+        """ This mimics plotting on upper and lower hemisphere"""
+        assert obj.type is Lin, 'Only Lin instance could be plotted as line.'
+        # ensure point plot
+        if 'ls' not in kwargs and 'linestyle' not in kwargs:
+            kwargs['linestyle'] = 'none'
+        if not args:
+            if 'marker' not in kwargs:
+                kwargs['marker'] = 'o'
         if isinstance(obj, Group):
             uh = np.atleast_2d(np.asarray(obj))[:, 2] < 0
-            x, y = l2xy(*obj[~uh].dd)
-            h = self.ax.plot(x, y, *args, **kwargs)
-            kwargs['fillstyle'] = 'none'
-            kwargs.pop('label')
-            x, y = l2xy(*obj[uh].dd)
-            g = self.ax.plot(x, y, *args, **kwargs)
-            g[0].set_color(h[0].get_color())
+            if np.any(~uh):
+                x, y = l2xy(*obj[~uh].dd)
+                h = self.ax.plot(x, y, *args, **kwargs)
+                kwargs.pop('label', None)
+                cc = h[0].get_color()
+            else:
+                cc = None
+            if np.any(uh):
+                kwargs['fillstyle'] = 'none'
+                x, y = l2xy(*obj[uh].dd)
+                g = self.ax.plot(-x, -y, *args, **kwargs)
+                if cc is not None:
+                    g[0].set_color(cc)
         else:
+            x, y = l2xy(*obj.dd)
             if obj[2] < 0:
                 kwargs['fillstyle'] = 'none'
-            x, y = l2xy(*obj.dd)
-            h = self.ax.plot(x, y, *args, **kwargs)
+                h = self.ax.plot(-x, -y, *args, **kwargs)
+            else:
+                h = self.ax.plot(x, y, *args, **kwargs)
         self.draw()
         # return h
 
