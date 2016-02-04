@@ -979,7 +979,6 @@ class FaultSet(list):
         """rotate Group"""
         return FaultSet([f.rotate(axis, phi) for f in self], name=self.name)
 
-    # TODO from_csv and from_array
     @classmethod
     def from_csv(cls, fname, typ=Lin, delimiter=',',
                  facol=1, ficol=2, lacol=3, licol=4):
