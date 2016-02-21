@@ -45,7 +45,8 @@ class SDB(object):
             if isinstance(structs, str):
                 w.append("structype.structure='%s'" % structs)
             elif isinstance(structs, (list, tuple)):
-                u = ' OR '.join(["structype.structure='%s'" % struct for struct in structs])
+                u = ' OR '.join(["structype.structure='%s'" % struct
+                                 for struct in structs])
                 w.append("(" + u + ")")
             else:
                 raise ValueError('Keyword structs must be list or string.')
@@ -69,14 +70,16 @@ class SDB(object):
             if isinstance(tags, str):
                 w.append("tags.name like '%%%s%%'" % tags)
             elif isinstance(tags, (list, tuple)):
-                u = ' AND '.join(["tags.name like '%%%s%%'" % tag for tag in tags])
+                u = ' AND '.join(["tags.name like '%%%s%%'" % tag
+                                  for tag in tags])
                 w.append("(" + u + ")")
             else:
                 raise ValueError('Keyword tags must be list or string.')
+        sel = SDB._SELECT
         if w:
-            sel = SDB._SELECT + " WHERE " + ' AND '.join(w) + " GROUP BY structdata.id"
+            sel += " WHERE " + ' AND '.join(w) + " GROUP BY structdata.id"
         else:
-            sel = SDB._SELECT + " GROUP BY structdata.id"
+            sel += " GROUP BY structdata.id"
         return sel
 
     def execsql(self, sql):

@@ -61,7 +61,8 @@ class StereoNet(object):
 
     def draw(self):
         if self.closed:
-            print('The StereoNet figure have been closed. Use new() method or create new one.')
+            print('The StereoNet figure have been closed. \
+                   Use new() method or create new one.')
         else:
             h, l = self.ax.get_legend_handles_labels()
             if h:
@@ -205,9 +206,8 @@ class StereoNet(object):
             if 'marker' not in kwargs:
                 kwargs['marker'] = 'o'
         x, y = l2xy(*obj.dd)
-        h = self.ax.plot(x, y, *args, **kwargs)
+        self.ax.plot(x, y, *args, **kwargs)
         self.draw()
-        # return h
 
     def vector(self, obj, *args, **kwargs):
         """ This mimics plotting on upper and lower hemisphere"""
@@ -230,18 +230,17 @@ class StereoNet(object):
             if np.any(uh):
                 kwargs['fillstyle'] = 'none'
                 x, y = l2xy(*obj[uh].dd)
-                g = self.ax.plot(-x, -y, *args, **kwargs)
+                h = self.ax.plot(-x, -y, *args, **kwargs)
                 if cc is not None:
-                    g[0].set_color(cc)
+                    h[0].set_color(cc)
         else:
             x, y = l2xy(*obj.dd)
             if obj[2] < 0:
                 kwargs['fillstyle'] = 'none'
-                h = self.ax.plot(-x, -y, *args, **kwargs)
+                self.ax.plot(-x, -y, *args, **kwargs)
             else:
-                h = self.ax.plot(x, y, *args, **kwargs)
+                self.ax.plot(x, y, *args, **kwargs)
         self.draw()
-        # return h
 
     def pole(self, obj, *args, **kwargs):
         assert obj.type is Fol, 'Only Fol instance could be plotted as poles.'
@@ -252,9 +251,8 @@ class StereoNet(object):
             if 'marker' not in kwargs:
                 kwargs['marker'] = 's'
         x, y = l2xy(*obj.aslin.dd)
-        h = self.ax.plot(x, y, *args, **kwargs)
+        self.ax.plot(x, y, *args, **kwargs)
         self.draw()
-        # return h
 
     def cone(self, obj, alpha, *args, **kwargs):
         assert obj.type is Lin, 'Only Lin instance could be used as cone axis.'
@@ -273,9 +271,8 @@ class StereoNet(object):
             azi, inc = obj.dd
             x, y = self._cone(l2v(azi, inc), l2v(azi, inc-alpha),
                               limit=180, res=sind(alpha)*358+3, split=True)
-        h = self.ax.plot(x, y, *args, **kwargs)
+        self.ax.plot(x, y, *args, **kwargs)
         self.draw()
-        # return h
 
     def fault(self, obj, *arg, **kwargs):
         """Plot a fault-and-striae plot"""
@@ -370,7 +367,8 @@ class FabricPlot(object):
 
     def draw(self):
         if self.closed:
-            print('The FabricPlot figure have been closed. Use new() method or create new one.')
+            print('The FabricPlot figure have been closed. \
+                   Use new() method or create new one.')
         else:
             h, l = self.ax.get_legend_handles_labels()
             if h:

@@ -70,3 +70,4 @@ History
 * FabricPlot - triangular fabric plot added
 * .asvec3 property has .V alias
 * Resultant of Fol and Lin is calculated as vectorial in centered position
+* dv method of Fol added to resturn dip slip vector

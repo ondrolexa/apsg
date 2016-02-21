@@ -36,7 +36,7 @@ setup(
                  'apsg'},
     include_package_data=True,
     install_requires=requirements,
-    scripts = ['iapsg'],
+    scripts=['iapsg'],
     license="BSD",
     zip_safe=False,
     keywords='apsg geology',
