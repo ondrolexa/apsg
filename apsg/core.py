@@ -409,6 +409,19 @@ class Fol(Vec3):
         azi, inc = self.dd
         return (azi - 90) % 360, inc
 
+    @property
+    def dv(self):
+        """Convert to dip vector ``Vec3`` object.
+
+        Example:
+          >>> f = Fol(120,50)
+          >>> f.dv
+          V(-0.321, 0.557, 0.766)
+
+        """
+        azi, inc = self.dd
+        return Lin(azi, inc).view(Vec3)
+
 
 class Pair(object):
     """Class to store pair of planar and linear feature.
