@@ -60,7 +60,7 @@ History
 * Group examples method provide few well-known datasets.
 * Matplotlib deprecation warnings are ignored by default
 
-0.3.1 (20 Nov 2015)
+0.3.1 (XX XXX XXXX)
 ---------------------
 
 * SDB class improved. Support basic filtering including tags
@@ -68,3 +68,5 @@ History
   to re-initialize figure when closed in interactive mode
 * iapsg shell script added to invoke apsg ipython shell
 * FabricPlot - triangular fabric plot added
+* .asvec3 property has .V alias
+* Resultant of Fol and Lin is calculated as vectorial in centered position
