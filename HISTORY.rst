@@ -60,13 +60,17 @@ History
 * Group examples method provide few well-known datasets.
 * Matplotlib deprecation warnings are ignored by default
 
-0.3.1 (XX XXX XXXX)
+0.3.1 (20 Nov 2015)
 ---------------------
 
 * SDB class improved. Support basic filtering including tags
 * StereoNet has close method to close figure and new method
   to re-initialize figure when closed in interactive mode
 * iapsg shell script added to invoke apsg ipython shell
+
+0.3.2 (22 Feb 2016)
+---------------------
+
 * FabricPlot - triangular fabric plot added
 * .asvec3 property has .V alias
 * Resultant of Fol and Lin is calculated as vectorial in centered position
