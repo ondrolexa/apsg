@@ -322,13 +322,12 @@ class StereoNet(object):
     def show(self):
         plt.show()
 
-    def savefig(self, filename='apsg_stereonet.pdf'):
+    def savefig(self, filename='apsg_stereonet.pdf', **kwargs):
         if self._lgd is None:
-            self.ax.figure.savefig(filename)
+            self.ax.figure.savefig(filename, **kwargs)
         else:
             self.ax.figure.savefig(filename, bbox_extra_artists=(self._lgd,),
-                                   bbox_inches='tight')
-        plt.savefig(filename)
+                                   bbox_inches='tight', **kwargs)
 
     def format_coord(self, x, y):
         if np.hypot(x, y) > 1:
@@ -464,13 +463,12 @@ class FabricPlot(object):
     def show(self):
         plt.show()
 
-    def savefig(self, filename='apsg_fabricplot.pdf'):
+    def savefig(self, filename='apsg_fabricplot.pdf', **kwargs):
         if self._lgd is None:
-            self.ax.figure.savefig(filename)
+            self.ax.figure.savefig(filename, **kwargs)
         else:
             self.ax.figure.savefig(filename, bbox_extra_artists=(self._lgd,),
-                                   bbox_inches='tight')
-        plt.savefig(filename)
+                                   bbox_inches='tight', **kwargs)
 
     def format_coord(self, x, y):
         a, b = self.Ti.dot(np.r_[x, y]-self.C)
@@ -712,12 +710,12 @@ class StereoNetJK(object):
             cbaxes = self._ax.figure.add_axes([0.015, 0.2, 0.02, 0.6])
             plt.colorbar(self._cax, cax=cbaxes)
 
-    def savefig(self, filename='stereonet.pdf'):
+    def savefig(self, filename='stereonet.pdf', **kwargs):
         if self._lgd is None:
-            self._ax.figure.savefig(filename)
+            self._ax.figure.savefig(filename, **kwargs)
         else:
             self._ax.figure.savefig(filename, bbox_extra_artists=(self._lgd,),
-                                    bbox_inches='tight')
+                                    bbox_inches='tight', **kwargs)
 
     def show(self):
         plt.show()
