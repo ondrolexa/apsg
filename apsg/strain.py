@@ -27,8 +27,7 @@ class DefGrad(np.ndarray):
         return np.dot(self, other)
 
     def __pow__(self, n):
-        # cross product or power of magnitude
-        assert np.isscalar(n), 'Exponent must be integer.'
+        # matrix power
         return np.linalg.matrix_power(self, n)
 
     def __eq__(self, other):
@@ -75,6 +74,21 @@ class DefGrad(np.ndarray):
         return tuple(vals)
 
     @property
+    def E1(self):
+        """Max eigenvalue"""
+        return self.eigenvals[0]
+
+    @property
+    def E2(self):
+        """Middle eigenvalue"""
+        return self.eigenvals[1]
+
+    @property
+    def E3(self):
+        """Min eigenvalue"""
+        return self.eigenvals[2]
+
+    @property
     def eigenvects(self):
         U, _, _ = np.linalg.svd(self)
         return Group([Vec3(U.T[0]),
@@ -88,6 +102,24 @@ class DefGrad(np.ndarray):
     @property
     def eigenfols(self):
         return self.eigenvects.asfol
+
+    @property
+    def R(self):
+        from scipy.linalg import polar
+        R, _ = polar(self)
+        return DefGrad(R)
+
+    @property
+    def U(self):
+        from scipy.linalg import polar
+        _, U = polar(self)
+        return DefGrad(U)
+
+    @property
+    def V(self):
+        from scipy.linalg import polar
+        _, V = polar(self, 'left')
+        return DefGrad(V)
 
 
 class VelGrad(np.ndarray):
@@ -103,8 +135,7 @@ class VelGrad(np.ndarray):
         return 'VelGrad:\n' + str(self)
 
     def __pow__(self, n):
-        # cross product or power of magnitude
-        assert np.isscalar(n), 'Exponent must be integer.'
+        # matrix power
         return np.linalg.matrix_power(self, n)
 
     def __eq__(self, other):
