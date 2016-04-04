@@ -211,7 +211,7 @@ class StereoNet(object):
 
     def vector(self, obj, *args, **kwargs):
         """ This mimics plotting on upper and lower hemisphere"""
-        assert obj.type is Lin, 'Only Lin instance could be plotted as line.'
+        assert issubclass(obj.type, Vec3), 'Only Vec3-like instance could be plotted as line.'
         # ensure point plot
         if 'ls' not in kwargs and 'linestyle' not in kwargs:
             kwargs['linestyle'] = 'none'
@@ -221,7 +221,7 @@ class StereoNet(object):
         if isinstance(obj, Group):
             uh = np.atleast_2d(np.asarray(obj))[:, 2] < 0
             if np.any(~uh):
-                x, y = l2xy(*obj[~uh].dd)
+                x, y = l2xy(*obj[~uh].asvec3.aslin.dd)
                 h = self.ax.plot(x, y, *args, **kwargs)
                 kwargs.pop('label', None)
                 cc = h[0].get_color()
@@ -229,12 +229,12 @@ class StereoNet(object):
                 cc = None
             if np.any(uh):
                 kwargs['fillstyle'] = 'none'
-                x, y = l2xy(*obj[uh].dd)
+                x, y = l2xy(*obj[uh].asvec3.aslin.dd)
                 h = self.ax.plot(-x, -y, *args, **kwargs)
                 if cc is not None:
                     h[0].set_color(cc)
         else:
-            x, y = l2xy(*obj.dd)
+            x, y = l2xy(*obj.asvec3.aslin.dd)
             if obj[2] < 0:
                 kwargs['fillstyle'] = 'none'
                 self.ax.plot(-x, -y, *args, **kwargs)
