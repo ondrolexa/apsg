@@ -25,13 +25,17 @@ warnings.filterwarnings('ignore', category=mcb.mplDeprecation)
 class StereoNet(object):
     """StereoNet class for Schmidt net lower hemisphere plotting"""
     def __init__(self, *args, **kwargs):
-        self.fig = plt.figure()
-        self.fig.canvas.set_window_title('StereoNet - schmidt projection')
         self.ticks = kwargs.get('ticks', True)
         self.grid = kwargs.get('grid', True)
+        self.ncols = kwargs.get('ncols', 1)
         self.grid_style = kwargs.get('grid_style', 'k:')
         self.fol_plot = kwargs.get('fol_plot', 'plane')
         self._lgd = None
+        self.active = 0
+        self.fig, self.ax = plt.subplots(ncols=self.ncols)
+        self.fig.canvas.set_window_title('StereoNet - schmidt projection')
+        self.fig.set_size_inches(8*self.ncols, 6)
+        self._title = self.fig.suptitle(kwargs.get('title', ''))
         self.cla()
         # optionally immidiately plot passed objects
         if args:
@@ -64,15 +68,16 @@ class StereoNet(object):
             print('The StereoNet figure have been closed. \
                    Use new() method or create new one.')
         else:
-            h, l = self.ax.get_legend_handles_labels()
-            if h:
-                self._lgd = self.ax.legend(h, l, bbox_to_anchor=(1.12, 1),
-                                           prop={'size': 11}, loc=2,
-                                           borderaxespad=0, scatterpoints=1,
-                                           numpoints=1)
-                plt.subplots_adjust(right=0.75)
-            else:
-                plt.subplots_adjust(right=0.9)
+            for ax in self.fig.axes:
+                h, l = ax.get_legend_handles_labels()
+                if h:
+                    self._lgd = ax.legend(h, l, bbox_to_anchor=(1.12, 1),
+                                          prop={'size': 11}, loc=2,
+                                          borderaxespad=0, scatterpoints=1,
+                                          numpoints=1)
+                    plt.subplots_adjust(right=0.75)
+                else:
+                    plt.subplots_adjust(right=0.9)
             plt.draw()
             # plt.pause(0.001)
 
@@ -84,56 +89,56 @@ class StereoNet(object):
     def cla(self):
         """Clear projection"""
         # now ok
-        self.fig.clear()
-        self.ax = self.fig.add_subplot(111)
-        self.ax.format_coord = self.format_coord
-        self.ax.set_aspect('equal')
-        self.ax.set_autoscale_on(False)
-        self.ax.axis([-1.05, 1.05, -1.05, 1.05])
-        self.ax.set_axis_off()
+        for ax in self.fig.axes:
+            ax.cla()
+            ax.format_coord = self.format_coord
+            ax.set_aspect('equal')
+            ax.set_autoscale_on(False)
+            ax.axis([-1.05, 1.05, -1.05, 1.05])
+            ax.set_axis_off()
 
-        # Projection circle
-        self.ax.text(0, 1.02, 'N', ha='center', va='baseline', fontsize=16)
-        self.ax.add_artist(plt.Circle((0, 0), 1,
-                           color='w', zorder=0))
-        self.ax.add_artist(plt.Circle((0, 0), 1,
-                           color='None', ec='k', zorder=3))
+            # Projection circle
+            ax.text(0, 1.02, 'N', ha='center', va='baseline', fontsize=16)
+            ax.add_artist(plt.Circle((0, 0), 1,
+                               color='w', zorder=0))
+            ax.add_artist(plt.Circle((0, 0), 1,
+                               color='None', ec='k', zorder=3))
 
-        if self.grid:
-            # Main cross
-            self.ax.plot([-1, 1, np.nan, 0, 0],
-                         [0, 0, np.nan, -1, 1],
-                         self.grid_style, zorder=3)
-            # Latitudes
-            lat = lambda a, phi: self._cone(l2v(a, 0), l2v(a, phi),
-                                            limit=89.9999, res=91)
-            lat_n = np.array([lat(0, phi) for phi in range(10, 90, 10)])
-            self.ax.plot(lat_n[:, 0, :].T, lat_n[:, 1, :].T,
-                         self.grid_style, zorder=3)
-            lat_s = np.array([lat(180, phi) for phi in range(10, 90, 10)])
-            self.ax.plot(lat_s[:, 0, :].T, lat_s[:, 1, :].T,
-                         self.grid_style, zorder=3)
-            # Longitudes
-            lon = lambda a, theta: self._cone(p2v(a, theta), l2v(a, theta),
-                                              limit=80, res=91)
-            lon_e = np.array([lon(90, theta) for theta in range(10, 90, 10)])
-            self.ax.plot(lon_e[:, 0, :].T, lon_e[:, 1, :].T,
-                         self.grid_style, zorder=3)
-            lon_w = np.array([lon(270, theta) for theta in range(10, 90, 10)])
-            self.ax.plot(lon_w[:, 0, :].T, lon_w[:, 1, :].T,
-                         self.grid_style, zorder=3)
+            if self.grid:
+                # Main cross
+                ax.plot([-1, 1, np.nan, 0, 0],
+                             [0, 0, np.nan, -1, 1],
+                             self.grid_style, zorder=3)
+                # Latitudes
+                lat = lambda a, phi: self._cone(l2v(a, 0), l2v(a, phi),
+                                                limit=89.9999, res=91)
+                lat_n = np.array([lat(0, phi) for phi in range(10, 90, 10)])
+                ax.plot(lat_n[:, 0, :].T, lat_n[:, 1, :].T,
+                             self.grid_style, zorder=3)
+                lat_s = np.array([lat(180, phi) for phi in range(10, 90, 10)])
+                ax.plot(lat_s[:, 0, :].T, lat_s[:, 1, :].T,
+                             self.grid_style, zorder=3)
+                # Longitudes
+                lon = lambda a, theta: self._cone(p2v(a, theta), l2v(a, theta),
+                                                  limit=80, res=91)
+                lon_e = np.array([lon(90, theta) for theta in range(10, 90, 10)])
+                ax.plot(lon_e[:, 0, :].T, lon_e[:, 1, :].T,
+                             self.grid_style, zorder=3)
+                lon_w = np.array([lon(270, theta) for theta in range(10, 90, 10)])
+                ax.plot(lon_w[:, 0, :].T, lon_w[:, 1, :].T,
+                             self.grid_style, zorder=3)
 
-        # ticks
-        if self.ticks:
-            a = np.arange(0, 360, 30)
-            tt = np.array([0.98, 1])
-            x = np.outer(tt, sind(a))
-            y = np.outer(tt, cosd(a))
-            self.ax.plot(x, y, 'k', zorder=4)
-        # Middle cross
-        self.ax.plot([-0.02, 0.02, np.nan, 0, 0],
-                     [0, 0, np.nan, -0.02, 0.02],
-                     'k', zorder=4)
+            # ticks
+            if self.ticks:
+                a = np.arange(0, 360, 30)
+                tt = np.array([0.98, 1])
+                x = np.outer(tt, sind(a))
+                y = np.outer(tt, cosd(a))
+                ax.plot(x, y, 'k', zorder=4)
+            # Middle cross
+            ax.plot([-0.02, 0.02, np.nan, 0, 0],
+                         [0, 0, np.nan, -0.02, 0.02],
+                         'k', zorder=4)
         self.draw()
 
     def getlin(self):
@@ -175,7 +180,7 @@ class StereoNet(object):
             dx, dy = -ax, -ay
         mag = np.hypot(dx, dy)
         u, v = sense * dx / mag, sense * dy / mag
-        self.ax.quiver(x, y, u, v, width=1, headwidth=4, units='dots')
+        self.fig.axes[self.active].quiver(x, y, u, v, width=1, headwidth=4, units='dots')
 
     def plane(self, obj, *args, **kwargs):
         assert obj.type is Fol, 'Only Fol instance could be plotted as plane.'
@@ -193,7 +198,7 @@ class StereoNet(object):
             azi, inc = obj.dd
             x, y = self._cone(p2v(azi, inc), l2v(azi, inc),
                               limit=89.9999, res=cosd(inc)*179+2)
-        h = self.ax.plot(x, y, *args, **kwargs)
+        h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
         self.draw()
         # return h
 
@@ -206,7 +211,7 @@ class StereoNet(object):
             if 'marker' not in kwargs:
                 kwargs['marker'] = 'o'
         x, y = l2xy(*obj.dd)
-        self.ax.plot(x, y, *args, **kwargs)
+        self.fig.axes[self.active].plot(x, y, *args, **kwargs)
         self.draw()
 
     def vector(self, obj, *args, **kwargs):
@@ -222,7 +227,7 @@ class StereoNet(object):
             uh = np.atleast_2d(np.asarray(obj))[:, 2] < 0
             if np.any(~uh):
                 x, y = l2xy(*obj[~uh].asvec3.aslin.dd)
-                h = self.ax.plot(x, y, *args, **kwargs)
+                h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
                 kwargs.pop('label', None)
                 cc = h[0].get_color()
             else:
@@ -230,16 +235,16 @@ class StereoNet(object):
             if np.any(uh):
                 kwargs['fillstyle'] = 'none'
                 x, y = l2xy(*obj[uh].asvec3.aslin.dd)
-                h = self.ax.plot(-x, -y, *args, **kwargs)
+                h = self.fig.axes[self.active].plot(-x, -y, *args, **kwargs)
                 if cc is not None:
                     h[0].set_color(cc)
         else:
             x, y = l2xy(*obj.asvec3.aslin.dd)
             if obj[2] < 0:
                 kwargs['fillstyle'] = 'none'
-                self.ax.plot(-x, -y, *args, **kwargs)
+                self.fig.axes[self.active].plot(-x, -y, *args, **kwargs)
             else:
-                self.ax.plot(x, y, *args, **kwargs)
+                self.fig.axes[self.active].plot(x, y, *args, **kwargs)
         self.draw()
 
     def pole(self, obj, *args, **kwargs):
@@ -251,7 +256,7 @@ class StereoNet(object):
             if 'marker' not in kwargs:
                 kwargs['marker'] = 's'
         x, y = l2xy(*obj.aslin.dd)
-        self.ax.plot(x, y, *args, **kwargs)
+        self.fig.axes[self.active].plot(x, y, *args, **kwargs)
         self.draw()
 
     def cone(self, obj, alpha, *args, **kwargs):
@@ -271,7 +276,7 @@ class StereoNet(object):
             azi, inc = obj.dd
             x, y = self._cone(l2v(azi, inc), l2v(azi, inc-alpha),
                               limit=180, res=sind(alpha)*358+3, split=True)
-        self.ax.plot(x, y, *args, **kwargs)
+        self.fig.axes[self.active].plot(x, y, *args, **kwargs)
         self.draw()
 
     def fault(self, obj, *arg, **kwargs):
@@ -293,7 +298,7 @@ class StereoNet(object):
         if 'zorder' not in kwargs:
                 kwargs['zorder'] = 1
         d = Density(obj, **kwargs)
-        cs = self.ax.tricontourf(d.triang, d.density, *args, **kwargs)
+        cs = self.fig.axes[self.active].tricontourf(d.triang, d.density, *args, **kwargs)
         if kwargs.get('legend', False):
             self._add_colorbar(cs)
         self.draw()
@@ -304,13 +309,13 @@ class StereoNet(object):
         if 'zorder' not in kwargs:
                 kwargs['zorder'] = 1
         d = Density(obj, **kwargs)
-        cs = self.ax.tricontour(d.triang, d.density, *args, **kwargs)
+        cs = self.fig.axes[self.active].tricontour(d.triang, d.density, *args, **kwargs)
         if kwargs.get('legend', False):
             self._add_colorbar(cs)
         self.draw()
 
     def _add_colorbar(self, cs):
-        divider = make_axes_locatable(self.ax)
+        divider = make_axes_locatable(self.fig.axes[self.active])
         cax = divider.append_axes("left", size="5%", pad=0.5)
         plt.colorbar(cs, cax=cax)
         # modify tick labels
@@ -324,10 +329,10 @@ class StereoNet(object):
 
     def savefig(self, filename='apsg_stereonet.pdf', **kwargs):
         if self._lgd is None:
-            self.ax.figure.savefig(filename, **kwargs)
+            self.fig.savefig(filename, **kwargs)
         else:
-            self.ax.figure.savefig(filename, bbox_extra_artists=(self._lgd,),
-                                   bbox_inches='tight', **kwargs)
+            self.fig.savefig(filename, bbox_extra_artists=(self._lgd, self._title),
+                             bbox_inches='tight', **kwargs)
 
     def format_coord(self, x, y):
         if np.hypot(x, y) > 1:
