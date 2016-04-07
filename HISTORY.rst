@@ -74,4 +74,13 @@ History
 * FabricPlot - triangular fabric plot added
 * .asvec3 property has .V alias
 * Resultant of Fol and Lin is calculated as vectorial in centered position
-* dv method of Fol added to resturn dip slip vector
+* dv property of Fol added to return dip slip vector
+
+devel
+---------------------
+
+* Added E1,E2,E3 properties and polar decomposition method to DefGrad object
+* StereoNet has vector method to mimics lower and upper hemisphere plotting
+  of Lin and Vec3 objects as used in paleomagnetic plots
+* StereoNet could be initialized with subplots.
+* rake method of Fol added to return vector defined by rake

@@ -428,6 +428,18 @@ class Fol(Vec3):
         azi, inc = self.dd
         return Lin(azi, inc).view(Vec3)
 
+    def rake(self, rake):
+        """Convert to vector ``Vec3`` object with given rake.
+
+        Example:
+          >>> f = Fol(120,50)
+          >>> f.rake(30)
+          V(-0.911, -0.155, 0.383)
+          >>> f.rake(30).aslin
+
+        """
+        return self.dv.rotate(self, rake-90)
+
 
 class Pair(object):
     """Class to store pair of planar and linear feature.
