@@ -297,7 +297,10 @@ class StereoNet(object):
                 kwargs['cmap'] = 'Greys'
         if 'zorder' not in kwargs:
                 kwargs['zorder'] = 1
-        d = Density(obj, **kwargs)
+        if isinstance(obj, Density):
+            d = obj
+        else:
+            d = Density(obj, **kwargs)
         cs = self.fig.axes[self.active].tricontourf(d.triang, d.density, *args, **kwargs)
         if kwargs.get('legend', False):
             self._add_colorbar(cs)
@@ -308,7 +311,10 @@ class StereoNet(object):
                 kwargs['cmap'] = 'Greys'
         if 'zorder' not in kwargs:
                 kwargs['zorder'] = 1
-        d = Density(obj, **kwargs)
+        if isinstance(obj, Density):
+            d = obj
+        else:
+            d = Density(obj, **kwargs)
         cs = self.fig.axes[self.active].tricontour(d.triang, d.density, *args, **kwargs)
         if kwargs.get('legend', False):
             self._add_colorbar(cs)
