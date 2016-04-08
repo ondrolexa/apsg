@@ -551,7 +551,7 @@ class Density(object):
         plt.figure()
         plt.gca().set_aspect('equal')
         plt.triplot(self.triang, 'bo-')
-        plt.show()s.show()
+        plt.show()
 
 # ----------------------------------------------------------------
 # Following counting routines are from Joe Kington's mplstereonet

@@ -84,3 +84,5 @@ devel
   of Lin and Vec3 objects as used in paleomagnetic plots
 * StereoNet could be initialized with subplots.
 * rake method of Fol added to return vector defined by rake
+* Density could be initialized without data for user-defined calculations
+* Contour(f) methods accept Density object as argument
