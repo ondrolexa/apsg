@@ -492,16 +492,34 @@ class FabricPlot(object):
 
 class Density(object):
     """trida Density"""
-    def __init__(self, d, **kwargs):
-        self.dcdata = np.asarray(d)
-        self.calculate(**kwargs)
+    def __init__(self, d=None, **kwargs):
+        self.initgrid(**kwargs)
+        if d:
+            assert isinstance(d, Group), 'Density need Group as argument'
+            self.dcdata = np.asarray(d)
+            self.calculate(**kwargs)
 
-    def calculate(self, **kwargs):
+    def initgrid(self, **kwargs):
         import matplotlib.tri as tri
         # parse options
-        sigma = kwargs.get('sigma', 1)
         ctn_points = kwargs.get('cnt_points', 180)
+        # calc grid
+        self.xg = 0
+        self.yg = 0
+        for rho in np.linspace(0, 1, np.round(ctn_points/2/np.pi)):
+            theta = np.linspace(0, 360, np.round(ctn_points*rho + 1))[:-1]
+            self.xg = np.hstack((self.xg, rho*sind(theta)))
+            self.yg = np.hstack((self.yg, rho*cosd(theta)))
+        self.dcgrid = l2v(*getldd(self.xg, self.yg)).T
+        self.n = self.dcgrid.shape[0]
+        self.density = np.zeros(self.n, dtype=np.float)
+        self.triang = tri.Triangulation(self.xg, self.yg)
+
+    def calculate(self, **kwargs):
+        # parse options
+        sigma = kwargs.get('sigma', 1)
         method = kwargs.get('method', 'exp_kamb')
+        trim = kwargs.get('trim', False)
 
         func = {'linear_kamb': _linear_inverse_kamb,
                 'square_kamb': _square_inverse_kamb,
@@ -510,24 +528,16 @@ class Density(object):
                 'exp_kamb': _exponential_kamb,
                 }[method]
 
-        self.xg = self.yg = 0
-        for rho in np.linspace(0, 1, np.round(ctn_points/2/np.pi)):
-            theta = np.linspace(0, 360, np.round(ctn_points*rho + 1))[:-1]
-            self.xg = np.hstack((self.xg, rho*sind(theta)))
-            self.yg = np.hstack((self.yg, rho*cosd(theta)))
-        self.dcgrid = l2v(*getldd(self.xg, self.yg)).T
-        n = self.dcgrid.shape[0]
-        self.density = np.zeros(n, dtype=np.float)
         # weights are given by euclidean norms of data
         weights = np.linalg.norm(self.dcdata, axis=1)
         weights /= weights.mean()
-        for i in range(n):
+        for i in range(self.n):
             dist = np.abs(np.dot(self.dcgrid[i], self.dcdata.T))
             count, scale = func(dist, sigma)
             count *= weights
             self.density[i] = (count.sum() - 0.5) / scale
-        # self.density[self.density < 0] = 0
-        self.triang = tri.Triangulation(self.xg, self.yg)
+        if trim:
+            self.density[self.density < 0] = 0
 
     def plot(self, N=6, cm=plt.cm.jet):
         plt.figure()
@@ -541,7 +551,7 @@ class Density(object):
         plt.figure()
         plt.gca().set_aspect('equal')
         plt.triplot(self.triang, 'bo-')
-        plt.show()
+        plt.show()s.show()
 
 # ----------------------------------------------------------------
 # Following counting routines are from Joe Kington's mplstereonet
