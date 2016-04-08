@@ -82,7 +82,8 @@ devel
 * Added E1,E2,E3 properties and polar decomposition method to DefGrad object
 * StereoNet has vector method to mimics lower and upper hemisphere plotting
   of Lin and Vec3 objects as used in paleomagnetic plots
-* StereoNet could be initialized with subplots.
+* StereoNet could be initialized with subplots
 * rake method of Fol added to return vector defined by rake
 * Density could be initialized without data for user-defined calculations
+  New method apply_func could be used to calculate density
 * Contour(f) methods accept Density object as argument
