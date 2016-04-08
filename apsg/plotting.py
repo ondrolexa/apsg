@@ -23,7 +23,7 @@ warnings.filterwarnings('ignore', category=mcb.mplDeprecation)
 
 
 class StereoNet(object):
-    """StereoNet class for Schmidt net lower hemisphere plotting"""
+    """StereoNet class for Schmidt net plotting"""
     def __init__(self, *args, **kwargs):
         self.ticks = kwargs.get('ticks', True)
         self.grid = kwargs.get('grid', True)
@@ -491,13 +491,27 @@ class FabricPlot(object):
 
 
 class Density(object):
-    """trida Density"""
+    """Class to store regular grid of values to be contoured on ``StereoNet``.
+
+    ``Density`` object could be calculated from ``Group`` object or by user-
+    defined function, which accept unit vector as argument.
+
+    Args:
+      g: ``Group`` object of data to be used for desity calculation
+         If ommited, zero density grid is returned.
+
+    Kwargs:
+      cnt_points: Value specify density of uniform grid [180]
+      sigma: sigma for kernels. Default 1
+      method: 'linear_kamb', 'square_kamb', 'schmidt', 'kamb'. Default 'exp_kamb'
+      Trim: Set negative density values to zero. Default False
+
+    """
     def __init__(self, d=None, **kwargs):
         self.initgrid(**kwargs)
         if d:
             assert isinstance(d, Group), 'Density need Group as argument'
-            self.dcdata = np.asarray(d)
-            self.calculate(**kwargs)
+            self.calculate_density(np.asarray(d), **kwargs)
 
     def initgrid(self, **kwargs):
         import matplotlib.tri as tri
@@ -515,7 +529,10 @@ class Density(object):
         self.density = np.zeros(self.n, dtype=np.float)
         self.triang = tri.Triangulation(self.xg, self.yg)
 
-    def calculate(self, **kwargs):
+    def calculate_density(self, dcdata, **kwargs):
+        """Calculate density of elements from ``Group`` object
+
+        """
         # parse options
         sigma = kwargs.get('sigma', 1)
         method = kwargs.get('method', 'exp_kamb')
@@ -529,17 +546,26 @@ class Density(object):
                 }[method]
 
         # weights are given by euclidean norms of data
-        weights = np.linalg.norm(self.dcdata, axis=1)
+        weights = np.linalg.norm(dcdata, axis=1)
         weights /= weights.mean()
         for i in range(self.n):
-            dist = np.abs(np.dot(self.dcgrid[i], self.dcdata.T))
+            dist = np.abs(np.dot(self.dcgrid[i], dcdata.T))
             count, scale = func(dist, sigma)
             count *= weights
             self.density[i] = (count.sum() - 0.5) / scale
         if trim:
             self.density[self.density < 0] = 0
 
+    def apply_func(self, func, **kwargs):
+        """Calculate density using function passed as argument.
+        Function must accept unit vector as argument and retrun scalar value.
+
+        """
+        for i in range(self.n):
+            self.density[i] = func(self.dcgrid[i])
+
     def plot(self, N=6, cm=plt.cm.jet):
+        """ Show contoured density."""
         plt.figure()
         plt.gca().set_aspect('equal')
         plt.tricontourf(self.triang, self.density, N, cm=cm)
@@ -548,6 +574,7 @@ class Density(object):
         plt.show()
 
     def plotcountgrid(self):
+        """ Show counting grid."""
         plt.figure()
         plt.gca().set_aspect('equal')
         plt.triplot(self.triang, 'bo-')
