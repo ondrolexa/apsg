@@ -855,6 +855,60 @@ class Group(list):
         azi, inc = l.dd
         return cls.from_array(azi+180, 90-inc, typ=Fol)
 
+    @classmethod
+    def sfs_vec3(cls, N=1000):
+        """Spherical Fibonacci Spiral points on a sphere.
+
+        adopted from John Burkardt
+        http://people.sc.fsu.edu/~jburkardt/
+        """
+        phi = (1 + np.sqrt(5))/2
+        i2 = 2*np.arange(N) - N + 1
+        theta = 2*np.pi*i2/phi
+        sp = i2/N
+        cp = np.sqrt((N + i2)*(N - i2))/N
+        dc = np.array([cp*np.sin(theta), cp*np.cos(theta), sp]).T
+        return cls([Vec3(d) for d in dc])
+
+    @classmethod
+    def sfs_lin(cls, N=500):
+        g = cls.sfs_vec3(N=2*N)
+        # no antipodal
+        return cls([d.aslin for d in g if d[2]>0])
+
+    @classmethod
+    def sfs_fol(cls, N=500):
+        g = cls.sfs_vec3(N=2*N)
+        # no antipodal
+        return cls([d.asfol for d in g if d[2]>0])
+
+    @classmethod
+    def gss_vec3(cls, N=1000):
+        """Golden Section Spiral points on a sphere.
+
+        adopted http://www.softimageblog.com/archives/115
+        """
+        inc = np.pi*(3 - np.sqrt(5)) 
+        off = 2/N
+        k = np.arange(N)
+        y = k*off - 1 + (off/2) 
+        r = np.sqrt(1 - y*y) 
+        phi = k*inc 
+        dc = np.array([np.cos(phi)*r, y, np.sin(phi)*r]).T
+        return cls([Vec3(d) for d in dc])
+
+    @classmethod
+    def gss_lin(cls, N=500):
+        g = cls.gss_vec3(N=2*N)
+        # no antipodal
+        return cls([d.aslin for d in g if d[2]>0])
+
+    @classmethod
+    def gss_fol(cls, N=500):
+        g = cls.gss_vec3(N=2*N)
+        # no antipodal
+        return cls([d.asfol for d in g if d[2]>0])
+
     def to_file(self, filename='group.dat'):
         import pickle
         with open(filename, 'wb') as file:

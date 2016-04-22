@@ -87,3 +87,5 @@ devel
 * Density could be initialized without data for user-defined calculations
   New method apply_func could be used to calculate density
 * Contour(f) methods accept Density object as argument
+* Added Group class methods to generate Spherical Fibonacci and Golden Section
+  based uniform distributions of Vec3, Lin and Fol
