@@ -1,0 +1,5 @@
+name: apsg
+conda:
+    file: environment.yml
+python:
+   version: 3
