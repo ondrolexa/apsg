@@ -76,7 +76,7 @@ History
 * Resultant of Fol and Lin is calculated as vectorial in centered position
 * dv property of Fol added to return dip slip vector
 
-devel
+0.3.3 (04 Jun 2016)
 ---------------------
 
 * Added E1,E2,E3 properties and polar decomposition method to DefGrad object
