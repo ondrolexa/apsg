@@ -14,6 +14,7 @@ from .helpers import sind, cosd, acosd, asind, atan2d, angle_metric
 __all__ = ['Vec3', 'Lin', 'Fol', 'Pair', 'Fault',
            'Group', 'FaultSet', 'Ortensor', 'Cluster', 'G']
 
+settings = dict(notation = 'dd')
 
 class Vec3(np.ndarray):
     """Base class to store 3D vectors derived from numpy.ndarray
@@ -309,11 +310,13 @@ class Fol(Vec3):
         """Create planar feature.
 
         """
+        if settings['notation'] == 'rhr':
+            azi += 90
         v = [-cosd(azi)*sind(inc), -sind(azi)*sind(inc), cosd(inc)]
         return Vec3(v).view(cls)
 
     def __repr__(self):
-        return 'S:{:.0f}/{:.0f}'.format(*self.dd)
+        return 'S:{:.0f}/{:.0f}'.format(*getattr(self, settings['notation']))
 
     def __add__(self, other):
         """Sum of axial data
@@ -476,13 +479,13 @@ class Pair(object):
         self.misfit = misfit
 
     def __repr__(self):
-        vals = self.fol.dd + self.lin.dd
+        vals = getattr(self.fol, settings['notation']) + self.lin.dd
         return 'P:{:.0f}/{:.0f}-{:.0f}/{:.0f}'.format(*vals)
 
     @classmethod
     def from_pair(cls, fol, lin):
         """Create ``Pair`` from Fol and Lin objects"""
-        data = fol.dd + lin.dd
+        data = getattr(fol, settings['notation']) + lin.dd
         return cls(*data)
 
     def rotate(self, axis, phi):
@@ -553,13 +556,13 @@ class Fault(Pair):
 
     def __repr__(self):
         s = ['', '+', '-'][self.sense]
-        vals = self.fol.dd + self.lin.dd + (s,)
+        vals = getattr(self.fol, settings['notation']) + self.lin.dd + (s,)
         return 'F:{:.0f}/{:.0f}-{:.0f}/{:.0f} {:s}'.format(*vals)
 
     @classmethod
     def from_pair(cls, fol, lin, sense):
         """Create ``Fault`` from Fol and Lin objects"""
-        data = fol.dd + lin.dd + (sense,)
+        data = getattr(fol, settings['notation']) + lin.dd + (sense,)
         return cls(*data)
 
     def rotate(self, axis, phi):
@@ -693,10 +696,11 @@ class Group(list):
     @property
     def R(self):
         """Return resultant of Group"""
-        #r = deepcopy(self[0])
-        #for v in self[1:]:
-        #    r += v
-        #return r
+        # r = deepcopy(self[0])
+        # for v in self[1:]:
+        #     r += v
+        # return r
+        #
         # As axial summing is not commutative we use vectorial
         # summing of centered data
         if self.type == Vec3:
@@ -707,14 +711,14 @@ class Group(list):
                 cg = Group.from_array(*self.centered.dd, typ=Lin)
                 r = Vec3(np.sum(cg, axis=0)).aslin.rotate(Lin(90, 0), -90).transform(irot)
             else:
-                cg = Group.from_array(*self.centered.dd, typ=Fol)
+                cg = Group.from_array(*getattr(self.centered, settings['notation']), typ=Fol)
                 r = Vec3(np.sum(cg, axis=0)).asfol.rotate(Lin(90, 0), -90).transform(irot)
         return r
 
     @property
     def var(self):
         """Spherical variance"""
-        return 1 - abs(self.R)/len(self)
+        return 1 - abs(self.R) / len(self)
 
     @property
     def fisher_stats(self):
@@ -853,6 +857,8 @@ class Group(list):
     def uniform_fol(cls, N=500):
         l = cls.uniform_lin(N=N)
         azi, inc = l.dd
+        if settings['notation'] == 'rhr':
+            azi -= 90
         return cls.from_array(azi+180, 90-inc, typ=Fol)
 
     @classmethod
@@ -888,12 +894,12 @@ class Group(list):
 
         adopted http://www.softimageblog.com/archives/115
         """
-        inc = np.pi*(3 - np.sqrt(5)) 
+        inc = np.pi*(3 - np.sqrt(5))
         off = 2/N
         k = np.arange(N)
-        y = k*off - 1 + (off/2) 
-        r = np.sqrt(1 - y*y) 
-        phi = k*inc 
+        y = k*off - 1 + (off/2)
+        r = np.sqrt(1 - y*y)
+        phi = k*inc
         dc = np.array([np.cos(phi)*r, y, np.sin(phi)*r]).T
         return cls([Vec3(d) for d in dc])
 

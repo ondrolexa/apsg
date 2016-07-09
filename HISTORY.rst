@@ -48,7 +48,7 @@ History
 * Cluster class with hierarchical clustering implemented
 * Group to_file and from_file methods implemented to store data in file
 * Group copy method for shallow copy implemented
-* StereoNet now accept Vec3 and Fault object as well for instant plotting. 
+* StereoNet now accept Vec3 and Fault object as well for instant plotting.
 * Ortensor updated with new properties E1,E2,E3 and Vollmer(1989) indexes
   P,G,R and C. Bug in Woodcocks's shape and strength values fixed.
 * uniform_lin and uniform_fol improved.
@@ -94,3 +94,10 @@ History
 -------------------------
 
 * RTD fix
+
+0.3 Patch 5 ()
+-------------------------
+
+* Simple notation seetings implemented in core.seetings dictionary. Value 'dd'
+  or 'rhr' define property used for __repr__ method and control how azimuth
+  argument of Fol is interpreted.
