@@ -14,7 +14,8 @@ from .helpers import sind, cosd, acosd, asind, atan2d, angle_metric
 __all__ = ['Vec3', 'Lin', 'Fol', 'Pair', 'Fault',
            'Group', 'FaultSet', 'Ortensor', 'Cluster', 'G']
 
-settings = dict(notation = 'dd')
+settings = dict(notation='dd')
+
 
 class Vec3(np.ndarray):
     """Base class to store 3D vectors derived from numpy.ndarray
@@ -85,7 +86,7 @@ class Vec3(np.ndarray):
           V(0.577, 0.577, 0.577)
 
         """
-        return self/abs(self)
+        return self / abs(self)
 
     def cross(self, other):
         """Returns cross product of two vectors::
@@ -125,7 +126,9 @@ class Vec3(np.ndarray):
         """
         e = Vec3(self)  # rotate all types as vectors
         k = axis.uv
-        r = cosd(phi)*e + sind(phi)*k.cross(e) + (1-cosd(phi))*k*(k*e)
+        r = (cosd(phi) * e +
+             sind(phi) * k.cross(e) +
+             (1 - cosd(phi)) * k * (k * e))
         return r.view(type(self))
 
     def proj(self, other):
@@ -135,7 +138,7 @@ class Vec3(np.ndarray):
           >>> u.proj(v)
 
         """
-        r = np.dot(self, other)*other / abs(other)**2
+        r = np.dot(self, other) * other / abs(other)**2
         return r.view(type(self))
 
     def transform(self, F):
@@ -211,7 +214,9 @@ class Lin(Vec3):
         """Create linear feature.
 
         """
-        v = [cosd(azi)*cosd(inc), sind(azi)*cosd(inc), sind(inc)]
+        v = [cosd(azi) * cosd(inc),
+             sind(azi) * cosd(inc),
+             sind(inc)]
         return Vec3(v).view(cls)
 
     def __repr__(self):
@@ -247,7 +252,7 @@ class Lin(Vec3):
         """Returns True if linear features are equal.
 
         """
-        return bool(abs(self-other) < 1e-15 or abs(self+other) < 1e-15)
+        return bool(abs(self - other) < 1e-15 or abs(self + other) < 1e-15)
 
     def __ne__(self, other):
         """Returns False if linear features are equal.
@@ -312,7 +317,9 @@ class Fol(Vec3):
         """
         if settings['notation'] == 'rhr':
             azi += 90
-        v = [-cosd(azi)*sind(inc), -sind(azi)*sind(inc), cosd(inc)]
+        v = [-cosd(azi) * sind(inc),
+             -sind(azi) * sind(inc),
+             cosd(inc)]
         return Vec3(v).view(cls)
 
     def __repr__(self):
@@ -348,7 +355,7 @@ class Fol(Vec3):
         """Returns True if planar features are equal.
 
         """
-        return bool(abs(self-other) < 1e-15 or abs(self+other) < 1e-15)
+        return bool(abs(self - other) < 1e-15 or abs(self + other) < 1e-15)
 
     def __ne__(self, other):
         """Returns False if planar features are equal.
@@ -441,7 +448,7 @@ class Fol(Vec3):
           >>> f.rake(30).aslin
 
         """
-        return self.dv.rotate(self, rake-90)
+        return self.dv.rotate(self, rake - 90)
 
 
 class Pair(object):
@@ -471,7 +478,7 @@ class Pair(object):
         if misfit > 20:
             warnings.warn('Warning: Misfit angle is %.1f degrees.' % misfit)
         ax = fol**lin
-        ang = (Vec3(lin).angle(fol) - 90)/2
+        ang = (Vec3(lin).angle(fol) - 90) / 2
         fol = fol.rotate(ax, ang)
         lin = lin.rotate(ax, -ang)
         self.fvec = Vec3(fol)
@@ -548,11 +555,11 @@ class Fault(Pair):
         assert isinstance(sense, int), \
             'Third sense parameter must be positive or negative integer'
         super(Fault, self).__init__(fazi, finc, lazi, linc)
-        sense = 2*int(sense > 0) - 1
+        sense = 2 * int(sense > 0) - 1
         ax = self.fvec**self.lvec
-        self.lvec = sense*self.lvec
-        self.pvec = self.fvec.rotate(ax, -45*sense)
-        self.tvec = self.fvec.rotate(ax, 45*sense)
+        self.lvec = sense * self.lvec
+        self.pvec = self.fvec.rotate(ax, -45 * sense)
+        self.tvec = self.fvec.rotate(ax, 45 * sense)
 
     def __repr__(self):
         s = ['', '+', '-'][self.sense]
@@ -575,7 +582,7 @@ class Fault(Pair):
 
     @property
     def sense(self):
-        return 2*int(self.fvec**self.lvec == Vec3(self.fol**self.lin)) - 1
+        return 2 * int(self.fvec**self.lvec == Vec3(self.fol**self.lin)) - 1
 
     @property
     def p(self):
@@ -660,7 +667,7 @@ class Group(list):
         """Create group from csv file"""
         from os.path import basename
         dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
-        return cls.from_array(dt[acol-1], dt[icol-1],
+        return cls.from_array(dt[acol - 1], dt[icol - 1],
                               typ=typ, name=basename(fname))
 
     def to_csv(self, fname, delimiter=','):
@@ -708,11 +715,15 @@ class Group(list):
         else:
             irot = np.linalg.inv(self.ortensor.vects)
             if self.type == Lin:
-                cg = Group.from_array(*self.centered.dd, typ=Lin)
-                r = Vec3(np.sum(cg, axis=0)).aslin.rotate(Lin(90, 0), -90).transform(irot)
+                vals = self.centered.dd
+                cg = Group.from_array(*vals, typ=Lin)
+                r = (Vec3(np.sum(cg, axis=0)).aslin
+                     .rotate(Lin(90, 0), -90).transform(irot))
             else:
-                cg = Group.from_array(*getattr(self.centered, settings['notation']), typ=Fol)
-                r = Vec3(np.sum(cg, axis=0)).asfol.rotate(Lin(90, 0), -90).transform(irot)
+                vals = getattr(self.centered, settings['notation'])
+                cg = Group.from_array(*vals, typ=Fol)
+                r = (Vec3(np.sum(cg, axis=0)).asfol
+                     .rotate(Lin(90, 0), -90).transform(irot))
         return r
 
     @property
@@ -727,28 +738,28 @@ class Group(list):
         N = len(self)
         R = abs(self.R)
         if N != R:
-            stats['k'] = (N - 1)/(N - R)
-            stats['csd'] = 81/np.sqrt(stats['k'])
-        stats['a95'] = acosd(1 - ((N - R)/R)*(20**(1/(N-1)) - 1))
+            stats['k'] = (N - 1) / (N - R)
+            stats['csd'] = 81 / np.sqrt(stats['k'])
+        stats['a95'] = acosd(1 - ((N - R) / R) * (20**(1 / (N - 1)) - 1))
         return stats
 
     @property
     def delta(self):
         """cone containing ~63% of the data"""
-        return acosd(abs(self.R)/len(self))
+        return acosd(abs(self.R) / len(self))
 
     @property
     def rdegree(self):
         """degree of preffered orientation od Group"""
         N = len(self)
-        return 100*(2*abs(self.R) - N)/N
+        return 100 * (2 * abs(self.R) - N) / N
 
     def cross(self, other=None):
         """return cross products of all pairs in Group"""
         res = []
         if other is None:
-            for i in range(len(self)-1):
-                for j in range(i+1, len(self)):
+            for i in range(len(self) - 1):
+                for j in range(i + 1, len(self)):
                     res.append(self[i]**self[j])
         elif isinstance(other, Group):
             for e in self:
@@ -780,8 +791,8 @@ class Group(list):
         """return angles of all pairs in Group"""
         res = []
         if other is None:
-            for i in range(len(self)-1):
-                for j in range(i+1, len(self)):
+            for i in range(len(self) - 1):
+                for j in range(i + 1, len(self)):
                     res.append(self[i].angle(self[j]))
         elif isinstance(other, Group):
             for e in self:
@@ -822,33 +833,34 @@ class Group(list):
     def randn_lin(cls, N=100, mean=Lin(0, 90), sig=20):
         data = []
         ta, td = mean.dd
-        for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
+        for azi, dip in zip(180 * np.random.rand(N), sig * np.random.randn(N)):
             data.append(Lin(0, 90).rotate(Lin(azi, 0), dip))
-        return cls(data).rotate(Lin(ta+90, 0), 90-td)
+        return cls(data).rotate(Lin(ta + 90, 0), 90 - td)
 
     @classmethod
     def randn_fol(cls, N=100, mean=Fol(0, 0), sig=20):
         data = []
         ta, td = mean.dd
-        for azi, dip in zip(180*np.random.rand(N), sig*np.random.randn(N)):
+        for azi, dip in zip(180 * np.random.rand(N), sig * np.random.randn(N)):
             data.append(Fol(0, 0).rotate(Lin(azi, 0), dip))
-        return cls(data).rotate(Lin(ta-90, 0), td)
+        return cls(data).rotate(Lin(ta - 90, 0), td)
 
     @classmethod
     def uniform_lin(cls, N=500):
-        n = 2*np.ceil(np.sqrt(N)/0.564)
+        n = 2 * np.ceil(np.sqrt(N) / 0.564)
         azi = 0
         inc = 90
-        for rho in np.linspace(0, 1, np.round(n/2/np.pi))[:-1]:
-            theta = np.linspace(0, 360, np.round(n*rho + 1))[:-1]
-            x, y = rho*sind(theta), rho*cosd(theta)
+        for rho in np.linspace(0, 1, np.round(n / 2 / np.pi))[:-1]:
+            theta = np.linspace(0, 360, np.round(n * rho + 1))[:-1]
+            x, y = rho * sind(theta), rho * cosd(theta)
             azi = np.hstack((azi, atan2d(x, y)))
-            inc = np.hstack((inc, 90 - 2*asind(np.sqrt((x*x + y*y)/2))))
+            ii = asind(np.sqrt((x * x + y * y) / 2))
+            inc = np.hstack((inc, 90 - 2 * ii))
         # no antipodal
         theta = np.linspace(0, 360, n + 1)[:-1:2]
         x, y = sind(theta), cosd(theta)
         azi = np.hstack((azi, atan2d(x, y)))
-        inc = np.hstack((inc, 90 - 2*asind(np.sqrt((x*x + y*y)/2))))
+        inc = np.hstack((inc, 90 - 2 * asind(np.sqrt((x * x + y * y) / 2))))
         # fix
         inc[inc < 0] = 0
         return cls.from_array(azi, inc, typ=Lin)
@@ -859,7 +871,7 @@ class Group(list):
         azi, inc = l.dd
         if settings['notation'] == 'rhr':
             azi -= 90
-        return cls.from_array(azi+180, 90-inc, typ=Fol)
+        return cls.from_array(azi + 180, 90 - inc, typ=Fol)
 
     @classmethod
     def sfs_vec3(cls, N=1000):
@@ -868,25 +880,25 @@ class Group(list):
         adopted from John Burkardt
         http://people.sc.fsu.edu/~jburkardt/
         """
-        phi = (1 + np.sqrt(5))/2
-        i2 = 2*np.arange(N) - N + 1
-        theta = 2*np.pi*i2/phi
-        sp = i2/N
-        cp = np.sqrt((N + i2)*(N - i2))/N
-        dc = np.array([cp*np.sin(theta), cp*np.cos(theta), sp]).T
+        phi = (1 + np.sqrt(5)) / 2
+        i2 = 2 * np.arange(N) - N + 1
+        theta = 2 * np.pi * i2 / phi
+        sp = i2 / N
+        cp = np.sqrt((N + i2) * (N - i2)) / N
+        dc = np.array([cp * np.sin(theta), cp * np.cos(theta), sp]).T
         return cls([Vec3(d) for d in dc])
 
     @classmethod
     def sfs_lin(cls, N=500):
-        g = cls.sfs_vec3(N=2*N)
+        g = cls.sfs_vec3(N=2 * N)
         # no antipodal
-        return cls([d.aslin for d in g if d[2]>0])
+        return cls([d.aslin for d in g if d[2] > 0])
 
     @classmethod
     def sfs_fol(cls, N=500):
-        g = cls.sfs_vec3(N=2*N)
+        g = cls.sfs_vec3(N=2 * N)
         # no antipodal
-        return cls([d.asfol for d in g if d[2]>0])
+        return cls([d.asfol for d in g if d[2] > 0])
 
     @classmethod
     def gss_vec3(cls, N=1000):
@@ -894,26 +906,26 @@ class Group(list):
 
         adopted http://www.softimageblog.com/archives/115
         """
-        inc = np.pi*(3 - np.sqrt(5))
-        off = 2/N
+        inc = np.pi * (3 - np.sqrt(5))
+        off = 2 / N
         k = np.arange(N)
-        y = k*off - 1 + (off/2)
-        r = np.sqrt(1 - y*y)
-        phi = k*inc
-        dc = np.array([np.cos(phi)*r, y, np.sin(phi)*r]).T
+        y = k * off - 1 + (off / 2)
+        r = np.sqrt(1 - y * y)
+        phi = k * inc
+        dc = np.array([np.cos(phi) * r, y, np.sin(phi) * r]).T
         return cls([Vec3(d) for d in dc])
 
     @classmethod
     def gss_lin(cls, N=500):
-        g = cls.gss_vec3(N=2*N)
+        g = cls.gss_vec3(N=2 * N)
         # no antipodal
-        return cls([d.aslin for d in g if d[2]>0])
+        return cls([d.aslin for d in g if d[2] > 0])
 
     @classmethod
     def gss_fol(cls, N=500):
-        g = cls.gss_vec3(N=2*N)
+        g = cls.gss_vec3(N=2 * N)
         # no antipodal
-        return cls([d.asfol for d in g if d[2]>0])
+        return cls([d.asfol for d in g if d[2] > 0])
 
     def to_file(self, filename='group.dat'):
         import pickle
@@ -1070,7 +1082,7 @@ class FaultSet(list):
         """Read FaultSet from csv file"""
         from os.path import basename
         dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
-        return cls.from_array(dt[facol-1], dt[ficol-1],
+        return cls.from_array(dt[facol - 1], dt[ficol - 1],
                               typ=typ, name=basename(fname))
 
     def to_csv(self, fname, delimiter=','):
@@ -1137,7 +1149,7 @@ class Ortensor(object):
         else:
             n = 1.0
         return 'Ortensor: %s\n' % self.name + \
-            '(E1:%.4g,E2:%.4g,E3:%.4g)\n' % tuple(self.vals/n) + \
+            '(E1:%.4g,E2:%.4g,E3:%.4g)\n' % tuple(self.vals / n) + \
             str(self.M)
 
     @property
@@ -1189,7 +1201,7 @@ class Ortensor(object):
     @property
     def strength(self):
         """Woodcock strength"""
-        return np.log(self.E1/self.E3)
+        return np.log(self.E1 / self.E3)
 
     @property
     def C(self):
@@ -1199,22 +1211,22 @@ class Ortensor(object):
     @property
     def shape(self):
         """Woodcock shape"""
-        return np.log(self.E1/self.E2)/np.log(self.E2/self.E3)
+        return np.log(self.E1 / self.E2) / np.log(self.E2 / self.E3)
 
     @property
     def P(self):
         """Point index - Vollmer, 1990"""
-        return (self.vals[0] - self.vals[1])/self.n
+        return (self.vals[0] - self.vals[1]) / self.n
 
     @property
     def G(self):
         """Girdle index - Vollmer, 1990"""
-        return 2*(self.vals[1] - self.vals[2])/self.n
+        return 2 * (self.vals[1] - self.vals[2]) / self.n
 
     @property
     def R(self):
         """Random index - Vollmer, 1990"""
-        return 3*self.vals[2]/self.n
+        return 3 * self.vals[2] / self.n
 
     @property
     def B(self):
@@ -1224,7 +1236,7 @@ class Ortensor(object):
     @property
     def I(self):
         """Intensity index - Lisle, 1985"""
-        return 7.5*np.sum((self.vals/self.n - 1/3)**2)
+        return 7.5 * np.sum((self.vals / self.n - 1 / 3)**2)
 
 
 class Cluster(object):
@@ -1306,7 +1318,7 @@ class Cluster(object):
             idx = fcluster(self.Z, n, criterion='maxclust')
             grp = [np.flatnonzero(idx == c) for c in np.unique(idx)]
             # between_grp_var = Group([self.data[ix].R.uv for ix in grp]).var
-            var = [100*self.data[ix].var for ix in grp]
+            var = [100 * self.data[ix].var for ix in grp]
             within_grp_var.append(var)
             mean_var.append(np.mean(var))
         if not no_plot:
