@@ -95,9 +95,17 @@ History
 
 * RTD fix
 
-0.3 Patch 5 ()
+0.3 Patch 5 (dev)
 -------------------------
 
-* Simple notation seetings implemented in core.seetings dictionary. Value 'dd'
-  or 'rhr' define property used for __repr__ method and control how azimuth
-  argument of Fol is interpreted.
+* Simple settings interface implemented in in apsg.core.seetings dictionary.
+  To change: `from apsg.core import settings`
+             `set setting['name']=value`
+* `notation` seeting with values `dd` or `rhr` control how azimuth argument of
+  Fol is represented.
+* `vec2dd` setting with values `True` or `False` control how `Vec3` is
+  represented.
+* Vec3 could be instantiated by one arument (vector like), 2 arguments
+  (azimuth, inclination) or 3 arguments (azimuth, inclination, magnitude).
+* Group and FaultSet can return array or list of user-defined attributes of
+  all elements

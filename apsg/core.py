@@ -14,7 +14,7 @@ from .helpers import sind, cosd, acosd, asind, atan2d, angle_metric
 __all__ = ['Vec3', 'Lin', 'Fol', 'Pair', 'Fault',
            'Group', 'FaultSet', 'Ortensor', 'Cluster', 'G']
 
-settings = dict(notation='dd')
+settings = dict(notation='dd', vec2dd=False)
 
 
 class Vec3(np.ndarray):
@@ -29,15 +29,22 @@ class Vec3(np.ndarray):
       >>> v = Vec3([0.67, 1.2, 0.73])
 
     """
-    def __new__(cls, array):
+    def __new__(cls, array, inc=None, mag=1.0):
         """Convert the input to 3D vector.
 
         """
-        obj = np.asarray(array).view(cls)
+        if inc is None:
+            obj = np.asarray(array).view(cls)
+        else:
+            obj = mag * Lin(array, inc).view(cls)
         return obj
 
     def __repr__(self):
-        return 'V({:.3f}, {:.3f}, {:.3f})'.format(*self)
+        if settings['vec2dd']:
+            r = 'V:{:.0f}/{:.0f}'.format(*self.dd)
+        else:
+            r = 'V({:.3f}, {:.3f}, {:.3f})'.format(*self)
+        return r
 
     def __mul__(self, other):
         """Returns dot product of two vectors.
@@ -137,6 +144,8 @@ class Vec3(np.ndarray):
         Example:
           >>> u.proj(v)
 
+        To project on plane use: u - u.proj(v), where v in plane normal.
+
         """
         r = np.dot(self, other) * other / abs(other)**2
         return r.view(type(self))
@@ -197,6 +206,16 @@ class Vec3(np.ndarray):
         """Convert to ``Vec3`` object.
         """
         return self.copy().view(Vec3)
+
+    @property
+    def dd(self):
+        """ Return Return dip-direction, dip tuple
+
+        """
+        n = self.uv
+        dec = atan2d(n[1], n[0]) % 360
+        inc = asind(n[2])
+        return dec, inc
 
 
 class Lin(Vec3):
@@ -646,6 +665,16 @@ class Group(list):
         else:
             return super(Group, self).__getitem__(key)
 
+    def __getattr__(self, attr):
+        if attr in self[0].__dict__:
+            try:
+                res = np.array([getattr(e, attr) for e in self])
+            except ValueError:
+                res = [getattr(e, attr) for e in self]
+            return res
+        else:
+            raise AttributeError
+
     def append(self, item):
         assert isinstance(item, self.type), \
             'item is not of type %s' % self.type.__name__
@@ -1058,6 +1087,29 @@ class FaultSet(list):
         assert isinstance(value, self.type), \
             'item is not of type %s' % self.type.__name__
         super(FaultSet, self).__setitem__(key, value)
+
+    def __getitem__(self, key):
+        """FaultSet fancy indexing"""
+        if isinstance(key, slice):
+            key = np.arange(*key.indices(len(self)))
+        if isinstance(key, list) or isinstance(key, tuple):
+            key = np.asarray(key)
+        if isinstance(key, np.ndarray):
+            if key.dtype == 'bool':
+                key = np.flatnonzero(key)
+            return FaultSet([self[i] for i in key])
+        else:
+            return super(FaultSet, self).__getitem__(key)
+
+    def __getattr__(self, attr):
+        if attr in self[0].__dict__:
+            try:
+                res = np.array([getattr(e, attr) for e in self])
+            except ValueError:
+                res = [getattr(e, attr) for e in self]
+            return res
+        else:
+            raise AttributeError
 
     def append(self, item):
         assert isinstance(item, self.type), \

@@ -49,7 +49,7 @@ class StereoNet(object):
                 elif typ is Fol:
                     getattr(self, self.fol_plot)(arg, label=repr(arg))
                 elif typ is Vec3:
-                    self.line(arg.aslin, label=repr(arg))
+                    self.vector(arg.aslin, label=repr(arg))
                 elif typ is Fault:
                     self.fault(arg, label=repr(arg))
                 else:
