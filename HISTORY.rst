@@ -95,7 +95,7 @@ History
 
 * RTD fix
 
-0.3 Patch 5 (dev)
+0.3 Patch 5 (12 Nov 2016)
 -------------------------
 
 * Simple settings interface implemented in in apsg.core.seetings dictionary.
