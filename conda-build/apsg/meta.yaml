@@ -1,0 +1,53 @@
+{% set data = load_setup_py_data() %}
+
+package:
+  name: apsg
+  version: {{ data.get('version') }}
+
+source:
+  git_url: https://github.com/ondrolexa/apsg.git
+  git_rev: {{ data.get('version') }}
+#  patches:
+   # List any patch files here
+   # - fix.patch
+
+build:
+  noarch_python: True
+  # preserve_egg_dir: True
+  entry_points:
+    - iapsg=apsg.shell:main
+
+  # If this is a new build for the same version, increment the build
+  # number. If you do not include this key, it defaults to 0.
+  # number: 1
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - numpy >=1.8
+    - matplotlib >=1.2
+    - scipy
+
+  run:
+    - python
+    - numpy >=1.8
+    - matplotlib >=1.2
+    - scipy
+
+test:
+  # Python imports
+  imports:
+    - apsg
+
+about:
+  home: http://ondrolexa.github.io/apsg
+  license: BSD License
+  summary: 'APSG - structural geology module for Python'
+  license_family: BSD
+  doc_url: https://apsg.readthedocs.org
+  dev_url: https://github.com/ondrolexa/apsg
+
+# See
+# http://docs.continuum.io/conda/build.html for
+# more information about meta.yaml
