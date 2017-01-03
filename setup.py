@@ -38,7 +38,8 @@ setup(
     entry_points={
     'console_scripts': [
         'iapsg=apsg.shell:main'
-    ]
+        ]
+    },
     license="BSD",
     zip_safe=False,
     classifiers=[

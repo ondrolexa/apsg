@@ -11,17 +11,15 @@ except:
     APSG_VERSION = ''
 
 def main():
-    banner = '+-----------------------------------------------------------+\n'
-    banner += ' APSG '
+    banner = '+----------------------------------------------------------+\n'
+    banner += '    APSG toolbox '
     banner += APSG_VERSION
-    banner += ' [interactive shell] - http://ondrolexa.github.io/apsg\n'
-    banner += '+-----------------------------------------------------------+\n'
-    banner += '\n'
-    exitmsg = '\n... [Exiting the APSG interactive shell] ...\n'
+    banner += ' - http://ondrolexa.github.io/apsg\n'
+    banner += '+----------------------------------------------------------+'
     vars = globals().copy()
     vars.update(locals())
     shell = code.InteractiveConsole(vars)
-    shell.interact(banner=banner, exitmsg=exitmsg)
+    shell.interact(banner=banner)
 
 if __name__ == "__main__":
     main()
