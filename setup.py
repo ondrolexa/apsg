@@ -13,7 +13,6 @@ history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 requirements = [
     'numpy >= 1.8',
     'matplotlib >= 1.2',
-    'ipython',
     'scipy'
 ]
 
@@ -23,7 +22,7 @@ test_requirements = [
 
 setup(
     name='apsg',
-    version='0.3.5',
+    version='0.3.6',
     description='APSG - structural geology module for Python',
     long_description=readme + '\n\n' + history,
     author='Ondrej Lexa',
@@ -36,10 +35,12 @@ setup(
                  'apsg'},
     include_package_data=True,
     install_requires=requirements,
-    scripts=['iapsg'],
+    entry_points={
+    'console_scripts': [
+        'iapsg=apsg.shell:main'
+    ]
     license="BSD",
     zip_safe=False,
-    keywords='apsg geology',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',

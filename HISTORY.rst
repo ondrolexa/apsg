@@ -109,3 +109,8 @@ History
   (azimuth, inclination) or 3 arguments (azimuth, inclination, magnitude).
 * Group and FaultSet can return array or list of user-defined attributes of
   all elements
+
+0.3 Patch 6 (03 Jan 2017)
+-------------------------
+
+* shell script iapsg opens interactive console

@@ -7,4 +7,4 @@ from .db import SDB
 
 __author__ = 'Ondrej Lexa'
 __email__ = 'lexa.ondrej@gmail.com'
-__version__ = '0.3.5'
+__version__ = '0.3.6'
