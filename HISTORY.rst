@@ -114,3 +114,8 @@ History
 -------------------------
 
 * shell script iapsg opens interactive console
+
+0.3 Patch 7 (05 Jan 2017)
+-------------------------
+
+* conda build for all platforms

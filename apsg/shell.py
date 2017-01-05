@@ -1,19 +1,15 @@
 #!/usr/bin/python
 
+import pkg_resources
 import readline
 import code
 from pylab import *
 from apsg import *
 
-try:
-    from apsg import __version__ as APSG_VERSION
-except:
-    APSG_VERSION = ''
-
 def main():
     banner = '+----------------------------------------------------------+\n'
     banner += '    APSG toolbox '
-    banner += APSG_VERSION
+    banner += pkg_resources.require('apsg')[0].version
     banner += ' - http://ondrolexa.github.io/apsg\n'
     banner += '+----------------------------------------------------------+'
     vars = globals().copy()

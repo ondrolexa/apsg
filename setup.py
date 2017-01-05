@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup, find_packages
 
+with open('README.rst') as readme_file:
+    readme = readme_file.read()
 
-readme = open('README.rst').read()
-history = open('HISTORY.rst').read().replace('.. :changelog:', '')
+with open('HISTORY.rst') as history_file:
+    history = history_file.read().replace('.. :changelog:', '')
 
 requirements = [
     'numpy >= 1.8',
@@ -22,18 +21,13 @@ test_requirements = [
 
 setup(
     name='apsg',
-    version='0.3.6',
+    version='0.3.7',
     description='APSG - structural geology module for Python',
     long_description=readme + '\n\n' + history,
     author='Ondrej Lexa',
     author_email='lexa.ondrej@gmail.com',
     url='http://ondrolexa.github.io/apsg',
-    packages=[
-        'apsg',
-    ],
-    package_dir={'apsg':
-                 'apsg'},
-    include_package_data=True,
+    packages=find_packages(),
     install_requires=requirements,
     entry_points={
     'console_scripts': [
