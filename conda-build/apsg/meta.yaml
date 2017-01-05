@@ -43,6 +43,9 @@ test:
     - apsg.strain
     - apsg.shell
 
+build:
+  script: python setup.py install
+
 about:
   home: http://ondrolexa.github.io/apsg
   license: BSD License

@@ -26,7 +26,7 @@ setup(
     long_description=readme + '\n\n' + history,
     author='Ondrej Lexa',
     author_email='lexa.ondrej@gmail.com',
-    url='http://ondrolexa.github.io/apsg',
+    url='https://github.com/ondrolexa/apsg',
     packages=find_packages(),
     install_requires=requirements,
     entry_points={
@@ -36,6 +36,7 @@ setup(
     },
     license="BSD",
     zip_safe=False,
+    keywords='apsg',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
