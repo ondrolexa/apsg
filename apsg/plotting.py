@@ -16,7 +16,7 @@ except ImportError:
 from .core import Vec3, Fol, Lin, Fault, Group, FaultSet, Ortensor
 from .helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 
-__all__ = ['StereoNet', 'Density', 'rose']
+__all__ = ['StereoNet', 'FabricPlot', 'Density', 'rose']
 
 # ignore matplotlib warnings
 warnings.filterwarnings('ignore', category=mcb.mplDeprecation)

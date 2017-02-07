@@ -119,3 +119,7 @@ History
 -------------------------
 
 * conda build for all platforms
+* numpy, matplotlib and other helpres imported by default
+* ortensor is normed by default
+* ortensor MADp, MADo, MAD and kind properties added
+

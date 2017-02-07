@@ -9,7 +9,7 @@ from copy import deepcopy
 import warnings
 
 import numpy as np
-from .helpers import sind, cosd, acosd, asind, atan2d, angle_metric
+from .helpers import sind, cosd, acosd, asind, atand, atan2d, angle_metric
 
 __all__ = ['Vec3', 'Lin', 'Fol', 'Pair', 'Fault',
            'Group', 'FaultSet', 'Ortensor', 'Cluster', 'G']
@@ -1185,38 +1185,18 @@ class Ortensor(object):
     """
     def __init__(self, d, **kwargs):
         assert isinstance(d, Group), 'Only group could be passed to Ortensor'
-        self.M = np.dot(np.array(d).T, np.array(d))
-        self.n = len(d)
+        self.cov = np.dot(np.array(d).T, np.array(d)) / len(d)
         self.name = d.name
-        vc, vv = np.linalg.eig(self.M)
+        vc, vv = np.linalg.eig(self.cov)
         ix = np.argsort(vc)[::-1]
-        self.vals = vc[ix]
+        self.eigenvals = vc[ix]
         self.vects = vv.T[ix]
-        self.norm = kwargs.get('norm', True)
         self.scaled = kwargs.get('scaled', False)
 
     def __repr__(self):
-        if self.norm:
-            n = self.n
-        else:
-            n = 1.0
-        return 'Ortensor: %s\n' % self.name + \
-            '(E1:%.4g,E2:%.4g,E3:%.4g)\n' % tuple(self.vals / n) + \
-            str(self.M)
-
-    @property
-    def cov(self):
-        """Return covariance matrix"""
-        return self.M / self.n
-
-    @property
-    def eigenvals(self):
-        """Return tuple of eigenvalues. Normalized if norm property is True"""
-        if self.norm:
-            n = self.n
-        else:
-            n = 1.0
-        return self.vals[0] / n, self.vals[1] / n, self.vals[2] / n
+        return 'Ortensor: %s Kind: %s\n' % (self.name, self.kind) + \
+            '(E1:%.4g,E2:%.4g,E3:%.4g)\n' % tuple(self.eigenvals) + \
+            str(self.cov)
 
     @property
     def E1(self):
@@ -1273,17 +1253,17 @@ class Ortensor(object):
     @property
     def P(self):
         """Point index - Vollmer, 1990"""
-        return (self.vals[0] - self.vals[1]) / self.n
+        return self.eigenvals[0] - self.eigenvals[1]
 
     @property
     def G(self):
         """Girdle index - Vollmer, 1990"""
-        return 2 * (self.vals[1] - self.vals[2]) / self.n
+        return 2 * (self.eigenvals[1] - self.eigenvals[2])
 
     @property
     def R(self):
         """Random index - Vollmer, 1990"""
-        return 3 * self.vals[2] / self.n
+        return 3 * self.eigenvals[2]
 
     @property
     def B(self):
@@ -1293,7 +1273,30 @@ class Ortensor(object):
     @property
     def I(self):
         """Intensity index - Lisle, 1985"""
-        return 7.5 * np.sum((self.vals / self.n - 1 / 3)**2)
+        return 7.5 * np.sum((self.eigenvals - 1 / 3)**2)
+
+    @property
+    def kind(self):
+        """Return descriptive type of ellipsoid"""
+        return {False: 'oblate', True: 'prolate'}[self.shape > 1]
+
+    @property
+    def MADp(self):
+        """Return approximate angular deviation from the major axis along E1"""
+        return atand(np.sqrt((1 - self.E1) / self.E1))
+
+    @property
+    def MADo(self):
+        """Return approximate deviation from the plane normal to E3"""
+        return atand(np.sqrt(self.E3 / (1 - self.E3)))
+
+    @property
+    def MAD(self):
+        """Return approximate deviation according to shape"""
+        if self.shape > 1:
+            return self.MADp
+        else:
+            return self.MADo
 
 
 class Cluster(object):
