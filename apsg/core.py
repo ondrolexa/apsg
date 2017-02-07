@@ -1205,6 +1205,11 @@ class Ortensor(object):
             str(self.M)
 
     @property
+    def cov(self):
+        """Return covariance matrix"""
+        return self.M / self.n
+
+    @property
     def eigenvals(self):
         """Return tuple of eigenvalues. Normalized if norm property is True"""
         if self.norm:
