@@ -13,12 +13,13 @@ try:
 except ImportError:
     pass
 
-from .core import Vec3, Fol, Lin, Fault, Group, FaultSet, Ortensor
+from .core import (Vec3, Fol, Lin, Pair, Fault,
+                   Group, PairSet, FaultSet, Ortensor, StereoGrid)
 from .helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 
-__all__ = ['StereoNet', 'FabricPlot', 'Density', 'rose']
+__all__ = ['StereoNet', 'FabricPlot', 'rose']
 
-# ignore matplotlib warnings
+# ignore matplotlib deprecation warnings
 warnings.filterwarnings('ignore', category=mcb.mplDeprecation)
 
 
@@ -26,7 +27,7 @@ class StereoNet(object):
     """StereoNet class for Schmidt net plotting"""
     def __init__(self, *args, **kwargs):
         self.ticks = kwargs.get('ticks', True)
-        self.grid = kwargs.get('grid', True)
+        self.grid = kwargs.get('grid', False)
         self.ncols = kwargs.get('ncols', 1)
         self.grid_style = kwargs.get('grid_style', 'k:')
         self.fol_plot = kwargs.get('fol_plot', 'plane')
@@ -36,11 +37,12 @@ class StereoNet(object):
         self.fig.canvas.set_window_title('StereoNet - schmidt projection')
         self.fig.set_size_inches(8 * self.ncols, 6)
         self._title = self.fig.suptitle(kwargs.get('title', ''))
+        self._axtitle = self.ncols * [None]
         self.cla()
         # optionally immidiately plot passed objects
         if args:
             for arg in args:
-                if type(arg) in [Group, FaultSet]:
+                if type(arg) in [Group, PairSet, FaultSet]:
                     typ = arg.type
                 else:
                     typ = type(arg)
@@ -50,8 +52,17 @@ class StereoNet(object):
                     getattr(self, self.fol_plot)(arg, label=repr(arg))
                 elif typ is Vec3:
                     self.vector(arg.aslin, label=repr(arg))
+                elif typ is Pair:
+                    self.pair(arg, label=repr(arg))
                 elif typ is Fault:
                     self.fault(arg, label=repr(arg))
+                elif typ is StereoGrid:
+                    self.contourf(arg, legend=True)
+                    self.contour(arg, colors='k')
+                elif typ is Ortensor:
+                    getattr(self, self.fol_plot)(arg.eigenfols[0], label=arg.name + '-E1')
+                    getattr(self, self.fol_plot)(arg.eigenfols[1], label=arg.name + '-E2')
+                    getattr(self, self.fol_plot)(arg.eigenfols[2], label=arg.name + '-E3')
                 else:
                     raise TypeError('%s argument is not supported!' % typ)
             self.show()
@@ -69,9 +80,9 @@ class StereoNet(object):
                   'Use new() method or create new one.')
         else:
             for ax in self.fig.axes:
-                h, l = ax.get_legend_handles_labels()
+                h, lbls = ax.get_legend_handles_labels()
                 if h:
-                    self._lgd = ax.legend(h, l, bbox_to_anchor=(1.12, 1),
+                    self._lgd = ax.legend(h, lbls, bbox_to_anchor=(1.12, 1),
                                           prop={'size': 11}, loc=2,
                                           borderaxespad=0, scatterpoints=1,
                                           numpoints=1)
@@ -88,7 +99,14 @@ class StereoNet(object):
 
     def cla(self):
         """Clear projection"""
-        # now ok
+        def lat(a, phi):
+            return self._cone(l2v(a, 0), l2v(a, phi),
+                              limit=89.9999, res=91)
+
+        def lon(a, theta):
+            return self._cone(p2v(a, theta), l2v(a, theta),
+                              limit=80, res=91)
+
         for ax in self.fig.axes:
             ax.cla()
             ax.format_coord = self.format_coord
@@ -110,8 +128,6 @@ class StereoNet(object):
                         [0, 0, np.nan, -1, 1],
                         self.grid_style, zorder=3)
                 # Latitudes
-                lat = lambda a, phi: self._cone(l2v(a, 0), l2v(a, phi),
-                                                limit=89.9999, res=91)
                 lat_n = np.array([lat(0, phi) for phi in range(10, 90, 10)])
                 ax.plot(lat_n[:, 0, :].T, lat_n[:, 1, :].T,
                         self.grid_style, zorder=3)
@@ -119,8 +135,6 @@ class StereoNet(object):
                 ax.plot(lat_s[:, 0, :].T, lat_s[:, 1, :].T,
                         self.grid_style, zorder=3)
                 # Longitudes
-                lon = lambda a, theta: self._cone(p2v(a, theta), l2v(a, theta),
-                                                  limit=80, res=91)
                 le = np.array([lon(90, theta) for theta in range(10, 90, 10)])
                 ax.plot(le[:, 0, :].T, le[:, 1, :].T,
                         self.grid_style, zorder=3)
@@ -181,11 +195,14 @@ class StereoNet(object):
         mag = np.hypot(dx, dy)
         u, v = sense * dx / mag, sense * dy / mag
         self.fig.axes[self.active].quiver(x, y, u, v,
-                                          width=1, headwidth=4,
-                                          units='dots')
+                                          width=2, headwidth=5, zorder=6,
+                                          pivot='mid', units='dots')
+        self.fig.axes[self.active].scatter(x, y, color='k', s=5, zorder=6)
 
     def plane(self, obj, *args, **kwargs):
         assert obj.type is Fol, 'Only Fol instance could be plotted as plane.'
+        if 'zorder' not in kwargs:
+            kwargs['zorder'] = 5
         if isinstance(obj, Group):
             x = []
             y = []
@@ -206,6 +223,8 @@ class StereoNet(object):
 
     def line(self, obj, *args, **kwargs):
         assert obj.type is Lin, 'Only Lin instance could be plotted as line.'
+        if 'zorder' not in kwargs:
+            kwargs['zorder'] = 5
         # ensure point plot
         if 'ls' not in kwargs and 'linestyle' not in kwargs:
             kwargs['linestyle'] = 'none'
@@ -220,6 +239,8 @@ class StereoNet(object):
         """ This mimics plotting on upper and lower hemisphere"""
         assert issubclass(obj.type, Vec3), \
             'Only Vec3-like instance could be plotted as line.'
+        if 'zorder' not in kwargs:
+            kwargs['zorder'] = 5
         # ensure point plot
         if 'ls' not in kwargs and 'linestyle' not in kwargs:
             kwargs['linestyle'] = 'none'
@@ -252,6 +273,8 @@ class StereoNet(object):
 
     def pole(self, obj, *args, **kwargs):
         assert obj.type is Fol, 'Only Fol instance could be plotted as poles.'
+        if 'zorder' not in kwargs:
+            kwargs['zorder'] = 5
         # ensure point plot
         if 'ls' not in kwargs and 'linestyle' not in kwargs:
             kwargs['linestyle'] = 'none'
@@ -264,6 +287,8 @@ class StereoNet(object):
 
     def cone(self, obj, alpha, *args, **kwargs):
         assert obj.type is Lin, 'Only Lin instance could be used as cone axis.'
+        if 'zorder' not in kwargs:
+            kwargs['zorder'] = 5
         if isinstance(obj, Group):
             x = []
             y = []
@@ -282,17 +307,26 @@ class StereoNet(object):
         self.fig.axes[self.active].plot(x, y, *args, **kwargs)
         self.draw()
 
+    def pair(self, obj, *arg, **kwargs):
+        """Plot a fol-lin pair"""
+        assert obj.type is Pair, 'Only Pair instance could be used.'
+        self.plane(obj.fol, *arg, **kwargs)
+        x, y = l2xy(*obj.lin.dd)
+        self.fig.axes[self.active].scatter(x, y, color='k', s=5, zorder=6)
+        self.draw()
+
     def fault(self, obj, *arg, **kwargs):
-        """Plot a fault-and-striae plot"""
+        """Plot a fault-and-striae plot - Angelier plot"""
         assert obj.type is Fault, 'Only Fault instance could be used.'
         self.plane(obj.fol, *arg, **kwargs)
         self._arrow(obj.lin, sense=obj.sense)
         self.draw()
 
     def hoeppner(self, obj, *arg, **kwargs):
-        """Plot a tangent lineation plot"""
+        """Plot a tangent lineation plot - Hoeppner plot"""
         assert obj.type is Fault, 'Only Fault instance could be used.'
-        self._arrow(obj.fvec.aslin, dir_lin=obj.lin, sense=-obj.sense)
+        self.pole(obj.fol, *arg, **kwargs)
+        self._arrow(obj.fvec.aslin, dir_lin=obj.lin, sense=obj.sense)
         self.draw()
 
     def contourf(self, obj, *args, **kwargs):
@@ -300,11 +334,20 @@ class StereoNet(object):
                 kwargs['cmap'] = 'Greys'
         if 'zorder' not in kwargs:
                 kwargs['zorder'] = 1
-        if isinstance(obj, Density):
+        if isinstance(obj, StereoGrid):
             d = obj
         else:
-            d = Density(obj, **kwargs)
-        cs = self.fig.axes[self.active].tricontourf(d.triang, d.density,
+            d = StereoGrid(obj, **kwargs)
+        if 'levels' not in kwargs:
+            if len(args) == 0:
+                args = (6,)
+            if isinstance(args[0], int):
+                mn = obj.values.min()
+                mx = obj.values.max()
+                levels = np.linspace(mn, mx, args[0])
+                levels[-1] += 1e-8
+                args = (levels,)
+        cs = self.fig.axes[self.active].tricontourf(d.triang, d.values,
                                                     *args, **kwargs)
         if kwargs.get('legend', False):
             self._add_colorbar(cs)
@@ -315,11 +358,20 @@ class StereoNet(object):
                 kwargs['cmap'] = 'Greys'
         if 'zorder' not in kwargs:
                 kwargs['zorder'] = 1
-        if isinstance(obj, Density):
+        if isinstance(obj, StereoGrid):
             d = obj
         else:
-            d = Density(obj, **kwargs)
-        cs = self.fig.axes[self.active].tricontour(d.triang, d.density,
+            d = StereoGrid(obj, **kwargs)
+        if 'levels' not in kwargs:
+            if len(args) == 0:
+                args = (6,)
+            if isinstance(args[0], int):
+                mn = obj.values.min()
+                mx = obj.values.max()
+                levels = np.linspace(mn, mx, args[0])
+                levels[-1] += 1e-8
+                args = (levels,)
+        cs = self.fig.axes[self.active].tricontour(d.triang, d.values,
                                                    *args, **kwargs)
         if kwargs.get('legend', False):
             self._add_colorbar(cs)
@@ -335,6 +387,10 @@ class StereoNet(object):
         # lbl[lbl.index(next(l for l in lbl if l.startswith('0')))] = 'E'
         # cb.set_ticklabels(lbl)
 
+    def axtitle(self, title):
+        self._axtitle[self.active] = self.fig.axes[self.active].set_title(title)
+        self._axtitle[self.active].set_y(-0.09)
+
     def show(self):
         plt.show()
 
@@ -343,15 +399,15 @@ class StereoNet(object):
             self.fig.savefig(filename, **kwargs)
         else:
             self.fig.savefig(filename,
-                             bbox_extra_artists=(self._lgd, self._title),
+                             bbox_extra_artists=(self._lgd, self._title, *self._axtitle),
                              bbox_inches='tight', **kwargs)
 
     def format_coord(self, x, y):
         if np.hypot(x, y) > 1:
             return ''
         else:
-            vals = getfdd(x, y) + getldd(x, y)
-            return 'S:{:0>3.0f}/{:0>2.0f} L:{:0>3.0f}/{:0>2.0f}'.format(*vals)
+            v = Vec3(*getldd(x, y))
+            return repr(v.asfol) + ' ' + repr(v.aslin)
 
 
 class FabricPlot(object):
@@ -386,9 +442,9 @@ class FabricPlot(object):
             print('The FabricPlot figure have been closed. '
                   'Use new() method or create new one.')
         else:
-            h, l = self.ax.get_legend_handles_labels()
+            h, lbls = self.ax.get_legend_handles_labels()
             if h:
-                self._lgd = self.ax.legend(h, l, prop={'size': 11}, loc=4,
+                self._lgd = self.ax.legend(h, lbls, prop={'size': 11}, loc=4,
                                            borderaxespad=0, scatterpoints=1,
                                            numpoints=1)
             plt.draw()
@@ -500,165 +556,6 @@ class FabricPlot(object):
             return 'P:{:0.2f} G:{:0.2f} R:{:0.2f}'.format(a, b, c)
 
 
-class Density(object):
-    """Class to store regular grid of values to be contoured on ``StereoNet``.
-
-    ``Density`` object could be calculated from ``Group`` object or by user-
-    defined function, which accept unit vector as argument.
-
-    Args:
-      g: ``Group`` object of data to be used for desity calculation
-         If ommited, zero density grid is returned.
-
-    Kwargs:
-      cnt_points: Value specify density of uniform grid [180]
-      sigma: sigma for kernels. Default 1
-      method: 'exp_kamb', 'linear_kamb', 'square_kamb', 'schmidt', 'kamb'
-              Default 'exp_kamb'
-      Trim: Set negative density values to zero. Default False
-
-    """
-    def __init__(self, d=None, **kwargs):
-        self.initgrid(**kwargs)
-        if d:
-            assert isinstance(d, Group), 'Density need Group as argument'
-            self.calculate_density(np.asarray(d), **kwargs)
-
-    def initgrid(self, **kwargs):
-        import matplotlib.tri as tri
-        # parse options
-        ctn_points = kwargs.get('cnt_points', 180)
-        # calc grid
-        self.xg = 0
-        self.yg = 0
-        for rho in np.linspace(0, 1, np.round(ctn_points / 2 / np.pi)):
-            theta = np.linspace(0, 360, np.round(ctn_points * rho + 1))[:-1]
-            self.xg = np.hstack((self.xg, rho * sind(theta)))
-            self.yg = np.hstack((self.yg, rho * cosd(theta)))
-        self.dcgrid = l2v(*getldd(self.xg, self.yg)).T
-        self.n = self.dcgrid.shape[0]
-        self.density = np.zeros(self.n, dtype=np.float)
-        self.triang = tri.Triangulation(self.xg, self.yg)
-
-    def calculate_density(self, dcdata, **kwargs):
-        """Calculate density of elements from ``Group`` object
-
-        """
-        # parse options
-        sigma = kwargs.get('sigma', 1)
-        method = kwargs.get('method', 'exp_kamb')
-        trim = kwargs.get('trim', False)
-
-        func = {'linear_kamb': _linear_inverse_kamb,
-                'square_kamb': _square_inverse_kamb,
-                'schmidt': _schmidt_count,
-                'kamb': _kamb_count,
-                'exp_kamb': _exponential_kamb,
-                }[method]
-
-        # weights are given by euclidean norms of data
-        weights = np.linalg.norm(dcdata, axis=1)
-        weights /= weights.mean()
-        for i in range(self.n):
-            dist = np.abs(np.dot(self.dcgrid[i], dcdata.T))
-            count, scale = func(dist, sigma)
-            count *= weights
-            self.density[i] = (count.sum() - 0.5) / scale
-        if trim:
-            self.density[self.density < 0] = 0
-
-    def apply_func(self, func, **kwargs):
-        """Calculate density using function passed as argument.
-        Function must accept unit vector as argument and retrun scalar value.
-
-        """
-        for i in range(self.n):
-            self.density[i] = func(self.dcgrid[i])
-
-    def plot(self, N=6, cm=plt.cm.jet):
-        """ Show contoured density."""
-        plt.figure()
-        plt.gca().set_aspect('equal')
-        plt.tricontourf(self.triang, self.density, N, cm=cm)
-        plt.colorbar()
-        plt.tricontour(self.triang, self.density, N, colors='k')
-        plt.show()
-
-    def plotcountgrid(self):
-        """ Show counting grid."""
-        plt.figure()
-        plt.gca().set_aspect('equal')
-        plt.triplot(self.triang, 'bo-')
-        plt.show()
-
-# ----------------------------------------------------------------
-# Following counting routines are from Joe Kington's mplstereonet
-# https://github.com/joferkington/mplstereonet
-
-
-def _kamb_radius(n, sigma):
-    """Radius of kernel for Kamb-style smoothing."""
-    a = sigma**2 / (float(n) + sigma**2)
-    return (1 - a)
-
-
-def _kamb_units(n, radius):
-    """Normalization function for Kamb-style counting."""
-    return np.sqrt(n * radius * (1 - radius))
-
-
-# All of the following kernel functions return an _unsummed_ distribution and
-# a normalization factor
-def _exponential_kamb(cos_dist, sigma=3):
-    """Kernel function from Vollmer for exponential smoothing."""
-    n = float(cos_dist.size)
-    f = 2 * (1.0 + n / sigma**2)
-    count = np.exp(f * (cos_dist - 1))
-    units = np.sqrt(n * (f / 2.0 - 1) / f**2)
-    return count, units
-
-
-def _linear_inverse_kamb(cos_dist, sigma=3):
-    """Kernel function from Vollmer for linear smoothing."""
-    n = float(cos_dist.size)
-    radius = _kamb_radius(n, sigma)
-    f = 2 / (1 - radius)
-    # cos_dist = cos_dist[cos_dist >= radius]
-    count = (f * (cos_dist - radius))
-    count[cos_dist < radius] = 0
-    return count, _kamb_units(n, radius)
-
-
-def _square_inverse_kamb(cos_dist, sigma=3):
-    """Kernel function from Vollemer for inverse square smoothing."""
-    n = float(cos_dist.size)
-    radius = _kamb_radius(n, sigma)
-    f = 3 / (1 - radius)**2
-    # cos_dist = cos_dist[cos_dist >= radius]
-    count = (f * (cos_dist - radius)**2)
-    count[cos_dist < radius] = 0
-    return count, _kamb_units(n, radius)
-
-
-def _kamb_count(cos_dist, sigma=3):
-    """Original Kamb kernel function (raw count within radius)."""
-    n = float(cos_dist.size)
-    dist = _kamb_radius(n, sigma)
-    # count = (cos_dist >= dist)
-    count = np.array(cos_dist >= dist, dtype=float)
-    return count, _kamb_units(n, dist)
-
-
-def _schmidt_count(cos_dist, sigma=None):
-    """Schmidt (a.k.a. 1%) counting kernel function."""
-    radius = 0.01
-    count = ((1 - cos_dist) <= radius)
-    # To offset the count.sum() - 0.5 required for the kamb methods...
-    count = 0.5 / count.size + count
-    return count, cos_dist.size * radius
-# ------------------------------------------------------------------
-
-
 class StereoNetJK(object):
     """API to Joe Kington mplstereonet"""
     def __init__(self, *args, **kwargs):
@@ -668,9 +565,9 @@ class StereoNetJK(object):
         self._lgd = None
 
     def draw(self):
-        h, l = self._ax.get_legend_handles_labels()
+        h, lbls = self._ax.get_legend_handles_labels()
         if h:
-            self._lgd = self._ax.legend(h, l, bbox_to_anchor=(1.12, 1),
+            self._lgd = self._ax.legend(h, lbls, bbox_to_anchor=(1.12, 1),
                                         loc=2, borderaxespad=0.,
                                         numpoints=1, scatterpoints=1)
             plt.subplots_adjust(right=0.75)

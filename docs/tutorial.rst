@@ -150,7 +150,7 @@ class and derived ``Fault`` class. Both classes are instantiated
 providing dip direction and dip of planar and linear measurements,
 which are automatically orthogonalized. If misfit is too high,
 warning is raised. The ``Fault`` class expects one more argument
-providing sense of movement information, either 1 or -1. 
+providing sense of movement information, either 1 or -1.
 
 To create instance of ``Pair`` class, we have to provide
 dip direction and dip of planar and linear feature, both in degrees::
@@ -192,8 +192,8 @@ Note the change in sense of movement after ``Fault`` rotation::
     >>> f.rotate(Lin(45, 10), 60)
     F:312/62-340/59 +
 
-``Fault`` class also provide ``p``, ``t`` and ``m`` properties to get PT-axes
-and kinematic plane::
+``Fault`` class also provide ``p``, ``t``, ``m`` and ``d`` properties to get
+ PT-axes, kinematic plane and dihedra separation plane::
 
     >>> f.p
     L:315/75
@@ -201,18 +201,21 @@ and kinematic plane::
     L:116/14
     >>> f.m
     S:27/85
+    >>> f.d
+    S:290/31
 
 Group class
 -----------
 
-``Group`` class serve as a homogeneous container for ``Lin`` or ``Fol`` objects.
-It allows grouping of features either for visualization or batch analysis::
+``Group`` class serve as a homogeneous container for ``Lin``, ``Fol`` and
+``Vec3`` objects. It allows grouping of features either for visualization
+or batch analysis::
 
     >>> g = Group([Lin(120,60), Lin(116,50), Lin(132,45), Lin(90,60), Lin(84,52)],
                   name='L1')
     >>> g
     L1: 5 Lin
-    
+
 To simplify interactive group creation, you can use function ``G``::
 
     >>> g = G('120 60 116 50 132 45 90 60 84 52', name='L1')
@@ -292,8 +295,8 @@ is also impleneted, e.g. Woodcock's ``shape`` and ``strength`` or Vollmer's
 StereoNet class
 ---------------
 
-Any ``Fol``, ``Lin`` or ``Group`` object could be visualized as plane,
-line or pole in stereographic projection using StereoNet class::
+Any ``Fol``, ``Lin``, ``Group`` object could be visualized as plane,
+line or pole in stereographic projection using ``StereoNet`` class::
 
     >>> s = StereoNet()
     >>> s.plane(Fol(150, 40))
@@ -301,14 +304,7 @@ line or pole in stereographic projection using StereoNet class::
     >>> s.line(Lin(112, 30))
     >>> s.show()
 
-.. plot::
-
-    from apsg import *
-    s = StereoNet()
-    s.plane(Fol(150, 40))
-    s.pole(Fol(150, 40))
-    s.line(Lin(112, 30))
-    s.show() 
+.. image:: _static/images/figure_1.png
 
 A cones (or small circles) could be plotted as well::
 
@@ -319,35 +315,109 @@ A cones (or small circles) could be plotted as well::
     >>> s.cone(g.R, g.fisher_stats['csd'], 'g')  # confidence cone on 63% of data
     >>> s.show()
 
-.. plot::
-
-    from apsg import *
-    s = StereoNet()
-    g = Group.randn_lin(mean=Lin(40, 15))
-    s.line(g, 'k.')
-    s.cone(g.R, g.fisher_stats['a95'], 'r')  # confidence cone on resultant
-    s.cone(g.R, g.fisher_stats['csd'], 'g')  # confidence cone on 63% of data
-    s.show()
+.. image:: _static/images/figure_2.png
 
 To make density contours plots, a ``contour`` and ``contourf``
 methods are available::
 
     >>> s = StereoNet()
     >>> g = Group.randn_lin(mean=Lin(40, 20))
-    >>> s.contourf(g, 8, legend=True)
-    >>> s.contour(g, 8, colors='k')
-    >>> s.line(g, 'wo')
+    >>> s.contourf(g, 8, legend=True, sigma=2)
+    >>> s.contour(g, 8, colors='k', sigma=2)
+    >>> s.line(g, 'g.')
     >>> s.show()
 
-.. plot::
+.. image:: _static/images/figure_3.png
 
-    from apsg import *
-    s = StereoNet()
-    g = Group.randn_lin(mean=Lin(40, 20))
-    s.contourf(g, 8, legend=True)
-    s.contour(g, 8, colors='k')
-    s.line(g, 'wo')
-    s.show()
+Except ``Group``, APSG provide ``PairSet`` and ``FaultSet`` classes to store
+``Pair`` or ``Fault`` datasets. It can be inicialized by passing list of
+`Pair`` or ``Fault`` objects as argument or use class methods ``from_array`` or
+``from_csv``:
+
+    >>> p = PairSet([Pair(120, 30, 165, 20),
+                     Pair(215, 60, 280,35),
+                     Pair(324, 70, 35, 40)])
+    >>> p.misfit
+    array([ 2.0650076 ,  0.74600727,  0.83154705])
+    >>> StereoNet(p)
+
+.. image:: _static/images/figure_13.png
+
+``StereoNet`` has two special methods to visualize fault data. Method ``fault`` produce classical Angelier plot::
+
+    >>> f = FaultSet([Fault(170, 60, 182, 59, -1),
+                      Fault(210, 55, 195, 53, -1),
+                      Fault(10, 60, 15, 59, -1),
+                      Fault(355, 48, 22, 45, -1)])
+    >>> s = StereoNet()
+    >>> s.fault(f)
+    >>> s.line(f.p, label='P-axes')
+    >>> s.line(f.t, label='T-axes')
+    >>> s.plane(f.m, label='M-planes')
+    >>> s.show()
+
+.. image:: _static/images/figure_10.png
+
+``hoeppner`` method produce Hoeppner diagram and must be invoked from
+``StereoNet`` instance::
+
+    >>> s = StereoNet()
+    >>> s.hoeppner(f, label=repr(f))
+    >>> s.show()
+
+.. image:: _static/images/figure_11.png
+
+
+Note that ``fault`` method is used, when data are passed directly to
+``StereoNet`` instance::
+
+    >>> f = Fault(120, 60, 110, 58, -1)
+    >>> StereoNet(f, f.m, f.d, f.p, f.t)
+
+.. image:: _static/images/figure_12.png
+
+StereoGrid class
+----------------
+
+``StereoGrid`` class allows to visualize any scalar field on StereoNet.
+Internally it is used for plotting contour diagrams, but it exposes
+``apply_func`` method to calculate scalar field by any user-defined
+function. Function must accept three element ``numpy.array`` as first
+argument passed from grid points of ``StereoGrid``.
+
+Following example defines function to calculate resolved shear stress on
+plane from given stress tensor. ``StereoGrid`` is used to calculate this
+value over all directions and finally values are plotted by ``StereoNet``::
+
+    >>> # user-defined function to calculate resolved shear stress
+    >>> def resolved_shear_stress(n, sig):
+    >>>     t = Vec3(S.dot(n))
+    >>>     return abs(t - t.proj(n))
+    >>>
+    >>> # stress tensor
+    >>> S = np.array([[-10, 2, -3],[2, -5, 1], [-3, 1, 2]])
+    >>> # now we create StereoGrid and apply function on it
+    >>> d = StereoGrid()
+    >>> d.apply_func(resolved_shear_stress, S)
+    >>> StereoNet(d)
+
+.. image:: _static/images/figure_9.png
+
+The ``FaultSet`` provide also ``amgmech`` method which provide access to
+Angelier dihedra method. Results are stored in ``StereoGrid``. Default
+behavior is to calculate counts (positive in extension, negative in
+compression), but setting method to 'probability', maximum likelihood
+estimate is calculated.::
+
+    >>> f = FaultSet.examples('MELE')
+    >>> StereoNet(f.angmech())
+
+.. image:: _static/images/figure_14.png
+
+    >>> f = FaultSet.examples('MELE')
+    >>> StereoNet(f.angmech(method='probability'))
+
+.. image:: _static/images/figure_15.png
 
 Cluster class
 -------------
@@ -365,17 +435,9 @@ example. We generate some data and plot dendrogram::
     >>> g3 = Group.randn_lin(mean=Lin(150,40))
     >>> g = g1 + g2 + g3
     >>> cl = Cluster(g)
-    >>> cl.dendrogram()
+    >>> cl.dendrogram(no_labels=True)
 
-.. plot::
-
-    from apsg import *
-    g1 = Group.randn_lin(mean=Lin(45,30))
-    g2 = Group.randn_lin(mean=Lin(320,56))
-    g3 = Group.randn_lin(mean=Lin(150,40))
-    g = g1 + g2 + g3
-    cl = Cluster(g)
-    cl.dendrogram()
+.. image:: _static/images/figure_4.png
 
 Now we can explore evolution of within-groups variance versus
 number of clusters on Elbow plot (Note change in slope for
@@ -383,33 +445,16 @@ three clusters)::
 
    >>> cl.elbow()
 
-.. plot::
-
-    from apsg import *
-    g1 = Group.randn_lin(mean=Lin(45,30))
-    g2 = Group.randn_lin(mean=Lin(320,56))
-    g3 = Group.randn_lin(mean=Lin(150,40))
-    g = g1 + g2 + g3
-    cl = Cluster(g)
-    cl.elbow()
+.. image:: _static/images/figure_5.png
 
 Finally we can do clustering and plot created clusters::
 
    >>> cl.cluster(maxclust=3)
    >>> cl.R.data  # Restored centres of clusters
-   [L:152/38, L:47/33, L:314/52]
+   [L:146/39, L:43/26, L:323/59]
    >>> StereoNet(*cl.groups)
 
-.. plot::
-
-    from apsg import *
-    g1 = Group.randn_lin(mean=Lin(45,30))
-    g2 = Group.randn_lin(mean=Lin(320,56))
-    g3 = Group.randn_lin(mean=Lin(150,40))
-    g = g1 + g2 + g3
-    cl = Cluster(g)
-    cl.cluster(maxclust=3)
-    StereoNet(*cl.groups)
+.. image:: _static/images/figure_6.png
 
 Some tricks
 -----------
@@ -420,12 +465,7 @@ Double cross product is allowed (note quick plot feature)::
     >>> l = Lin(160,25)
     >>> StereoNet(p, l, l**p, p**l, l**p**l, p**l**p)
 
-.. plot::
-
-    from apsg import *
-    p = Fol(250,40)
-    l = Lin(160,25)
-    StereoNet(p, l, l**p, p**l, l**p**l, p**l**p)
+.. image:: _static/images/figure_7.png
 
 Correct measurements of planar linear pairs by instantiation
 of Pair class::
@@ -440,14 +480,4 @@ of Pair class::
     >>> s.line(pl.lin, 'go')
     >>> s.show()
 
-.. plot::
-
-    from apsg import *
-    pl = Pair(250, 40, 160, 25)
-    pl.misfit
-    s = StereoNet()
-    s.plane(Fol(250, 40), 'b')
-    s.line(Lin(160, 25), 'bo')
-    s.plane(pl.fol, 'g')
-    s.line(pl.lin, 'go')
-    s.show()
+.. image:: _static/images/figure_8.png

@@ -22,14 +22,14 @@ requirements:
   build:
     - python
     - setuptools
-    - numpy >=1.8
-    - matplotlib >=1.2
+    - numpy
+    - matplotlib
     - scipy
 
   run:
     - python
-    - numpy >=1.8
-    - matplotlib >=1.2
+    - numpy
+    - matplotlib
     - scipy
 
 test:

@@ -100,8 +100,8 @@ History
 
 * Simple settings interface implemented in in apsg.core.seetings dictionary.
   To change: `from apsg.core import settings`
-             `set setting['name']=value`
-* `notation` seeting with values `dd` or `rhr` control how azimuth argument of
+             `setting['name']=value`
+* `notation` setting with values `dd` or `rhr` control how azimuth argument of
   Fol is represented.
 * `vec2dd` setting with values `True` or `False` control how `Vec3` is
   represented.
@@ -123,3 +123,13 @@ History
 * ortensor is normed by default
 * ortensor MADp, MADo, MAD and kind properties added
 
+
+0.4 (04 Mar 2017)
+-----------------
+
+* Density class renamed to StereoGrid
+* Fault sense under rotation fixed
+* FaultSet example provided
+* Angelier-Mechler dihedra method implemented for FaultSet
+* StereoNet accepts StereoGrid and Ortensor as quick plot arguments
+* StereoNet instance has axtitle method to put text below stereonet

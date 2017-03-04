@@ -10,8 +10,8 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
 
 requirements = [
-    'numpy >= 1.8',
-    'matplotlib >= 1.2',
+    'numpy',
+    'matplotlib',
     'scipy'
 ]
 
@@ -21,7 +21,7 @@ test_requirements = [
 
 setup(
     name='apsg',
-    version='0.3.7',
+    version='0.4.0',
     description='APSG - structural geology module for Python',
     long_description=readme + '\n\n' + history,
     author='Ondrej Lexa',
@@ -29,11 +29,10 @@ setup(
     url='https://github.com/ondrolexa/apsg',
     packages=find_packages(),
     install_requires=requirements,
-    entry_points={
-    'console_scripts': [
-        'iapsg=apsg.shell:main'
-        ]
-    },
+    entry_points="""
+    [console_scripts]
+    iapsg=apsg.shell:main
+    """,
     license="BSD",
     zip_safe=False,
     keywords='apsg',

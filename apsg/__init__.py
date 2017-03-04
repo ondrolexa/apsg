@@ -3,9 +3,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .core import Vec3, Fol, Lin, Pair, Fault
-from .core import Group, FaultSet, Ortensor, Cluster, G
-from .plotting import StereoNet, FabricPlot, Density
+from .core import (Vec3, Fol, Lin, Pair, Fault,
+                   Group, PairSet, FaultSet,
+                   Ortensor, Cluster, StereoGrid, G)
+from .plotting import StereoNet, FabricPlot
 from .db import SDB
 from .helpers import sind, cosd, tand, acosd, asind, atand, atan2d
 

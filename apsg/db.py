@@ -12,32 +12,45 @@ __all__ = ['SDB']
 
 class SDB(object):
     """PySDB database access class"""
-    _SELECT = "SELECT sites.name as name, sites.x_coord as x, \
-    sites.y_coord as y, units.name as unit, structdata.azimuth as azimuth, \
-    structdata.inclination as inclination, structype.structure as structure, \
-    structype.planar as planar, structdata.description as description, \
-    GROUP_CONCAT(tags.name) AS tags \
-    FROM structdata \
-    INNER JOIN sites ON structdata.id_sites=sites.id \
-    INNER JOIN structype ON structype.id = structdata.id_structype \
-    INNER JOIN units ON units.id = sites.id_units \
-    LEFT OUTER JOIN tagged ON structdata.id = tagged.id_structdata \
-    LEFT OUTER JOIN tags ON tags.id = tagged.id_tags"
-    _TYPSEL = "SELECT planar FROM structype"
-    _VERSEL = "SELECT value FROM meta WHERE name='version'"
+    _SELECT = """SELECT sites.name as name, sites.x_coord as x,
+    sites.y_coord as y, units.name as unit, structdata.azimuth as azimuth,
+    structdata.inclination as inclination, structype.structure as structure,
+    structype.planar as planar, structdata.description as description,
+    GROUP_CONCAT(tags.name) AS tags
+    FROM structdata
+    INNER JOIN sites ON structdata.id_sites=sites.id
+    INNER JOIN structype ON structype.id = structdata.id_structype
+    INNER JOIN units ON units.id = sites.id_units
+    LEFT OUTER JOIN tagged ON structdata.id = tagged.id_structdata
+    LEFT OUTER JOIN tags ON tags.id = tagged.id_tags"""
 
     def __new__(cls, db=None):
-        try:
-            cls.conn = sqlite3.connect(db)
-            cls.conn.row_factory = sqlite3.Row
-            cls.conn.execute("pragma encoding='UTF-8'")
-            cls.conn.execute(SDB._SELECT + " LIMIT 1")
-            ver = cls.conn.execute(SDB._VERSEL).fetchall()[0][0]
-            print("Connected. PySDB version: %s" % ver)
-            return super(SDB, cls).__new__(cls)
-        except sqlite3.Error as e:
-            print("Error %s:" % e.args[0])
-            raise sqlite3.Error
+        cls.conn = sqlite3.connect(db)
+        cls.conn.row_factory = sqlite3.Row
+        cls.conn.execute("pragma encoding='UTF-8'")
+        cls.conn.execute(SDB._SELECT + " LIMIT 1")
+        return super(SDB, cls).__new__(cls)
+
+    def __repr__(self):
+        return 'PySDB database version: {}'.format(self.meta('version'))
+
+    def meta(self, name):
+        return self.conn.execute("SELECT value FROM meta WHERE name='{}'".format(name)).fetchall()[0][0]
+
+    def info(self, verbose=False):
+        print('PySDB database version: {}'.format(self.meta('version')))
+        print('PySDB database projection: {}'.format(self.meta('proj4')))
+        print('PySDB database version: {}'.format(self.meta('created')))
+        print('PySDB database version: {}'.format(self.meta('updated')))
+        print('Number of sites: {}'.format(len(self.sites())))
+        print('Number of units: {}'.format(len(self.units())))
+        print('Number of structures: {}'.format(len(self.structures())))
+        r = self.execsql(self._make_select())
+        print('Number of measurements: {}'.format(len(r)))
+        if verbose:
+            for s in self.structures():
+                r = self.execsql(self._make_select(structs=s))
+                print('   Number of {} measurements: {}'.format(s, len(r)))
 
     def _make_select(self, structs=None, sites=None, units=None, tags=None):
         w = []
@@ -122,7 +135,7 @@ class SDB(object):
 
         """
         dtsel = self._make_select(structs=struct, **kwargs)
-        tpsel = SDB._TYPSEL + " WHERE structure='%s'" % struct
+        tpsel = "SELECT planar FROM structype WHERE structure='{}'".format(struct)
         tp = self.execsql(tpsel)[0][0]
         if tp:
             res = Group([Fol(el['azimuth'], el['inclination'])
