@@ -1,10 +1,14 @@
 #!/usr/bin/python
 
 import pkg_resources
-import readline
 import code
+try:
+    import readline
+except ImportError:
+    pass
 from pylab import *
 from apsg import *
+
 
 def main():
     banner = '+----------------------------------------------------------+\n'
@@ -16,6 +20,7 @@ def main():
     vars.update(locals())
     shell = code.InteractiveConsole(vars)
     shell.interact(banner=banner)
+
 
 if __name__ == "__main__":
     main()
