@@ -15,13 +15,6 @@
 
 import sys
 import os
-#import mock
-
-#MOCK_MODULES = ['numpy', 'matplotlib', 'matplotlib.pyplot',
-#                'matplotlib.cbook', 'scipy.cluster.hierarchy',
-#                'scipy.linalg']
-#for mod_name in MOCK_MODULES:
-#    sys.modules[mod_name] = mock.Mock()
 
 # If extensions (or modules to document with autodoc) are in another
 # directory, add these directories to sys.path here. If the directory is
@@ -207,7 +200,7 @@ htmlhelp_basename = 'apsgdoc'
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    'papersize': 'letterpaper',
 
     # The font size ('10pt', '11pt' or '12pt').
     #'pointsize': '10pt',
@@ -288,4 +281,3 @@ texinfo_documents = [
 
 # Sort members by type
 autodoc_member_order = 'groupwise'
-
