@@ -406,18 +406,33 @@ value over all directions and finally values are plotted by ``StereoNet``::
 The ``FaultSet`` provide also ``amgmech`` method which provide access to
 Angelier dihedra method. Results are stored in ``StereoGrid``. Default
 behavior is to calculate counts (positive in extension, negative in
-compression), but setting method to 'probability', maximum likelihood
-estimate is calculated.::
+compression)::
 
     >>> f = FaultSet.examples('MELE')
     >>> StereoNet(f.angmech())
 
 .. image:: _static/images/figure_14.png
 
+Setting method to 'probability', maximum likelihood estimate is calculated.::
+
     >>> f = FaultSet.examples('MELE')
     >>> StereoNet(f.angmech(method='probability'))
 
 .. image:: _static/images/figure_15.png
+
+
+FabricPlot class
+----------------
+
+``FabricPlot`` class provide triangular fabric plot (Vollmer, 1989). You
+can pass either ``Ortensor`` or ``Group`` instances::
+
+    >>> g1 = Group.examples('B2')
+    >>> g2 = Group.examples('B4')
+    >>> g3 = Group.uniform_lin(name='Uniform')
+    >>> FabricPlot(g1, g2, g3)
+
+.. image:: _static/images/figure_16.png
 
 Cluster class
 -------------
