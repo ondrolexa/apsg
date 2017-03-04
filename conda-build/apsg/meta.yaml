@@ -6,7 +6,7 @@ package:
 
 source:
   git_url: https://github.com/ondrolexa/apsg.git
-  git_rev: {{ 'v' + data.get('version') }}
+  git_rev: {{ data.get('version') }}
 
 build:
   # noarch_python: True
