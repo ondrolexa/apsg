@@ -3,7 +3,7 @@
 from __future__ import division, print_function
 
 import numpy as np
-from .core import Vec3, Group
+from .core import Vec3, Group, Pair
 from .helpers import sind, cosd
 
 __all__ = ['DefGrad', 'VelGrad']
@@ -32,7 +32,7 @@ class DefGrad(np.ndarray):
 
     def __eq__(self, other):
         # equal
-        return bool(np.sum(abs(self-other)) < 1e-14)
+        return bool(np.sum(abs(self - other)) < 1e-14)
 
     def __ne__(self, other):
         # not equal
@@ -42,13 +42,13 @@ class DefGrad(np.ndarray):
     def from_axis(cls, vector, theta):
         x, y, z = vector.uv
         c, s = cosd(theta), sind(theta)
-        xs, ys, zs = x*s, y*s, z*s
-        xc, yc, zc = x*(1-c), y*(1-c), z*(1-c)
-        xyc, yzc, zxc = x*yc, y*zc, z*xc
+        xs, ys, zs = x * s, y * s, z * s
+        xc, yc, zc = x * (1 - c), y * (1 - c), z * (1 - c)
+        xyc, yzc, zxc = x * yc, y * zc, z * xc
         return cls([
-            [x*xc+c, xyc-zs, zxc+ys],
-            [xyc+zs, y*yc+c, yzc-xs],
-            [zxc-ys, yzc+xs, z*zc+c]])
+            [x * xc + c, xyc - zs, zxc + ys],
+            [xyc + zs, y * yc + c, yzc - xs],
+            [zxc - ys, yzc + xs, z * zc + c]])
 
     @classmethod
     def from_comp(cls,
@@ -60,13 +60,18 @@ class DefGrad(np.ndarray):
             [yx, yy, yz],
             [zx, zy, zz]])
 
+    @classmethod
+    def from_pair(cls, p):
+        assert issubclass(type(p), Pair), 'Data must be of Pair type.'
+        return cls(np.array([p.lvec, p.fvec**p.lvec, p.fvec]).T)
+
     @property
     def I(self):
         return np.linalg.inv(self)
 
     def rotate(self, vector, theta):
         R = DefGrad.from_axis(vector, theta)
-        return R*self*R.T
+        return R * self * R.T
 
     @property
     def eigenvals(self):
@@ -140,7 +145,7 @@ class VelGrad(np.ndarray):
 
     def __eq__(self, other):
         # equal
-        return bool(np.sum(abs(self-other)) < 1e-14)
+        return bool(np.sum(abs(self - other)) < 1e-14)
 
     def __ne__(self, other):
         # not equal
@@ -158,4 +163,4 @@ class VelGrad(np.ndarray):
 
     def defgrad(self, time=1):
         from scipy.linalg import expm
-        return DefGrad(expm(self*time))
+        return DefGrad(expm(self * time))

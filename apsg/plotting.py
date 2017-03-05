@@ -398,8 +398,9 @@ class StereoNet(object):
         if self._lgd is None:
             self.fig.savefig(filename, **kwargs)
         else:
+            bea = (self._lgd, self._title) + tuple(self._axtitle)
             self.fig.savefig(filename,
-                             bbox_extra_artists=(self._lgd, self._title, *self._axtitle),
+                             bbox_extra_artists=bea,
                              bbox_inches='tight', **kwargs)
 
     def format_coord(self, x, y):
