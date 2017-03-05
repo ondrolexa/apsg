@@ -102,7 +102,7 @@ class Vec3(np.ndarray):
         return self / abs(self)
 
     def cross(self, other):
-        """Returns cross product of two vectors::
+        """Returns cross product of two vectors.
 
         Example:
           >>> v=Vec3([0,2,-2])
@@ -113,7 +113,7 @@ class Vec3(np.ndarray):
         return Vec3(np.cross(self, other))
 
     def angle(self, other):
-        """Returns angle of two vectors in degrees::
+        """Returns angle of two vectors in degrees.
 
         Example:
           >>> u.angle(v)
@@ -126,7 +126,7 @@ class Vec3(np.ndarray):
             return acosd(np.clip(np.dot(self.uv, other.uv), -1, 1))
 
     def rotate(self, axis, phi):
-        """Rotates vector `phi` degrees about `axis`::
+        """Rotates vector `phi` degrees about `axis`.
 
         Args:
           axis: axis of rotation
@@ -145,19 +145,19 @@ class Vec3(np.ndarray):
         return r.view(type(self))
 
     def proj(self, other):
-        """Returns projection of vector *u* onto vector *v*::
+        """Returns projection of vector `u` onto vector `v`.
 
         Example:
           >>> u.proj(v)
 
-        To project on plane use: u - u.proj(v), where v in plane normal.
+        To project on plane use: `u - u.proj(v)`, where `v` in plane normal.
 
         """
         r = np.dot(self, other) * other / np.linalg.norm(other)
         return r.view(type(self))
 
     def transform(self, F):
-        """Returns affine transformation of vector *u* by matrix *F*::
+        """Returns affine transformation of vector `u` by matrix `F`.
 
         Args:
           F: Transformation matrix. Should be array-like value e.g. ``DefGrad``
@@ -215,7 +215,7 @@ class Vec3(np.ndarray):
 
     @property
     def dd(self):
-        """ Return Return dip-direction, dip tuple
+        """ Return dip-direction, dip tuple
 
         """
         n = self.uv
@@ -228,7 +228,7 @@ class Lin(Vec3):
     """Class to store linear feature.
 
     Args:
-      azi: Dip direction of linear feature in degrees
+      azi: dip direction of linear feature in degrees
       inc: dip of linear feature in degrees
 
     Example:
@@ -329,7 +329,7 @@ class Fol(Vec3):
     """Class to store planar feature.
 
     Args:
-      azi: Dip direction of planar feature in degrees
+      azi: dip direction of planar feature in degrees
       inc: dip of planar feature in degrees
 
     Example:
@@ -377,13 +377,13 @@ class Fol(Vec3):
         return super(Fol, self).__isub__(other)
 
     def __eq__(self, other):
-        """Returns True if planar features are equal.
+        """Returns `True` if planar features are equal.
 
         """
         return bool(abs(self - other) < 1e-15 or abs(self + other) < 1e-15)
 
     def __ne__(self, other):
-        """Returns False if planar features are equal.
+        """Returns `False` if planar features are equal.
 
         """
         return not (self == other or self == -other)
@@ -416,7 +416,7 @@ class Fol(Vec3):
             return np.cross(self, other).view(Lin)
 
     def transform(self, F):
-        """Returns affine transformation of planar feature by matrix *F*::
+        """Returns affine transformation of planar feature by matrix `F`.
 
         Args:
           F: Transformation matrix. Should be array-like value e.g. ``DefGrad``
@@ -490,7 +490,7 @@ class Pair(object):
       linc: dip of linear feature in degrees
 
     Example:
-      >>> p = Pair(140,30,110,26)
+      >>> p = Pair(140, 30, 110, 26)
 
     """
     def __init__(self, fazi, finc, lazi, linc):
@@ -516,20 +516,21 @@ class Pair(object):
 
     @classmethod
     def from_pair(cls, fol, lin):
-        """Create ``Pair`` from Fol and Lin objects"""
+        """Create ``Pair`` from ``Fol`` and ``Lin`` objects"""
         data = getattr(fol, settings['notation']) + lin.dd
         return cls(*data)
 
     def rotate(self, axis, phi):
-        """Rotates ``Pair`` by `phi` degrees about `axis`::
+        """Rotates ``Pair`` by `phi` degrees about `axis`.
 
         Args:
           axis: axis of rotation
           phi: angle of rotation in degrees
 
         Example:
-          >>> v.rotate(u,60)
-          V(-2.000, 2.000, -0.000)
+          >>> p = Pair(140, 30, 110, 26)
+          >>> p.rotate(Lin(40, 50), 120)
+          P:210/83-287/60
 
         """
         rot = deepcopy(self)
@@ -563,7 +564,7 @@ class Pair(object):
         return self.fvec**self.lvec
 
     def transform(self, F):
-        """Returns affine transformation of ``Pair`` by matrix *F*::
+        """Returns affine transformation of ``Pair`` by matrix `F`.
 
         Args:
           F: Transformation matrix. Should be array-like value e.g. ``DefGrad``
@@ -582,7 +583,23 @@ class Pair(object):
 
 
 class Fault(Pair):
-    """Fault class for related Fol and Lin instances with sense of movement"""
+    """Fault class for related ``Fol`` and ``Lin`` instances with sense of movement.
+
+    When ``Fault`` object is created, both planar and linear feature are
+    adjusted, so linear feature perfectly fit onto planar one. Warning
+    is issued, when misfit angle is bigger than 20 degrees.
+
+    Args:
+      fazi: dip direction of planar feature in degrees
+      finc: dip of planar feature in degrees
+      lazi: dip direction of linear feature in degrees
+      linc: dip of linear feature in degrees
+      sense: sense of movement +/-1 hanging-wall up/down
+
+    Example:
+      >>> p = Fault(140, 30, 110, 26, -1)
+
+    """
     def __init__(self, fazi, finc, lazi, linc, sense):
         assert np.sign(sense) != 0, \
             'Sense parameter must be positive or negative'
@@ -596,11 +613,23 @@ class Fault(Pair):
 
     @classmethod
     def from_pair(cls, fol, lin, sense):
-        """Create ``Fault`` from Fol and Lin objects"""
+        """Create ``Fault`` from ``Fol`` and ``Lin`` objects"""
         data = getattr(fol, settings['notation']) + lin.dd + (sense,)
         return cls(*data)
 
     def rotate(self, axis, phi):
+        """Rotates ``Fault`` by `phi` degrees about `axis`.
+
+        Args:
+          axis: axis of rotation
+          phi: angle of rotation in degrees
+
+        Example:
+          >>> f = Fault(140, 30, 110, 26, -1)
+          >>> f.rotate(Lin(220, 10), 60)
+          F:300/31-301/31 +
+
+        """
         rot = deepcopy(self)
         rot.fvec = self.fvec.rotate(axis, phi)
         rot.lvec = self.lvec.rotate(axis, phi)
@@ -608,6 +637,7 @@ class Fault(Pair):
 
     @property
     def sense(self):
+        """Return sense of movement (+/-1)."""
         # return 2 * int(self.fvec**self.lvec == Vec3(self.fol**self.lin)) - 1
         orax = self.fvec**self.lvec
         rax = Vec3(*self.fol.aslin.dd)**Vec3(*self.lin.dd)
@@ -615,38 +645,38 @@ class Fault(Pair):
 
     @property
     def pvec(self):
-        """return P axis as ``Vec3``."""
+        """Return P axis as ``Vec3``."""
         return self.fvec.rotate(self.rax, -45)
 
     @property
     def tvec(self):
-        """return T axisas ``Vec3``."""
+        """Return T-axis as ``Vec3``."""
         return self.fvec.rotate(self.rax, 45)
 
     @property
     def p(self):
-        """return P axis"""
+        """Return P-axis as ``Lin``."""
         return self.pvec.aslin
 
     @property
     def t(self):
-        """return T axis"""
+        """Return T-axis as ``Lin``."""
         return self.tvec.aslin
 
     @property
     def m(self):
-        """return kinematic M-plane"""
+        """Return kinematic M-plane as ``Fol``."""
         return (self.fvec**self.lvec).asfol
 
     @property
     def d(self):
-        """return dihedra plane"""
+        """Return dihedra plane as ``Fol``."""
         return (self.rax**self.fvec).asfol
 
 
 class Group(list):
     """Group class
-    Group is homogeneous group of ``Vec3``, ``Fol`` or ``Lin`` objects
+    Group is homogeneous group of ``Vec3``, ``Fol`` or ``Lin`` objects.
     """
     def __init__(self, data, name='Default'):
         assert issubclass(type(data), list), 'Argument must be list of data.'
@@ -690,16 +720,6 @@ class Group(list):
         else:
             return super(Group, self).__getitem__(key)
 
-    # def __getattr__(self, attr):
-    #     if attr in self[0].__dict__:
-    #         try:
-    #             res = np.array([getattr(e, attr) for e in self])
-    #         except ValueError:
-    #             res = [getattr(e, attr) for e in self]
-    #         return res
-    #     else:
-    #         raise AttributeError
-
     def append(self, item):
         assert isinstance(item, self.type), \
             'item is not of type %s' % self.type.__name__
@@ -714,17 +734,19 @@ class Group(list):
 
     @property
     def data(self):
+        """List of objects in ``Group``."""
         return list(self)
 
     @classmethod
     def from_csv(cls, fname, typ=Lin, delimiter=',', acol=1, icol=2):
-        """Create group from csv file"""
+        """Create ``Group`` object from csv file"""
         from os.path import basename
         dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
         return cls.from_array(dt[acol - 1], dt[icol - 1],
                               typ=typ, name=basename(fname))
 
     def to_csv(self, fname, delimiter=',', rounded=False):
+        """Save ``Group`` object to csv file"""
         if rounded:
             data = np.round(self.dd.T).astype(int)
         else:
@@ -733,34 +755,54 @@ class Group(list):
 
     @classmethod
     def from_array(cls, azis, incs, typ=Lin, name='Default'):
-        """Create group from arrays of dip directions and dips"""
+        """Create ``Group`` object from arrays of dip directions and dips
+
+        Args:
+          azis: list or array of dip directions
+          incs: list or array of inclinations
+
+        Kwargs:
+          typ: type of data. ``Fol`` or ``Lin``
+          name: name of ``Group`` object. Default is 'Default'
+
+        Example:
+          >>> f = Fault(140, 30, 110, 26, -1)
+        """
         data = []
         data = [typ(azi, inc) for azi, inc in zip(azis, incs)]
         return cls(data, name=name)
 
     @property
     def aslin(self):
-        """Convert all data in Group to Lin"""
+        """Return all data in ``Group`` object as ``Lin``."""
         return Group([e.aslin for e in self], name=self.name)
 
     @property
     def asfol(self):
-        """Convert all data in Group to Fol"""
+        """Return all data in ``Group`` object as ``Fol``."""
         return Group([e.asfol for e in self], name=self.name)
 
     @property
     def asvec3(self):
-        """Convert all data in Group to Vec3"""
+        """Return all data in ``Group`` object as ``Vec3``."""
         return Group([e.asvec3 for e in self], name=self.name)
 
     @property
     def V(self):
-        """Convert all data in Group to Vec3"""
+        """Return all data in ``Group`` object as ``Vec3``."""
         return Group([e.asvec3 for e in self], name=self.name)
 
     @property
     def R(self):
-        """Return resultant of Group"""
+        """Return resultant of data in ``Group`` object.
+
+        Resultant is of same type as ``Group``. Note that ``Fol`` and ``Lin``
+        are axial in nature so resultant can give other result than
+        expected. For most cases is should not be problem as it is
+        calculated as resultant of centered data. Anyway for axial
+        data orientation tensor analysis will give you right answer.
+
+        """
         # r = deepcopy(self[0])
         # for v in self[1:]:
         #     r += v
@@ -786,12 +828,18 @@ class Group(list):
 
     @property
     def var(self):
-        """Spherical variance"""
+        """Spherical variance based on resultant length.
+
+        var = 1 - |R| / N
+        """
         return 1 - abs(self.R) / len(self)
 
     @property
     def fisher_stats(self):
-        """Fisher's concentration parameter"""
+        """Fisher's statistics.
+
+        fisher_stats property gives dictionary with `k`, `csd` and `a95` keywords.
+        """
         stats = {'k': np.inf, 'a95': 180.0, 'csd': 0.0}
         N = len(self)
         R = abs(self.R)
@@ -803,17 +851,25 @@ class Group(list):
 
     @property
     def delta(self):
-        """cone containing ~63% of the data"""
+        """Cone angle containing ~63% of the data in degrees."""
         return acosd(abs(self.R) / len(self))
 
     @property
     def rdegree(self):
-        """degree of preffered orientation od Group"""
+        """Degree of preffered orientation of data in ``Group`` object.
+
+        D = 100 * (2 * |R| - N) / N
+        """
         N = len(self)
         return 100 * (2 * abs(self.R) - N) / N
 
     def cross(self, other=None):
-        """return cross products of all pairs in Group"""
+        """Return cross products of all data in ``Group`` object
+
+        Without arguments it returns cross product of all pairs in dataset.
+        If argument is group or single data object all mutual cross products
+        are returned.
+        """
         res = []
         if other is None:
             for i in range(len(self) - 1):
@@ -831,22 +887,27 @@ class Group(list):
         return Group(res, name=self.name)
 
     def rotate(self, axis, phi):
-        """rotate Group"""
+        """Rotate ``Group`` object `phi` degress about `axis`."""
         return Group([e.rotate(axis, phi) for e in self], name=self.name)
 
     @property
     def centered(self):
-        """rotate eigenvectors to axes of coordinate system
-        E1(vertical), E2(east-west), E3(north-south)"""
+        """Rotate ``Group`` object to position that eigenvectors are parallel
+        to axes of coordinate system: E1(vertical), E2(east-west), E3(north-south)"""
         return self.transform(self.ortensor.vects).rotate(Lin(90, 0), 90)
 
     @property
     def uv(self):
-        """return Group with normalized elements"""
+        """Return ``Group`` object with normalized (unit length) elements."""
         return Group([e.uv for e in self], name=self.name)
 
     def angle(self, other=None):
-        """return angles of all pairs in Group"""
+        """Return angles of all data in ``Group`` object
+
+        Without arguments it returns angles of all pairs in dataset.
+        If argument is group or single data object all mutual angles
+        are returned.
+        """
         res = []
         if other is None:
             for i in range(len(self) - 1):
@@ -865,30 +926,49 @@ class Group(list):
 
     @property
     def ortensor(self):
-        """return orientation tensor of Group"""
+        """Return orientation tensor ``Ortensor`` of ``Group``."""
         return Ortensor(self)
 
     @property
     def cluster(self):
-        """return hierarchical clustering of Group"""
+        """Return hierarchical clustering ``Cluster`` of ``Group``."""
         return Cluster(self)
 
     def transform(self, F):
-        """Return affine transformation of Group by matrix *F*"""
+        """Return affine transformation of ``Group`` by matrix 'F'.
+
+        Args:
+          F: Transformation matrix. Should be array-like value e.g. ``DefGrad``
+
+        """
         return Group([e.transform(F) for e in self], name=self.name)
 
     @property
     def dd(self):
-        """array of dip directions and dips of Group"""
+        """Return array of dip directions and dips of ``Group``"""
         return np.array([d.dd for d in self]).T
 
     @property
     def rhr(self):
-        """array of strikes and dips of Group"""
+        """Return array of strikes and dips of ``Group``"""
         return np.array([d.rhr for d in self]).T
 
     @classmethod
     def randn_lin(cls, N=100, mean=Lin(0, 90), sig=20, name='Default'):
+        """Method to create ``Group`` of normaly distributed random ``Lin`` objects.
+
+        Kwargs:
+          N: number of objects to be generated
+          mean: mean orientation given as ``Lin``. Default Lin(0, 90)
+          sig: sigma of normal distribution. Default 20
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> g = Group.randn_lin(100, Lin(120, 40))
+          >>> g.R
+          L:120/39
+
+        """
         data = []
         ta, td = mean.dd
         for azi, dip in zip(180 * np.random.rand(N), sig * np.random.randn(N)):
@@ -897,6 +977,20 @@ class Group(list):
 
     @classmethod
     def randn_fol(cls, N=100, mean=Fol(0, 0), sig=20, name='Default'):
+        """Method to create ``Group`` of normaly distributed random ``Fol`` objects.
+
+        Kwargs:
+          N: number of objects to be generated
+          mean: mean orientation given as ``Fol``. Default Fol(0, 0)
+          sig: sigma of normal distribution. Default 20
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> g = Group.randn_fol(100, Lin(240, 60))
+          >>> g.R
+          S:238/61
+
+        """
         data = []
         ta, td = mean.dd
         for azi, dip in zip(180 * np.random.rand(N), sig * np.random.randn(N)):
@@ -905,6 +999,18 @@ class Group(list):
 
     @classmethod
     def uniform_lin(cls, N=500, name='Default'):
+        """Method to create ``Group`` of uniformly distributed ``Lin`` objects.
+
+        Kwargs:
+          N: approximate (maximum) number of objects to be generated
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> g = Group.uniform_lin(300)
+          >>> g.ortensor.eigenvals
+          array([ 0.3354383 ,  0.33228085,  0.33228085])
+
+        """
         n = 2 * np.ceil(np.sqrt(N) / 0.564)
         azi = 0
         inc = 90
@@ -925,6 +1031,18 @@ class Group(list):
 
     @classmethod
     def uniform_fol(cls, N=500, name='Default'):
+        """Method to create ``Group`` of uniformly distributed ``Fol`` objects.
+
+        Kwargs:
+          N: approximate (maximum) number of objects to be generated
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> g = Group.uniform_fol(300)
+          >>> g.ortensor.eigenvals
+          array([ 0.3354383 ,  0.33228085,  0.33228085])
+
+        """
         lins = cls.uniform_lin(N=N)
         azi, inc = lins.dd
         if settings['notation'] == 'rhr':
@@ -933,10 +1051,20 @@ class Group(list):
 
     @classmethod
     def sfs_vec3(cls, N=1000, name='Default'):
-        """Spherical Fibonacci Spiral points on a sphere.
+        """Method to create ``Group`` of uniformly distributed ``Vec3`` objects.
+        Spherical Fibonacci Spiral points on a sphere algorithm adopted from
+        John Burkardt.
 
-        adopted from John Burkardt
         http://people.sc.fsu.edu/~jburkardt/
+
+        Kwargs:
+          N: number of objects to be generated
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> v = Group.sfs_vec3(300)
+          >>> v.ortensor.eigenvals
+          array([ 0.33346453,  0.33333475,  0.33320072])
         """
         phi = (1 + np.sqrt(5)) / 2
         i2 = 2 * np.arange(N) - N + 1
@@ -948,21 +1076,55 @@ class Group(list):
 
     @classmethod
     def sfs_lin(cls, N=500, name='Default'):
+        """Method to create ``Group`` of uniformly distributed ``Lin`` objects.
+        Based on ``Group.sfs_vec3`` method, but only half of sphere is used.
+
+        Kwargs:
+          N: number of objects to be generated
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> g = Group.sfs_lin(300)
+          >>> g.ortensor.eigenvals
+          array([ 0.33417707,  0.33333973,  0.33248319])
+        """
         g = cls.sfs_vec3(N=2 * N)
         # no antipodal
         return cls([d.aslin for d in g if d[2] > 0], name=name)
 
     @classmethod
     def sfs_fol(cls, N=500, name='Default'):
+        """Method to create ``Group`` of uniformly distributed ``Fol`` objects.
+        Based on ``Group.sfs_vec3`` method, but only half of sphere is used.
+
+        Kwargs:
+          N: number of objects to be generated
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> g = Group.sfs_fol(300)
+          >>> g.ortensor.eigenvals
+          array([ 0.33417707,  0.33333973,  0.33248319])
+        """
         g = cls.sfs_vec3(N=2 * N)
         # no antipodal
         return cls([d.asfol for d in g if d[2] > 0], name=name)
 
     @classmethod
     def gss_vec3(cls, N=1000, name='Default'):
-        """Golden Section Spiral points on a sphere.
+        """Method to create ``Group`` of uniformly distributed ``Vec3`` objects.
+        Golden Section Spiral points on a sphere algorithm.
 
-        adopted http://www.softimageblog.com/archives/115
+        http://www.softimageblog.com/archives/115
+
+        Kwargs:
+          N: number of objects to be generated
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> v = Group.gss_vec3(300)
+          >>> v.ortensor.eigenvals
+          array([ 0.33335689,  0.33332315,  0.33331996])
         """
         inc = np.pi * (3 - np.sqrt(5))
         off = 2 / N
@@ -975,17 +1137,42 @@ class Group(list):
 
     @classmethod
     def gss_lin(cls, N=500, name='Default'):
+        """Method to create ``Group`` of uniformly distributed ``Lin`` objects.
+        Based on ``Group.gss_vec3`` method, but only half of sphere is used.
+
+        Kwargs:
+          N: number of objects to be generated
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> g = Group.gss_lin(300)
+          >>> g.ortensor.eigenvals
+          array([ 0.33498373,  0.3333366 ,  0.33167967])
+        """
         g = cls.gss_vec3(N=2 * N)
         # no antipodal
         return cls([d.aslin for d in g if d[2] > 0], name=name)
 
     @classmethod
     def gss_fol(cls, N=500, name='Default'):
+        """Method to create ``Group`` of uniformly distributed ``Fol`` objects.
+        Based on ``Group.gss_vec3`` method, but only half of sphere is used.
+
+        Kwargs:
+          N: number of objects to be generated
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> g = Group.gss_fol(300)
+          >>> g.ortensor.eigenvals
+          array([ 0.33498373,  0.3333366 ,  0.33167967])
+        """
         g = cls.gss_vec3(N=2 * N)
         # no antipodal
         return cls([d.asfol for d in g if d[2] > 0], name=name)
 
     def to_file(self, filename='group.dat'):
+        """Save group to file."""
         import pickle
         with open(filename, 'wb') as file:
             pickle.dump(self, file)
@@ -993,21 +1180,40 @@ class Group(list):
 
     @classmethod
     def from_file(cls, filename='group.dat'):
+        """Load group to file."""
         import pickle
         with open(filename, 'rb') as file:
             data = pickle.load(file)
         print('Group loaded from file %s' % filename)
         return cls(data, name=filename)
 
-    def bootstrap(self, num=100, size=None):
+    def bootstrap(self, N=100, size=None):
+        """Return iterator of bootstraped samples from ``Group``.
+
+        Kwargs:
+          N: number of samples to be generated
+          size: number of data in sample. Default is same as ``Group``.
+
+        Example:
+          >>> g = Group.randn_lin(100, mean=Lin(120,40))
+          >>> sm = [gb.R for gb in g.bootstrap(100)]
+          >>> g.fisher_stats
+          {'csd': 18.985075817669784, 'a95': 3.4065695594364684, 'k': 18.203100466576508}
+          >>> Group(sm).fisher_stats
+          {'csd': 1.9142106832769188, 'a95': 0.33404753286607225, 'k': 1790.5669592301119}
+
+        """
         if size is None:
             size = len(self)
-        for ix in np.random.randint(0, len(self), (num, size)):
+        for ix in np.random.randint(0, len(self), (N, size)):
             yield self[ix]
 
     @classmethod
     def examples(cls, name=None):
-        # Sample datasets
+        """Create ``Group`` from example datasets. Available names are returned
+        when no name of example dataset is given as argument.
+
+        """
         azis = {}
         incs = {}
         typs = {}

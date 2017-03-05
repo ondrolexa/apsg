@@ -9,7 +9,7 @@ which will be explained in following examples.
 Basic usage
 -----------
 
-APSG module could be imported either into own name space or into
+**APSG** module could be imported either into own name space or into
 active one for easier interactive work::
 
     >>> from apsg import *
@@ -77,7 +77,7 @@ vector ``v`` for 45°::
 Classes Lin and Fol
 -------------------
 
-To work with orientation data in structural geology, APSG
+To work with orientation data in structural geology, **APSG**
 provide two classes derived from ``Vec3`` class. There is ``Fol``
 class to represent planar features by planes and ``Lin`` class
 to represent linear feature by lines. Both classes provide all
@@ -145,7 +145,7 @@ Classes Pair and Fault
 ----------------------
 
 To work with paired orientation data like foliations and lineations
-or fault data in structural geology, APSG provide two base ``Pair``
+or fault data in structural geology, **APSG** provide two base ``Pair``
 class and derived ``Fault`` class. Both classes are instantiated
 providing dip direction and dip of planar and linear measurements,
 which are automatically orthogonalized. If misfit is too high,
@@ -192,8 +192,10 @@ Note the change in sense of movement after ``Fault`` rotation::
     >>> f.rotate(Lin(45, 10), 60)
     F:312/62-340/59 +
 
-``Fault`` class also provide ``p``, ``t``, ``m`` and ``d`` properties to get
- PT-axes, kinematic plane and dihedra separation plane::
+
+For simple fault analyses ``Fault`` class also provide ``p``, ``t``, ``m``
+and ``d`` properties to get PT-axes, kinematic plane and dihedra
+separation plane::
 
     >>> f.p
     L:315/75
@@ -225,8 +227,9 @@ Method ``len`` returns number of features in group::
     >>> len(g)
     5
 
-To measure angles between all features in group and another feature,
-we can use method ``angle``::
+Most of the ``Lin``, ``Fol`` and ``Vec3`` methods could be used for ``Group``
+as well. For example, to measure angles between all features in group and
+another feature, we can use method ``angle``::
 
     >>> g.angle(Lin(110,50))
     array([ 11.49989817,   3.85569115,  15.61367789,  15.11039885,  16.3947936 ])
@@ -236,12 +239,14 @@ we can use method ``rotate``::
 
     >>> gr = g.rotate(Lin(150, 30), 45)
 
-To show data in list you can use ``data`` method::
+To show data in list you can use ``data`` property::
 
     >>> gr.data
     [L:107/35, L:113/26, L:126/30, L:93/26, L:94/18]
 
-Property ``R`` gives mean or resultant of all features in group::
+Property ``R`` gives mean or resultant of all features in group. Note that
+``Lin`` and ``Fol`` are axial in nature, so resultant vector is not reliable.
+ You can use ``ortensor`` property.::
 
     >>> g.R
     L:110/55
@@ -257,15 +262,15 @@ data etc.::
     >>> g.delta
     12.411724720740544
 
-To calculate orientation tensor of all features in group,
-we can use method ``ortensor``::
+To calculate orientation tensor of all features in group, we can use
+``ortensor`` property.::
 
     >>> g.ortensor
-    Ortensor: L1
+    Ortensor: L1 Kind: prolate
     (E1:0.954,E2:0.04021,E3:0.005749)
-    [[ 0.36990905 -0.48027385 -0.71621555]
-     [-0.48027385  1.42230591  2.10464496]
-     [-0.71621555  2.10464496  3.20778504]]
+    [[ 0.07398181 -0.09605477 -0.14324311]
+     [-0.09605477  0.28446118  0.42092899]
+     [-0.14324311  0.42092899  0.64155701]]
 
 Ortensor class
 --------------
@@ -306,6 +311,15 @@ line or pole in stereographic projection using ``StereoNet`` class::
 
 .. image:: _static/images/figure_1.png
 
+When ``StereoNet`` class instance is created with arguments, they are
+immidiatelly plotted. Most of the objects provided by **APSG** could be
+plotted. Here we use the ``Group`` object and principal planes and lines
+of ``Ortensor``:
+
+    >>> StereoNet(g, ot.eigenfols, ot.eigenlins)
+
+.. image:: _static/images/figure_17.png
+
 A cones (or small circles) could be plotted as well::
 
     >>> s = StereoNet()
@@ -329,10 +343,10 @@ methods are available::
 
 .. image:: _static/images/figure_3.png
 
-Except ``Group``, APSG provide ``PairSet`` and ``FaultSet`` classes to store
-``Pair`` or ``Fault`` datasets. It can be inicialized by passing list of
-`Pair`` or ``Fault`` objects as argument or use class methods ``from_array`` or
-``from_csv``:
+Except ``Group``, **APSG** provides ``PairSet`` and ``FaultSet`` classes
+to store ``Pair`` or ``Fault`` datasets. It can be inicialized by passing
+list of ``Pair`` or ``Fault`` objects as argument or use class
+methods ``from_array`` or ``from_csv``:
 
     >>> p = PairSet([Pair(120, 30, 165, 20),
                      Pair(215, 60, 280,35),
@@ -442,7 +456,7 @@ Distance matrix is calculated as mutual angles of features within Group
 keeping axial and/or vectorial nature in mind. ``Cluster.explain`` method
 allows to explore explained variance versus number of clusters relation.
 Actual cluster is done by ``Cluster.cluster`` method, using distance or
-maxclust criterion. Using of ``Cluster'' is explained in following
+maxclust criterion. Using of ``Cluster`` is explained in following
 example. We generate some data and plot dendrogram::
 
     >>> g1 = Group.randn_lin(mean=Lin(45,30))
@@ -474,7 +488,11 @@ Finally we can do clustering and plot created clusters::
 Some tricks
 -----------
 
-Double cross product is allowed (note quick plot feature)::
+Double cross products are allowed but not easy to understand.
+
+For example ``p**l**p`` is interpreted as ``p**(l**p)``: a) ``l**p`` is
+plane defined by ``l`` and ``p`` normal b) intersection of this plane
+and ``p`` is calculated::
 
     >>> p = Fol(250,40)
     >>> l = Lin(160,25)
@@ -482,17 +500,17 @@ Double cross product is allowed (note quick plot feature)::
 
 .. image:: _static/images/figure_7.png
 
-Correct measurements of planar linear pairs by instantiation
-of Pair class::
+``Pair`` class could be used to correct measurements of planar linear
+features which should spatialy overlap::
 
     >>> pl = Pair(250, 40, 160, 25)
     >>> pl.misfit
     18.889520432245405
     >>> s = StereoNet()
-    >>> s.plane(Fol(250, 40), 'b')
-    >>> s.line(Lin(160, 25), 'bo')
-    >>> s.plane(pl.fol, 'g')
-    >>> s.line(pl.lin, 'go')
+    >>> s.plane(Fol(250, 40), 'b', label='Original')
+    >>> s.line(Lin(160, 25), 'bo', label='Original')
+    >>> s.plane(pl.fol, 'g', label='Corrected')
+    >>> s.line(pl.lin, 'go', label='Corrected')
     >>> s.show()
 
 .. image:: _static/images/figure_8.png

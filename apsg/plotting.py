@@ -31,11 +31,12 @@ class StereoNet(object):
         self.ncols = kwargs.get('ncols', 1)
         self.grid_style = kwargs.get('grid_style', 'k:')
         self.fol_plot = kwargs.get('fol_plot', 'plane')
+        figsize = kwargs.get('figsize', None)
         self._lgd = None
         self.active = 0
-        self.fig, self.ax = plt.subplots(ncols=self.ncols)
+        self.fig, self.ax = plt.subplots(ncols=self.ncols, figsize=figsize)
         self.fig.canvas.set_window_title('StereoNet - schmidt projection')
-        self.fig.set_size_inches(8 * self.ncols, 6)
+        # self.fig.set_size_inches(8 * self.ncols, 6)
         self._title = self.fig.suptitle(kwargs.get('title', ''))
         self._axtitle = self.ncols * [None]
         self.cla()
@@ -342,8 +343,8 @@ class StereoNet(object):
             if len(args) == 0:
                 args = (6,)
             if isinstance(args[0], int):
-                mn = obj.values.min()
-                mx = obj.values.max()
+                mn = d.values.min()
+                mx = d.values.max()
                 levels = np.linspace(mn, mx, args[0])
                 levels[-1] += 1e-8
                 args = (levels,)
@@ -366,8 +367,8 @@ class StereoNet(object):
             if len(args) == 0:
                 args = (6,)
             if isinstance(args[0], int):
-                mn = obj.values.min()
-                mx = obj.values.max()
+                mn = d.values.min()
+                mx = d.values.max()
                 levels = np.linspace(mn, mx, args[0])
                 levels[-1] += 1e-8
                 args = (levels,)
