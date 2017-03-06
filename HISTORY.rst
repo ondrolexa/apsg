@@ -121,10 +121,10 @@ Changes
 * StereoNet accepts StereoGrid and Ortensor as quick plot arguments
 * StereoNet instance has axtitle method to put text below stereonet
 
-0.4.1 (03 Jan 2017)
+0.4.1-2 (03 Jan 2017)
 ~~~~~~~~~~~~~~~~~~~
 * bugfix
 
-0.4.2 (XX YYY 2017)
+0.4.3 (XX YYY 2017)
 ~~~~~~~~~~~~~~~~~~~
-*
+* Stress tensor with few basic methods implemented

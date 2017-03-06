@@ -3,7 +3,7 @@
 from __future__ import division, print_function
 
 import numpy as np
-from .core import Vec3, Group, Pair
+from .core import Vec3, Group, Pair, Fault
 from .helpers import sind, cosd
 
 __all__ = ['DefGrad', 'VelGrad']
@@ -128,7 +128,7 @@ class DefGrad(np.ndarray):
 
 
 class VelGrad(np.ndarray):
-    """class to store  velocity gradient tensor derived from numpy.ndarray
+    """class to store velocity gradient tensor derived from numpy.ndarray
     """
     def __new__(cls, array):
         # casting to our class
@@ -164,3 +164,111 @@ class VelGrad(np.ndarray):
     def defgrad(self, time=1):
         from scipy.linalg import expm
         return DefGrad(expm(self * time))
+
+
+class Stress(np.ndarray):
+    """class to store stress tensor derived from numpy.ndarray
+    """
+    def __new__(cls, array):
+        # casting to our class
+        assert np.shape(array) == (3, 3), 'Stress must be 3x3 2D array'
+        obj = np.asarray(array).view(cls)
+        return obj
+
+    def __repr__(self):
+        return 'Stress:\n' + str(self)
+
+    def __pow__(self, n):
+        # matrix power
+        return np.linalg.matrix_power(self, n)
+
+    def __eq__(self, other):
+        # equal
+        return bool(np.sum(abs(self - other)) < 1e-14)
+
+    def __ne__(self, other):
+        # not equal
+        return not self == other
+
+    @classmethod
+    def from_comp(cls,
+                  xx=0, xy=0, xz=0,
+                  yx=0, yy=0, yz=0,
+                  zx=0, zy=0, zz=0):
+        return cls([
+            [xx, xy, xz],
+            [yx, yy, yz],
+            [zx, zy, zz]])
+
+    def rotate(self, vector, theta):
+        R = DefGrad.from_axis(vector, theta)
+        return R * self * R.T
+
+    @property
+    def eigenvals(self):
+        vals, _ = np.linalg.eig(self)
+        return tuple(vals)
+
+    @property
+    def E1(self):
+        """Max eigenvalue"""
+        return self.eigenvals[0]
+
+    @property
+    def E2(self):
+        """Middle eigenvalue"""
+        return self.eigenvals[1]
+
+    @property
+    def E3(self):
+        """Min eigenvalue"""
+        return self.eigenvals[2]
+
+    @property
+    def eigenvects(self):
+        _, U = np.linalg.eig(self)
+        return Group([Vec3(U.T[0]),
+                      Vec3(U.T[1]),
+                      Vec3(U.T[2])])
+
+    @property
+    def eigenlins(self):
+        return self.eigenvects.aslin
+
+    @property
+    def eigenfols(self):
+        return self.eigenvects.asfol
+
+    def cauchy(self, n):
+        """Return stress vector associated with plane given by normal vector
+
+        Args:
+          n: normal given as ``Vec3`` or ``Fol`` object
+
+        """
+        return Vec3(np.dot(self, n))
+
+    def fault(self, n):
+        """Return ``Fault`` object derived from given by normal vector
+
+        Args:
+          n: normal given as ``Vec3`` or ``Fol`` object
+
+        """
+        return Fault.from_vecs(*self.stress_comp(n))
+
+    def stress_comp(self, n):
+        """Return normal and shear stress ``Vec3`` components on plane given by normal vector"""
+        t = self.cauchy(n)
+        sn = t.proj(n)
+        return sn, t - sn
+
+    def normal_stress(self, n):
+        """Return magnitude of normal stress component on plane given by normal vector"""
+        sn, tau = self.stress_comp(n)
+        return abs(sn)
+
+    def shear_stress(self, n):
+        """Return magnitude of shear stress component on plane given by normal vector"""
+        sn, tau = self.stress_comp(n)
+        return abs(tau)

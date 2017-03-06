@@ -399,21 +399,18 @@ Internally it is used for plotting contour diagrams, but it exposes
 function. Function must accept three element ``numpy.array`` as first
 argument passed from grid points of ``StereoGrid``.
 
-Following example defines function to calculate resolved shear stress on
-plane from given stress tensor. ``StereoGrid`` is used to calculate this
-value over all directions and finally values are plotted by ``StereoNet``::
+Following example shows how to plot resolved shear stress on
+plane from given stress tensor. ``StereoGrid.apply_func`` method is used
+to calculate this value over all directions and finally values are
+plotted by ``StereoNet``::
 
-    >>> # user-defined function to calculate resolved shear stress
-    >>> def resolved_shear_stress(n, sig):
-    >>>     t = Vec3(S.dot(n))
-    >>>     return abs(t - t.proj(n))
-    >>>
-    >>> # stress tensor
-    >>> S = np.array([[-10, 2, -3],[2, -5, 1], [-3, 1, 2]])
-    >>> # now we create StereoGrid and apply function on it
+    >>> S = Stress([[-10, 2, -3],[2, -5, 1], [-3, 1, 2]])
     >>> d = StereoGrid()
-    >>> d.apply_func(resolved_shear_stress, S)
-    >>> StereoNet(d)
+    >>> d.apply_func(S.shear_stress)
+    >>> s = StereoNet()
+    >>> s.contourf(d, 10, legend=True)
+    >>> s.contour(d, 10, colors='k')
+    >>> s.show()
 
 .. image:: _static/images/figure_9.png
 

@@ -7,7 +7,7 @@ from .core import (Vec3, Fol, Lin, Pair, Fault,
                    Group, PairSet, FaultSet,
                    Ortensor, Cluster, StereoGrid, G)
 from .plotting import StereoNet, FabricPlot
-from .strain import DefGrad, VelGrad
+from .tensors import DefGrad, VelGrad, Stress
 from .db import SDB
 from .helpers import sind, cosd, tand, acosd, asind, atand, atan2d
 

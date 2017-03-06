@@ -166,7 +166,7 @@ class Vec3(np.ndarray):
           >>> u.transform(F)
 
         See Also:
-          ``strain.DefGrad``
+          ``tensors.DefGrad``
 
         """
         return np.dot(F, self).view(type(self))
@@ -425,7 +425,7 @@ class Fol(Vec3):
           >>> f.transform(F)
 
         See Also:
-          ``strain.DefGrad``
+          ``tensors.DefGrad``
 
         """
         return np.dot(self, np.linalg.inv(F)).view(type(self))
@@ -573,7 +573,7 @@ class Pair(object):
           >>> p.transform(F)
 
         See Also:
-          ``strain.DefGrad``
+          ``tensors.DefGrad``
 
         """
         t = deepcopy(self)
@@ -617,6 +617,21 @@ class Fault(Pair):
         data = getattr(fol, settings['notation']) + lin.dd + (sense,)
         return cls(*data)
 
+    @classmethod
+    def from_vecs(cls, fvec, lvec):
+        """Create ``Fault`` from two ortogonal ``Vec3`` objects
+        
+        Args:
+          fvec: vector normal to fault plane
+          lvec: vector parallel to movement
+
+        """
+        orax = fvec**lvec
+        rax = Vec3(*fvec.aslin.dd)**Vec3(*lvec.dd)
+        sense = 1 - 2 * (orax == rax)
+        data = getattr(fvec.asfol, settings['notation']) + lvec.dd + (sense,)
+        return cls(*data)
+
     def rotate(self, axis, phi):
         """Rotates ``Fault`` by `phi` degrees about `axis`.
 
@@ -639,7 +654,7 @@ class Fault(Pair):
     def sense(self):
         """Return sense of movement (+/-1)."""
         # return 2 * int(self.fvec**self.lvec == Vec3(self.fol**self.lin)) - 1
-        orax = self.fvec**self.lvec
+        orax = self.fvec.uv**self.lvec.uv
         rax = Vec3(*self.fol.aslin.dd)**Vec3(*self.lin.dd)
         return 2 * (orax == rax) - 1
 
