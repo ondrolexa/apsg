@@ -128,3 +128,5 @@ Changes
 0.4.3 (XX YYY 2017)
 ~~~~~~~~~~~~~~~~~~~
 * Stress tensor with few basic methods implemented
+* StereoGrid keyword argument 'weighted' to control weighting
+* StereoNet kwargs are passed to underlaying methods for immediate plots

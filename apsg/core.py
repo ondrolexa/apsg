@@ -1713,7 +1713,8 @@ class StereoGrid(object):
       sigma: sigma for kernels. Default 1
       method: 'exp_kamb', 'linear_kamb', 'square_kamb', 'schmidt', 'kamb'
               Default 'exp_kamb'
-      Trim: Set negative values to zero. Default False
+      trim: Set negative values to zero. Default False
+      weighted: use euclidean norms as weights. Default False
 
     """
     def __init__(self, d=None, **kwargs):
@@ -1739,11 +1740,12 @@ class StereoGrid(object):
         self.triang = tri.Triangulation(self.xg, self.yg)
 
     def calculate_density(self, dcdata, **kwargs):
-        """Calculate density of elements from ``Group`` object
+        """Calculate density of elements from ``Group`` object.
 
         """
         # parse options
         sigma = kwargs.get('sigma', 1)
+        weighted = kwargs.get('weighted', False)
         method = kwargs.get('method', 'exp_kamb')
         trim = kwargs.get('trim', False)
 
@@ -1755,8 +1757,11 @@ class StereoGrid(object):
                 }[method]
 
         # weights are given by euclidean norms of data
-        weights = np.linalg.norm(dcdata, axis=1)
-        weights /= weights.mean()
+        if weighted:
+            weights = np.linalg.norm(dcdata, axis=1)
+            weights /= weights.mean()
+        else:
+            weights = np.ones(len(dcdata))
         for i in range(self.n):
             dist = np.abs(np.dot(self.dcgrid[i], dcdata.T))
             count, scale = func(dist, sigma)

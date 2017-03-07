@@ -26,44 +26,49 @@ warnings.filterwarnings('ignore', category=mcb.mplDeprecation)
 class StereoNet(object):
     """StereoNet class for Schmidt net plotting"""
     def __init__(self, *args, **kwargs):
-        self.ticks = kwargs.get('ticks', True)
-        self.grid = kwargs.get('grid', False)
-        self.ncols = kwargs.get('ncols', 1)
-        self.grid_style = kwargs.get('grid_style', 'k:')
-        self.fol_plot = kwargs.get('fol_plot', 'plane')
-        figsize = kwargs.get('figsize', None)
+        self.ticks = kwargs.pop('ticks', True)
+        self.grid = kwargs.pop('grid', False)
+        self.ncols = kwargs.pop('ncols', 1)
+        self.grid_style = kwargs.pop('grid_style', 'k:')
+        self.fol_plot = kwargs.pop('fol_plot', 'plane')
+        figsize = kwargs.pop('figsize', None)
+        title = kwargs.pop('title', '')
         self._lgd = None
         self.active = 0
         self.fig, self.ax = plt.subplots(ncols=self.ncols, figsize=figsize)
         self.fig.canvas.set_window_title('StereoNet - schmidt projection')
         # self.fig.set_size_inches(8 * self.ncols, 6)
-        self._title = self.fig.suptitle(kwargs.get('title', ''))
+        self._title = self.fig.suptitle(title)
         self._axtitle = self.ncols * [None]
         self.cla()
         # optionally immidiately plot passed objects
         if args:
             for arg in args:
+                kwargs['label'] = repr(arg)
                 if type(arg) in [Group, PairSet, FaultSet]:
                     typ = arg.type
                 else:
                     typ = type(arg)
                 if typ is Lin:
-                    self.line(arg, label=repr(arg))
+                    self.line(arg, **kwargs)
                 elif typ is Fol:
-                    getattr(self, self.fol_plot)(arg, label=repr(arg))
+                    getattr(self, self.fol_plot)(arg, **kwargs)
                 elif typ is Vec3:
-                    self.vector(arg.aslin, label=repr(arg))
+                    self.vector(arg.aslin, **kwargs)
                 elif typ is Pair:
-                    self.pair(arg, label=repr(arg))
+                    self.pair(arg, **kwargs)
                 elif typ is Fault:
-                    self.fault(arg, label=repr(arg))
+                    self.fault(arg, **kwargs)
                 elif typ is StereoGrid:
-                    self.contourf(arg, legend=True)
+                    if 'legend' in kwargs:
+                        del(kwargs['legend'])
+                    self.contourf(arg, legend=True, **kwargs)
                     self.contour(arg, colors='k')
                 elif typ is Ortensor:
-                    getattr(self, self.fol_plot)(arg.eigenfols[0], label=arg.name + '-E1')
-                    getattr(self, self.fol_plot)(arg.eigenfols[1], label=arg.name + '-E2')
-                    getattr(self, self.fol_plot)(arg.eigenfols[2], label=arg.name + '-E3')
+                    del(kwargs['label'])
+                    getattr(self, self.fol_plot)(arg.eigenfols[0], label=arg.name + '-E1', **kwargs)
+                    getattr(self, self.fol_plot)(arg.eigenfols[1], label=arg.name + '-E2', **kwargs)
+                    getattr(self, self.fol_plot)(arg.eigenfols[2], label=arg.name + '-E3', **kwargs)
                 else:
                     raise TypeError('%s argument is not supported!' % typ)
             self.show()
