@@ -510,7 +510,7 @@ features which should spatialy overlap::
 
 .. image:: _static/images/figure_8.png
 
-``StereoNet`` has no quiver method, but internal ``_arrow`` method could be exploited. Here is example
+``StereoNet`` has method ``arrow`` to draw arrow. Here is example
 of Hoeppner plot for variable fault orientation within given stress field:: 
 
     >>> S = Stress([[-8, 0, 0],[0, -5, 0],[0, 0, -1]]).rotate(Lin(90,45), 45)
@@ -519,7 +519,7 @@ of Hoeppner plot for variable fault orientation within given stress field::
     >>> s.tensor(S)
     >>> for dc in d.dcgrid:
     >>>     f = S.fault(dc)
-    >>>     s._arrow(f.fvec, f.lvec, f.sense)
+    >>>     s.arrow(f.fvec, f.lvec, f.sense)
     >>> s.show()
 
 .. image:: _static/images/figure_18.png

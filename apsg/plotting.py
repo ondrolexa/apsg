@@ -200,15 +200,23 @@ class StereoNet(object):
             dx, dy = -ax, -ay
         mag = np.hypot(dx, dy)
         u, v = sense * dx / mag, sense * dy / mag
-        self.fig.axes[self.active].quiver(x, y, u, v,
+        return x, y, u ,v
+
+    def arrow(self, pos_lin, dir_lin=None, sense=1, **kwargs):
+        animate = kwargs.pop('animate', False)
+        x, y, u, v = self._arrow(pos_lin, dir_lin, sense=1,)
+        a = self.fig.axes[self.active].quiver(x, y, u, v,
                                           width=2, headwidth=5, zorder=6,
                                           pivot='mid', units='dots')
-        self.fig.axes[self.active].scatter(x, y, color='k', s=5, zorder=6)
+        p = self.fig.axes[self.active].scatter(x, y, color='k', s=5, zorder=6)
+        if animate:
+            return tuple(a + p)
 
     def plane(self, obj, *args, **kwargs):
         assert obj.type is Fol, 'Only Fol instance could be plotted as plane.'
         if 'zorder' not in kwargs:
             kwargs['zorder'] = 5
+        animate = kwargs.pop('animate', False)
         if isinstance(obj, Group):
             x = []
             y = []
@@ -223,13 +231,16 @@ class StereoNet(object):
             azi, inc = obj.dd
             x, y = self._cone(p2v(azi, inc), l2v(azi, inc),
                               limit=89.9999, res=cosd(inc) * 179 + 2)
-        self.artists.append(tuple(self.fig.axes[self.active].plot(x, y, *args, **kwargs)))
+        h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
+        if animate:
+            self.artists.append(tuple(h))
         self.draw()
 
     def line(self, obj, *args, **kwargs):
         assert obj.type is Lin, 'Only Lin instance could be plotted as line.'
         if 'zorder' not in kwargs:
             kwargs['zorder'] = 5
+        animate = kwargs.pop('animate', False)
         # ensure point plot
         if 'ls' not in kwargs and 'linestyle' not in kwargs:
             kwargs['linestyle'] = 'none'
@@ -237,7 +248,9 @@ class StereoNet(object):
             if 'marker' not in kwargs:
                 kwargs['marker'] = 'o'
         x, y = l2xy(*obj.dd)
-        self.artists.append(tuple(self.fig.axes[self.active].plot(x, y, *args, **kwargs)))
+        h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
+        if animate:
+            self.artists.append(tuple(h))
         self.draw()
 
     def vector(self, obj, *args, **kwargs):
@@ -246,6 +259,7 @@ class StereoNet(object):
             'Only Vec3-like instance could be plotted as line.'
         if 'zorder' not in kwargs:
             kwargs['zorder'] = 5
+        animate = kwargs.pop('animate', False)
         # ensure point plot
         if 'ls' not in kwargs and 'linestyle' not in kwargs:
             kwargs['linestyle'] = 'none'
@@ -267,20 +281,24 @@ class StereoNet(object):
                 h2 = self.fig.axes[self.active].plot(-x, -y, *args, **kwargs)
                 if cc is not None:
                     h2[0].set_color(cc)
-            self.artists.append(tuple(h1 + h2))
+            if animate:
+                self.artists.append(tuple(h1 + h2))
         else:
             x, y = l2xy(*obj.asvec3.aslin.dd)
             if obj[2] < 0:
                 kwargs['fillstyle'] = 'none'
-                self.artists.append(tuple(self.fig.axes[self.active].plot(-x, -y, *args, **kwargs)))
+                h = self.fig.axes[self.active].plot(-x, -y, *args, **kwargs)
             else:
-                self.artists.append(tuple(self.fig.axes[self.active].plot(x, y, *args, **kwargs)))
+                h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
+            if animate:
+                self.artists.append(tuple(h))
         self.draw()
 
     def pole(self, obj, *args, **kwargs):
         assert obj.type is Fol, 'Only Fol instance could be plotted as poles.'
         if 'zorder' not in kwargs:
             kwargs['zorder'] = 5
+        animate = kwargs.pop('animate', False)
         # ensure point plot
         if 'ls' not in kwargs and 'linestyle' not in kwargs:
             kwargs['linestyle'] = 'none'
@@ -288,13 +306,16 @@ class StereoNet(object):
             if 'marker' not in kwargs:
                 kwargs['marker'] = 's'
         x, y = l2xy(*obj.aslin.dd)
-        self.artists.append(tuple(self.fig.axes[self.active].plot(x, y, *args, **kwargs)))
+        h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
+        if animate:
+            self.artists.append(tuple(h))
         self.draw()
 
     def cone(self, obj, alpha, *args, **kwargs):
         assert obj.type is Lin, 'Only Lin instance could be used as cone axis.'
         if 'zorder' not in kwargs:
             kwargs['zorder'] = 5
+        animate = kwargs.pop('animate', False)
         if isinstance(obj, Group):
             x = []
             y = []
@@ -310,39 +331,59 @@ class StereoNet(object):
             azi, inc = obj.dd
             x, y = self._cone(l2v(azi, inc), l2v(azi, inc - alpha),
                               limit=180, res=sind(alpha) * 358 + 3, split=True)
-        self.fig.axes[self.active].plot(x, y, *args, **kwargs)
+        h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
+        if animate:
+            self.artists.append(tuple(h))
         self.draw()
 
     def pair(self, obj, *arg, **kwargs):
         """Plot a fol-lin pair"""
         assert obj.type is Pair, 'Only Pair instance could be used.'
-        self.plane(obj.fol, *arg, **kwargs)
+        animate = kwargs.pop('animate', False)
+        h1 = self.plane(obj.fol, *arg, **kwargs)
         x, y = l2xy(*obj.lin.dd)
-        self.fig.axes[self.active].scatter(x, y, color='k', s=5, zorder=6)
+        h2 = self.fig.axes[self.active].scatter(x, y, color='k', s=5, zorder=6)
+        if animate:
+            self.artists.append(tuple(h1 + h2))
         self.draw()
 
     def fault(self, obj, *arg, **kwargs):
         """Plot a fault-and-striae plot - Angelier plot"""
         assert obj.type is Fault, 'Only Fault instance could be used.'
+        animate = kwargs.get('animate', False)
         self.plane(obj.fol, *arg, **kwargs)
-        self._arrow(obj.lin, sense=obj.sense)
+        x, y, u, v = self._arrow(obj.lin, sense=obj.sense)
+        a = self.fig.axes[self.active].quiver(x, y, u, v,
+                                          width=2, headwidth=5, zorder=6,
+                                          pivot='mid', units='dots')
+        p = self.fig.axes[self.active].scatter(x, y, color='k', s=5, zorder=6)
+        if animate:
+            self.artists[-1] = self.artists[-1] + tuple(a + p)
         self.draw()
 
     def hoeppner(self, obj, *arg, **kwargs):
         """Plot a tangent lineation plot - Hoeppner plot"""
         assert obj.type is Fault, 'Only Fault instance could be used.'
+        animate = kwargs.get('animate', False)
         self.pole(obj.fol, *arg, **kwargs)
-        self._arrow(obj.fvec.aslin, dir_lin=obj.lin, sense=obj.sense)
+        x, y, u, v = self._arrow(obj.fvec.aslin, dir_lin=obj.lin, sense=obj.sense)
+        a = self.fig.axes[self.active].quiver(x, y, u, v,
+                                          width=2, headwidth=5, zorder=6,
+                                          pivot='mid', units='dots')
+        p = self.fig.axes[self.active].scatter(x, y, color='k', s=5, zorder=6)
+        if animate:
+            self.artists[-1] = self.artists[-1] + tuple(a + p)
         self.draw()
 
     def tensor(self, obj, *arg, **kwargs):
-        """Plotddd"""
+        """Plot tensor pricipal planes or directions"""
         getattr(self, self.fol_plot)(obj.eigenfols[0], label=obj.name + '-E1', **kwargs)
         getattr(self, self.fol_plot)(obj.eigenfols[1], label=obj.name + '-E2', **kwargs)
         getattr(self, self.fol_plot)(obj.eigenfols[2], label=obj.name + '-E3', **kwargs)        
 
     def contourf(self, obj, *args, **kwargs):
         clines = kwargs.pop('clines', True)
+        animate = kwargs.get('animate', False)
         if 'cmap' not in kwargs and 'colors' not in kwargs:
                 kwargs['cmap'] = 'Greys'
         if 'zorder' not in kwargs:
