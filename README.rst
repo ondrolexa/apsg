@@ -24,5 +24,7 @@ APSG defines several new python classes to easily manage, analyze and visualize 
 
 You can see APSG in action in accompanied Jupyter notebook http://nbviewer.jupyter.org/github/ondrolexa/apsg/blob/master/apsg_tutorial.ipynb
 
+And for fun check how simply you can animate stereonets http://nbviewer.jupyter.org/github/ondrolexa/apsg/blob/master/animation_example.ipynb
+
 * Free software: BSD license
 * Documentation: https://apsg.readthedocs.org.

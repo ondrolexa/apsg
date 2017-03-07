@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import warnings
 import matplotlib.cbook as mcb
+import matplotlib.animation as animation
 
 try:
     import mplstereonet
@@ -36,6 +37,7 @@ class StereoNet(object):
         title = kwargs.pop('title', '')
         self._lgd = None
         self.active = 0
+        self.artists = []
         self.fig, self.ax = plt.subplots(ncols=self.ncols, figsize=figsize)
         self.fig.canvas.set_window_title('StereoNet - schmidt projection')
         # self.fig.set_size_inches(8 * self.ncols, 6)
@@ -221,9 +223,8 @@ class StereoNet(object):
             azi, inc = obj.dd
             x, y = self._cone(p2v(azi, inc), l2v(azi, inc),
                               limit=89.9999, res=cosd(inc) * 179 + 2)
-        self.fig.axes[self.active].plot(x, y, *args, **kwargs)
+        self.artists.append(tuple(self.fig.axes[self.active].plot(x, y, *args, **kwargs)))
         self.draw()
-        # return h
 
     def line(self, obj, *args, **kwargs):
         assert obj.type is Lin, 'Only Lin instance could be plotted as line.'
@@ -236,7 +237,7 @@ class StereoNet(object):
             if 'marker' not in kwargs:
                 kwargs['marker'] = 'o'
         x, y = l2xy(*obj.dd)
-        self.fig.axes[self.active].plot(x, y, *args, **kwargs)
+        self.artists.append(tuple(self.fig.axes[self.active].plot(x, y, *args, **kwargs)))
         self.draw()
 
     def vector(self, obj, *args, **kwargs):
@@ -255,24 +256,25 @@ class StereoNet(object):
             uh = np.atleast_2d(np.asarray(obj))[:, 2] < 0
             if np.any(~uh):
                 x, y = l2xy(*obj[~uh].asvec3.aslin.dd)
-                h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
+                h1 = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
                 kwargs.pop('label', None)
-                cc = h[0].get_color()
+                cc = h1[0].get_color()
             else:
                 cc = None
             if np.any(uh):
                 kwargs['fillstyle'] = 'none'
                 x, y = l2xy(*obj[uh].asvec3.aslin.dd)
-                h = self.fig.axes[self.active].plot(-x, -y, *args, **kwargs)
+                h2 = self.fig.axes[self.active].plot(-x, -y, *args, **kwargs)
                 if cc is not None:
-                    h[0].set_color(cc)
+                    h2[0].set_color(cc)
+            self.artists.append(tuple(h1 + h2))
         else:
             x, y = l2xy(*obj.asvec3.aslin.dd)
             if obj[2] < 0:
                 kwargs['fillstyle'] = 'none'
-                self.fig.axes[self.active].plot(-x, -y, *args, **kwargs)
+                self.artists.append(tuple(self.fig.axes[self.active].plot(-x, -y, *args, **kwargs)))
             else:
-                self.fig.axes[self.active].plot(x, y, *args, **kwargs)
+                self.artists.append(tuple(self.fig.axes[self.active].plot(x, y, *args, **kwargs)))
         self.draw()
 
     def pole(self, obj, *args, **kwargs):
@@ -286,7 +288,7 @@ class StereoNet(object):
             if 'marker' not in kwargs:
                 kwargs['marker'] = 's'
         x, y = l2xy(*obj.aslin.dd)
-        self.fig.axes[self.active].plot(x, y, *args, **kwargs)
+        self.artists.append(tuple(self.fig.axes[self.active].plot(x, y, *args, **kwargs)))
         self.draw()
 
     def cone(self, obj, alpha, *args, **kwargs):
@@ -404,6 +406,10 @@ class StereoNet(object):
 
     def show(self):
         plt.show()
+
+    def animate(self, **kwargs):
+        blit = kwargs.pop('blit', True)
+        return animation.ArtistAnimation(self.fig, self.artists, blit=blit, **kwargs)
 
     def savefig(self, filename='apsg_stereonet.pdf', **kwargs):
         if self._lgd is None:
