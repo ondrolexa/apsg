@@ -214,7 +214,7 @@ Group class
 or batch analysis::
 
     >>> g = Group([Lin(120,60), Lin(116,50), Lin(132,45), Lin(90,60), Lin(84,52)],
-                  name='L1')
+    >>>           name='L1')
     >>> g
     L1: 5 Lin
 
@@ -348,8 +348,8 @@ list of ``Pair`` or ``Fault`` objects as argument or use class
 methods ``from_array`` or ``from_csv``:
 
     >>> p = PairSet([Pair(120, 30, 165, 20),
-                     Pair(215, 60, 280,35),
-                     Pair(324, 70, 35, 40)])
+    >>>              Pair(215, 60, 280,35),
+    >>>              Pair(324, 70, 35, 40)])
     >>> p.misfit
     array([ 2.0650076 ,  0.74600727,  0.83154705])
     >>> StereoNet(p)
@@ -359,9 +359,9 @@ methods ``from_array`` or ``from_csv``:
 ``StereoNet`` has two special methods to visualize fault data. Method ``fault`` produce classical Angelier plot::
 
     >>> f = FaultSet([Fault(170, 60, 182, 59, -1),
-                      Fault(210, 55, 195, 53, -1),
-                      Fault(10, 60, 15, 59, -1),
-                      Fault(355, 48, 22, 45, -1)])
+    >>>               Fault(210, 55, 195, 53, -1),
+    >>>               Fault(10, 60, 15, 59, -1),
+    >>>               Fault(355, 48, 22, 45, -1)])
     >>> s = StereoNet()
     >>> s.fault(f)
     >>> s.line(f.p, label='P-axes')
@@ -518,8 +518,8 @@ of Hoeppner plot for variable fault orientation within given stress field::
     >>> s = StereoNet()
     >>> s.tensor(S)
     >>> for dc in d.dcgrid:
-            f = S.fault(dc)
-            s._arrow(f.fvec, f.lvec, f.sense)
+    >>>     f = S.fault(dc)
+    >>>     s._arrow(f.fvec, f.lvec, f.sense)
     >>> s.show()
 
 .. image:: _static/images/figure_18.png
