@@ -130,3 +130,8 @@ Changes
 * Stress tensor with few basic methods implemented
 * StereoGrid keyword argument 'weighted' to control weighting
 * StereoNet kwargs are passed to underlaying methods for immediate plots
+* StereoNet tensor method implemented (draw eigenlins or fols based on fol_plot settings)
+* Group totvar property and dot and proj methods implemented
+* Fol and Lin has dot method which returns absolute value of dot product
+* Vec3 H method implemented
+* StereoNet.contourf method draw contour lines as well by default. Option clines controls it.

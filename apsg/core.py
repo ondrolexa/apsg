@@ -156,6 +156,17 @@ class Vec3(np.ndarray):
         r = np.dot(self, other) * other / np.linalg.norm(other)
         return r.view(type(self))
 
+    def H(self, other):
+        """Returns ``DefGrad`` rotational matrix H which rotate vector `u` to vector `v`
+
+        Example:
+          >>> u.transform(u.H(v)) == v
+          True
+
+        """
+
+        return DefGrad(np.outer(self + other,(self + other).T) / (1 + self*other) - np.eye(3))
+
     def transform(self, F):
         """Returns affine transformation of vector `u` by matrix `F`.
 
@@ -296,7 +307,7 @@ class Lin(Vec3):
         if isinstance(other, Group):
             return other.angle(self)
         else:
-            return acosd(abs(np.clip(np.dot(self.uv, other.uv), -1, 1)))
+            return acosd(np.clip(self.uv.dot(other.uv), -1, 1))
 
     def cross(self, other):
         """Returns planar feature defined by two linear features
@@ -311,6 +322,10 @@ class Lin(Vec3):
             return other.cross(self)
         else:
             return np.cross(self, other).view(Fol)
+
+    def dot(self, other):
+        """Axial dot product"""
+        return abs(np.dot(self, other))
 
     @property
     def dd(self):
@@ -399,7 +414,7 @@ class Fol(Vec3):
         if isinstance(other, Group):
             return other.angle(self)
         else:
-            return acosd(abs(np.clip(np.dot(self.uv, other.uv), -1, 1)))
+            return acosd(np.clip(self.uv.dot(other.uv), -1, 1))
 
     def cross(self, other):
         """Returns linear feature defined as intersection of two planar features
@@ -414,6 +429,10 @@ class Fol(Vec3):
             return other.cross(self)
         else:
             return np.cross(self, other).view(Lin)
+
+    def dot(self, other):
+        """Axial dot product"""
+        return abs(np.dot(self, other))
 
     def transform(self, F):
         """Returns affine transformation of planar feature by matrix `F`.
@@ -843,11 +862,22 @@ class Group(list):
 
     @property
     def var(self):
-        """Spherical variance based on resultant length.
+        """Spherical variance based on resultant length (Mardia 1972).
 
         var = 1 - |R| / N
         """
         return 1 - abs(self.R) / len(self)
+
+    @property
+    def totvar(self):
+        """Return total variance based on projections onto resultant
+
+        totvar = sum(|x - R|^2) / 2n
+
+        Note that difference between totvar and var is measure of difference
+        between sample and population mean
+        """
+        return 1 - np.mean(self.dot(self.R.uv))
 
     @property
     def fisher_stats(self):
@@ -938,6 +968,18 @@ class Group(list):
         else:
             raise TypeError('Wrong argument type!')
         return np.array(res)
+
+    def proj(self, vec):
+        """Return projections of all data in ``Group`` onto vector.
+
+        """
+        return Group([e.proj(vec) for e in self], name=self.name)
+
+    def dot(self, vec):
+        """Return array of dot products of all data in ``Group`` with vector.
+
+        """
+        return np.array([e.dot(vec) for e in self])
 
     @property
     def ortensor(self):
@@ -1709,7 +1751,8 @@ class StereoGrid(object):
          If ommited, zero values grid is returned.
 
     Kwargs:
-      cnt_points: Value specify density of uniform grid [180]
+      npoints: approximate number of grid points Default 1800
+      grid: type of grid 'radial' or 'ortho'. Default 'radial'
       sigma: sigma for kernels. Default 1
       method: 'exp_kamb', 'linear_kamb', 'square_kamb', 'schmidt', 'kamb'
               Default 'exp_kamb'
@@ -1726,14 +1769,24 @@ class StereoGrid(object):
     def initgrid(self, **kwargs):
         import matplotlib.tri as tri
         # parse options
-        ctn_points = kwargs.get('cnt_points', 180)
-        # calc grid
-        self.xg = 0
-        self.yg = 0
-        for rho in np.linspace(0, 1, np.round(ctn_points / 2 / np.pi)):
-            theta = np.linspace(0, 360, np.round(ctn_points * rho + 1))[:-1]
-            self.xg = np.hstack((self.xg, rho * sind(theta)))
-            self.yg = np.hstack((self.yg, rho * cosd(theta)))
+        grid = kwargs.get('grid', 'radial')
+        if  grid == 'radial':
+            ctn_points = int(np.round(np.sqrt(kwargs.get('npoints', 1800)) / 0.280269786))
+            # calc grid
+            self.xg = 0
+            self.yg = 0
+            for rho in np.linspace(0, 1, np.round(ctn_points / 2 / np.pi)):
+                theta = np.linspace(0, 360, np.round(ctn_points * rho + 1))[:-1]
+                self.xg = np.hstack((self.xg, rho * sind(theta)))
+                self.yg = np.hstack((self.yg, rho * cosd(theta)))
+        elif grid == 'ortho':
+            n = int(np.round(np.sqrt(kwargs.get('npoints', 1800) - 4) / 0.8685725142))
+            x, y = np.meshgrid(np.linspace(-1, 1, n), np.linspace(-1, 1, n))
+            d2 = (x**2 + y**2) <= 1
+            self.xg = np.hstack((0, 1, 0, -1, x[d2]))
+            self.yg = np.hstack((1, 0, -1, 0, y[d2]))
+        else:
+            raise TypeError('Wrong grid type!')
         self.dcgrid = l2v(*getldd(self.xg, self.yg)).T
         self.n = self.dcgrid.shape[0]
         self.values = np.zeros(self.n, dtype=np.float)

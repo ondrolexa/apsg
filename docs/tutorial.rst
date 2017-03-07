@@ -337,7 +337,6 @@ methods are available::
     >>> s = StereoNet()
     >>> g = Group.randn_lin(mean=Lin(40, 20))
     >>> s.contourf(g, 8, legend=True, sigma=2)
-    >>> s.contour(g, 8, colors='k', sigma=2)
     >>> s.line(g, 'g.')
     >>> s.show()
 
@@ -409,7 +408,6 @@ plotted by ``StereoNet``::
     >>> d.apply_func(S.shear_stress)
     >>> s = StereoNet()
     >>> s.contourf(d, 10, legend=True)
-    >>> s.contour(d, 10, colors='k')
     >>> s.show()
 
 .. image:: _static/images/figure_9.png
@@ -511,3 +509,17 @@ features which should spatialy overlap::
     >>> s.show()
 
 .. image:: _static/images/figure_8.png
+
+``StereoNet`` has no quiver method, but internal ``_arrow`` method could be exploited. Here is example
+of Hoeppner plot for variable fault orientation within given stress field:: 
+
+    >>> S = Stress([[-8, 0, 0],[0, -5, 0],[0, 0, -1]]).rotate(Lin(90,45), 45)
+    >>> d = StereoGrid(npoints=300)
+    >>> s = StereoNet()
+    >>> s.tensor(S)
+    >>> for dc in d.dcgrid:
+            f = S.fault(dc)
+            s._arrow(f.fvec, f.lvec, f.sense)
+    >>> s.show()
+
+.. image:: _static/images/figure_18.png

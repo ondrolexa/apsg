@@ -16,6 +16,7 @@ except ImportError:
 from .core import (Vec3, Fol, Lin, Pair, Fault,
                    Group, PairSet, FaultSet, Ortensor, StereoGrid)
 from .helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
+from .tensors import DefGrad, Stress
 
 __all__ = ['StereoNet', 'FabricPlot', 'rose']
 
@@ -63,12 +64,9 @@ class StereoNet(object):
                     if 'legend' in kwargs:
                         del(kwargs['legend'])
                     self.contourf(arg, legend=True, **kwargs)
-                    self.contour(arg, colors='k')
-                elif typ is Ortensor:
+                elif typ in [Ortensor, DefGrad, Stress]:
                     del(kwargs['label'])
-                    getattr(self, self.fol_plot)(arg.eigenfols[0], label=arg.name + '-E1', **kwargs)
-                    getattr(self, self.fol_plot)(arg.eigenfols[1], label=arg.name + '-E2', **kwargs)
-                    getattr(self, self.fol_plot)(arg.eigenfols[2], label=arg.name + '-E3', **kwargs)
+                    self.tensor(arg, **kwargs)
                 else:
                     raise TypeError('%s argument is not supported!' % typ)
             self.show()
@@ -335,7 +333,14 @@ class StereoNet(object):
         self._arrow(obj.fvec.aslin, dir_lin=obj.lin, sense=obj.sense)
         self.draw()
 
+    def tensor(self, obj, *arg, **kwargs):
+        """Plotddd"""
+        getattr(self, self.fol_plot)(obj.eigenfols[0], label=obj.name + '-E1', **kwargs)
+        getattr(self, self.fol_plot)(obj.eigenfols[1], label=obj.name + '-E2', **kwargs)
+        getattr(self, self.fol_plot)(obj.eigenfols[2], label=obj.name + '-E3', **kwargs)        
+
     def contourf(self, obj, *args, **kwargs):
+        clines = kwargs.pop('clines', True)
         if 'cmap' not in kwargs and 'colors' not in kwargs:
                 kwargs['cmap'] = 'Greys'
         if 'zorder' not in kwargs:
@@ -353,8 +358,9 @@ class StereoNet(object):
                 levels = np.linspace(mn, mx, args[0])
                 levels[-1] += 1e-8
                 args = (levels,)
-        cs = self.fig.axes[self.active].tricontourf(d.triang, d.values,
-                                                    *args, **kwargs)
+        cs = self.fig.axes[self.active].tricontourf(d.triang, d.values, *args, **kwargs)
+        if clines:
+            self.fig.axes[self.active].tricontour(d.triang, d.values, *args, colors='k')
         if kwargs.get('legend', False):
             self._add_colorbar(cs)
         self.draw()
@@ -377,8 +383,7 @@ class StereoNet(object):
                 levels = np.linspace(mn, mx, args[0])
                 levels[-1] += 1e-8
                 args = (levels,)
-        cs = self.fig.axes[self.active].tricontour(d.triang, d.values,
-                                                   *args, **kwargs)
+        cs = self.fig.axes[self.active].tricontour(d.triang, d.values, *args, **kwargs)
         if kwargs.get('legend', False):
             self._add_colorbar(cs)
         self.draw()

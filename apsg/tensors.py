@@ -6,7 +6,7 @@ import numpy as np
 from .core import Vec3, Group, Pair, Fault
 from .helpers import sind, cosd
 
-__all__ = ['DefGrad', 'VelGrad']
+__all__ = ['DefGrad', 'VelGrad', 'Stress']
 
 
 class DefGrad(np.ndarray):
@@ -16,6 +16,7 @@ class DefGrad(np.ndarray):
         # casting to our class
         assert np.shape(array) == (3, 3), 'DefGrad must be 3x3 2D array'
         obj = np.asarray(array).view(cls)
+        obj.name = 'D'
         return obj
 
     def __repr__(self):
@@ -134,6 +135,7 @@ class VelGrad(np.ndarray):
         # casting to our class
         assert np.shape(array) == (3, 3), 'VelGrad must be 3x3 2D array'
         obj = np.asarray(array).view(cls)
+        obj.name = 'L'
         return obj
 
     def __repr__(self):
@@ -172,7 +174,9 @@ class Stress(np.ndarray):
     def __new__(cls, array):
         # casting to our class
         assert np.shape(array) == (3, 3), 'Stress must be 3x3 2D array'
+        assert np.allclose(np.asarray(array), np.asarray(array).T), 'Stress tensor must be symmetrical'
         obj = np.asarray(array).view(cls)
+        obj.name = 'S'
         return obj
 
     def __repr__(self):
@@ -202,7 +206,7 @@ class Stress(np.ndarray):
 
     def rotate(self, vector, theta):
         R = DefGrad.from_axis(vector, theta)
-        return R * self * R.T
+        return Stress(R * self * R.T)
 
     @property
     def eigenvals(self):
