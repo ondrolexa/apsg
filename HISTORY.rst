@@ -135,3 +135,4 @@ Changes
 * Fol and Lin has dot method which returns absolute value of dot product
 * Vec3 H method implemented
 * StereoNet.contourf method draw contour lines as well by default. Option clines controls it.
+* centered bug fixed

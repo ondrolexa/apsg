@@ -164,7 +164,7 @@ class Vec3(np.ndarray):
           True
 
         """
-
+        from .tensors import DefGrad
         return DefGrad(np.outer(self + other,(self + other).T) / (1 + self*other) - np.eye(3))
 
     def transform(self, F):
@@ -639,7 +639,7 @@ class Fault(Pair):
     @classmethod
     def from_vecs(cls, fvec, lvec):
         """Create ``Fault`` from two ortogonal ``Vec3`` objects
-        
+
         Args:
           fvec: vector normal to fault plane
           lvec: vector parallel to movement
@@ -846,18 +846,24 @@ class Group(list):
         # summing of centered data
         if self.type == Vec3:
             r = Vec3(np.sum(self, axis=0))
+        elif self.type == Lin:
+            u, _, _ = np.linalg.svd(self.ortensor.cov)
+            # centered
+            cntr = self.transform(u).rotate(Lin(90, 0), 90)
+            # all points Z-ward
+            vals = self.centered.dd
+            cg = Group.from_array(*vals, typ=Lin)
+            r = Vec3(np.sum(cntr, axis=0)).aslin.rotate(Lin(90, 0), -90).transform(u.T)
+        elif self.type == Fol:
+            u, _, _ = np.linalg.svd(self.ortensor.cov)
+            # centered
+            cntr = self.transform(u).rotate(Lin(90, 0), 90)
+            # all points Z-ward
+            vals = getattr(self.centered, settings['notation'])
+            cg = Group.from_array(*vals, typ=Fol)
+            r = Vec3(np.sum(cntr, axis=0)).asfol.rotate(Lin(90, 0), -90).transform(u.T)
         else:
-            irot = np.linalg.inv(self.ortensor.vects)
-            if self.type == Lin:
-                vals = self.centered.dd
-                cg = Group.from_array(*vals, typ=Lin)
-                r = (Vec3(np.sum(cg, axis=0)).aslin
-                     .rotate(Lin(90, 0), -90).transform(irot))
-            else:
-                vals = getattr(self.centered, settings['notation'])
-                cg = Group.from_array(*vals, typ=Fol)
-                r = (Vec3(np.sum(cg, axis=0)).asfol
-                     .rotate(Lin(90, 0), -90).transform(irot))
+            raise TypeError('Wrong argument type! Only Vec3, Lin and Fol!')
         return r
 
     @property
@@ -939,7 +945,8 @@ class Group(list):
     def centered(self):
         """Rotate ``Group`` object to position that eigenvectors are parallel
         to axes of coordinate system: E1(vertical), E2(east-west), E3(north-south)"""
-        return self.transform(self.ortensor.vects).rotate(Lin(90, 0), 90)
+        u, _, _ = np.linalg.svd(self.ortensor.cov)
+        return self.transform(u).rotate(Lin(90, 0), 90)
 
     @property
     def uv(self):
