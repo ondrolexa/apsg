@@ -24,14 +24,12 @@ settings = dict(notation='dd', vec2dd=False)
 
 
 class Vec3(np.ndarray):
-    """Class to store 3D vectors derived from ``numpy.ndarray``
-
-    ``Vec3`` is APSG base class derived from ``numpy.ndarray`` on which
-    ``Lin`` and ``Fol`` classes are based.
+    """``Vec3`` is APSG base class to store 3D vectors derived from
+    ``numpy.ndarray`` on which ``Lin`` and ``Fol`` classes are based.
 
     Args:
       a (array_like): Input data, that can be converted to an array.
-      This includes lists, tuples and ndarrays.
+        This includes lists, tuples and ndarrays.
 
     Attributes:
       uv: Returns unit vector
@@ -54,9 +52,9 @@ class Vec3(np.ndarray):
 
         Args:
           a (array_like): Input data, that can be converted to an array.
-          This includes lists, tuples and ndarrays. When more than
-          one argument is passed (i.e. `inc` is not None) a is interpreted
-          as dip direction of vector in degrees
+            This includes lists, tuples and ndarrays. When more than
+            one argument is passed (i.e. `inc` is not None) a is interpreted
+            as dip direction of vector in degrees
           inc (float): None or dip of vector in degrees
           mag (float): magnitude of vector if `inc` is not None
 
@@ -182,7 +180,7 @@ class Vec3(np.ndarray):
 
         Returns:
           vector represenatation of `self` rotated `phi` degrees about
-          vector `axis`. Rotation is clockwise along axis direction.
+            vector `axis`. Rotation is clockwise along axis direction.
 
         Example:
           >>> v.rotate(u, 60)
@@ -210,7 +208,7 @@ class Vec3(np.ndarray):
 
         Note:
           To project on plane use: `u - u.proj(v)`, where `v` in plane
-          normal.
+            normal.
 
         """
         r = np.dot(self, other) * other / np.linalg.norm(other)
@@ -242,7 +240,7 @@ class Vec3(np.ndarray):
 
         Returns:
           vector representation of affine transformation (dot product)
-          of `self` by `F`
+            of `self` by `F`
 
         Example:
           >>> u.transform(F)
@@ -512,7 +510,7 @@ class Fol(Vec3):
 
         Returns:
           representation of affine transformation (dot product) of `self`
-          by `F`
+            by `F`
 
         Example:
           >>> f.transform(F)
@@ -663,7 +661,7 @@ class Pair(object):
 
         Returns:
           representation of affine transformation (dot product) of `self`
-          by `F`
+            by `F`
 
         Example:
           >>> p.transform(F)
@@ -746,7 +744,7 @@ class Fault(Pair):
 
     @property
     def sense(self):
-        """Return sense of movement (+/-1)."""
+        """Return sense of movement (+/-1)"""
         # return 2 * int(self.fvec**self.lvec == Vec3(self.fol**self.lin)) - 1
         orax = self.fvec.uv**self.lvec.uv
         rax = Vec3(*self.fol.aslin.dd)**Vec3(*self.lin.dd)
@@ -754,7 +752,7 @@ class Fault(Pair):
 
     @property
     def pvec(self):
-        """Return P axis as ``Vec3``."""
+        """Return P axis as ``Vec3``"""
         return self.fvec.rotate(self.rax, -45)
 
     @property
@@ -764,28 +762,28 @@ class Fault(Pair):
 
     @property
     def p(self):
-        """Return P-axis as ``Lin``."""
+        """Return P-axis as ``Lin``"""
         return self.pvec.aslin
 
     @property
     def t(self):
-        """Return T-axis as ``Lin``."""
+        """Return T-axis as ``Lin``"""
         return self.tvec.aslin
 
     @property
     def m(self):
-        """Return kinematic M-plane as ``Fol``."""
+        """Return kinematic M-plane as ``Fol``"""
         return (self.fvec**self.lvec).asfol
 
     @property
     def d(self):
-        """Return dihedra plane as ``Fol``."""
+        """Return dihedra plane as ``Fol``"""
         return (self.rax**self.fvec).asfol
 
 
 class Group(list):
-    """Group class
-    Group is homogeneous group of ``Vec3``, ``Fol`` or ``Lin`` objects.
+    """Group is homogeneous group of ``Vec3``, ``Fol`` or ``Lin`` objects.
+
     """
     def __init__(self, data, name='Default'):
         assert issubclass(type(data), list), 'Argument must be list of data.'
@@ -945,7 +943,7 @@ class Group(list):
     def var(self):
         """Spherical variance based on resultant length (Mardia 1972).
 
-        var = 1 - |R| / N
+        .. math:: \textup{var} = 1 - \frac{|R|}{n}
         """
         return 1 - abs(self.R) / len(self)
 
@@ -953,7 +951,7 @@ class Group(list):
     def totvar(self):
         """Return total variance based on projections onto resultant
 
-        totvar = sum(|x - R|^2) / 2n
+        .. math:: \textup{totvar} = \frac{\sum |x - R|^2}{2n}
 
         Note that difference between totvar and var is measure of difference
         between sample and population mean
@@ -984,7 +982,7 @@ class Group(list):
     def rdegree(self):
         """Degree of preffered orientation of data in ``Group`` object.
 
-        D = 100 * (2 * |R| - N) / N
+        .. math:: \textup{D} = \frac{2 * |R| - n}{n} * 100
         """
         N = len(self)
         return 100 * (2 * abs(self.R) - N) / N
@@ -1019,7 +1017,10 @@ class Group(list):
     @property
     def centered(self):
         """Rotate ``Group`` object to position that eigenvectors are parallel
-        to axes of coordinate system: E1(vertical), E2(east-west), E3(north-south)"""
+        to axes of coordinate system: E1(vertical), E2(east-west),
+        E3(north-south)
+
+        """
         u, _, _ = np.linalg.svd(self.ortensor.cov)
         return self.transform(u).rotate(Lin(90, 0), 90)
 
@@ -1096,7 +1097,7 @@ class Group(list):
     def randn_lin(cls, N=100, mean=Lin(0, 90), sig=20, name='Default'):
         """Method to create ``Group`` of normaly distributed random ``Lin`` objects.
 
-        Kwargs:
+        Args:
           N: number of objects to be generated
           mean: mean orientation given as ``Lin``. Default Lin(0, 90)
           sig: sigma of normal distribution. Default 20
@@ -1118,7 +1119,7 @@ class Group(list):
     def randn_fol(cls, N=100, mean=Fol(0, 0), sig=20, name='Default'):
         """Method to create ``Group`` of normaly distributed random ``Fol`` objects.
 
-        Kwargs:
+        Args:
           N: number of objects to be generated
           mean: mean orientation given as ``Fol``. Default Fol(0, 0)
           sig: sigma of normal distribution. Default 20
@@ -1140,7 +1141,7 @@ class Group(list):
     def uniform_lin(cls, N=500, name='Default'):
         """Method to create ``Group`` of uniformly distributed ``Lin`` objects.
 
-        Kwargs:
+        Args:
           N: approximate (maximum) number of objects to be generated
           name: name of dataset. Default is 'Default'
 
@@ -1172,7 +1173,7 @@ class Group(list):
     def uniform_fol(cls, N=500, name='Default'):
         """Method to create ``Group`` of uniformly distributed ``Fol`` objects.
 
-        Kwargs:
+        Args:
           N: approximate (maximum) number of objects to be generated
           name: name of dataset. Default is 'Default'
 
@@ -1196,7 +1197,7 @@ class Group(list):
 
         http://people.sc.fsu.edu/~jburkardt/
 
-        Kwargs:
+        Args:
           N: number of objects to be generated
           name: name of dataset. Default is 'Default'
 
@@ -1218,7 +1219,7 @@ class Group(list):
         """Method to create ``Group`` of uniformly distributed ``Lin`` objects.
         Based on ``Group.sfs_vec3`` method, but only half of sphere is used.
 
-        Kwargs:
+        Args:
           N: number of objects to be generated
           name: name of dataset. Default is 'Default'
 
@@ -1236,7 +1237,7 @@ class Group(list):
         """Method to create ``Group`` of uniformly distributed ``Fol`` objects.
         Based on ``Group.sfs_vec3`` method, but only half of sphere is used.
 
-        Kwargs:
+        Args:
           N: number of objects to be generated
           name: name of dataset. Default is 'Default'
 
@@ -1256,7 +1257,7 @@ class Group(list):
 
         http://www.softimageblog.com/archives/115
 
-        Kwargs:
+        Args:
           N: number of objects to be generated
           name: name of dataset. Default is 'Default'
 
@@ -1279,7 +1280,7 @@ class Group(list):
         """Method to create ``Group`` of uniformly distributed ``Lin`` objects.
         Based on ``Group.gss_vec3`` method, but only half of sphere is used.
 
-        Kwargs:
+        Args:
           N: number of objects to be generated
           name: name of dataset. Default is 'Default'
 
@@ -1297,7 +1298,7 @@ class Group(list):
         """Method to create ``Group`` of uniformly distributed ``Fol`` objects.
         Based on ``Group.gss_vec3`` method, but only half of sphere is used.
 
-        Kwargs:
+        Args:
           N: number of objects to be generated
           name: name of dataset. Default is 'Default'
 
@@ -1329,7 +1330,7 @@ class Group(list):
     def bootstrap(self, N=100, size=None):
         """Return iterator of bootstraped samples from ``Group``.
 
-        Kwargs:
+        Args:
           N: number of samples to be generated
           size: number of data in sample. Default is same as ``Group``.
 
@@ -1542,8 +1543,8 @@ class PairSet(list):
 
 
 class FaultSet(PairSet):
-    """FaultSet class
-    FaultSet is container of ``Fault`` objects
+    """FaultSet is container of ``Fault`` objects
+
     """
     def __init__(self, data, name='Default'):
         assert issubclass(type(data), list), 'Argument must be list of data.'
@@ -1622,7 +1623,7 @@ class FaultSet(PairSet):
     def angmech(self, method='classic'):
         """Implementation of Angelier-Mechler dihedra method
 
-        Kwargs:
+        Args:
           method: 'probability' or 'classic'. Classic method assigns +/-1
                   to individual positions, while 'probability' returns
                   maximum likelihood estimate.
@@ -1832,12 +1833,12 @@ class StereoGrid(object):
       g: ``Group`` object of data to be used for desity calculation
          If ommited, zero values grid is returned.
 
-    Kwargs:
+    Keyword Args:
       npoints: approximate number of grid points Default 1800
       grid: type of grid 'radial' or 'ortho'. Default 'radial'
       sigma: sigma for kernels. Default 1
-      method: 'exp_kamb', 'linear_kamb', 'square_kamb', 'schmidt', 'kamb'
-              Default 'exp_kamb'
+      method: 'exp_kamb', 'linear_kamb', 'square_kamb', 'schmidt', 'kamb'.
+        Default 'exp_kamb'
       trim: Set negative values to zero. Default False
       weighted: use euclidean norms as weights. Default False
 
