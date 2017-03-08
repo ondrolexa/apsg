@@ -29,34 +29,21 @@ class Vec3(np.ndarray):
     ``Vec3`` is APSG base class derived from ``numpy.ndarray`` on which
     ``Lin`` and ``Fol`` classes are based.
 
-    Parameters
-    ----------
-    a : array_like
-        Input data, that can be converted to an array. This includes
-        lists, lists of tuples, tuples, tuples of tuples, tuples
-        of lists and ndarrays.
+    Args:
+      a (array_like): Input data, that can be converted to an array.
+      This includes lists, tuples and ndarrays.
 
-    Attributes
-    ----------
-    uv : str
-        Returns unit vector
-    type : int
-        Returns type of `self`
-    aslin : int
-        Convert `self` to ``Lin`` object.
-    asfol : int
-        Convert `self` to ``Fol`` object.
-    asvec3 : int
-        Convert `self` to ``Vec3`` object.
-    V : int
-        Convert `self` to ``Vec3`` object. Alias
-    dd : tuple
-        Returns dip-direction, dip tuple
+    Attributes:
+      uv: Returns unit vector
+      type: Returns type of `self`
+      aslin: Convert `self` to ``Lin`` object.
+      asfol: Convert `self` to ``Fol`` object.
+      asvec3: Convert `self` to ``Vec3`` object.
+      V: Convert `self` to ``Vec3`` object. Alias
+      dd: Returns tuple of dip-direction and dip tuple
 
-    Returns
-    -------
-    out : ``Vec3``
-        vector created from `a`
+    Returns:
+      vector created from `a`
 
     Example:
       >>> v = Vec3([0.67, 1.2, 0.73])
@@ -65,27 +52,21 @@ class Vec3(np.ndarray):
     def __new__(cls, a, inc=None, mag=1.0):
         """Convert the input to ``Vec3``.
 
-        Parameters
-        ----------
-        a : array_like or float
-            Input data, in any form that can be converted to an array.
-            This includes lists, tuples and ndarrays. When more than
-            one argument is passed (i.e. `inc` is not None) a is interpreted
-            as dip direction of vector in degrees
-        inc : float
-            None or dip of vector in degrees
-        mag : float
-            magnitude of vector if `inc` is not None
+        Args:
+          a (array_like): Input data, that can be converted to an array.
+          This includes lists, tuples and ndarrays. When more than
+          one argument is passed (i.e. `inc` is not None) a is interpreted
+          as dip direction of vector in degrees
+          inc (float): None or dip of vector in degrees
+          mag (float): magnitude of vector if `inc` is not None
 
-        Returns
-        -------
-        out : ``Vec3``
-            vector created
+        Returns:
+          interpreted vector
 
         Example:
           >>> v = Vec3([1, 0.2, 1.6])
-          >>> v = Vec3(120, 60) # dip-direction and dip of unit length vector
-          >>> v = Vec3(120, 60) # dip-direction, dip and magnitude of vector
+          >>> v = Vec3(120, 60) # dip-dir and dip of unit length vector
+          >>> v = Vec3(120, 60) # dip-dir, dip and magnitude of vector
 
         """
         if inc is None:
@@ -145,10 +126,8 @@ class Vec3(np.ndarray):
     def uv(self):
         """Returns unit vector
 
-        Returns
-        -------
-        out : ``Vec3``
-            unit vector of `self`
+        Returns:
+          unit vector of `self`
 
         Example:
           >>> u = Vec3([1,1,1])
@@ -161,15 +140,11 @@ class Vec3(np.ndarray):
     def cross(self, other):
         """Cross product of two vectors.
 
-        Parameters
-        ----------
-        other : ``Vec3``
-            other vector
+        Args:
+          other (``Vec3``): other vector
 
-        Returns
-        -------
-        out : ``Vec3``
-            cross product of `self` and `other`
+        Returns:
+          cross product of `self` and `other`
 
         Example:
           >>> v = Vec3([0,2,-2])
@@ -182,15 +157,11 @@ class Vec3(np.ndarray):
     def angle(self, other):
         """Angle of two vectors in degrees.
 
-        Parameters
-        ----------
-        other : ``Vec3``
-            other vector
+        Args:
+          other (``Vec3``): other vector
 
-        Returns
-        -------
-        out : float
-            angle of `self` and `other` in degrees
+        Returns:
+          angle of `self` and `other` in degrees
 
         Example:
           >>> u.angle(v)
@@ -205,18 +176,13 @@ class Vec3(np.ndarray):
     def rotate(self, axis, phi):
         """Returns rotated vector about axis.
 
-        Parameters
-        ----------
-        axis : ``Vec3``
-            axis of rotation
-        phi : int
-            angle of rotation in degrees
+        Args:
+          axis (``Vec3``): axis of rotation
+          phi (float): angle of rotation in degrees
 
-        Returns
-        -------
-        out : ``Vec3``
-            vector represenatation of `self` rotated `phi` degrees about
-            vector `axis`. Rotation is clockwise along axis direction.
+        Returns:
+          vector represenatation of `self` rotated `phi` degrees about
+          vector `axis`. Rotation is clockwise along axis direction.
 
         Example:
           >>> v.rotate(u, 60)
@@ -233,20 +199,18 @@ class Vec3(np.ndarray):
     def proj(self, other):
         """Returns projection of vector `u` onto vector `v`.
 
-        Parameters
-        ----------
-        other : ``Vec3``
-            other vector
+        Args:
+          other (``Vec3``): other vector
 
-        Returns
-        -------
-        out : ``Vec3``
-            vector representation of `self` projected onto 'other'
+        Returns:
+          vector representation of `self` projected onto 'other'
 
         Example:
-          >>> u.proj(v)
+           >> u.proj(v)
 
-        To project on plane use: `u - u.proj(v)`, where `v` in plane normal.
+        Note:
+          To project on plane use: `u - u.proj(v)`, where `v` in plane
+          normal.
 
         """
         r = np.dot(self, other) * other / np.linalg.norm(other)
@@ -256,15 +220,11 @@ class Vec3(np.ndarray):
         """Returns ``DefGrad`` rotational matrix H which rotate vector
         `u` to vector `v`
 
-        Parameters
-        ----------
-        other : ``Vec3``
-            other vector
+        Args:
+          other (``Vec3``): other vector
 
-        Returns
-        -------
-        out : ``DefGrad``
-            rotational matrix
+        Returns:
+          ``Defgrad`` rotational matrix
 
         Example:
           >>> u.transform(u.H(v)) == v
@@ -277,16 +237,12 @@ class Vec3(np.ndarray):
     def transform(self, F):
         """Returns affine transformation of vector `u` by matrix `F`.
 
-        Parameters
-        ----------
-        F : ``DefGrad`` or np.array
-            Transformation matrix
+        Args:
+          F (``DefGrad`` or ``numpy.array``): transformation matrix
 
-        Returns
-        -------
-        out : ``Vec3``
-            vector representation of affine transformation (dot product)
-            of `self` by `F`
+        Returns:
+          vector representation of affine transformation (dot product)
+          of `self` by `F`
 
         Example:
           >>> u.transform(F)
@@ -552,20 +508,21 @@ class Fol(Vec3):
         """Returns affine transformation of planar feature by matrix `F`.
 
         Args:
-          F: Transformation matrix. Should be array-like value e.g. ``DefGrad``
+          F (``DefGrad`` or ``numpy.array``): transformation matrix
+
+        Returns:
+          representation of affine transformation (dot product) of `self`
+          by `F`
 
         Example:
           >>> f.transform(F)
-
-        See Also:
-          ``tensors.DefGrad``
 
         """
         return np.dot(self, np.linalg.inv(F)).view(type(self))
 
     @property
     def dd(self):
-        """ Return dip-direction, dip tuple
+        """Return dip-direction, dip tuple
 
         """
         n = self.uv
@@ -577,7 +534,7 @@ class Fol(Vec3):
 
     @property
     def rhr(self):
-        """ Return strike and dip tuple (right-hand-rule)
+        """Return strike and dip tuple (right-hand-rule)
 
         """
         azi, inc = self.dd
@@ -617,10 +574,10 @@ class Pair(object):
     is issued, when misfit angle is bigger than 20 degrees.
 
     Args:
-      fazi: Dip direction of planar feature in degrees
-      finc: dip of planar feature in degrees
-      lazi: Dip direction of linear feature in degrees
-      linc: dip of linear feature in degrees
+      fazi (float): Dip direction of planar feature in degrees
+      finc (float): dip of planar feature in degrees
+      lazi (float): Dip direction of linear feature in degrees
+      linc (float): dip of linear feature in degrees
 
     Example:
       >>> p = Pair(140, 30, 110, 26)
@@ -649,7 +606,9 @@ class Pair(object):
 
     @classmethod
     def from_pair(cls, fol, lin):
-        """Create ``Pair`` from ``Fol`` and ``Lin`` objects"""
+        """Create ``Pair`` from ``Fol`` and ``Lin`` objects
+
+        """
         data = getattr(fol, settings['notation']) + lin.dd
         return cls(*data)
 
@@ -657,8 +616,8 @@ class Pair(object):
         """Rotates ``Pair`` by `phi` degrees about `axis`.
 
         Args:
-          axis: axis of rotation
-          phi: angle of rotation in degrees
+          axis (``Vec3``): axis of rotation
+          phi (float): angle of rotation in degrees
 
         Example:
           >>> p = Pair(140, 30, 110, 26)
@@ -700,13 +659,14 @@ class Pair(object):
         """Returns affine transformation of ``Pair`` by matrix `F`.
 
         Args:
-          F: Transformation matrix. Should be array-like value e.g. ``DefGrad``
+          F (``DefGrad`` or ``numpy.array``): transformation matrix
+
+        Returns:
+          representation of affine transformation (dot product) of `self`
+          by `F`
 
         Example:
           >>> p.transform(F)
-
-        See Also:
-          ``tensors.DefGrad``
 
         """
         t = deepcopy(self)
@@ -724,11 +684,11 @@ class Fault(Pair):
     is issued, when misfit angle is bigger than 20 degrees.
 
     Args:
-      fazi: dip direction of planar feature in degrees
-      finc: dip of planar feature in degrees
-      lazi: dip direction of linear feature in degrees
-      linc: dip of linear feature in degrees
-      sense: sense of movement +/-1 hanging-wall up/down
+      fazi (float): dip direction of planar feature in degrees
+      finc (float): dip of planar feature in degrees
+      lazi (float): dip direction of linear feature in degrees
+      linc (float): dip of linear feature in degrees
+      sense (float): sense of movement +/-1 hanging-wall up/down
 
     Example:
       >>> p = Fault(140, 30, 110, 26, -1)
