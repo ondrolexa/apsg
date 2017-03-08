@@ -93,12 +93,8 @@ class TestApsg(unittest.TestCase):
         self.assertTrue(Lin(*f.V.dd).asfol == f)
 
     def test_fault_rotation_sense(self):
-        f = Fault(90, 60, 90, 60, -1)
-        self.assertTrue(repr(f.rotate(Lin(220, 10), 60)) == 'F:300/31-301/31 +')
-
-    def test_fault_rotation(self):
-        f = Fault(140, 30, 110, 26, -1)
-        self.assertTrue(repr(f.rotate(Lin(0, 0), 60)) == repr(f.rotate(Lin(0, 0), -120)))
+        f = Fault(90, 30, 110, 28, -1)
+        self.assertTrue(repr(f.rotate(Lin(220, 10), 60)) == 'F:343/37-301/29 +')
 
     def tearDown(self):
         pass

@@ -24,25 +24,74 @@ settings = dict(notation='dd', vec2dd=False)
 
 
 class Vec3(np.ndarray):
-    """Base class to store 3D vectors derived from numpy.ndarray
+    """Class to store 3D vectors derived from ``numpy.ndarray``
 
-    Args:
-      a (array_like): Input data, that can be converted to an array.
-        This includes lists, lists of tuples, tuples, tuples of tuples, tuples
+    ``Vec3`` is APSG base class derived from ``numpy.ndarray`` on which
+    ``Lin`` and ``Fol`` classes are based.
+
+    Parameters
+    ----------
+    a : array_like
+        Input data, that can be converted to an array. This includes
+        lists, lists of tuples, tuples, tuples of tuples, tuples
         of lists and ndarrays.
+
+    Attributes
+    ----------
+    uv : str
+        Returns unit vector
+    type : int
+        Returns type of `self`
+    aslin : int
+        Convert `self` to ``Lin`` object.
+    asfol : int
+        Convert `self` to ``Fol`` object.
+    asvec3 : int
+        Convert `self` to ``Vec3`` object.
+    V : int
+        Convert `self` to ``Vec3`` object. Alias
+    dd : tuple
+        Returns dip-direction, dip tuple
+
+    Returns
+    -------
+    out : ``Vec3``
+        vector created from `a`
 
     Example:
       >>> v = Vec3([0.67, 1.2, 0.73])
 
     """
-    def __new__(cls, array, inc=None, mag=1.0):
-        """Convert the input to 3D vector.
+    def __new__(cls, a, inc=None, mag=1.0):
+        """Convert the input to ``Vec3``.
+
+        Parameters
+        ----------
+        a : array_like or float
+            Input data, in any form that can be converted to an array.
+            This includes lists, tuples and ndarrays. When more than
+            one argument is passed (i.e. `inc` is not None) a is interpreted
+            as dip direction of vector in degrees
+        inc : float
+            None or dip of vector in degrees
+        mag : float
+            magnitude of vector if `inc` is not None
+
+        Returns
+        -------
+        out : ``Vec3``
+            vector created
+
+        Example:
+          >>> v = Vec3([1, 0.2, 1.6])
+          >>> v = Vec3(120, 60) # dip-direction and dip of unit length vector
+          >>> v = Vec3(120, 60) # dip-direction, dip and magnitude of vector
 
         """
         if inc is None:
-            obj = np.asarray(array).view(cls)
+            obj = np.asarray(a).view(cls)
         else:
-            obj = mag * Lin(array, inc).view(cls)
+            obj = mag * Lin(a, inc).view(cls)
         return obj
 
     def __repr__(self):
@@ -87,11 +136,19 @@ class Vec3(np.ndarray):
 
     @property
     def type(self):
+        """Returns type of `self`
+
+        """
         return type(self)
 
     @property
     def uv(self):
         """Returns unit vector
+
+        Returns
+        -------
+        out : ``Vec3``
+            unit vector of `self`
 
         Example:
           >>> u = Vec3([1,1,1])
@@ -102,10 +159,20 @@ class Vec3(np.ndarray):
         return self / abs(self)
 
     def cross(self, other):
-        """Returns cross product of two vectors.
+        """Cross product of two vectors.
+
+        Parameters
+        ----------
+        other : ``Vec3``
+            other vector
+
+        Returns
+        -------
+        out : ``Vec3``
+            cross product of `self` and `other`
 
         Example:
-          >>> v=Vec3([0,2,-2])
+          >>> v = Vec3([0,2,-2])
           >>> u.cross(v)
           V(-4.000, 2.000, 2.000)
 
@@ -113,7 +180,17 @@ class Vec3(np.ndarray):
         return Vec3(np.cross(self, other))
 
     def angle(self, other):
-        """Returns angle of two vectors in degrees.
+        """Angle of two vectors in degrees.
+
+        Parameters
+        ----------
+        other : ``Vec3``
+            other vector
+
+        Returns
+        -------
+        out : float
+            angle of `self` and `other` in degrees
 
         Example:
           >>> u.angle(v)
@@ -126,14 +203,23 @@ class Vec3(np.ndarray):
             return acosd(np.clip(np.dot(self.uv, other.uv), -1, 1))
 
     def rotate(self, axis, phi):
-        """Rotates vector `phi` degrees about `axis`.
+        """Returns rotated vector about axis.
 
-        Args:
-          axis: axis of rotation
-          phi: angle of rotation in degrees
+        Parameters
+        ----------
+        axis : ``Vec3``
+            axis of rotation
+        phi : int
+            angle of rotation in degrees
+
+        Returns
+        -------
+        out : ``Vec3``
+            vector represenatation of `self` rotated `phi` degrees about
+            vector `axis`. Rotation is clockwise along axis direction.
 
         Example:
-          >>> v.rotate(u,60)
+          >>> v.rotate(u, 60)
           V(-2.000, 2.000, -0.000)
 
         """
@@ -147,6 +233,16 @@ class Vec3(np.ndarray):
     def proj(self, other):
         """Returns projection of vector `u` onto vector `v`.
 
+        Parameters
+        ----------
+        other : ``Vec3``
+            other vector
+
+        Returns
+        -------
+        out : ``Vec3``
+            vector representation of `self` projected onto 'other'
+
         Example:
           >>> u.proj(v)
 
@@ -157,7 +253,18 @@ class Vec3(np.ndarray):
         return r.view(type(self))
 
     def H(self, other):
-        """Returns ``DefGrad`` rotational matrix H which rotate vector `u` to vector `v`
+        """Returns ``DefGrad`` rotational matrix H which rotate vector
+        `u` to vector `v`
+
+        Parameters
+        ----------
+        other : ``Vec3``
+            other vector
+
+        Returns
+        -------
+        out : ``DefGrad``
+            rotational matrix
 
         Example:
           >>> u.transform(u.H(v)) == v
@@ -165,26 +272,31 @@ class Vec3(np.ndarray):
 
         """
         from .tensors import DefGrad
-        return DefGrad(np.outer(self + other,(self + other).T) / (1 + self*other) - np.eye(3))
+        return DefGrad(np.outer(self + other,(self + other).T) / (1 + self * other) - np.eye(3))
 
     def transform(self, F):
         """Returns affine transformation of vector `u` by matrix `F`.
 
-        Args:
-          F: Transformation matrix. Should be array-like value e.g. ``DefGrad``
+        Parameters
+        ----------
+        F : ``DefGrad`` or np.array
+            Transformation matrix
+
+        Returns
+        -------
+        out : ``Vec3``
+            vector representation of affine transformation (dot product)
+            of `self` by `F`
 
         Example:
           >>> u.transform(F)
-
-        See Also:
-          ``tensors.DefGrad``
 
         """
         return np.dot(F, self).view(type(self))
 
     @property
     def aslin(self):
-        """Convert to ``Lin`` object.
+        """Convert `self` to ``Lin`` object
 
         Example:
           >>> u = Vec3([1,1,1])
@@ -196,7 +308,7 @@ class Vec3(np.ndarray):
 
     @property
     def asfol(self):
-        """Convert to ``Fol`` object.
+        """Convert `self` to ``Fol`` object
 
         Example:
           >>> u = Vec3([1,1,1])
@@ -208,7 +320,7 @@ class Vec3(np.ndarray):
 
     @property
     def asvec3(self):
-        """Convert to ``Vec3`` object.
+        """Convert `self` to ``Vec3`` object
 
         Example:
           >>> l = Lin(120,50)
@@ -220,13 +332,15 @@ class Vec3(np.ndarray):
 
     @property
     def V(self):
-        """Convert to ``Vec3`` object.
+        """Convert `self` to ``Vec3`` object
+
+        Alias of ``asvec3`` property
         """
         return self.copy().view(Vec3)
 
     @property
     def dd(self):
-        """ Return dip-direction, dip tuple
+        """Return tuple of dip-direction and dip
 
         """
         n = self.uv
@@ -329,7 +443,7 @@ class Lin(Vec3):
 
     @property
     def dd(self):
-        """ Return dip-direction, dip tuple
+        """Returns dip-direction, dip tuple
 
         """
         n = self.uv
@@ -602,7 +716,8 @@ class Pair(object):
 
 
 class Fault(Pair):
-    """Fault class for related ``Fol`` and ``Lin`` instances with sense of movement.
+    """Fault class for related ``Fol`` and ``Lin`` instances with sense
+    of movement.
 
     When ``Fault`` object is created, both planar and linear feature are
     adjusted, so linear feature perfectly fit onto planar one. Warning
