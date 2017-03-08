@@ -180,7 +180,7 @@ class Vec3(np.ndarray):
 
         Returns:
           vector represenatation of `self` rotated `phi` degrees about
-            vector `axis`. Rotation is clockwise along axis direction.
+          vector `axis`. Rotation is clockwise along axis direction.
 
         Example:
           >>> v.rotate(u, 60)
@@ -240,7 +240,7 @@ class Vec3(np.ndarray):
 
         Returns:
           vector representation of affine transformation (dot product)
-            of `self` by `F`
+          of `self` by `F`
 
         Example:
           >>> u.transform(F)
@@ -510,7 +510,7 @@ class Fol(Vec3):
 
         Returns:
           representation of affine transformation (dot product) of `self`
-            by `F`
+          by `F`
 
         Example:
           >>> f.transform(F)
@@ -661,7 +661,7 @@ class Pair(object):
 
         Returns:
           representation of affine transformation (dot product) of `self`
-            by `F`
+          by `F`
 
         Example:
           >>> p.transform(F)
@@ -943,7 +943,7 @@ class Group(list):
     def var(self):
         """Spherical variance based on resultant length (Mardia 1972).
 
-        .. math:: \textup{var} = 1 - \frac{|R|}{n}
+        var = 1 - |R| / n
         """
         return 1 - abs(self.R) / len(self)
 
@@ -951,7 +951,7 @@ class Group(list):
     def totvar(self):
         """Return total variance based on projections onto resultant
 
-        .. math:: \textup{totvar} = \frac{\sum |x - R|^2}{2n}
+        totvar = sum(|x - R|^2) / 2n
 
         Note that difference between totvar and var is measure of difference
         between sample and population mean
@@ -962,7 +962,8 @@ class Group(list):
     def fisher_stats(self):
         """Fisher's statistics.
 
-        fisher_stats property gives dictionary with `k`, `csd` and `a95` keywords.
+        fisher_stats property gives dictionary with `k`, `csd` and
+        `a95` keywords.
         """
         stats = {'k': np.inf, 'a95': 180.0, 'csd': 0.0}
         N = len(self)
@@ -982,7 +983,7 @@ class Group(list):
     def rdegree(self):
         """Degree of preffered orientation of data in ``Group`` object.
 
-        .. math:: \textup{D} = \frac{2 * |R| - n}{n} * 100
+        D = 100 * (2 * |R| - n) / n
         """
         N = len(self)
         return 100 * (2 * abs(self.R) - N) / N
@@ -1625,8 +1626,8 @@ class FaultSet(PairSet):
 
         Args:
           method: 'probability' or 'classic'. Classic method assigns +/-1
-                  to individual positions, while 'probability' returns
-                  maximum likelihood estimate.
+          to individual positions, while 'probability' returns maximum
+          likelihood estimate.
         """
         def angmech(dc, fs):
             val = 0
@@ -1830,8 +1831,8 @@ class StereoGrid(object):
     defined function, which accept unit vector as argument.
 
     Args:
-      g: ``Group`` object of data to be used for desity calculation
-         If ommited, zero values grid is returned.
+      g: ``Group`` object of data to be used for desity calculation. If
+      ommited, zero values grid is returned.
 
     Keyword Args:
       npoints: approximate number of grid points Default 1800
