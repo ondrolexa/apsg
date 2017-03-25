@@ -40,7 +40,7 @@ test:
     - apsg.plotting
     - apsg.db
     - apsg.helpers
-    - apsg.strain
+    - apsg.tensors
     - apsg.shell
 
 build:
