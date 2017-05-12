@@ -30,6 +30,7 @@ class StereoNet(object):
     def __init__(self, *args, **kwargs):
         self.ticks = kwargs.pop('ticks', True)
         self.grid = kwargs.pop('grid', False)
+        self.gridlw = kwargs.pop('gridlw', 1)
         self.ncols = kwargs.pop('ncols', 1)
         self.grid_style = kwargs.pop('grid_style', 'k:')
         self.fol_plot = kwargs.pop('fol_plot', 'plane')
@@ -132,21 +133,21 @@ class StereoNet(object):
                 # Main cross
                 ax.plot([-1, 1, np.nan, 0, 0],
                         [0, 0, np.nan, -1, 1],
-                        self.grid_style, zorder=3)
+                        self.grid_style, zorder=3, lw=self.gridlw)
                 # Latitudes
                 lat_n = np.array([lat(0, phi) for phi in range(10, 90, 10)])
                 ax.plot(lat_n[:, 0, :].T, lat_n[:, 1, :].T,
-                        self.grid_style, zorder=3)
+                        self.grid_style, zorder=3, lw=self.gridlw)
                 lat_s = np.array([lat(180, phi) for phi in range(10, 90, 10)])
                 ax.plot(lat_s[:, 0, :].T, lat_s[:, 1, :].T,
-                        self.grid_style, zorder=3)
+                        self.grid_style, zorder=3, lw=self.gridlw)
                 # Longitudes
                 le = np.array([lon(90, theta) for theta in range(10, 90, 10)])
                 ax.plot(le[:, 0, :].T, le[:, 1, :].T,
-                        self.grid_style, zorder=3)
+                        self.grid_style, zorder=3, lw=self.gridlw)
                 lw = np.array([lon(270, theta) for theta in range(10, 90, 10)])
                 ax.plot(lw[:, 0, :].T, lw[:, 1, :].T,
-                        self.grid_style, zorder=3)
+                        self.grid_style, zorder=3, lw=self.gridlw)
 
             # ticks
             if self.ticks:
@@ -379,7 +380,7 @@ class StereoNet(object):
         """Plot tensor pricipal planes or directions"""
         getattr(self, self.fol_plot)(obj.eigenfols[0], label=obj.name + '-E1', **kwargs)
         getattr(self, self.fol_plot)(obj.eigenfols[1], label=obj.name + '-E2', **kwargs)
-        getattr(self, self.fol_plot)(obj.eigenfols[2], label=obj.name + '-E3', **kwargs)        
+        getattr(self, self.fol_plot)(obj.eigenfols[2], label=obj.name + '-E3', **kwargs)
 
     def contourf(self, obj, *args, **kwargs):
         clines = kwargs.pop('clines', True)
