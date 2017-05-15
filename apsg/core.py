@@ -1022,7 +1022,7 @@ class Group(list):
         E3(north-south)
 
         """
-        u, _, _ = np.linalg.svd(self.ortensor.cov)
+        _, _, u = np.linalg.svd(self.ortensor.cov)
         return self.transform(u).rotate(Lin(90, 0), 90)
 
     @property
@@ -1979,10 +1979,10 @@ class Cluster(object):
         self.maxclust = kwargs.get('maxclust', 2)
         self.distance = kwargs.get('angle', 40)
         self.criterion = kwargs.get('criterion', 'maxclust')
-        idx = fcluster(self.Z, getattr(self, self.criterion),
+        self.idx = fcluster(self.Z, getattr(self, self.criterion),
                        criterion=self.criterion)
-        self.groups = tuple(self.data[np.flatnonzero(idx == c)]
-                            for c in np.unique(idx))
+        self.groups = tuple(self.data[np.flatnonzero(self.idx == c)]
+                            for c in np.unique(self.idx))
 
     def linkage(self, **kwargs):
         """Do linkage of distance matrix
@@ -2005,14 +2005,17 @@ class Cluster(object):
         dendrogram(self.Z, **kwargs)
         plt.show()
 
-    def elbow(self, no_plot=False):
+    def elbow(self, no_plot=False, n=None):
         """Plot within groups variance vs. number of clusters.
         Elbow criterion could be used to determine number of clusters.
         """
         from scipy.cluster.hierarchy import fcluster
         import matplotlib.pyplot as plt
-        idx = fcluster(self.Z, len(self.data), criterion='maxclust')
-        nclust = list(np.arange(1, np.sqrt(idx.max() / 2) + 1, dtype=int))
+        if n is None:
+            idx = fcluster(self.Z, len(self.data), criterion='maxclust')
+            nclust = list(np.arange(1, np.sqrt(idx.max() / 2) + 1, dtype=int))
+        else:
+            nclust = list(np.arange(1, n + 1, dtype=int))
         within_grp_var = []
         mean_var = []
         for n in nclust:
