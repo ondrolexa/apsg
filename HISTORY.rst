@@ -113,7 +113,7 @@ Changes
 * ortensor MADp, MADo, MAD and kind properties added
 
 0.4 (04 Mar 2017)
------------------
+~~~~~~~~~~~~~~~~~
 * Density class renamed to StereoGrid
 * Fault sense under rotation fixed
 * FaultSet example provided
@@ -122,7 +122,7 @@ Changes
 * StereoNet instance has axtitle method to put text below stereonet
 
 0.4.1-2 (04 Mar 2017)
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 * bugfix
 
 0.4.3 (25 Mar 2017)
@@ -137,3 +137,8 @@ Changes
 * StereoNet.contourf method draw contour lines as well by default. Option clines controls it.
 * centered bug fixed
 * StereoNet allows simple animations. Add `animate=True` kwarg to plotting method and finally call StereoNet animate method.
+
+0.4.4 (25 Mar 2017)
+~~~~~~~~~~~~~~~~~~~
+* Group method centered improved
+* Group method halfspace added to reorient all vectors towards resultant halfspace
