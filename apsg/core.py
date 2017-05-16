@@ -909,32 +909,26 @@ class Group(list):
         calculated as resultant of centered data. Anyway for axial
         data orientation tensor analysis will give you right answer.
 
+        As axial summing is not commutative we use vectorial summing of
+        centered data for Fol and Lin
         """
-        # r = deepcopy(self[0])
-        # for v in self[1:]:
-        #     r += v
-        # return r
-        #
-        # As axial summing is not commutative we use vectorial
-        # summing of centered data
         if self.type == Vec3:
             r = Vec3(np.sum(self, axis=0))
         elif self.type == Lin:
-            u, _, _ = np.linalg.svd(self.ortensor.cov)
+            _, _, u = np.linalg.svd(self.ortensor.cov)
             # centered
             cntr = self.transform(u).rotate(Lin(90, 0), 90)
             # all points Z-ward
-            vals = self.centered.dd
-            cg = Group.from_array(*vals, typ=Lin)
-            r = Vec3(np.sum(cntr, axis=0)).aslin.rotate(Lin(90, 0), -90).transform(u.T)
+            cg = Group.from_array(*cntr.dd, typ=Vec3)
+            r = cg.R.aslin.rotate(Lin(90, 0), -90).transform(u.T)
         elif self.type == Fol:
-            u, _, _ = np.linalg.svd(self.ortensor.cov)
+            _, _, u = np.linalg.svd(self.ortensor.cov)
             # centered
             cntr = self.transform(u).rotate(Lin(90, 0), 90)
             # all points Z-ward
-            vals = getattr(self.centered, settings['notation'])
+            cg = Group.from_array(*cntr.aslin.dd, typ=Vec3)
             cg = Group.from_array(*vals, typ=Fol)
-            r = Vec3(np.sum(cntr, axis=0)).asfol.rotate(Lin(90, 0), -90).transform(u.T)
+            r = cg.R.asfol.rotate(Lin(90, 0), -90).transform(u.T)
         else:
             raise TypeError('Wrong argument type! Only Vec3, Lin and Fol!')
         return r
@@ -1024,6 +1018,26 @@ class Group(list):
         """
         _, _, u = np.linalg.svd(self.ortensor.cov)
         return self.transform(u).rotate(Lin(90, 0), 90)
+
+    @property
+    def halfspace(self):
+        """Change orientation of vectors in Group, so all have angle<=90 with
+        resultant.
+
+        """
+        v = self.asvec3
+        alldone = np.all(v.angle(v.R) <= 90)
+        while not alldone:
+            ang = v.angle(v.R)
+            for ix, do in enumerate(ang > 90):
+                if do:
+                    v[ix] = -v[ix]
+                alldone = np.all(v.angle(v.R) <= 90)
+        if self.type == Lin:
+          v = v.aslin
+        if self.type == Fol:
+          v = v.asfol
+        return v
 
     @property
     def uv(self):
