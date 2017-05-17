@@ -1963,9 +1963,8 @@ class Cluster(object):
         assert isinstance(d, Group), 'Only group could be clustered'
         self.data = Group(d.copy())
         self.maxclust = kwargs.get('maxclust', 2)
-        self.distance = kwargs.get('angle', 40)
+        self.angle = kwargs.get('angle', None)
         self.method = kwargs.get('method', 'average')
-        self.criterion = kwargs.get('criterion', 'maxclust')
         self.pdist = self.data.angle()
         self.linkage()
 
@@ -1974,11 +1973,14 @@ class Cluster(object):
             info = 'Already %d clusters created.' % len(self.groups)
         else:
             info = 'Not yet clustered. Use cluster() method.'
+        if self.angle is not None:
+            crit = 'Criterion: Angle\nSettings: angle=%.4g\n' % (self.angle)
+        else:
+            crit = 'Criterion: Maxclust\nSettings: muxclust=%.4g\n' % (self.maxclust)
         return 'Clustering object\n' + \
             'Number of data: %d\n' % len(self.data) + \
             'Linkage method: %s\n' % self.method + \
-            'Criterion: %s\nSettings: maxclust=%d, angle=%.4g\n' \
-            % (self.criterion, self.maxclust, self.distance) + info
+             crit + info
 
     def cluster(self, **kwargs):
         """Do clustering on data
@@ -1991,10 +1993,11 @@ class Cluster(object):
         """
         from scipy.cluster.hierarchy import fcluster
         self.maxclust = kwargs.get('maxclust', 2)
-        self.distance = kwargs.get('angle', 40)
-        self.criterion = kwargs.get('criterion', 'maxclust')
-        self.idx = fcluster(self.Z, getattr(self, self.criterion),
-                       criterion=self.criterion)
+        self.angle = kwargs.get('angle', None)
+        if self.angle is not None:
+            self.idx = fcluster(self.Z, self.angle, criterion='distance')
+        else:
+            self.idx = fcluster(self.Z, self.maxclust, criterion='maxclust')
         self.groups = tuple(self.data[np.flatnonzero(self.idx == c)]
                             for c in np.unique(self.idx))
 
