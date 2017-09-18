@@ -809,6 +809,15 @@ class Group(list):
         assert self.type is other.type, 'Only same type groups could be merged'
         return Group(list(self) + other, name=self.name)
 
+    def __pow__(self, other):
+        """Return all mutual cross products of two ``Group`` objects
+
+        """
+        if np.isscalar(other):
+            return pow(abs(self), other)
+        else:
+            return self.cross(other)
+
     def __setitem__(self, key, value):
         assert isinstance(value, self.type), \
             'item is not of type %s' % self.type.__name__
