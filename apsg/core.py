@@ -936,7 +936,6 @@ class Group(list):
             cntr = self.transform(u).rotate(Lin(90, 0), 90)
             # all points Z-ward
             cg = Group.from_array(*cntr.aslin.dd, typ=Vec3)
-            cg = Group.from_array(*vals, typ=Fol)
             r = cg.R.asfol.rotate(Lin(90, 0), -90).transform(u.T)
         else:
             raise TypeError('Wrong argument type! Only Vec3, Lin and Fol!')
