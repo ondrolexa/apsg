@@ -15,9 +15,9 @@ before_install:
 # install packages
 install:
   - deps='numpy matplotlib scipy'
-  - conda create -n apsg $deps "python=$TRAVIS_PYTHON_VERSION"
+  - conda create -n apsg $deps python=$TRAVIS_PYTHON_VERSION
   - source activate apsg
-  - conda build "python=$TRAVIS_PYTHON_VERSION" conda-build/apsg
+  - conda build --python $TRAVIS_PYTHON_VERSION conda-build/apsg
   - conda install apsg --use-local
 script:
   - python -m unittest discover
