@@ -2,7 +2,6 @@ language: python
 python:
   - "3.5"
   - "3.6"
-  - nightly
 # Setup anaconda
 before_install:
   - sudo apt-get update
@@ -18,7 +17,7 @@ install:
   - deps='numpy matplotlib scipy'
   - conda create -n apsg $deps "python=$TRAVIS_PYTHON_VERSION"
   - source activate apsg
-  - conda build conda-build/apsg
+  - conda build "python=$TRAVIS_PYTHON_VERSION" conda-build/apsg
   - conda install apsg --use-local
 script:
   - python -m unittest discover
