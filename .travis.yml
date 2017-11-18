@@ -10,8 +10,10 @@ before_install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
+  - conda config --set anaconda_upload yes
   - conda update -q conda
   - conda install conda-build
+  - conda install anaconda-client
 # install packages
 install:
   - deps='numpy matplotlib scipy'
@@ -21,6 +23,8 @@ install:
   - conda install apsg --use-local
 script:
   - python -m unittest discover
+after_success:
+  - if [ "$BRANCH" == "master" -a "$PULL_REQUEST" == "false" ] ; then anaconda -t $CONDA_UPLOAD_TOKEN upload --force -u cball $HOME/miniconda/conda-bld/linux-64/apsg*.tar.bz2; fi
 notifications:
   email:
     - lexa.ondrej@gmail.com
