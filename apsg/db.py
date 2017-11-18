@@ -35,11 +35,15 @@ class SDB(object):
         return 'PySDB database version: {}'.format(self.meta('version'))
 
     def meta(self, name):
+        if name == 'crs':
+            val = self.conn.execute("SELECT value FROM meta WHERE name='crs'").fetchall()
+            if not val:
+                name = 'proj4'
         return self.conn.execute("SELECT value FROM meta WHERE name='{}'".format(name)).fetchall()[0][0]
 
     def info(self, verbose=False):
         print('PySDB database version: {}'.format(self.meta('version')))
-        print('PySDB database projection: {}'.format(self.meta('proj4')))
+        print('PySDB database crs: {}'.format(self.meta('crs')))
         print('PySDB database version: {}'.format(self.meta('created')))
         print('PySDB database version: {}'.format(self.meta('updated')))
         print('Number of sites: {}'.format(len(self.sites())))
