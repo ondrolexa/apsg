@@ -11,11 +11,11 @@ before_install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
+  - conda install conda-build
 # install packages
 install:
   - conda env create -q -f environment.yml
   - source activate apsg
-  - conda install conda-build
   - conda build conda-build/apsg
   - conda install apsg --use-local
 script:
