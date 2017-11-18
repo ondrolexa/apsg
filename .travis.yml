@@ -1,7 +1,10 @@
 language: python
+
 python:
+  - "2.7"
   - "3.5"
   - "3.6"
+
 # Setup anaconda
 before_install:
   - sudo apt-get update
@@ -13,6 +16,7 @@ before_install:
   - conda update -q conda
   - conda install conda-build
   - conda install anaconda-client
+
 # install packages
 install:
   - deps='numpy matplotlib scipy'
@@ -20,10 +24,22 @@ install:
   - source activate apsg
   - conda build --python $TRAVIS_PYTHON_VERSION conda-build/apsg
   - conda install apsg --use-local
+
 script:
-  - python -m unittest discover
+  - python -m unittest discover -v
+
 after_success:
-  - if [ "$BRANCH" == "master" -a "$PULL_REQUEST" == "false" ] ; then anaconda -t $CONDA_UPLOAD_TOKEN upload --force $HOME/miniconda/conda-bld/linux-64/apsg*.tar.bz2; fi
+  - chmod +x conda-build/deploy_anaconda.sh
+  # if [ "$BRANCH" == "master" -a "$PULL_REQUEST" == "false" ] ; then anaconda -t $CONDA_UPLOAD_TOKEN upload --force $HOME/miniconda/conda-bld/linux-64/apsg*.tar.bz2; fi
+
+deploy:
+ # Deploy to Anaconda.org
+  - provider: script
+    script: conda-build/deploy_anaconda.sh
+    on:
+      tags: true
+    skip_cleanup: true
+
 notifications:
   email:
     - lexa.ondrej@gmail.com
