@@ -27,46 +27,32 @@ class Vec3(np.ndarray):
     """``Vec3`` is APSG base class to store 3D vectors derived from
     ``numpy.ndarray`` on which ``Lin`` and ``Fol`` classes are based.
 
+    ``Vec3`` support most of common vector algebra using following operators:
+      - ``+`` - vector addition
+      - ``-`` - vector subtraction
+      - ``*`` - dor product
+      - ``**`` - cross product
+      - ``abs`` - magnitude (length) of vector
+
+      See following methods and properties for additional operations.
+
     Args:
       a (array_like): Input data, that can be converted to an array.
-        This includes lists, tuples and ndarrays.
-
-    Attributes:
-      uv: Returns unit vector
-      type: Returns type of `self`
-      aslin: Convert `self` to ``Lin`` object.
-      asfol: Convert `self` to ``Fol`` object.
-      asvec3: Convert `self` to ``Vec3`` object.
-      V: Convert `self` to ``Vec3`` object. Alias
-      dd: Returns tuple of dip-direction and dip tuple
+        This includes lists, tuples and ndarrays. When more than
+        one argument is passed (i.e. `inc` is not None) a is interpreted
+        as dip direction of vector in degrees
+      inc (float): None or dip of vector in degrees
+      mag (float): magnitude of vector if `inc` is not None
 
     Returns:
-      vector created from `a`
+      ``Vec3`` object
 
     Example:
-      >>> v = Vec3([0.67, 1.2, 0.73])
-
+      >>> v = Vec3([1, 0.2, 1.6])
+      >>> v = Vec3(120, 60) # dip-dir and dip of unit length vector
+      >>> v = Vec3(120, 60, 3) # dip-dir, dip and magnitude of vector
     """
     def __new__(cls, a, inc=None, mag=1.0):
-        """Convert the input to ``Vec3``.
-
-        Args:
-          a (array_like): Input data, that can be converted to an array.
-            This includes lists, tuples and ndarrays. When more than
-            one argument is passed (i.e. `inc` is not None) a is interpreted
-            as dip direction of vector in degrees
-          inc (float): None or dip of vector in degrees
-          mag (float): magnitude of vector if `inc` is not None
-
-        Returns:
-          interpreted vector
-
-        Example:
-          >>> v = Vec3([1, 0.2, 1.6])
-          >>> v = Vec3(120, 60) # dip-dir and dip of unit length vector
-          >>> v = Vec3(120, 60) # dip-dir, dip and magnitude of vector
-
-        """
         if inc is None:
             obj = np.asarray(a).view(cls)
         else:
@@ -122,7 +108,7 @@ class Vec3(np.ndarray):
 
     @property
     def uv(self):
-        """Returns unit vector
+        """Normalize vector to unit length
 
         Returns:
           unit vector of `self`
@@ -139,7 +125,7 @@ class Vec3(np.ndarray):
         """Cross product of two vectors.
 
         Args:
-          other (``Vec3``): other vector
+          other: other ``Vec3`` vector
 
         Returns:
           cross product of `self` and `other`
@@ -156,7 +142,7 @@ class Vec3(np.ndarray):
         """Angle of two vectors in degrees.
 
         Args:
-          other (``Vec3``): other vector
+          other: other ``Vec3`` vector
 
         Returns:
           angle of `self` and `other` in degrees
@@ -207,8 +193,7 @@ class Vec3(np.ndarray):
            >> u.proj(v)
 
         Note:
-          To project on plane use: `u - u.proj(v)`, where `v` in plane
-            normal.
+          To project on plane use: `u - u.proj(v)`, where `v` is plane normal.
 
         """
         r = np.dot(self, other) * other / np.linalg.norm(other)
@@ -230,7 +215,7 @@ class Vec3(np.ndarray):
 
         """
         from .tensors import DefGrad
-        return DefGrad(np.outer(self + other,(self + other).T) / (1 + self * other) - np.eye(3))
+        return DefGrad(np.outer(self + other, (self + other).T) / (1 + self * other) - np.eye(3))
 
     def transform(self, F):
         """Returns affine transformation of vector `u` by matrix `F`.
@@ -294,8 +279,10 @@ class Vec3(np.ndarray):
 
     @property
     def dd(self):
-        """Return tuple of dip-direction and dip
+        """Returns dip-direction, dip tuple
 
+        Example:
+          >>> azi, inc = v.dd
         """
         n = self.uv
         dec = atan2d(n[1], n[0]) % 360
@@ -304,7 +291,8 @@ class Vec3(np.ndarray):
 
 
 class Lin(Vec3):
-    """Class to store linear feature.
+    """Class to store linear feature. It provides all ``Vec3`` methods
+    and properties but behave as axial vector.
 
     Args:
       azi: dip direction of linear feature in degrees
@@ -315,9 +303,6 @@ class Lin(Vec3):
 
     """
     def __new__(cls, azi, inc):
-        """Create linear feature.
-
-        """
         v = [cosd(azi) * cosd(inc),
              sind(azi) * cosd(inc),
              sind(inc)]
@@ -365,7 +350,7 @@ class Lin(Vec3):
         return not (self == other or self == -other)
 
     def angle(self, other):
-        """Returns angle of two linear features in degrees
+        """Returns angle (<90) of two linear features in degrees
 
         Example:
           >>> u.angle(v)
@@ -378,7 +363,7 @@ class Lin(Vec3):
             return acosd(np.clip(self.uv.dot(other.uv), -1, 1))
 
     def cross(self, other):
-        """Returns planar feature defined by two linear features
+        """Construct planar feature defined by two linear features
 
         Example:
           >>> l=Lin(120,10)
@@ -409,7 +394,8 @@ class Lin(Vec3):
 
 
 class Fol(Vec3):
-    """Class to store planar feature.
+    """Class to store planar feature. It provides all ``Vec3`` methods
+    and properties but plane normal behave as axial vector.
 
     Args:
       azi: dip direction of planar feature in degrees
@@ -540,7 +526,7 @@ class Fol(Vec3):
 
     @property
     def dv(self):
-        """Convert to dip vector ``Vec3`` object.
+        """Returns dip vector ``Vec3`` object.
 
         Example:
           >>> f = Fol(120,50)
@@ -552,7 +538,7 @@ class Fol(Vec3):
         return Lin(azi, inc).view(Vec3)
 
     def rake(self, rake):
-        """Convert to vector ``Vec3`` object with given rake.
+        """Returns vector ``Vec3`` object with given rake.
 
         Example:
           >>> f = Fol(120,50)
@@ -582,9 +568,6 @@ class Pair(object):
 
     """
     def __init__(self, fazi, finc, lazi, linc):
-        """Create ``Pair`` object.
-
-        """
         fol = Fol(fazi, finc)
         lin = Lin(lazi, linc)
         misfit = 90 - fol.angle(lin)
@@ -606,12 +589,16 @@ class Pair(object):
     def from_pair(cls, fol, lin):
         """Create ``Pair`` from ``Fol`` and ``Lin`` objects
 
+        Example:
+          >>> f = Fol(140, 30)
+          >>> l = Lin(110, 26)
+          >>> p = Pair.from_pair(f, l)
         """
         data = getattr(fol, settings['notation']) + lin.dd
         return cls(*data)
 
     def rotate(self, axis, phi):
-        """Rotates ``Pair`` by `phi` degrees about `axis`.
+        """Rotates ``Pair`` by angle `phi` about `axis`.
 
         Args:
           axis (``Vec3``): axis of rotation
@@ -705,7 +692,7 @@ class Fault(Pair):
 
     @classmethod
     def from_pair(cls, fol, lin, sense):
-        """Create ``Fault`` from ``Fol`` and ``Lin`` objects"""
+        """Create ``Fault`` with given sense from ``Fol`` and ``Lin`` objects"""
         data = getattr(fol, settings['notation']) + lin.dd + (sense,)
         return cls(*data)
 
@@ -784,6 +771,23 @@ class Fault(Pair):
 class Group(list):
     """Group is homogeneous group of ``Vec3``, ``Fol`` or ``Lin`` objects.
 
+    ``Group`` provide append and extend methods as well as list indexing
+    to get or set individual items. It also supports following operators:
+      - ``+`` - merge groups
+      - ``**`` - mutual cross product
+      - ``abs`` - array of magnitudes (lengths) of all objects
+
+    See following methods and properties for additional operations.
+
+    Args:
+      data (list): list of ``Vec3``, ``Fol`` or ``Lin`` objects
+      name (str): Name of group
+
+    Returns:
+      ``Group`` object
+
+    Example:
+      >>> g = Group([Lin(120, 20), Lin(151, 23), Lin(137, 28)])
     """
     def __init__(self, data, name='Default'):
         assert issubclass(type(data), list), 'Argument must be list of data.'
@@ -850,19 +854,42 @@ class Group(list):
 
     @property
     def data(self):
-        """List of objects in ``Group``."""
+        """Return list of objects in ``Group``."""
         return list(self)
 
     @classmethod
     def from_csv(cls, fname, typ=Lin, delimiter=',', acol=1, icol=2):
-        """Create ``Group`` object from csv file"""
+        """Create ``Group`` object from csv file
+
+        Args:
+          fname: csv filename
+
+        Keyword Args:
+          typ: Type of objects. Default ``Lin``
+          delimiter (str): values delimiter. Default ','
+          acol (int): azimuth column. Default 1
+          icol (int): inclination column. Default 2
+
+        Example:
+          >>> g = Group.from_csv('file.csv', typ=Fol, acol=2, icol=3)
+
+        """
         from os.path import basename
         dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
         return cls.from_array(dt[acol - 1], dt[icol - 1],
                               typ=typ, name=basename(fname))
 
     def to_csv(self, fname, delimiter=',', rounded=False):
-        """Save ``Group`` object to csv file"""
+        """Save ``Group`` object to csv file
+
+        Args:
+          fname: csv filename
+
+        Keyword Args:
+          delimiter (str): values delimiter. Default ','
+          rounded (bool): round values to integer. Default False
+
+        """
         if rounded:
             data = np.round(self.dd.T).astype(int)
         else:
@@ -877,7 +904,7 @@ class Group(list):
           azis: list or array of dip directions
           incs: list or array of inclinations
 
-        Kwargs:
+        Keyword Args:
           typ: type of data. ``Fol`` or ``Lin``
           name: name of ``Group`` object. Default is 'Default'
 
@@ -890,22 +917,22 @@ class Group(list):
 
     @property
     def aslin(self):
-        """Return all data in ``Group`` object as ``Lin``."""
+        """Return ``Group`` object with all data converted to ``Lin``."""
         return Group([e.aslin for e in self], name=self.name)
 
     @property
     def asfol(self):
-        """Return all data in ``Group`` object as ``Fol``."""
+        """Return ``Group`` object with all data converted to ``Fol``."""
         return Group([e.asfol for e in self], name=self.name)
 
     @property
     def asvec3(self):
-        """Return all data in ``Group`` object as ``Vec3``."""
+        """Return ``Group`` object with all data converted to ``Vec3``."""
         return Group([e.asvec3 for e in self], name=self.name)
 
     @property
     def V(self):
-        """Return all data in ``Group`` object as ``Vec3``."""
+        """Return ``Group`` object with all data converted to ``Vec3``."""
         return Group([e.asvec3 for e in self], name=self.name)
 
     @property
@@ -964,7 +991,7 @@ class Group(list):
     def fisher_stats(self):
         """Fisher's statistics.
 
-        fisher_stats property gives dictionary with `k`, `csd` and
+        fisher_stats property returns dictionary with `k`, `csd` and
         `a95` keywords.
         """
         stats = {'k': np.inf, 'a95': 180.0, 'csd': 0.0}
@@ -1042,9 +1069,9 @@ class Group(list):
                     v[ix] = -v[ix]
                 alldone = np.all(v.angle(v.R) <= 90)
         if self.type == Lin:
-          v = v.aslin
+            v = v.aslin
         if self.type == Fol:
-          v = v.asfol
+            v = v.asfol
         return v
 
     @property
@@ -1120,7 +1147,7 @@ class Group(list):
     def randn_lin(cls, N=100, mean=Lin(0, 90), sig=20, name='Default'):
         """Method to create ``Group`` of normaly distributed random ``Lin`` objects.
 
-        Args:
+        Keyword Args:
           N: number of objects to be generated
           mean: mean orientation given as ``Lin``. Default Lin(0, 90)
           sig: sigma of normal distribution. Default 20
@@ -1142,7 +1169,7 @@ class Group(list):
     def randn_fol(cls, N=100, mean=Fol(0, 0), sig=20, name='Default'):
         """Method to create ``Group`` of normaly distributed random ``Fol`` objects.
 
-        Args:
+        Keyword Args:
           N: number of objects to be generated
           mean: mean orientation given as ``Fol``. Default Fol(0, 0)
           sig: sigma of normal distribution. Default 20
@@ -1164,7 +1191,7 @@ class Group(list):
     def uniform_lin(cls, N=500, name='Default'):
         """Method to create ``Group`` of uniformly distributed ``Lin`` objects.
 
-        Args:
+        Keyword Args:
           N: approximate (maximum) number of objects to be generated
           name: name of dataset. Default is 'Default'
 
@@ -1196,7 +1223,7 @@ class Group(list):
     def uniform_fol(cls, N=500, name='Default'):
         """Method to create ``Group`` of uniformly distributed ``Fol`` objects.
 
-        Args:
+        Keyword Args:
           N: approximate (maximum) number of objects to be generated
           name: name of dataset. Default is 'Default'
 
@@ -1220,8 +1247,8 @@ class Group(list):
 
         http://people.sc.fsu.edu/~jburkardt/
 
-        Args:
-          N: number of objects to be generated
+        Keyword Args:
+          N: number of objects to be generated. Default 1000
           name: name of dataset. Default is 'Default'
 
         Example:
@@ -1243,7 +1270,7 @@ class Group(list):
         Based on ``Group.sfs_vec3`` method, but only half of sphere is used.
 
         Args:
-          N: number of objects to be generated
+          N: number of objects to be generated. Default 500
           name: name of dataset. Default is 'Default'
 
         Example:
@@ -1261,7 +1288,7 @@ class Group(list):
         Based on ``Group.sfs_vec3`` method, but only half of sphere is used.
 
         Args:
-          N: number of objects to be generated
+          N: number of objects to be generated. Default 500
           name: name of dataset. Default is 'Default'
 
         Example:
@@ -1281,7 +1308,7 @@ class Group(list):
         http://www.softimageblog.com/archives/115
 
         Args:
-          N: number of objects to be generated
+          N: number of objects to be generated.  Default 1000
           name: name of dataset. Default is 'Default'
 
         Example:
@@ -1304,7 +1331,7 @@ class Group(list):
         Based on ``Group.gss_vec3`` method, but only half of sphere is used.
 
         Args:
-          N: number of objects to be generated
+          N: number of objects to be generated. Default 500
           name: name of dataset. Default is 'Default'
 
         Example:
@@ -1322,7 +1349,7 @@ class Group(list):
         Based on ``Group.gss_vec3`` method, but only half of sphere is used.
 
         Args:
-          N: number of objects to be generated
+          N: number of objects to be generated.  Default 500
           name: name of dataset. Default is 'Default'
 
         Example:
@@ -1335,7 +1362,12 @@ class Group(list):
         return cls([d.asfol for d in g if d[2] > 0], name=name)
 
     def to_file(self, filename='group.dat'):
-        """Save group to file."""
+        """Save group to file.
+
+        Keyword Args:
+          filename (str): name of file to save. Default 'group.dat'
+
+        """
         import pickle
         with open(filename, 'wb') as file:
             pickle.dump(self, file)
@@ -1343,7 +1375,12 @@ class Group(list):
 
     @classmethod
     def from_file(cls, filename='group.dat'):
-        """Load group to file."""
+        """Load group to file.
+
+        Keyword Args:
+          filename (str): name of data file to load. Default 'group.dat'
+
+        """
         import pickle
         with open(filename, 'rb') as file:
             data = pickle.load(file)
@@ -1375,6 +1412,12 @@ class Group(list):
     def examples(cls, name=None):
         """Create ``Group`` from example datasets. Available names are returned
         when no name of example dataset is given as argument.
+
+        Keyword Args:
+          name: name of dataset
+
+        Example:
+          >>> g = Group.examples('B2')
 
         """
         azis = {}
@@ -1455,8 +1498,8 @@ class Group(list):
 
 
 class PairSet(list):
-    """PairSet class
-    PairSet is container of ``Pair`` objects
+    """PairSet is homogeneous group of ``Pair`` objects
+
     """
     def __init__(self, data, name='Default'):
         assert issubclass(type(data), list), 'Argument must be list of data.'
@@ -1566,7 +1609,7 @@ class PairSet(list):
 
 
 class FaultSet(PairSet):
-    """FaultSet is container of ``Fault`` objects
+    """FaultSet is homogeneous group of ``Fault`` objects
 
     """
     def __init__(self, data, name='Default'):
@@ -1676,7 +1719,15 @@ class FaultSet(PairSet):
 
     @classmethod
     def examples(cls, name=None):
-        """Sample datasets
+        """Create ``FaultSet`` from example datasets. Available names are returned
+        when no name of example dataset is given as argument.
+
+        Keyword Args:
+          name: name of dataset
+
+        Example:
+          >>> fs = FaultSet.examples('MELE')
+
         """
         fazis, fincs = {}, {}
         lazis, lincs = {}, {}
@@ -1726,9 +1777,29 @@ class FaultSet(PairSet):
 
 
 class Ortensor(object):
-    """Ortensor class
-    Ortensor is orientation tensor, which characterize data distribution
+    """Ortensor is orientation tensor, which characterize data distribution
     using eigenvalue method. See (Watson 1966, Scheidegger 1965).
+
+    See following methods and properties for additional operations.
+
+    Args:
+      data (``Group``): grou of ``Vec3``, ``Fol`` or ``Lin`` objects
+
+    Returns:
+      ``Ortensor`` object
+
+    Example:
+      >>> g = Group.examples('B2')
+      >>> ot = Ortensor(g)
+      >>> ot
+      Ortensor: B2 Kind: prolate
+      (E1:0.9825,E2:0.01039,E3:0.007101)
+      [[ 0.19780807 -0.13566589 -0.35878837]
+       [-0.13566589  0.10492993  0.25970594]
+       [-0.35878837  0.25970594  0.697262  ]]
+      >>> ot.eigenlins.data
+      [L:144/57, L:360/28, L:261/16]
+
     """
     def __init__(self, d, **kwargs):
         assert isinstance(d, Group), 'Only group could be passed to Ortensor'
@@ -1876,7 +1947,7 @@ class StereoGrid(object):
         import matplotlib.tri as tri
         # parse options
         grid = kwargs.get('grid', 'radial')
-        if  grid == 'radial':
+        if grid == 'radial':
             ctn_points = int(np.round(np.sqrt(kwargs.get('npoints', 1800)) / 0.280269786))
             # calc grid
             self.xg = 0
@@ -1963,9 +2034,9 @@ class StereoGrid(object):
 
 
 class Cluster(object):
-    """Clustering class
-    Hierarchical clustering using scipy.cluster routines. distance
-    matrix is calculated as angle beetween features, where Fol and
+    """Cluster provides hierarchical clustering using scipy.cluster routines.
+
+    Distance matrix is calculated as angle beetween features, where Fol and
     Lin use axial angles while Vec3 uses direction angles."""
     def __init__(self, d, **kwargs):
         assert isinstance(d, Group), 'Only group could be clustered'
@@ -1986,15 +2057,16 @@ class Cluster(object):
         else:
             crit = 'Criterion: Maxclust\nSettings: muxclust=%.4g\n' % (self.maxclust)
         return 'Clustering object\n' + \
-            'Number of data: %d\n' % len(self.data) + \
-            'Linkage method: %s\n' % self.method + \
-             crit + info
+               'Number of data: %d\n' % len(self.data) + \
+               'Linkage method: %s\n' % self.method + \
+               crit + info
 
     def cluster(self, **kwargs):
         """Do clustering on data
-        Result is stored as tuple of Groups in groups property.
 
-        Args:
+        Result is stored as tuple of Groups in ``groups`` property.
+
+        Keyword Args:
           criterion: The criterion to use in forming flat clusters
           maxclust: number of clusters
           angle: maximum cophenetic distance(angle) in clusters
@@ -2012,7 +2084,7 @@ class Cluster(object):
     def linkage(self, **kwargs):
         """Do linkage of distance matrix
 
-        Args:
+        Keyword Args:
           method: The linkage algorithm to use
         """
         from scipy.cluster.hierarchy import linkage
@@ -2023,7 +2095,7 @@ class Cluster(object):
     def dendrogram(self, **kwargs):
         """Show dendrogram
 
-        See ``scipy.cluster.hierarchy.dendrogram`` for possible options
+        See ``scipy.cluster.hierarchy.dendrogram`` for possible kwargs.
         """
         from scipy.cluster.hierarchy import dendrogram
         import matplotlib.pyplot as plt
@@ -2032,6 +2104,7 @@ class Cluster(object):
 
     def elbow(self, no_plot=False, n=None):
         """Plot within groups variance vs. number of clusters.
+
         Elbow criterion could be used to determine number of clusters.
         """
         from scipy.cluster.hierarchy import fcluster

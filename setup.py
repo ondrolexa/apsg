@@ -21,7 +21,7 @@ test_requirements = [
 
 setup(
     name='apsg',
-    version='0.4.4',
+    version='0.4.5',
     description='APSG - structural geology module for Python',
     long_description=readme + '\n\n' + history,
     author='Ondrej Lexa',

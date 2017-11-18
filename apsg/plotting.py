@@ -201,14 +201,14 @@ class StereoNet(object):
             dx, dy = -ax, -ay
         mag = np.hypot(dx, dy)
         u, v = sense * dx / mag, sense * dy / mag
-        return x, y, u ,v
+        return x, y, u, v
 
     def arrow(self, pos_lin, dir_lin=None, sense=1, **kwargs):
         animate = kwargs.pop('animate', False)
         x, y, u, v = self._arrow(pos_lin, dir_lin, sense=1,)
         a = self.fig.axes[self.active].quiver(x, y, u, v,
-                                          width=2, headwidth=5, zorder=6,
-                                          pivot='mid', units='dots')
+                                              width=2, headwidth=5, zorder=6,
+                                              pivot='mid', units='dots')
         p = self.fig.axes[self.active].scatter(x, y, color='k', s=5, zorder=6)
         if animate:
             return tuple(a + p)
@@ -355,8 +355,8 @@ class StereoNet(object):
         self.plane(obj.fol, *arg, **kwargs)
         x, y, u, v = self._arrow(obj.lin, sense=obj.sense)
         a = self.fig.axes[self.active].quiver(x, y, u, v,
-                                          width=2, headwidth=5, zorder=6,
-                                          pivot='mid', units='dots')
+                                              width=2, headwidth=5, zorder=6,
+                                              pivot='mid', units='dots')
         p = self.fig.axes[self.active].scatter(x, y, color='k', s=5, zorder=6)
         if animate:
             self.artists[-1] = self.artists[-1] + tuple(a + p)
@@ -369,8 +369,8 @@ class StereoNet(object):
         self.pole(obj.fol, *arg, **kwargs)
         x, y, u, v = self._arrow(obj.fvec.aslin, dir_lin=obj.lin, sense=obj.sense)
         a = self.fig.axes[self.active].quiver(x, y, u, v,
-                                          width=2, headwidth=5, zorder=6,
-                                          pivot='mid', units='dots')
+                                              width=2, headwidth=5, zorder=6,
+                                              pivot='mid', units='dots')
         p = self.fig.axes[self.active].scatter(x, y, color='k', s=5, zorder=6)
         if animate:
             self.artists[-1] = self.artists[-1] + tuple(a + p)
@@ -384,7 +384,6 @@ class StereoNet(object):
 
     def contourf(self, obj, *args, **kwargs):
         clines = kwargs.pop('clines', True)
-        animate = kwargs.get('animate', False)
         if 'cmap' not in kwargs and 'colors' not in kwargs:
                 kwargs['cmap'] = 'Greys'
         if 'zorder' not in kwargs:
