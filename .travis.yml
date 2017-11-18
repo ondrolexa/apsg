@@ -24,7 +24,7 @@ install:
 script:
   - python -m unittest discover
 after_success:
-  - if [ "$BRANCH" == "master" -a "$PULL_REQUEST" == "false" ] ; then anaconda -t $CONDA_UPLOAD_TOKEN upload --force -u ondrolexa $HOME/miniconda/conda-bld/linux-64/apsg*.tar.bz2; fi
+  - if [ "$BRANCH" == "master" -a "$PULL_REQUEST" == "false" ] ; then anaconda -t $CONDA_UPLOAD_TOKEN upload --force $HOME/miniconda/conda-bld/linux-64/apsg*.tar.bz2; fi
 notifications:
   email:
     - lexa.ondrej@gmail.com
