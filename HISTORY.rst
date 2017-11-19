@@ -142,3 +142,7 @@ Changes
 ~~~~~~~~~~~~~~~~~~~
 * Group method centered improved
 * Group method halfspace added to reorient all vectors towards resultant halfspace
+
+0.5.0 (19 Nov 2017)
+~~~~~~~~~~~~~~~~~~~
+* bux fix minor release

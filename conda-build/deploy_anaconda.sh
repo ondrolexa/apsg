@@ -1,8 +1,6 @@
 #!/bin/bash
 # this script uses the CONDA_UPLOAD_TOKEN env var
 
-rm -rf $HOME/miniconda/conda-bld
-
 echo "Converting conda package..."
 conda convert --platform osx-64 $HOME/miniconda/conda-bld/linux-64/apsg-*.tar.bz2 --output-dir $HOME/miniconda/conda-bld/
 conda convert --platform linux-32 $HOME/miniconda/conda-bld/linux-64/apsg-*.tar.bz2 --output-dir $HOME/miniconda/conda-bld/
