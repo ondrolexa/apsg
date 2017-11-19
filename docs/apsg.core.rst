@@ -5,5 +5,3 @@ core module
     :members:
     :undoc-members:
     :show-inheritance:
-    :special-members: __new__, __init__
-

@@ -8,6 +8,6 @@ APSG provides following modules:
 
    apsg.core
    apsg.plotting
-   apsg.strain
+   apsg.tensors
    apsg.db
 

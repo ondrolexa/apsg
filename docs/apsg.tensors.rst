@@ -1,7 +1,7 @@
-strain module
-=============
+tensors module
+==============
 
-.. automodule:: apsg.strain
+.. automodule:: apsg.tensors
     :members:
     :undoc-members:
     :show-inheritance:

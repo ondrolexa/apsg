@@ -10,7 +10,18 @@ __all__ = ['DefGrad', 'VelGrad', 'Stress']
 
 
 class DefGrad(np.ndarray):
-    """class to store deformation gradient tensor derived from numpy.ndarray
+    """``DefGrad`` store deformation gradient tensor derived from numpy.ndarray
+
+    Args:
+      a (3x3 array_like): Input data, that can be converted to an 3x3 2D array.
+        This includes lists, tuples and ndarrays.
+
+    Returns:
+      ``DefGrad`` object
+
+    Example:
+      >>> F = DefGrad(np.diag([2, 1, 0.5]))
+
     """
     def __new__(cls, array):
         # casting to our class
@@ -41,6 +52,16 @@ class DefGrad(np.ndarray):
 
     @classmethod
     def from_axis(cls, vector, theta):
+        """Return ``DefGrad`` representing rotation around axis.
+
+        Args:
+          vector: Rotation axis as ``Vec3`` like object
+          theta: Angle of rotation in degrees
+
+        Example:
+          >>> F = DefGrad.from_axis(Lin(120, 30), 45)
+
+        """
         x, y, z = vector.uv
         c, s = cosd(theta), sind(theta)
         xs, ys, zs = x * s, y * s, z * s
@@ -56,6 +77,20 @@ class DefGrad(np.ndarray):
                   xx=1, xy=0, xz=0,
                   yx=0, yy=1, yz=0,
                   zx=0, zy=0, zz=1):
+        """Return ``DefGrad`` tensor. Default is identity tensor.
+
+        Keyword Args:
+          xx, xy, xz, yx, yy, yz, zx, zy, zz: tensor components
+
+        Example:
+          >>> F = DefGrad.from_comp(xy=1, zy=-0.5)
+          >>> F
+          DefGrad:
+          [[ 1.   1.   0. ]
+           [ 0.   1.   0. ]
+           [ 0.  -0.5  1. ]]
+
+        """
         return cls([
             [xx, xy, xz],
             [yx, yy, yz],
@@ -68,14 +103,20 @@ class DefGrad(np.ndarray):
 
     @property
     def I(self):
+        """Returns inverse tensor"""
         return np.linalg.inv(self)
 
     def rotate(self, vector, theta):
+        """Rotate tensor around axis by angle theta
+
+        Using rotation matrix it returns F = R*F*R.T
+        """
         R = DefGrad.from_axis(vector, theta)
         return R * self * R.T
 
     @property
     def eigenvals(self):
+        """Return tuple of sorted eigenvalues"""
         _, vals, _ = np.linalg.svd(self)
         return tuple(vals)
 
@@ -96,6 +137,7 @@ class DefGrad(np.ndarray):
 
     @property
     def eigenvects(self):
+        """Return ```Group``` of principal eigenvectors as ``Vec3`` objects."""
         U, _, _ = np.linalg.svd(self)
         return Group([Vec3(U.T[0]),
                       Vec3(U.T[1]),
@@ -103,33 +145,49 @@ class DefGrad(np.ndarray):
 
     @property
     def eigenlins(self):
+        """Return ```Group``` of principal eigenvectors as ``Lin`` objects."""
         return self.eigenvects.aslin
 
     @property
     def eigenfols(self):
+        """Return ```Group``` of principal eigenvectors as ``Fol`` objects."""
         return self.eigenvects.asfol
 
     @property
     def R(self):
+        """Return rotation part of ``DefGrad`` from polar decomposition."""
         from scipy.linalg import polar
         R, _ = polar(self)
         return DefGrad(R)
 
     @property
     def U(self):
+        """Return stretching part of ``DefGrad`` from right polar decomposition."""
         from scipy.linalg import polar
-        _, U = polar(self)
+        _, U = polar(self, 'right')
         return DefGrad(U)
 
     @property
     def V(self):
+        """Return stretching part of ``DefGrad`` from left polar decomposition."""
         from scipy.linalg import polar
         _, V = polar(self, 'left')
         return DefGrad(V)
 
 
 class VelGrad(np.ndarray):
-    """class to store velocity gradient tensor derived from numpy.ndarray
+    """``VelGrad`` store velocity gradient tensor derived from numpy.ndarray
+
+    Args:
+      a (3x3 array_like): Input data, that can be converted to an 3x3 2D array.
+        This includes lists, tuples and ndarrays.
+
+    Returns:
+      ``VelGrad`` object
+
+    Example:
+      >>> L = VelGrad(np.diag([0.1, 0, -0.1]))
+
     """
     def __new__(cls, array):
         # casting to our class
@@ -158,18 +216,54 @@ class VelGrad(np.ndarray):
                   xx=0, xy=0, xz=0,
                   yx=0, yy=0, yz=0,
                   zx=0, zy=0, zz=0):
+        """Return ``VelGrad`` tensor. Default is zero tensor.
+
+        Keyword Args:
+          xx, xy, xz, yx, yy, yz, zx, zy, zz: tensor components
+
+        Example:
+          >>> L = VelGrad.from_comp(xx=0.1, zz=-0.1)
+          >>> L
+          VelGrad:
+          [[ 0.1  0.   0. ]
+           [ 0.   0.   0. ]
+           [ 0.   0.  -0.1]]
+
+        """
         return cls([
             [xx, xy, xz],
             [yx, yy, yz],
             [zx, zy, zz]])
 
     def defgrad(self, time=1):
+        """Return ``DefGrad`` accumulated after given time"""
         from scipy.linalg import expm
         return DefGrad(expm(self * time))
 
+    @property
+    def rate(self):
+        """Return rate of deformation tensor"""
+        return (self + self.T) / 2
+
+    @property
+    def spin(self):
+        """Return spin tensor"""
+        return (self - self.T) / 2
+
 
 class Stress(np.ndarray):
-    """class to store stress tensor derived from numpy.ndarray
+    """``Stress`` store stress tensor derived from numpy.ndarray
+
+    Args:
+      a (3x3 array_like): Input data, that can be converted to an 3x3 2D array.
+        This includes lists, tuples and ndarrays.
+
+    Returns:
+      ``Stress`` object
+
+    Example:
+      >>> S = Stress([[-8, 0, 0],[0, -5, 0],[0, 0, -1]])
+
     """
     def __new__(cls, array):
         # casting to our class
@@ -195,21 +289,38 @@ class Stress(np.ndarray):
         return not self == other
 
     @classmethod
-    def from_comp(cls,
-                  xx=0, xy=0, xz=0,
-                  yx=0, yy=0, yz=0,
-                  zx=0, zy=0, zz=0):
+    def from_comp(cls, xx=0, xy=0, xz=0, yy=0, yz=0, zz=0):
+        """Return ``Stress`` tensor. Default is zero tensor. Note that stress
+        tensor must be symmetrical.
+
+        Keyword Args:
+          xx, xy, xz, yy, yz, zz: tensor components
+
+        Example:
+          >>> S = Stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+          >>> S
+          Stress:
+          [[-5  1  0]
+           [ 1 -2  0]
+           [ 0  0 10]]
+
+        """
         return cls([
             [xx, xy, xz],
-            [yx, yy, yz],
-            [zx, zy, zz]])
+            [xy, yy, yz],
+            [xz, yz, zz]])
 
     def rotate(self, vector, theta):
+        """Rotate tensor around axis by angle theta
+
+        Using rotation matrix it returns S = R*S*R.T
+        """
         R = DefGrad.from_axis(vector, theta)
         return Stress(R * self * R.T)
 
     @property
     def eigenvals(self):
+        """Return tuple of eigenvalues"""
         vals, _ = np.linalg.eig(self)
         return tuple(vals)
 
@@ -249,6 +360,11 @@ class Stress(np.ndarray):
         Args:
           n: normal given as ``Vec3`` or ``Fol`` object
 
+        Example:
+          >>> S = Stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+          >>> S.cauchy(Fol(160, 30))
+          V(-2.520, 0.812, 8.660)
+
         """
         return Vec3(np.dot(self, n))
 
@@ -257,6 +373,11 @@ class Stress(np.ndarray):
 
         Args:
           n: normal given as ``Vec3`` or ``Fol`` object
+
+        Example:
+          S = Stress.from_comp(xx=-5, yy=-2, zz=10, xy=8)
+          >>> S.fault(Fol(160, 30))
+          F:160/30-141/29 +
 
         """
         return Fault.from_vecs(*self.stress_comp(n))
