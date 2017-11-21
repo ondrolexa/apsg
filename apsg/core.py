@@ -7,6 +7,7 @@ Python module to manipulate, analyze and visualize structural geology data
 from __future__ import division, print_function
 from copy import deepcopy
 import warnings
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,6 +15,7 @@ from .helpers import (sind, cosd, acosd, asind, atand, atan2d,
                       angle_metric, l2v, getldd)
 from .helpers import (_linear_inverse_kamb, _square_inverse_kamb,
                       _schmidt_count, _kamb_count, _exponential_kamb)
+from .helpers import KentDistribution
 
 
 __all__ = ['Vec3', 'Lin', 'Fol', 'Pair', 'Fault',
@@ -1361,7 +1363,30 @@ class Group(list):
         # no antipodal
         return cls([d.asfol for d in g if d[2] > 0], name=name)
 
+    @classmethod
+    def kent_lin(cls, pair, kappa=20, beta=0, N=500, name='Default'):
+        """Method to create ``Group`` of ``Lin`` objects distributed
+        according to Kent distribution (Kent, 1982) - The 5-parameter
+        Fisher–Bingham distribution.
+
+        Args:
+          pair: Pair object defining orientation of data
+          N: number of objects to be generated
+          kappa: concentration parameter. Default 20
+          beta: ellipticity 0 <= beta < kappa
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> p = Pair(135, 30, 90, 22)
+          >>> g = Group.kent_lin(p, 30, 5, 300)
+        """
+        assert issubclass(type(p), Pair), 'Argument must be Pair object.'
+        k = KentDistribution(p.lvec, p.fvec.cross(p.lvec), p.fvec, kappa, beta)
+        g = Group([Vec3(v).aslin for v in k.rvs(N)])
+        return g
+
     def to_file(self, filename='group.dat'):
+<<<<<<< Updated upstream
         """Save group to file.
 
         Keyword Args:
@@ -1369,12 +1394,16 @@ class Group(list):
 
         """
         import pickle
+=======
+        """Save group to file."""
+>>>>>>> Stashed changes
         with open(filename, 'wb') as file:
             pickle.dump(self, file)
         print('Group saved to file %s' % filename)
 
     @classmethod
     def from_file(cls, filename='group.dat'):
+<<<<<<< Updated upstream
         """Load group to file.
 
         Keyword Args:
@@ -1382,6 +1411,9 @@ class Group(list):
 
         """
         import pickle
+=======
+        """Load group to file."""
+>>>>>>> Stashed changes
         with open(filename, 'rb') as file:
             data = pickle.load(file)
         print('Group loaded from file %s' % filename)
