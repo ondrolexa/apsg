@@ -146,3 +146,7 @@ Changes
 0.5.0 (19 Nov 2017)
 ~~~~~~~~~~~~~~~~~~~
 * bux fix minor release
+
+0.5.1 (XX YYY 2017)
+~~~~~~~~~~~~~~~~~~~
+* Kent distribution implemented to generate samples

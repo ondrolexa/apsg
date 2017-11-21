@@ -1364,13 +1364,13 @@ class Group(list):
         return cls([d.asfol for d in g if d[2] > 0], name=name)
 
     @classmethod
-    def kent_lin(cls, pair, kappa=20, beta=0, N=500, name='Default'):
+    def kent_lin(cls, p, kappa=20, beta=0, N=500, name='Default'):
         """Method to create ``Group`` of ``Lin`` objects distributed
         according to Kent distribution (Kent, 1982) - The 5-parameter
         Fisher–Bingham distribution.
 
         Args:
-          pair: Pair object defining orientation of data
+          p: Pair object defining orientation of data
           N: number of objects to be generated
           kappa: concentration parameter. Default 20
           beta: ellipticity 0 <= beta < kappa
@@ -1386,34 +1386,24 @@ class Group(list):
         return g
 
     def to_file(self, filename='group.dat'):
-<<<<<<< Updated upstream
         """Save group to file.
 
         Keyword Args:
           filename (str): name of file to save. Default 'group.dat'
 
         """
-        import pickle
-=======
-        """Save group to file."""
->>>>>>> Stashed changes
         with open(filename, 'wb') as file:
             pickle.dump(self, file)
         print('Group saved to file %s' % filename)
 
     @classmethod
     def from_file(cls, filename='group.dat'):
-<<<<<<< Updated upstream
         """Load group to file.
 
         Keyword Args:
           filename (str): name of data file to load. Default 'group.dat'
 
         """
-        import pickle
-=======
-        """Load group to file."""
->>>>>>> Stashed changes
         with open(filename, 'rb') as file:
             data = pickle.load(file)
         print('Group loaded from file %s' % filename)
