@@ -68,6 +68,9 @@ class Vec3(np.ndarray):
             r = 'V({:.3f}, {:.3f}, {:.3f})'.format(*self)
         return r
 
+    def __str__(self):
+        return self.__repr__()
+
     def __mul__(self, other):
         """Returns dot product of two vectors.
 
@@ -803,7 +806,7 @@ class Group(list):
         self.name = name
 
     def __repr__(self):
-        return '%s\n%g %s' % (self.name, len(self), self.type.__name__)
+        return 'G:%g %s (%s)' % (len(self), self.type.__name__, self.name)
 
     def __abs__(self):
         # abs returns array of euclidean norms
@@ -1535,7 +1538,7 @@ class PairSet(list):
         self.name = name
 
     def __repr__(self):
-        return '%s\n%g %s' % (self.name, len(self), self.type.__name__)
+        return 'P:%g %s (%s)' % (len(self), self.type.__name__, self.name)
 
     def __add__(self, other):
         # merge sets
@@ -1644,6 +1647,9 @@ class FaultSet(PairSet):
         super(FaultSet, self).__init__(data)
         self.type = tp
         self.name = name
+
+    def __repr__(self):
+        return 'F:%g %s (%s)' % (len(self), self.type.__name__, self.name)
 
     @classmethod
     def from_csv(cls, fname, delimiter=',',
