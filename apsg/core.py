@@ -1367,6 +1367,28 @@ class Group(list):
         return cls([d.asfol for d in g if d[2] > 0], name=name)
 
     @classmethod
+    def fisher_lin(cls, N=100, mean=Lin(0, 90), kappa=20, name='Default'):
+        """Method to create ``Group`` of ``Lin`` objects distributed
+        according to Fisher distribution.
+
+        Args:
+          N: number of objects to be generated
+          kappa: precision parameter of the distribution. Default 20
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> g = Group.fisher_lin(100, mean=Lin(120,10))
+        """
+        ta, td = mean.dd
+        L = np.exp(-2 * kappa)
+        a = np.random.random(N) * (1 - L) + L
+        fac = np.sqrt(-np.log(a) / (2 * kappa))
+        inc = 90 - 2 * asind(fac)
+        azi = 360 * np.random.random(N)
+        g = cls.from_array(azi, inc, typ=Lin, name=name)
+        return g.rotate(Lin(ta + 90, 0), 90 - td)
+
+    @classmethod
     def kent_lin(cls, p, kappa=20, beta=0, N=500, name='Default'):
         """Method to create ``Group`` of ``Lin`` objects distributed
         according to Kent distribution (Kent, 1982) - The 5-parameter

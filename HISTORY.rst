@@ -149,6 +149,10 @@ Changes
 
 0.5.1 (05 Dec 2017)
 ~~~~~~~~~~~~~~~~~~~
-* Kent distribution implemented to generate samples
+* Kent distribution sampling added
 * Automatic kernel density estimate for contouring
 * UserWarnings fix
+
+0.5.2 (XX YYY 2017)
+~~~~~~~~~~~~~~~~~~~
+* Fischer distribution sampling added

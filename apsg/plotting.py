@@ -64,11 +64,11 @@ class StereoNet(object):
                 elif typ is Fault:
                     self.fault(arg, **kwargs)
                 elif typ is StereoGrid:
-                    if 'legend' in kwargs:
-                        del(kwargs['legend'])
+                    kwargs.pop('label', None)
+                    kwargs.pop('legend', None)
                     self.contourf(arg, legend=True, **kwargs)
                 elif typ in [Ortensor, DefGrad, Stress]:
-                    del(kwargs['label'])
+                    kwargs.pop('label', None)
                     self.tensor(arg, **kwargs)
                 else:
                     raise TypeError('%s argument is not supported!' % typ)
