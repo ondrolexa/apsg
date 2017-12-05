@@ -9,8 +9,7 @@ source:
   git_rev: {{ data.get('version') }}
 
 build:
-  # noarch_python: True
-  # preserve_egg_dir: True
+  noarch: python
   entry_points:
     - iapsg=apsg.shell:main
 
