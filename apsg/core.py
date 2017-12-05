@@ -2002,7 +2002,7 @@ class StereoGrid(object):
 
         """
         # parse options
-        sigma = kwargs.get('sigma', 1)
+        sigma = kwargs.get('sigma', 1./len(dcdata)**(-1./7))
         weighted = kwargs.get('weighted', False)
         method = kwargs.get('method', 'exp_kamb')
         trim = kwargs.get('trim', False)

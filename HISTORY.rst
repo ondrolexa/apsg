@@ -147,6 +147,8 @@ Changes
 ~~~~~~~~~~~~~~~~~~~
 * bux fix minor release
 
-0.5.1 (XX YYY 2017)
+0.5.1 (05 Dec 2017)
 ~~~~~~~~~~~~~~~~~~~
 * Kent distribution implemented to generate samples
+* Automatic kernel density estimate for contouring
+* UserWarnings fix

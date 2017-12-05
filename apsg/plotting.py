@@ -384,6 +384,7 @@ class StereoNet(object):
 
     def contourf(self, obj, *args, **kwargs):
         clines = kwargs.pop('clines', True)
+        legend = kwargs.pop('legend', False)
         if 'cmap' not in kwargs and 'colors' not in kwargs:
                 kwargs['cmap'] = 'Greys'
         if 'zorder' not in kwargs:
@@ -392,6 +393,9 @@ class StereoNet(object):
             d = obj
         else:
             d = StereoGrid(obj, **kwargs)
+            # clean kwargs from StereoGrid keywords
+            for att in ['grid','npoints', 'sigma', 'weighted', 'method', 'trim']:
+                kwargs.pop(att, None)
         if 'levels' not in kwargs:
             if len(args) == 0:
                 args = (6,)
@@ -404,11 +408,12 @@ class StereoNet(object):
         cs = self.fig.axes[self.active].tricontourf(d.triang, d.values, *args, **kwargs)
         if clines:
             self.fig.axes[self.active].tricontour(d.triang, d.values, *args, colors='k')
-        if kwargs.get('legend', False):
+        if legend:
             self._add_colorbar(cs)
         self.draw()
 
     def contour(self, obj, *args, **kwargs):
+        legend = kwargs.pop('legend', False)
         if 'cmap' not in kwargs and 'colors' not in kwargs:
                 kwargs['cmap'] = 'Greys'
         if 'zorder' not in kwargs:
@@ -417,6 +422,9 @@ class StereoNet(object):
             d = obj
         else:
             d = StereoGrid(obj, **kwargs)
+            # clean kwargs from StereoGrid keywords
+            for att in ['grid','npoints', 'sigma', 'weighted', 'method', 'trim']:
+                kwargs.pop(att, None)
         if 'levels' not in kwargs:
             if len(args) == 0:
                 args = (6,)
@@ -427,7 +435,7 @@ class StereoNet(object):
                 levels[-1] += 1e-8
                 args = (levels,)
         cs = self.fig.axes[self.active].tricontour(d.triang, d.values, *args, **kwargs)
-        if kwargs.get('legend', False):
+        if legend:
             self._add_colorbar(cs)
         self.draw()
 
