@@ -12,6 +12,7 @@ build:
   noarch: python
   entry_points:
     - iapsg=apsg.shell:main
+  script: python setup.py install
 
   # If this is a new build for the same version, increment the build
   # number. If you do not include this key, it defaults to 0.
@@ -42,9 +43,6 @@ test:
     - apsg.tensors
     - apsg.shell
 
-build:
-  script: python setup.py install
-
 about:
   home: http://ondrolexa.github.io/apsg
   license: BSD License
@@ -53,3 +51,6 @@ about:
   doc_url: https://apsg.readthedocs.org
   dev_url: https://github.com/ondrolexa/apsg
 
+extra:
+  maintainers:
+   - Ondrej Lexa <lexa.ondrej@gmail.com>

@@ -36,9 +36,10 @@ deploy:
  # Deploy to Anaconda.org
   - provider: script
     script: conda-build/deploy_anaconda.sh
+    skip_cleanup: true
     on:
       tags: true
-    skip_cleanup: true
+      condition: $TRAVIS_PYTHON_VERSION = 2.7
 
 notifications:
   email:
