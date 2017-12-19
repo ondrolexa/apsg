@@ -60,12 +60,13 @@ Ready to contribute? Here's how to set up `apsg` for local development.
 1. Fork the `apsg` repo on GitHub.
 2. Clone your fork locally::
 
-    $ git clone git@github.com:ondrolexa/apsg.git
+    $ git clone git@github.com:<your-username>/apsg.git
 
-3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
+3. Install your local copy and activate the virtual environment via `pipenv`.
 
-    $ mkvirtualenv apsg
     $ cd apsg/
+    $ pipenv install
+    $ pipenv shell
     $ python setup.py develop
 
 4. Create a branch for local development::
