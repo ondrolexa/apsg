@@ -12,6 +12,9 @@ scipy = "*"
 
 
 [dev-packages]
+"flake8" = "*"
+tox = "*"
+
 
 [requires]
 python_version = "3.6"
