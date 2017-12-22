@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-test_apsg
-----------------------------------
 
-Tests for `apsg` module.
 """
-from apsg import *
+Tests for ``apsg`` module.
+"""
+
 import unittest
+
+import numpy as np
+
+from apsg import *
 
 
 class TestApsg(unittest.TestCase):
