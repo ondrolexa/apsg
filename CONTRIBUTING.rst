@@ -58,16 +58,17 @@ Get Started!
 Ready to contribute? Here's how to set up `apsg` for local development.
 
 1. Fork the `apsg` repo on GitHub.
-2. Clone your fork locally::
+2. Clone your fork locally with SSH or HTTPS::
 
     $ git clone git@github.com:<your-username>/apsg.git
+
+    $ git clone https://github.com/<your-username>/apsg.git
 
 3. Install your local copy and activate the virtual environment via `pipenv`.
 
     $ cd apsg/
-    $ pipenv install
     $ pipenv shell
-    $ python setup.py develop
+    $ pipenv install --dev
 
 4. Create a branch for local development::
 

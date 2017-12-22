@@ -12,8 +12,10 @@ scipy = "*"
 
 
 [dev-packages]
+
 "flake8" = "*"
 tox = "*"
+sphinx = "*"
 
 
 [requires]
