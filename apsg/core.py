@@ -222,11 +222,14 @@ class Vec3(np.ndarray):
         from .tensors import DefGrad
         return DefGrad(np.outer(self + other, (self + other).T) / (1 + self * other) - np.eye(3))
 
-    def transform(self, F):
+    def transform(self, F, **kwargs):
         """Returns affine transformation of vector `u` by matrix `F`.
 
         Args:
           F (``DefGrad`` or ``numpy.array``): transformation matrix
+
+        Keyword Args:
+          norm: normalize transformed vectors. True or False. Dafault True
 
         Returns:
           vector representation of affine transformation (dot product)
@@ -236,7 +239,11 @@ class Vec3(np.ndarray):
           >>> u.transform(F)
 
         """
-        return np.dot(F, self).view(type(self))
+        if kwargs.get('norm', True):
+            res = np.dot(F, self).view(type(self)).uv
+        else:
+            res = np.dot(F, self).view(type(self))
+        return res
 
     @property
     def aslin(self):
@@ -493,11 +500,14 @@ class Fol(Vec3):
         """Axial dot product"""
         return abs(np.dot(self, other))
 
-    def transform(self, F):
+    def transform(self, F, **kwargs):
         """Returns affine transformation of planar feature by matrix `F`.
 
         Args:
           F (``DefGrad`` or ``numpy.array``): transformation matrix
+
+        Keyword Args:
+          norm: normalize transformed vectors. True or False. Dafault True
 
         Returns:
           representation of affine transformation (dot product) of `self`
@@ -507,7 +517,11 @@ class Fol(Vec3):
           >>> f.transform(F)
 
         """
-        return np.dot(self, np.linalg.inv(F)).view(type(self))
+        if kwargs.get('norm', True):
+            res = np.dot(self, np.linalg.inv(F)).view(type(self)).uv
+        else:
+            res = np.dot(self, np.linalg.inv(F)).view(type(self))
+        return res
 
     @property
     def dd(self):
@@ -645,11 +659,14 @@ class Pair(object):
         """
         return self.fvec**self.lvec
 
-    def transform(self, F):
+    def transform(self, F, **kwargs):
         """Returns affine transformation of ``Pair`` by matrix `F`.
 
         Args:
           F (``DefGrad`` or ``numpy.array``): transformation matrix
+
+        Keyword Args:
+          norm: normalize transformed vectors. True or False. Dafault True
 
         Returns:
           representation of affine transformation (dot product) of `self`
@@ -660,8 +677,12 @@ class Pair(object):
 
         """
         t = deepcopy(self)
-        t.lvec = np.dot(F, t.lvec).view(Vec3)
-        t.fvec = np.dot(t.fvec, np.linalg.inv(F)).view(Vec3)
+        if kwargs.get('norm', True):
+            t.lvec = np.dot(F, t.lvec).view(Vec3).uv
+            t.fvec = np.dot(t.fvec, np.linalg.inv(F)).view(Vec3).uv
+        else:
+            t.lvec = np.dot(F, t.lvec).view(Vec3)
+            t.fvec = np.dot(t.fvec, np.linalg.inv(F)).view(Vec3)
         return t
 
 
@@ -1129,14 +1150,17 @@ class Group(list):
         """Return hierarchical clustering ``Cluster`` of ``Group``."""
         return Cluster(self)
 
-    def transform(self, F):
+    def transform(self, F, **kwargs):
         """Return affine transformation of ``Group`` by matrix 'F'.
 
         Args:
           F: Transformation matrix. Should be array-like value e.g. ``DefGrad``
 
+        Keyword Args:
+          norm: normalize transformed vectors. True or False. Dafault True
+
         """
-        return Group([e.transform(F) for e in self], name=self.name)
+        return Group([e.transform(F, **kwargs) for e in self], name=self.name)
 
     @property
     def dd(self):

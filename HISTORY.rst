@@ -156,3 +156,4 @@ Changes
 0.5.2 (XX YYY 2017)
 ~~~~~~~~~~~~~~~~~~~
 * Fischer distribution sampling added
+* transform method has norm kwarg to normalize tranformed vectors

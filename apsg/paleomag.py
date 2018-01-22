@@ -13,15 +13,21 @@ __all__ = ['Core']
 class Core(object):
     """``Core`` store palemomagnetic analysis data
 
-    Args:
-      a (3x3 array_like): Input data, that can be converted to an 3x3 2D array.
-        This includes lists, tuples and ndarrays.
+    Keyword Args:
+      info:
+      name:
+      filename:
+      alpha:
+      beta:
+      bedding:
+      volume:
+      date:
+      steps:
+      a95:
+      vectors:
 
     Returns:
-      ``DefGrad`` object
-
-    Example:
-      >>> F = DefGrad(np.diag([2, 1, 0.5]))
+      ``Core`` object instance
 
     """
     def __init__(self, **kwargs):
@@ -80,7 +86,7 @@ class Core(object):
 
     @property
     def MAG(self):
-        return [abs(v) / self.volume for v in self.Vc]
+        return [abs(v) / self.volume for v in self._vectors]
 
     @property
     def V(self):
