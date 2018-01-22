@@ -229,7 +229,7 @@ class Vec3(np.ndarray):
           F (``DefGrad`` or ``numpy.array``): transformation matrix
 
         Keyword Args:
-          norm: normalize transformed vectors. True or False. Dafault True
+          norm: normalize transformed vectors. True or False. Dafault False
 
         Returns:
           vector representation of affine transformation (dot product)
@@ -239,7 +239,7 @@ class Vec3(np.ndarray):
           >>> u.transform(F)
 
         """
-        if kwargs.get('norm', True):
+        if kwargs.get('norm', False):
             res = np.dot(F, self).view(type(self)).uv
         else:
             res = np.dot(F, self).view(type(self))
@@ -507,7 +507,7 @@ class Fol(Vec3):
           F (``DefGrad`` or ``numpy.array``): transformation matrix
 
         Keyword Args:
-          norm: normalize transformed vectors. True or False. Dafault True
+          norm: normalize transformed vectors. True or False. Dafault False
 
         Returns:
           representation of affine transformation (dot product) of `self`
@@ -517,7 +517,7 @@ class Fol(Vec3):
           >>> f.transform(F)
 
         """
-        if kwargs.get('norm', True):
+        if kwargs.get('norm', False):
             res = np.dot(self, np.linalg.inv(F)).view(type(self)).uv
         else:
             res = np.dot(self, np.linalg.inv(F)).view(type(self))
@@ -666,7 +666,7 @@ class Pair(object):
           F (``DefGrad`` or ``numpy.array``): transformation matrix
 
         Keyword Args:
-          norm: normalize transformed vectors. True or False. Dafault True
+          norm: normalize transformed vectors. True or False. Dafault False
 
         Returns:
           representation of affine transformation (dot product) of `self`
@@ -677,7 +677,7 @@ class Pair(object):
 
         """
         t = deepcopy(self)
-        if kwargs.get('norm', True):
+        if kwargs.get('norm', False):
             t.lvec = np.dot(F, t.lvec).view(Vec3).uv
             t.fvec = np.dot(t.fvec, np.linalg.inv(F)).view(Vec3).uv
         else:
@@ -1157,7 +1157,7 @@ class Group(list):
           F: Transformation matrix. Should be array-like value e.g. ``DefGrad``
 
         Keyword Args:
-          norm: normalize transformed vectors. True or False. Dafault True
+          norm: normalize transformed vectors. True or False. Dafault False
 
         """
         return Group([e.transform(F, **kwargs) for e in self], name=self.name)
