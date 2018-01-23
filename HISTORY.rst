@@ -157,3 +157,4 @@ Changes
 ~~~~~~~~~~~~~~~~~~~
 * Fischer distribution sampling added
 * transform method has norm kwarg to normalize tranformed vectors
+* axisangle property to calculate axis and angle from rotation matrix
