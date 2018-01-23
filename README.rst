@@ -1,6 +1,6 @@
-==============================================
-APSG - python module for structural geologists
-==============================================
+===============================================
+APSG - python package for structural geologists
+===============================================
 
 .. image:: https://badge.fury.io/py/apsg.svg
     :target: http://badge.fury.io/py/apsg
