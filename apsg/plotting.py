@@ -19,14 +19,23 @@ from .core import (Vec3, Fol, Lin, Pair, Fault,
 from .helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 from .tensors import DefGrad, Stress
 
+
 __all__ = ['StereoNet', 'FabricPlot', 'rose']
+
 
 # ignore matplotlib deprecation warnings
 warnings.filterwarnings('ignore', category=mcb.mplDeprecation)
 
 
 class StereoNet(object):
-    """StereoNet class for Schmidt net plotting"""
+
+    """
+    StereoNet class for Schmidt net plotting.
+
+    A stereonet is a lower hemisphere graph on to which a variety of geological
+    data can be plotted.
+    """
+
     def __init__(self, *args, **kwargs):
         self.ticks = kwargs.pop('ticks', True)
         self.grid = kwargs.pop('grid', False)
@@ -478,7 +487,11 @@ class StereoNet(object):
 
 
 class FabricPlot(object):
-    """FabricPlot class for triangular fabric plot (Vollmer, 1989)"""
+
+    """
+    Represents the triangular fabric plot (Vollmer, 1989).
+    """
+
     def __init__(self, *args, **kwargs):
         self.fig = plt.figure()
         self.fig.canvas.set_window_title('Vollmer fabric plot')
@@ -518,28 +531,37 @@ class FabricPlot(object):
             # plt.pause(0.001)
 
     def new(self):
-        """Re-initialize StereoNet figure"""
+        """
+        Re-initialize ``StereoNet`` figure.
+        """
+
         if self.closed:
             self.__init__()
 
     def cla(self):
-        """Clear projection"""
-        # now ok
+        """
+        Clear projection.
+        """
+
         self.fig.clear()
         self.ax = self.fig.add_subplot(111)
         self.ax.format_coord = self.format_coord
         self.ax.set_aspect('equal')
         self.ax.set_autoscale_on(False)
+
         triangle = np.c_[self.A, self.B, self.C, self.A]
         n = 10
         tick_size = 0.2
         margin = 0.05
+
         self.ax.set_axis_off()
+
         plt.axis([self.A[0] - margin, self.B[0] + margin,
                   self.C[1] - margin, self.A[1] + margin])
 
-        # Projection triangle
+        # projection triangle
         bg = plt.Polygon([self.A, self.B, self.C], color='w', edgecolor=None)
+
         self.ax.add_patch(bg)
         self.ax.plot(triangle[0], triangle[1], 'k', lw=2)
         self.ax.text(self.A[0] - 0.02, self.A[1], 'P',
@@ -576,32 +598,42 @@ class FabricPlot(object):
             y = self.A[1] * (1 - r) + self.C[1] * r
             y = np.vstack((y, y + tick[1]))
             self.ax.plot(x, y, 'k', lw=1)
+
         self.ax.set_title('Fabric plot')
+
         self.draw()
 
     def triplot(self, a, b, c, *args, **kwargs):
+
         a = np.asarray(a)
         b = np.asarray(b)
         c = np.asarray(c)
         x = (a * self.A[0] + b * self.B[0] + c * self.C[0]) / (a + b + c)
         y = (a * self.A[1] + b * self.B[1] + c * self.C[1]) / (a + b + c)
+
         self.ax.plot(x, y, *args, **kwargs)
+
         self.draw()
 
     def plot(self, obj, *args, **kwargs):
         if type(obj) is Group:
             obj = obj.ortensor
+
         if type(obj) is not Ortensor:
             raise TypeError('%s argument is not supported!' % type(obj))
+
         # ensure point plot
         if 'ls' not in kwargs and 'linestyle' not in kwargs:
             kwargs['linestyle'] = 'none'
+
         if not args:
             if 'marker' not in kwargs:
                 kwargs['marker'] = 'o'
         if 'label' not in kwargs:
             kwargs['label'] = obj.name
+
         self.triplot(obj.P, obj.G, obj.R, *args, **kwargs)
+
         self.draw()
 
     def show(self):
@@ -624,7 +656,11 @@ class FabricPlot(object):
 
 
 class StereoNetJK(object):
-    """API to Joe Kington mplstereonet"""
+
+    """
+    API to Joe Kington mplstereonet.
+    """
+
     def __init__(self, *args, **kwargs):
         _, self._ax = mplstereonet.subplots(*args, **kwargs)
         self._grid_state = False
@@ -745,9 +781,13 @@ class StereoNetJK(object):
 
 
 def rose(a, bins=13, **kwargs):
-    """Plot rose diagram"""
+    """
+    Plot the rose diagram.
+    """
+
     if isinstance(a, Group):
         a, _ = a.dd
+
     fig = plt.figure()
     ax = fig.add_subplot(111, polar=True)
     ax.set_theta_direction(-1)
