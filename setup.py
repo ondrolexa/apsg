@@ -4,9 +4,6 @@
 
 from setuptools import setup, find_packages
 
-from apsg import __version__, __author__, __email__
-
-
 with open('README.rst') as readme_file:
     readme = readme_file.read()
 
@@ -25,11 +22,11 @@ test_requirements = [
 
 setup(
     name='apsg',
-    version=__version__,
+    version='0.5.1',
     description='APSG - structural geology module for Python',
     long_description=readme + '\n\n' + history,
-    author=__author__,
-    author_email=__email__,
+    author='Ondrej Lexa',
+    author_email='lexa.ondrej@gmail.com',
     url='https://github.com/ondrolexa/apsg',
     packages=find_packages(),
     install_requires=requirements,
