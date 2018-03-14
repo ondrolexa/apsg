@@ -41,6 +41,7 @@ class Core(object):
         self.date = kwargs.get('date', datetime.now())
         self.steps = kwargs.get('steps', [])
         self.a95 = kwargs.get('a95', [])
+        self.comments = kwargs.get('comments', [])
         self._vectors = kwargs.get('vectors', [])
 
     def __repr__(self):
