@@ -10,11 +10,13 @@ name = "pypi"
 numpy = ">=1.8"
 matplotlib = ">=1.2"
 scipy = "*"
+pytest = "*"
+"e1839a8" = {editable = true, path = "."}
 
 
 [dev-packages]
 
-flake8 = "*"
+"flake8" = "*"
 tox = "*"
 sphinx = "*"
 pytest = "*"
