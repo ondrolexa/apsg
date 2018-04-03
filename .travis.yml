@@ -28,7 +28,8 @@ install:
   - conda install apsg --use-local
 
 script:
-  - python -m unittest discover -v
+#  - python -m unittest discover -v
+  - pytest -v
 
 after_success:
   - chmod +x ci/deploy_anaconda.sh
