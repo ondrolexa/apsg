@@ -29,6 +29,7 @@ install:
 
 script:
 #  - python -m unittest discover -v
+  - source activate apsg
   - pytest -v
 
 after_success:
