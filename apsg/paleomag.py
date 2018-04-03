@@ -75,7 +75,7 @@ class Core(object):
         data['volume'] = float(vline[50:63].strip().split('=')[1].strip('m3'))
         data['date'] = datetime.strptime(vline[63:], '%m-%d-%Y %H:%M')
         data['steps'] = [ln[:4].strip() for ln in d[3:-1]]
-        data['comments'] = [ln[73:-1].strip() for ln in d[3:-1]]
+        data['comments'] = [ln[73:].strip() for ln in d[3:-1]]
         data['a95'] = [float(ln[fields['a95']].strip()) for ln in d[3:-1]]
         data['vectors'] = []
         for ln in d[3:-1]:
@@ -84,6 +84,36 @@ class Core(object):
             z = float(ln[fields['Zc']].strip())
             data['vectors'].append(Vec3((x, y, z)))
         return cls(**data)
+
+    def write_pmd(self, filename=None):
+        """Save ``Core`` instance to PMD file.
+
+        Args:
+          filename: PMD file
+
+        Example:
+          >>> d.write_pmd(filename='K509A2-1.PMD')
+
+        """
+        import os
+        if filename is None:
+            filename = sefl.filename
+        ff = os.path.splitext(os.path.basename(filename))[0][:8]
+        dt = self.date.strftime("%m-%d-%Y %H:%M")
+        infoln = '{:<8}  α={:<7.1f} ß={:< 7.1f} s={:<7.1f} d={:< 7.1f} v={:7.1E}m3  {}'
+        ln0 = infoln.format(ff, self.alpha, self.beta, *self.bedding.rhr, self.volume, dt)
+        headln = 'STEP  Xc [Am²]  Yc [Am²]  Zc [Am²]  MAG[A/m]   Dg    Ig    Ds    Is  a95 '
+        tb = []
+        for ix, step in enumerate(self.steps):
+            ln = '{:<4} {: 9.2E} {: 9.2E} {: 9.2E} {: 9.2E} {: >5.1f} {: >5.1f} {: >5.1f} {: >5.1f} {: >4.1f} {}'.format(step, *self.V[ix], self.MAG[ix], *self.geo[ix].dd, *self.geo[ix].dd, self.a95[ix], self.comments[ix])
+            tb.append(ln)
+        with open(filename, 'w') as pmdfile:
+            print(self.info, file=pmdfile)
+            print(ln0, file=pmdfile)
+            print(headln, file=pmdfile)
+            for ln in tb:
+                print(ln, file=pmdfile)
+            print(bytearray.fromhex("1a").decode(), file=pmdfile)
 
     @property
     def MAG(self):
