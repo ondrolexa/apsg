@@ -13,7 +13,7 @@ before_install:
     - source ci/install-miniconda.sh
     - conda update -q conda
     # Install dependencies
-    - conda install python=$TRAVIS_PYTHON_VERSION pip pytest
+    - conda install python=$TRAVIS_PYTHON_VERSION pip
     - conda install conda-build
     - conda install anaconda-client
     # Show installed pkg information for postmortem diagnostic
@@ -21,7 +21,7 @@ before_install:
 
 # install packages
 install:
-  - deps='numpy matplotlib scipy'
+  - deps='numpy matplotlib scipy pytest'
   - conda create -n apsg $deps python=$TRAVIS_PYTHON_VERSION
   - source activate apsg
   - conda build --python $TRAVIS_PYTHON_VERSION conda-build/apsg
