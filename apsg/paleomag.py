@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import division, print_function
-
+import os
 import numpy as np
 from datetime import datetime
 from .core import Vec3, Fol, Lin, Group
@@ -19,11 +19,13 @@ class Core(object):
       filename:
       alpha:
       beta:
-      bedding:
+      strike:
+      dip:
       volume:
       date:
       steps:
       a95:
+      comments:
       vectors:
 
     Returns:
@@ -36,7 +38,8 @@ class Core(object):
         self.filename = kwargs.get('filename', None)
         self.alpha = kwargs.get('alpha', 0)
         self.beta = kwargs.get('beta', 0)
-        self.bedding = kwargs.get('bedding', Fol(0, 0))
+        self.strike = kwargs.get('strike', 90)
+        self.dip = kwargs.get('dip', 0)
         self.volume = kwargs.get('volume', 'Default')
         self.date = kwargs.get('date', datetime.now())
         self.steps = kwargs.get('steps', [])
@@ -69,9 +72,8 @@ class Core(object):
         data['name'] = vline[:10].strip()
         data['alpha'] = float(vline[10:20].strip().split('=')[1])
         data['beta'] = float(vline[20:30].strip().split('=')[1])
-        strike = float(vline[40:50].strip().split('=')[1])
-        dip = float(vline[40:50].strip().split('=')[1])
-        data['bedding'] = Fol(strike + 90, dip)
+        data['strike'] = float(vline[30:40].strip().split('=')[1])
+        data['dip'] = float(vline[40:50].strip().split('=')[1])
         data['volume'] = float(vline[50:63].strip().split('=')[1].strip('m3'))
         data['date'] = datetime.strptime(vline[63:], '%m-%d-%Y %H:%M')
         data['steps'] = [ln[:4].strip() for ln in d[3:-1]]
@@ -95,25 +97,35 @@ class Core(object):
           >>> d.write_pmd(filename='K509A2-1.PMD')
 
         """
-        import os
         if filename is None:
-            filename = sefl.filename
+            filename = self.filename
         ff = os.path.splitext(os.path.basename(filename))[0][:8]
         dt = self.date.strftime("%m-%d-%Y %H:%M")
-        infoln = '{:<8}  α={:<7.1f} ß={:< 7.1f} s={:<7.1f} d={:< 7.1f} v={:7.1E}m3  {}'
+        infoln = '{:<8}  α={:5.1f}   ß={:5.1f}   s={:5.1f}   d={:5.1f}   v={:7.1E}m3  {}'
         ln0 = infoln.format(ff, self.alpha, self.beta, *self.bedding.rhr, self.volume, dt)
         headln = 'STEP  Xc [Am²]  Yc [Am²]  Zc [Am²]  MAG[A/m]   Dg    Ig    Ds    Is  a95 '
-        tb = []
-        for ix, step in enumerate(self.steps):
-            ln = '{:<4} {: 9.2E} {: 9.2E} {: 9.2E} {: 9.2E} {: >5.1f} {: >5.1f} {: >5.1f} {: >5.1f} {: >4.1f} {}'.format(step, *self.V[ix], self.MAG[ix], *self.geo[ix].dd, *self.geo[ix].dd, self.a95[ix], self.comments[ix])
-            tb.append(ln)
         with open(filename, 'w') as pmdfile:
             print(self.info, file=pmdfile)
             print(ln0, file=pmdfile)
             print(headln, file=pmdfile)
-            for ln in tb:
+            for ln in self.datatable:
                 print(ln, file=pmdfile)
             print(bytearray.fromhex("1a").decode(), file=pmdfile)
+
+    @property
+    def datatable(self):
+        tb = []
+        for step, V, MAG, geo, strata, a95, comments in zip(self.steps, self.V, self.MAG, self.geo, self.strata, self.a95, self.comments):
+            ln = '{:<4} {: 9.2E} {: 9.2E} {: 9.2E} {: 9.2E} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:4.1f} {}'.format(step, *V, MAG, *geo.dd, *strata.dd, a95, comments)
+            tb.append(ln)
+        return tb
+
+    def show(self):
+        ff = os.path.splitext(os.path.basename(self.filename))[0][:8]
+        dt = self.date.strftime("%m-%d-%Y %H:%M")
+        print('{:<8}  α={:5.1f}   ß={:5.1f}   s={:5.1f}   d={:5.1f}   v={:7.1E}m3  {}'.format(ff, self.alpha, self.beta, *self.bedding.rhr, self.volume, dt))
+        print('STEP  Xc [Am²]  Yc [Am²]  Zc [Am²]  MAG[A/m]   Dg    Ig    Ds    Is  a95 ')
+        print('\n'.join(self.datatable))
 
     @property
     def MAG(self):
@@ -121,8 +133,19 @@ class Core(object):
 
     @property
     def V(self):
+        "Returns `Group` of vectors in sample (or core) coordinates system"
         return Group(self._vectors, name=self.name)
 
     @property
     def geo(self):
-        return Group(self._vectors, name=self.name).rotate(Lin(0, 90), self.alpha).rotate(Lin(self.alpha + 90, 0), self.beta)
+        "Returns `Group` of vectors in in-situ coordinates system"
+        return self.V.rotate(Lin(0, 90), self.alpha).rotate(Lin(self.alpha + 90, 0), self.beta)
+
+    @property
+    def strata(self):
+        "Returns `Group` of vectors in tilt‐corrected coordinates system"
+        return self.geo.rotate(Lin(self.strike, 0), -self.dip)
+
+    @property
+    def bedding(self):
+        return Fol(self.strike + 90, self.dip)
