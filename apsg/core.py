@@ -24,7 +24,7 @@ from .helpers import (
 
 
 __all__ = [
-    'Vec3', 'Lin', 'Fol', 'Pair', 'Fault', 'Group','PairSet', 'FaultSet',
+    'Vec3', 'Lin', 'Fol', 'Pair', 'Fault', 'Group', 'PairSet', 'FaultSet',
     'Ortensor', 'Cluster', 'StereoGrid', 'G'
 ]
 
