@@ -75,7 +75,7 @@ class Core(object):
         data['strike'] = float(vline[30:40].strip().split('=')[1])
         data['dip'] = float(vline[40:50].strip().split('=')[1])
         data['volume'] = float(vline[50:63].strip().split('=')[1].strip('m3'))
-        data['date'] = datetime.strptime(vline[63:], '%m-%d-%Y %H:%M')
+        data['date'] = datetime.strptime(vline[63:].strip(), '%m-%d-%Y %H:%M')
         data['steps'] = [ln[:4].strip() for ln in d[3:-1]]
         data['comments'] = [ln[73:].strip() for ln in d[3:-1]]
         data['a95'] = [float(ln[fields['a95']].strip()) for ln in d[3:-1]]
