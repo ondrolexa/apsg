@@ -4,7 +4,7 @@ from __future__ import division
 import numpy as np
 from scipy.stats import uniform
 from scipy.special import gamma as gamma_fun
-from scipy.special import iv as modified_bessel_2ndkind 
+from scipy.special import iv as modified_bessel_2ndkind
 from scipy.special import ivp as modified_bessel_2ndkind_derivative
 from scipy.stats import norm as gauss
 
@@ -88,6 +88,12 @@ def rodrigues(k, v, theta):
 
 def angle_metric(u, v):
     return np.degrees(np.arccos(np.abs(np.dot(u, v))))
+
+
+def eformat(f, prec):
+    s = '{:e}'.format(f)
+    m, e = s.split('e')
+    return '{:.{:d}f}E{:0d}'.format(float(m), prec, int(e))
 
 # ----------------------------------------------------------------
 # Following counting routines are from Joe Kington's mplstereonet
@@ -174,10 +180,11 @@ class KentDistribution(object):
 
     @staticmethod
     def create_matrix_H(theta, phi):
-        return np.array([[np.cos(theta), -np.sin(theta), 0.0], [np.sin(theta)
-                        * np.cos(phi), np.cos(theta) * np.cos(phi), -np.sin(phi)],
-                        [np.sin(theta) * np.sin(phi), np.cos(theta) * np.sin(phi),
-                        np.cos(phi)]])
+        return np.array([[np.cos(theta), -np.sin(theta), 0.0],
+                        [np.sin(theta) * np.cos(phi),
+                         np.cos(theta) * np.cos(phi), -np.sin(phi)],
+                        [np.sin(theta) * np.sin(phi),
+                         np.cos(theta) * np.sin(phi), np.cos(phi)]])
 
     @staticmethod
     def create_matrix_Ht(theta, phi):
@@ -235,7 +242,7 @@ class KentDistribution(object):
 
         (self.theta, self.phi, self.psi) = \
             KentDistribution.gammas_to_spherical_coordinates(self.gamma1,
-                self.gamma2)
+                                                             self.gamma2)
 
         for gamma in (gamma1, gamma2, gamma3):
             assert len(gamma) == 3
@@ -250,7 +257,7 @@ class KentDistribution(object):
     def normalize(self, cache=dict(), return_num_iterations=False):
         """
         Returns the normalization constant of the Kent distribution.
-        The proportional error may be expected not to be greater than 
+        The proportional error may be expected not to be greater than
         1E-11.
         """
 
@@ -320,11 +327,11 @@ class KentDistribution(object):
         Returns the pdf of the kent distribution for 3D vectors that
         are stored in xs which must be an array of N x 3 or N x M x 3
         N x M x P x 3 etc.
-        
+
         The code below shows how points in the pdf can be evaluated. An integral is
         calculated using random points on the sphere to determine wether the pdf is
         properly normalized.
-        
+
         >>> from numpy.random import seed
         >>> from scipy.stats import norm as gauss
         >>> seed(666)
@@ -358,7 +365,7 @@ class KentDistribution(object):
 
     def pdf_prime(self, xs, normalize=True):
         """
-        Returns the derivative of the pdf with respect to kappa and beta. 
+        Returns the derivative of the pdf with respect to kappa and beta.
         """
 
         return self.pdf(xs, normalize) * self.log_pdf_prime(xs,
@@ -473,7 +480,7 @@ class KentDistribution(object):
 
     def rvs(self, n_samples=None):
         """
-        Returns random samples from the Kent distribution by rejection sampling. 
+        Returns random samples from the Kent distribution by rejection sampling.
         May become inefficient for large kappas.
 
         The returned random samples are 3D unit vectors.

@@ -5,7 +5,7 @@ import os
 import numpy as np
 from datetime import datetime
 from .core import Vec3, Fol, Lin, Group
-from .helpers import sind, cosd
+from .helpers import sind, cosd, eformat
 
 __all__ = ['Core']
 
@@ -101,16 +101,16 @@ class Core(object):
             filename = self.filename
         ff = os.path.splitext(os.path.basename(filename))[0][:8]
         dt = self.date.strftime("%m-%d-%Y %H:%M")
-        infoln = '{:<8}  α={:5.1f}   ß={:5.1f}   s={:5.1f}   d={:5.1f}   v={:7.1E}m3  {}'
-        ln0 = infoln.format(ff, self.alpha, self.beta, *self.bedding.rhr, self.volume, dt)
-        headln = 'STEP  Xc [Am²]  Yc [Am²]  Zc [Am²]  MAG[A/m]   Dg    Ig    Ds    Is  a95 '
+        infoln = '{:<8}  a={:5.1f}   b={:5.1f}   s={:5.1f}   d={:5.1f}   v={}m3  {}'
+        ln0 = infoln.format(ff, self.alpha, self.beta, *self.bedding.rhr, eformat(self.volume, 2), dt)
+        headln = 'STEP  Xc [Am2]  Yc [Am2]  Zc [Am2]  MAG[A/m]   Dg    Ig    Ds    Is  a95 '
         with open(filename, 'w') as pmdfile:
-            print(self.info, file=pmdfile)
-            print(ln0, file=pmdfile)
-            print(headln, file=pmdfile)
+            print(self.info, file=pmdfile, end='\r\n')
+            print(ln0, file=pmdfile, end='\r\n')
+            print(headln, file=pmdfile, end='\r\n')
             for ln in self.datatable:
-                print(ln, file=pmdfile)
-            print(bytearray.fromhex("1a").decode(), file=pmdfile)
+                print(ln, file=pmdfile, end='\r\n')
+            pmdfile.write(chr(26))
 
     @property
     def datatable(self):
@@ -123,7 +123,7 @@ class Core(object):
     def show(self):
         ff = os.path.splitext(os.path.basename(self.filename))[0][:8]
         dt = self.date.strftime("%m-%d-%Y %H:%M")
-        print('{:<8}  α={:5.1f}   ß={:5.1f}   s={:5.1f}   d={:5.1f}   v={:7.1E}m3  {}'.format(ff, self.alpha, self.beta, *self.bedding.rhr, self.volume, dt))
+        print('{:<8}  α={:5.1f}   ß={:5.1f}   s={:5.1f}   d={:5.1f}   v=m3  {}'.format(ff, self.alpha, self.beta, *self.bedding.rhr, eformat(self.volume, 2), dt))
         print('STEP  Xc [Am²]  Yc [Am²]  Zc [Am²]  MAG[A/m]   Dg    Ig    Ds    Is  a95 ')
         print('\n'.join(self.datatable))
 
