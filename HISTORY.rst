@@ -153,8 +153,10 @@ Changes
 * Automatic kernel density estimate for contouring
 * UserWarnings fix
 
-0.5.2 (XX YYY 2017)
+0.5.2 (XX YYY 2018)
 ~~~~~~~~~~~~~~~~~~~
 * Fischer distribution sampling added
 * transform method has norm kwarg to normalize tranformed vectors
 * axisangle property to calculate axis and angle from rotation matrix
+* StereoNet arc method added
+* Vec3 and Group upper and flip properties implemented
