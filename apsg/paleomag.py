@@ -2,9 +2,12 @@
 
 from __future__ import division, print_function
 import os
+import re
 import numpy as np
+import matplotlib.pyplot as plt
 from datetime import datetime
 from .core import Vec3, Fol, Lin, Group
+from .plotting import StereoNet
 from .helpers import sind, cosd, eformat
 
 __all__ = ['Core']
@@ -49,6 +52,20 @@ class Core(object):
 
     def __repr__(self):
         return 'Core:' + str(self.name)
+
+    def __getitem__(self, key):
+        """Group fancy indexing"""
+        if isinstance(key, int):
+            key = self.steps[key]
+        if isinstance(key, str):
+            if key in self.steps:
+                ix = self.steps.index(key)
+                return dict(step=key, V=self._vectors[ix], MAG=self.MAG[ix], geo=self.geo[ix],
+                            strata=self.strata[ix], a95=self.a95[ix], comment=self.comments[ix])
+            else:
+                raise(Exception('Key {} not found.'.format(key)))
+        else:
+            raise(Exception('Key of {} not supported.'.format(type(key))))
 
     @classmethod
     def from_pmd(cls, filename):
@@ -115,7 +132,7 @@ class Core(object):
     @property
     def datatable(self):
         tb = []
-        for step, V, MAG, geo, strata, a95, comments in zip(self.steps, self.V, self.MAG, self.geo, self.strata, self.a95, self.comments):
+        for step, V, MAG, geo, strata, a95, comments in zip(self.steps, self._vectors, self.MAG, self.geo, self.strata, self.a95, self.comments):
             ln = '{:<4} {: 9.2E} {: 9.2E} {: 9.2E} {: 9.2E} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:4.1f} {}'.format(step, *V, MAG, *geo.dd, *strata.dd, a95, comments)
             tb.append(ln)
         return tb
@@ -129,12 +146,17 @@ class Core(object):
 
     @property
     def MAG(self):
-        return [abs(v) / self.volume for v in self._vectors]
+        return np.array([abs(v) / self.volume for v in self._vectors])
+
+    @property
+    def nsteps(self):
+        pp = [re.findall('\d+', s) for s in self.steps]
+        return np.array([int(s[0]) if s else 0 for s in pp])
 
     @property
     def V(self):
         "Returns `Group` of vectors in sample (or core) coordinates system"
-        return Group(self._vectors, name=self.name)
+        return Group([v / self.volume for v in self._vectors], name=self.name)
 
     @property
     def geo(self):
@@ -149,3 +171,49 @@ class Core(object):
     @property
     def bedding(self):
         return Fol(self.strike + 90, self.dip)
+
+    def zijderveld_plot(self):
+        N, E, Z = np.array(self.geo).T
+        N0, E0, Z0 = self.geo[0]
+        fig, ax = plt.subplots(facecolor='white')
+        ax.plot(E0, N0, 'b+', markersize=14)
+        ax.plot(E, N, 'bo-', label='Horizontal')
+        ax.plot(E0, -Z0, 'g+', markersize=14)
+        ax.plot(E, -Z, 'go-', label='Vertical')
+        mx = np.max(np.abs(ax.axis()))
+        ax.axis([-mx, mx, -mx, mx])
+        ax.set_aspect(1)
+        ax.spines['left'].set_position('zero')
+        ax.spines['right'].set_position('zero')
+        ax.spines['bottom'].set_position('zero')
+        ax.spines['top'].set_position('zero')
+        t = ax.xaxis.get_ticklocs()
+        ax.xaxis.set_ticklabels([])
+        ax.yaxis.set_ticklabels([])
+        #t = ax.xaxis.get_ticklocs()
+        #ax.xaxis.set_ticks(t[t != 0])
+        #t = ax.yaxis.get_ticklocs()
+        #ax.yaxis.set_ticks(t[t != 0])
+        ax.set_title(self.name, loc='left')
+        plt.legend(title='Unit={:g}A/m'.format(t[1]-t[0]))
+        plt.tight_layout()
+        plt.show()
+
+    def demag_plot(self):
+        fig, ax = plt.subplots()
+        ax.plot(self.nsteps[0], self.MAG[0]/self.MAG.max(), 'k+', markersize=14)
+        ax.plot(self.nsteps, self.MAG/self.MAG.max(), 'ko-')
+        ax.set_ylabel('M/Mmax')
+        ax.set_title('{} (Mmax = {:g})'.format(self.name, self.MAG.max()))
+        ax.set_ylim(0,1.02)
+        ax.yaxis.grid()
+        plt.show()
+
+    def stereo_plot(self, **kwargs):
+        title = kwargs.pop('title', self.name)
+        s = StereoNet(title=title, **kwargs)
+        for f1, f2 in zip(self.geo[:-1], self.geo[1:]):
+            s.arc(f1, f2, 'k:')
+        s.vector(self.geo[0], 'k+', markersize=14)
+        s.vector(self.geo, 'ko')
+        s.show()

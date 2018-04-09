@@ -128,6 +128,22 @@ class Vec3(np.ndarray):
         return type(self)
 
     @property
+    def upper(self):
+        """
+        Returns True if z-coordinate is negative.
+        """
+
+        return np.sign(self[2]) < 0
+
+    @property
+    def flip(self):
+        """
+        Invert z-coordinate of vector.
+        """
+
+        return Vec3((self[0], self[1], -self[2]))
+
+    @property
     def uv(self):
         """
         Normalizes the vector to unit length.
@@ -958,6 +974,19 @@ class Group(list):
 
     def copy(self):
         return Group(super(Group, self).copy(), self.name)
+
+    @property
+    def upper(self):
+        """
+        Returns boolean array of z-coordinate negative test
+        """
+
+        return np.asarray([e.upper for e in self])
+
+    @property
+    def flip(self):
+        """Return ``Group`` object with inverted z-coordinate."""
+        return Group([e.flip for e in self], name=self.name)
 
     @property
     def data(self):

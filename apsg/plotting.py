@@ -222,6 +222,21 @@ class StereoNet(object):
         if animate:
             return tuple(a + p)
 
+    def arc(self, f1, f2, *args, **kwargs):
+        assert issubclass(type(f1), Vec3) and issubclass(type(f2), Vec3), \
+            'Arguments mustr be subclass of Vec3'
+        animate = kwargs.pop('animate', False)
+        p = f1**f2
+        a = f1.angle(f2)
+        st = np.linspace(0, a, 2 + int(2*a))
+        rv = [f1.rotate(p, ang) for ang in st]
+        lh = [vv.flip if vv.upper else vv for vv in rv]
+        x, y = l2xy(*np.array([v.dd for v in lh]).T)
+        h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
+        if animate:
+            self.artists.append(tuple(h))
+        self.draw()
+
     def plane(self, obj, *args, **kwargs):
         assert obj.type is Fol, 'Only Fol instance could be plotted as plane.'
         if 'zorder' not in kwargs:
@@ -277,9 +292,9 @@ class StereoNet(object):
             if 'marker' not in kwargs:
                 kwargs['marker'] = 'o'
         if isinstance(obj, Group):
-            uh = np.atleast_2d(np.asarray(obj))[:, 2] < 0
+            uh = obj.upper
             if np.any(~uh):
-                x, y = l2xy(*obj[~uh].asvec3.aslin.dd)
+                x, y = l2xy(*obj[~uh].dd)
                 h1 = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
                 kwargs.pop('label', None)
                 cc = h1[0].get_color()
@@ -287,18 +302,19 @@ class StereoNet(object):
                 cc = None
             if np.any(uh):
                 kwargs['fillstyle'] = 'none'
-                x, y = l2xy(*obj[uh].asvec3.aslin.dd)
-                h2 = self.fig.axes[self.active].plot(-x, -y, *args, **kwargs)
+                x, y = l2xy(*obj[uh].flip.dd)
+                h2 = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
                 if cc is not None:
                     h2[0].set_color(cc)
             if animate:
                 self.artists.append(tuple(h1 + h2))
         else:
-            x, y = l2xy(*obj.asvec3.aslin.dd)
-            if obj[2] < 0:
+            if obj.upper:
                 kwargs['fillstyle'] = 'none'
-                h = self.fig.axes[self.active].plot(-x, -y, *args, **kwargs)
+                x, y = l2xy(*obj.flip.dd)
+                h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
             else:
+                x, y = l2xy(*obj.dd)
                 h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
             if animate:
                 self.artists.append(tuple(h))
@@ -596,7 +612,7 @@ class FabricPlot(object):
             x = self.A[0] * (1 - r) + self.C[0] * r
             x = np.vstack((x, x + tick[0]))
             y = self.A[1] * (1 - r) + self.C[1] * r
-            y = np.vstack((y, y + tick[1]))
+            y = np.vstsettingsack((y, y + tick[1]))
             self.ax.plot(x, y, 'k', lw=1)
 
         self.ax.set_title('Fabric plot')
