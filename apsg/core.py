@@ -973,7 +973,7 @@ class Group(list):
             self.append(item)
 
     def copy(self):
-        return Group(super(Group, self).copy(), self.name)
+        return Group(deepcopy(self.data), name=self.name)
 
     @property
     def upper(self):
