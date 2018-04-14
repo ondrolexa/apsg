@@ -23,11 +23,13 @@ from .helpers import (
 )
 
 
-__all__ = [
+__all__ = (
     'Vec3', 'Lin', 'Fol', 'Pair', 'Fault', 'Group', 'PairSet', 'FaultSet',
-    'Ortensor', 'Cluster', 'StereoGrid', 'G'
-]
+    'Ortensor', 'Cluster', 'StereoGrid', 'G', 'settings'
+)
 
+
+# Default module settings (singleton).
 
 settings = dict(notation='dd', vec2dd=False)
 
@@ -35,55 +37,63 @@ settings = dict(notation='dd', vec2dd=False)
 class Vec3(np.ndarray):
 
     """
-    ``Vec3`` is APSG base class to store 3D vectors derived from
+     ``Vec3`` is base class to store 3-dimensional vectors derived from
     ``numpy.ndarray`` on which ``Lin`` and ``Fol`` classes are based.
 
     ``Vec3`` support most of common vector algebra using following operators:
       - ``+`` - vector addition
       - ``-`` - vector subtraction
-      - ``*`` - dor product
+      - ``*`` - dot product
       - ``**`` - cross product
       - ``abs`` - magnitude (length) of vector
 
       See following methods and properties for additional operations.
 
     Args:
-      a (array_like): Input data, that can be converted to an array.
-        This includes lists, tuples and ndarrays. When more than
-        one argument is passed (i.e. `inc` is not None) a is interpreted
-        as dip direction of vector in degrees
-      inc (float): None or dip of vector in degrees
-      mag (float): magnitude of vector if `inc` is not None
+        arr (array_like): 
+            Input data that or can be converted to an array.
+            This includes lists, tuples, and ndarrays. When more than one 
+            argument is passed (i.e. `inc` is not `None`) `arr` is interpreted
+            as dip direction of the vector in degrees.
+        inc (float): 
+            `None` or dip of the vector in degrees.
+        mag (float): 
+            The magnitude of the vector if `inc` is not `None`.
 
     Returns:
       ``Vec3`` object
 
     Example:
       >>> v = Vec3([1, 0.2, 1.6])
-      >>> v = Vec3(120, 60) # dip-dir and dip of unit length vector
-      >>> v = Vec3(120, 60, 3) # dip-dir, dip and magnitude of vector
+      >>> v = Vec3(120, 60)       # dip-dir and dip of unit length vector
+      >>> v = Vec3(120, 60, 3)    # dip-dir, dip and magnitude of vector
     """
 
-    def __new__(cls, a, inc=None, mag=1.0):
+    def __new__(cls, arr, inc=None, mag=1.0):
         if inc is None:
-            obj = np.asarray(a).view(cls)
+            obj = np.asarray(arr).view(cls)
         else:
-            obj = mag * Lin(a, inc).view(cls)
+            obj = mag * Lin(arr, inc).view(cls)
         return obj
 
     def __repr__(self):
+        name = "V" # Should we use real class name as `self.type.__name__`?
+        
         if settings['vec2dd']:
-            r = 'V:{:.0f}/{:.0f}'.format(*self.dd)
+            result = '{name}:{:.0f}/{:.0f}'.format(
+                name = name, *self.dd)
         else:
-            r = 'V({:.3f}, {:.3f}, {:.3f})'.format(*self)
-        return r
+            result = '{name}({:.3f}, {:.3f}, {:.3f})'.format(
+                name = name, *self)
+
+        return result 
 
     def __str__(self):
-        return self.__repr__()
+        return repr(self)
 
     def __mul__(self, other):
         """
-        Returns dot product of two vectors.
+        Returns the dot product of two vectors.
         """
 
         return np.dot(self, other)
@@ -97,7 +107,7 @@ class Vec3(np.ndarray):
 
     def __pow__(self, other):
         """
-        Return cross product if argument is vector or power of vector.
+        Returns cross product if argument is vector or power of vector.
         """
 
         if np.isscalar(other):
@@ -119,18 +129,20 @@ class Vec3(np.ndarray):
 
         return not self == other
 
+    # def __hash__(self):  
+        # return NotImplementedError
+
     @property
     def type(self):
         """
         Returns the type of ``self``.
         """
-
         return type(self)
 
     @property
     def upper(self):
         """
-        Returns True if z-coordinate is negative.
+        Returns ``True`` if z-coordinate is negative.
         """
 
         return np.sign(self[2]) < 0
@@ -149,7 +161,7 @@ class Vec3(np.ndarray):
         Normalizes the vector to unit length.
 
         Returns:
-          unit vector of `self`
+          unit vector of ``self``
 
         Example:
           >>> u = Vec3([1,1,1])
@@ -168,7 +180,7 @@ class Vec3(np.ndarray):
           other: other ``Vec3`` vector
 
         Returns:
-          cross product of `self` and `other`
+          The cross product of `self` and `other`
 
         Example:
           >>> v = Vec3([0,2,-2])
@@ -358,6 +370,7 @@ class Vec3(np.ndarray):
 
 
 class Lin(Vec3):
+
     """
     Class to store linear feature. It provides all ``Vec3`` methods and
     properties but behave as axial vector.
@@ -667,6 +680,7 @@ class Fol(Vec3):
 
 
 class Pair(object):
+
     """Class to store pair of planar and linear feature.
 
     When ``Pair`` object is created, both planar and linear feature are
@@ -683,6 +697,7 @@ class Pair(object):
       >>> p = Pair(140, 30, 110, 26)
 
     """
+
     def __init__(self, fazi, finc, lazi, linc):
         fol = Fol(fazi, finc)
         lin = Lin(lazi, linc)
@@ -784,6 +799,7 @@ class Pair(object):
 
 
 class Fault(Pair):
+
     """Fault class for related ``Fol`` and ``Lin`` instances with sense
     of movement.
 
@@ -802,6 +818,7 @@ class Fault(Pair):
       >>> p = Fault(140, 30, 110, 26, -1)
 
     """
+
     def __init__(self, fazi, finc, lazi, linc, sense):
         assert np.sign(sense) != 0, \
             'Sense parameter must be positive or negative'
@@ -2218,10 +2235,14 @@ class StereoGrid(object):
 
 
 class Cluster(object):
-    """Cluster provides hierarchical clustering using scipy.cluster routines.
 
-    Distance matrix is calculated as angle beetween features, where Fol and
-    Lin use axial angles while Vec3 uses direction angles."""
+    """
+    Cluster object provides hierarchical clustering using `scipy.cluster` routines.
+
+    The distance matrix is calculated as an angle between features, where ``Fol`` and
+    ``Lin`` use axial angles while ``Vec3`` uses direction angles.
+    """
+    
     def __init__(self, d, **kwargs):
         assert isinstance(d, Group), 'Only group could be clustered'
         self.data = Group(d.copy())
