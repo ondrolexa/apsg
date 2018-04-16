@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 Unit tests for `apsg` module.
 
@@ -74,7 +76,7 @@ def teste_inequality_operator():
 @pytest.mark.skip
 def test_that_hash_is_not_same_for_different_vectors():
     lhs = Vec3([1, 2, 3])
-    rhs = Vec3([1, 2, 3])
+    rhs = Vec3([3, 2, 1])
     
     assert not hash(lhs) == hash(rhs)    
 
