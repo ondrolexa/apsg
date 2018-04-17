@@ -1,5 +1,17 @@
+# -*- coding: utf-8 -*-
+
 """
-Tests for `apsg` module.
+Unit tests for `apsg` module.
+
+Use this steps for unit test:
+    
+- Arrange all necessary preconditions and inputs.
+- Act on the object or method under test.
+- Assert that the expected results have occurred
+
+
+Proper unit tests should fail for exactly one reason
+(that’s why you should be using one assert per unit test.)
 """
 
 
@@ -7,15 +19,98 @@ import pytest
 import numpy as np
 
 
-from apsg import *
+from apsg import Vec3, Group, Fol, Lin, Fault, DefGrad, Ortensor, Pair, settings
 
 
-def test_lin2vec2lin():
+# ############################################################################
+# Vector
+# ############################################################################
+
+
+def test_that_vec3_string_gets_three_digits_when_vec2dd_settings_is_false():
+    settings["vec2dd"] = False
+
+    vec = Vec3([1, 2, 3])
+
+    current = str(vec)
+    expects = "V(1.000, 2.000, 3.000)"    
+    
+    assert current == expects
+
+
+def test_that_vec3_string_gets_dip_and_dir_when_vec2dd_settings_is_true():
+    settings["vec2dd"] = True
+    
+    vec = Vec3([1, 2, 3])
+    
+    current = str(vec)
+    expects = "V:63/53"
+
+    assert current == expects
+    
+    settings["vec2dd"] = False
+
+
+def test_equality_operator():
+    lhs = Vec3([1, 2, 3])
+    rhs = Vec3([1, 2, 3])
+
+    assert lhs == rhs
+
+
+@pytest.mark.skip
+def test_that_hash_is_same_for_identical_vectors():
+    lhs = Vec3([1, 2, 3])
+    rhs = Vec3([1, 2, 3])
+    
+    assert hash(lhs) == hash(rhs)    
+
+
+def teste_inequality_operator():
+    lhs = Vec3([1, 2, 3])
+    rhs = Vec3([3, 2, 1])
+
+    assert lhs != rhs
+
+
+@pytest.mark.skip
+def test_that_hash_is_not_same_for_different_vectors():
+    lhs = Vec3([1, 2, 3])
+    rhs = Vec3([3, 2, 1])
+    
+    assert not hash(lhs) == hash(rhs)    
+
+
+def test_lin_to_vec_to_lin():
     assert Vec3(Lin(110, 37)).aslin == Lin(110, 37)
 
 
-def test_fol2vec2fol():
+def test_fol_to_vec_to_fol():
     assert Vec3(Fol(213, 52)).asfol == Fol(213, 52)
+
+
+def test_that_vector_is_upper():
+    vec = Vec3([0, 0, -1])
+
+    assert vec.upper
+
+
+def test_that_vector_is_not_upper():
+    vec = Vec3([0, 0, 1])
+
+    assert not vec.upper
+
+
+def test_that_vector_is_flipped():
+    current = Vec3([0, 0, 1]).flip
+    expects = Vec3([0, 0, -1])
+
+    assert current == expects
+
+
+# ############################################################################
+# Group
+# ############################################################################
 
 
 def test_rotation_rdegree():
@@ -43,6 +138,17 @@ def test_resultant_rdegree():
     assert c1 and c2 and c3
 
 
+def test_group_heterogenous_error():
+    with pytest.raises(Exception) as exc:
+        g = Group([1, 2, 3])
+        assert "Data must be Fol, Lin or Vec3 type." ==  str(exc.exception)
+
+
+# ############################################################################
+# Lineation
+# ############################################################################
+
+
 def test_cross_product():
     l1 = Lin(110, 22)
     l2 = Lin(163, 47)
@@ -60,21 +166,10 @@ def test_vec_H():
     assert m.uv == Lin(135, 0)
 
 
-def test_ortensor_orthogonal():
-    f = Group.randn_fol(1)[0]
-    assert np.allclose(*Ortensor(Group([f.V, f.rake(-45), f.rake(45)])).eigenvals)
-
-
 def test_group_heterogenous_error():
     with pytest.raises(Exception) as exc:
         g = Group([Fol(10, 10), Lin(20, 20)])
         assert "All data in group must be of same type." == str(exc.exception)
-
-
-def test_group_heterogenous_error():
-    with pytest.raises(Exception) as exc:
-        g = Group([1, 2, 3])
-        assert "Data must be Fol, Lin or Vec3 type." ==  str(exc.exception)
 
 
 def test_pair_misfit():
@@ -97,11 +192,33 @@ def test_lin_vector_dd():
     assert Lin(*l.V.dd) == l
 
 
+# ############################################################################
+# Foliation
+# ############################################################################
+
+
 def test_fol_vector_dd():
     f = Fol(120, 30)
     assert Lin(*f.V.dd).asfol == f
 
 
+# ############################################################################
+# Fault
+# ############################################################################
+
+
 def test_fault_rotation_sense():
     f = Fault(90, 30, 110, 28, -1)
     assert repr(f.rotate(Lin(220, 10), 60)) == 'F:343/37-301/29 +'
+
+
+# ############################################################################
+# Ortensor
+# ############################################################################
+
+
+def test_ortensor_orthogonal():
+    f = Group.randn_fol(1)[0]
+    assert np.allclose(*Ortensor(Group([f.V, f.rake(-45), f.rake(45)])).eigenvals)
+
+
