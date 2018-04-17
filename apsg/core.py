@@ -155,9 +155,6 @@ class Vec3(np.ndarray):
 
         return Vec3((self[0], self[1], -self[2]))
 
-    # DISCUSS 
-    #   Rename to `unit()` or `to|as_unit()`.
-    #   Remove mutability and return new vector.
     @property
     def uv(self): 
         """
@@ -240,8 +237,6 @@ class Vec3(np.ndarray):
 
         return r.view(type(self))
 
-    # DISCUSS 
-    #   Rename to `project()``.
     def proj(self, other):
         """
         Returns projection of vector `u` onto vector `v`.
