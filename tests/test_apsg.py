@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 """
-Unit tests for `apsg` module.
+Unit tests for `apsg` core module.
 
 Use this steps for unit test:
     
 - Arrange all necessary preconditions and inputs.
 - Act on the object or method under test.
-- Assert that the expected results have occurred
+- Assert that the expected results have occurred.
 
 
 Proper unit tests should fail for exactly one reason
@@ -58,6 +58,13 @@ def test_equality_operator():
     assert lhs == rhs
 
 
+def test_equality_operator2():
+    lhs = Vec3([0.577, 0.577, 0.577])
+    rhs = Vec3([0.577, 0.577, 0.577])
+
+    assert lhs == rhs
+
+
 @pytest.mark.skip
 def test_that_hash_is_same_for_identical_vectors():
     lhs = Vec3([1, 2, 3])
@@ -104,6 +111,13 @@ def test_that_vector_is_not_upper():
 def test_that_vector_is_flipped():
     current = Vec3([0, 0, 1]).flip
     expects = Vec3([0, 0, -1])
+
+    assert current == expects
+
+
+def test_absolute_value():
+    current = abs(Vec3([1, 2, 3]))
+    expects = 3.7416573867739413
 
     assert current == expects
 

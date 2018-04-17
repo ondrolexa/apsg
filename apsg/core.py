@@ -115,7 +115,7 @@ class Vec3(np.ndarray):
         Returns `True` if vectors are equal, otherwise `False`.
         """
 
-        return bool(abs(self - other) < 1e-15)
+        return abs(self - other) < 1e-15
 
     def __ne__(self, other):
         """
@@ -124,8 +124,9 @@ class Vec3(np.ndarray):
 
         return not self == other
 
-    # def __hash__(self):
-        # return NotImplementedError
+    def __hash__(self):  
+        return NotImplementedError
+
 
     @property
     def type(self):
@@ -151,8 +152,11 @@ class Vec3(np.ndarray):
 
         return Vec3((self[0], self[1], -self[2]))
 
+    # DISCUSS 
+    #   Rename to `unit()` or `to|as_unit()`; 
+    #   Remove mutability and return new vector.
     @property
-    def uv(self):
+    def uv(self): 
         """
         Normalizes the vector to unit length.
 
