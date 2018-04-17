@@ -189,6 +189,22 @@ def test_that_mul_operator_applied_to_orthogonal_vectors_returns_proper_dot_prod
 
 # transform
 
+# + operator
+
+# - operator
+
+# * operator
+
+# ** operator
+
+
+def test_length_method():
+    u = Vec3([1])
+    v = Vec3([1, 2])
+    w = Vec3([1, 2, 3])
+
+    len(u) == len(v) == len(w) == 3
+
 
 # ############################################################################
 # Group
