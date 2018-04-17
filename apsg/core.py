@@ -114,8 +114,10 @@ class Vec3(np.ndarray):
         """
         Returns `True` if vectors are equal, otherwise `False`.
         """
+        if not isinstance(other, self.__class__):
+            return False
 
-        return abs(self - other) < 1e-15
+        return self is other or abs(self - other) < 1e-15
 
     def __ne__(self, other):
         """
