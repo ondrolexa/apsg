@@ -18,9 +18,6 @@ Changes
 * new Group method normalized
 * new Group properties and methods to calculate spherical statistics
 
-0.2 (09 Dec 2014)
------------------
-
 0.2.1 (09 Dec 2014)
 ~~~~~~~~~~~~~~~~~~~
 * Quick plotting of groups fixed.
@@ -90,8 +87,9 @@ Changes
 0.3.5 (12 Nov 2016)
 ~~~~~~~~~~~~~~~~~~~
 * Simple settings interface implemented in in apsg.core.seetings dictionary.
-  To change: `from apsg.core import settings`
-             `setting['name']=value`
+  To change:
+  `from apsg.core import settings`
+  `setting['name']=value`
 * `notation` setting with values `dd` or `rhr` control how azimuth argument of
   Fol is represented.
 * `vec2dd` setting with values `True` or `False` control how `Vec3` is

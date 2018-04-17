@@ -50,14 +50,14 @@ class Vec3(np.ndarray):
       See following methods and properties for additional operations.
 
     Args:
-        arr (array_like): 
+        arr (array_like):
             Input data that or can be converted to an array.
-            This includes lists, tuples, and ndarrays. When more than one 
+            This includes lists, tuples, and ndarrays. When more than one
             argument is passed (i.e. `inc` is not `None`) `arr` is interpreted
             as dip direction of the vector in degrees.
-        inc (float): 
+        inc (float):
             `None` or dip of the vector in degrees.
-        mag (float): 
+        mag (float):
             The magnitude of the vector if `inc` is not `None`.
 
     Returns:
@@ -77,16 +77,11 @@ class Vec3(np.ndarray):
         return obj
 
     def __repr__(self):
-        name = "V" # Should we use real class name as `self.type.__name__`?
-        
         if settings['vec2dd']:
-            result = '{name}:{:.0f}/{:.0f}'.format(
-                name = name, *self.dd)
+            result = 'V:{:.0f}/{:.0f}'.format(*self.dd)
         else:
-            result = '{name}({:.3f}, {:.3f}, {:.3f})'.format(
-                name = name, *self)
-
-        return result 
+            result = 'V({:.3f}, {:.3f}, {:.3f})'.format(*self)
+        return result
 
     def __str__(self):
         return repr(self)
@@ -129,7 +124,7 @@ class Vec3(np.ndarray):
 
         return not self == other
 
-    # def __hash__(self):  
+    # def __hash__(self):
         # return NotImplementedError
 
     @property
@@ -137,6 +132,7 @@ class Vec3(np.ndarray):
         """
         Returns the type of ``self``.
         """
+
         return type(self)
 
     @property
@@ -188,6 +184,7 @@ class Vec3(np.ndarray):
           V(-4.000, 2.000, 2.000)
 
         """
+
         return Vec3(np.cross(self, other))
 
     def angle(self, other):
@@ -2175,7 +2172,7 @@ class StereoGrid(object):
 
         """
         # parse options
-        sigma = kwargs.get('sigma', 1./len(dcdata)**(-1./7))
+        sigma = kwargs.get('sigma', 1 / len(dcdata) ** (-1 / 7))
         weighted = kwargs.get('weighted', False)
         method = kwargs.get('method', 'exp_kamb')
         trim = kwargs.get('trim', False)
@@ -2242,7 +2239,7 @@ class Cluster(object):
     The distance matrix is calculated as an angle between features, where ``Fol`` and
     ``Lin`` use axial angles while ``Vec3`` uses direction angles.
     """
-    
+
     def __init__(self, d, **kwargs):
         assert isinstance(d, Group), 'Only group could be clustered'
         self.data = Group(d.copy())
