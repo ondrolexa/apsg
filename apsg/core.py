@@ -114,18 +114,22 @@ class Vec3(np.ndarray):
         """
         Returns `True` if vectors are equal, otherwise `False`.
         """
+        if not isinstance(other, self.__class__):
+            return False
 
-        return bool(abs(self - other) < 1e-15)
+        return self is other or abs(self - other) < 1e-15
 
     def __ne__(self, other):
         """
         Returns `True` if vectors are not equal, otherwise `False`.
+
+        Overrides the default implementation (unnecessary in Python 3).
         """
 
         return not self == other
 
-    # def __hash__(self):
-        # return NotImplementedError
+    def __hash__(self):  
+        return NotImplementedError
 
     @property
     def type(self):
@@ -138,7 +142,7 @@ class Vec3(np.ndarray):
     @property
     def upper(self):
         """
-        Returns ``True`` if z-coordinate is negative.
+        Returns `True` if z-coordinate is negative, otherwise `False`.
         """
 
         return np.sign(self[2]) < 0
@@ -146,13 +150,13 @@ class Vec3(np.ndarray):
     @property
     def flip(self):
         """
-        Invert z-coordinate of vector.
+        Returns a new vector with inverted `z` coordinate.
         """
 
         return Vec3((self[0], self[1], -self[2]))
 
     @property
-    def uv(self):
+    def uv(self): 
         """
         Normalizes the vector to unit length.
 
@@ -299,6 +303,21 @@ class Vec3(np.ndarray):
         return res
 
     @property
+    def dd(self):
+        """
+        Returns dip-direction, dip tuple.
+
+        Example:
+          >>> azi, inc = v.dd
+        """
+
+        n = self.uv
+        dec = atan2d(n[1], n[0]) % 360
+        inc = asind(n[2])
+
+        return dec, inc
+
+    @property
     def aslin(self):
         """
         Converts `self` to ``Lin`` object.
@@ -349,21 +368,6 @@ class Vec3(np.ndarray):
         """
 
         return self.copy().view(Vec3)
-
-    @property
-    def dd(self):
-        """
-        Returns dip-direction, dip tuple.
-
-        Example:
-          >>> azi, inc = v.dd
-        """
-
-        n = self.uv
-        dec = atan2d(n[1], n[0]) % 360
-        inc = asind(n[2])
-
-        return dec, inc
 
 
 class Lin(Vec3):

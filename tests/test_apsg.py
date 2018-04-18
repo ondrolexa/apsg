@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 """
-Unit tests for `apsg` module.
+Unit tests for `apsg` core module.
 
 Use this steps for unit test:
     
 - Arrange all necessary preconditions and inputs.
 - Act on the object or method under test.
-- Assert that the expected results have occurred
+- Assert that the expected results have occurred.
 
 
 Proper unit tests should fail for exactly one reason
@@ -19,7 +19,7 @@ import pytest
 import numpy as np
 
 
-from apsg import Vec3, Group, Fol, Lin, Fault, DefGrad, Ortensor, Pair, settings
+from apsg import Vec3, Fol, Lin, Fault, Pair, Group, DefGrad, Ortensor, settings
 
 
 # ############################################################################
@@ -51,11 +51,50 @@ def test_that_vec3_string_gets_dip_and_dir_when_vec2dd_settings_is_true():
     settings["vec2dd"] = False
 
 
-def test_equality_operator():
-    lhs = Vec3([1, 2, 3])
-    rhs = Vec3([1, 2, 3])
+def test_that_equality_operator_works():
+    lhs = Vec3([1.000] * 3)
+    rhs = Vec3([1.000] * 3)
 
     assert lhs == rhs
+
+
+def test_that_equality_operator_precision_limits():
+    """
+    This is not the best method how to test a floating point precision limits, 
+    but I will keep it here for a future work.
+    """
+    lhs = Vec3([1.00000000000000001] * 3)
+    rhs = Vec3([1.00000000000000009] * 3)
+
+    assert lhs == rhs
+
+
+def test_that_equality_operator_is_reflexive():
+    u = Vec3(1, 2, 3)
+
+    assert u == u
+
+
+def test_that_equality_operator_is_symetric():
+    u = Vec3([1, 2, 3])
+    v = Vec3([1, 2, 3])
+
+    assert u == v and v == u
+
+
+def test_that_equality_operator_is_transitive():
+    u = Vec3([1, 2, 3])
+    v = Vec3([1, 2, 3])
+    w = Vec3([1, 2, 3])
+
+    assert u == v and v == w and u == w 
+
+
+def teste_inequality_operator():
+    lhs = Vec3([1, 2, 3])
+    rhs = Vec3([3, 2, 1])
+
+    assert lhs != rhs
 
 
 @pytest.mark.skip
@@ -64,13 +103,6 @@ def test_that_hash_is_same_for_identical_vectors():
     rhs = Vec3([1, 2, 3])
     
     assert hash(lhs) == hash(rhs)    
-
-
-def teste_inequality_operator():
-    lhs = Vec3([1, 2, 3])
-    rhs = Vec3([3, 2, 1])
-
-    assert lhs != rhs
 
 
 @pytest.mark.skip
@@ -106,6 +138,72 @@ def test_that_vector_is_flipped():
     expects = Vec3([0, 0, -1])
 
     assert current == expects
+
+
+def test_absolute_value():
+    current = abs(Vec3([1, 2, 3]))
+    expects = 3.7416573867739413
+
+    assert current == expects
+
+
+def test_that_vector_is_normalized():
+    current = Vec3([1, 2, 3]).uv
+    expects = Vec3([0.26726124191242442, 0.5345224838248488, 0.8017837257372732])
+
+    assert current == expects
+
+
+def test_that_mul_operator_applied_to_same_vectors_returns_proper_dot_product():
+    i = Vec3(1, 0, 0)
+
+    assert (i * i) == abs(i)
+
+
+def test_that_mul_operator_applied_to_orthogonal_vectors_returns_proper_dot_product():
+    i = Vec3(1, 0, 0)
+    j = Vec3(0, 1, 0)
+    
+    assert (i * j) == 0
+
+
+# TODO #
+
+# dd
+
+# aslin
+
+# asfol
+
+# asvec
+
+# angle
+
+# cross
+
+# rotate
+
+# project
+
+# H
+
+# transform
+
+# + operator
+
+# - operator
+
+# * operator
+
+# ** operator
+
+
+def test_length_method():
+    u = Vec3([1])
+    v = Vec3([1, 2])
+    w = Vec3([1, 2, 3])
+
+    len(u) == len(v) == len(w) == 3
 
 
 # ############################################################################
