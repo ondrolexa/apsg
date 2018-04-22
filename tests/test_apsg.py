@@ -72,24 +72,6 @@ def test_that_vec3_string_gets_dip_and_dir_when_vec2dd_settings_is_true():
 # ``==`` operator
 
 
-def test_that_equality_operator_works():
-    lhs = Vec3([1.000] * 3)
-    rhs = Vec3([1.000] * 3)
-
-    assert lhs == rhs
-
-
-def test_that_equality_operator_precision_limits():
-    """
-    This is not the best method how to test a floating point precision limits, 
-    but I will keep it here for a future work.
-    """
-    lhs = Vec3([1.00000000000000001] * 3)
-    rhs = Vec3([1.00000000000000009] * 3)
-
-    assert lhs == rhs
-
-
 def test_that_equality_operator_is_reflexive():
     u = Vec3(1, 2, 3)
 
@@ -109,6 +91,27 @@ def test_that_equality_operator_is_transitive():
     w = Vec3([1, 2, 3])
 
     assert u == v and v == w and u == w 
+
+
+def test_that_equality_operator_precision_limits():
+    """
+    This is not the best method how to test a floating point precision limits, 
+    but I will keep it here for a future work.
+    """
+    lhs = Vec3([1.00000000000000001] * 3)
+    rhs = Vec3([1.00000000000000009] * 3)
+
+    assert lhs == rhs
+
+
+def test_that_equality_operator_returns_false_for_none():
+    lhs = Vec3([1, 0, 0])
+    rhs = None
+
+    current = lhs == rhs
+    expects = False
+
+    assert current == expects
 
 
 # ``!=`` operator
