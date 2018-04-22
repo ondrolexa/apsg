@@ -6,7 +6,7 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
-from .core import Vec3, Fol, Lin, Group
+from .core import Vec, Fol, Lin, Group
 from .plotting import StereoNet
 from .helpers import sind, cosd, eformat
 
@@ -101,7 +101,7 @@ class Core(object):
             x = float(ln[fields['Xc']].strip())
             y = float(ln[fields['Yc']].strip())
             z = float(ln[fields['Zc']].strip())
-            data['vectors'].append(Vec3((x, y, z)))
+            data['vectors'].append(Vec((x, y, z)))
         return cls(**data)
 
     def write_pmd(self, filename=None):

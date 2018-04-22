@@ -13,7 +13,6 @@ scipy = "*"
 "flake8" = "*"
 tox = "*"
 Sphinx = "*"
-pytest = "*"
 
 [requires]
 python_version = "3.6"
