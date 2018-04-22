@@ -91,7 +91,7 @@ class Vec3(np.ndarray):
         Returns the dot product of two vectors.
         """
 
-        return np.dot(self, other)
+        return np.dot(self, other) # What about `numpy.inner`?
 
     def __abs__(self):
         """
@@ -109,7 +109,7 @@ class Vec3(np.ndarray):
             return pow(abs(self), other)
         else:
             return Vec3(np.cross(self, other))
-            
+
     def __eq__(self, other):
         """
         Returns `True` if vectors are equal, otherwise `False`.

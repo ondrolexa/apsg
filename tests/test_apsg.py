@@ -69,6 +69,8 @@ def test_that_vec3_string_gets_dip_and_dir_when_vec2dd_settings_is_true():
     settings["vec2dd"] = False
 
 
+# ``==`` operator
+
 def test_that_equality_operator_works():
     lhs = Vec3([1.000] * 3)
     rhs = Vec3([1.000] * 3)
@@ -108,6 +110,8 @@ def test_that_equality_operator_is_transitive():
     assert u == v and v == w and u == w 
 
 
+# ``!=`` operator
+
 def test_inequality_operator():
     lhs = Vec3([1, 2, 3])
     rhs = Vec3([3, 2, 1])
@@ -131,12 +135,7 @@ def test_that_hash_is_not_same_for_different_vectors():
     assert not hash(lhs) == hash(rhs)    
 
 
-def test_lin_to_vec_to_lin():
-    assert Vec3(Lin(110, 37)).aslin == Lin(110, 37)
-
-
-def test_fol_to_vec_to_fol():
-    assert Vec3(Fol(213, 52)).asfol == Fol(213, 52)
+# ``upper``
 
 
 def test_that_vector_is_upper():
@@ -151,11 +150,17 @@ def test_that_vector_is_not_upper():
     assert not vec.upper
 
 
+# ``flip``
+
+
 def test_that_vector_is_flipped():
     current = Vec3([0, 0, 1]).flip
     expects = Vec3([0, 0, -1])
 
     assert current == expects
+
+
+# ``abs``
 
 
 def test_absolute_value():
@@ -165,24 +170,14 @@ def test_absolute_value():
     assert current == expects
 
 
+# ``uv``
+
+
 def test_that_vector_is_normalized():
     current = Vec3([1, 2, 3]).uv
     expects = Vec3([0.26726124191242442, 0.5345224838248488, 0.8017837257372732])
 
     assert current == expects
-
-
-def test_that_mul_operator_applied_to_same_vectors_returns_proper_dot_product():
-    i = Vec3(1, 0, 0)
-
-    assert (i * i) == abs(i)
-
-
-def test_that_mul_operator_applied_to_orthogonal_vectors_returns_proper_dot_product():
-    i = Vec3(1, 0, 0)
-    j = Vec3(0, 1, 0)
-    
-    assert (i * j) == 0
 
 
 # ``dd``
@@ -199,18 +194,24 @@ def test_dipdir():
 
 # fixme ``aslin``
 
-# TypeError: ufunc 'multiply' did not contain a loop with signature matching types dtype('<U21') dtype('<U21') dtype('<U21')
-@pytest.mark.skip 
+
 def test_aslin_conversion():
-    assert Vec3([1, 1, 1]).aslin == 'L:45/35'
+    assert str(Vec3([1, 1, 1]).aslin) == 'L:45/35'
+
+
+def test_lin_to_vec_to_lin():
+    assert Vec3(Lin(110, 37)).aslin == Lin(110, 37)
 
 
 # fixme ``asfol``
 
-# TypeError: ufunc 'multiply' did not contain a loop with signature matching types dtype('<U21') dtype('<U21') dtype('<U21')
-@pytest.mark.skip 
+
 def test_asfol_conversion():
-    assert Vec3([1, 1, 1]).asfol() == 'S:225/55'
+    assert str(Vec3([1, 1, 1]).asfol) == 'S:225/55'
+
+
+def test_fol_to_vec_to_fol():
+    assert Vec3(Fol(213, 52)).asfol == Fol(213, 52)
 
 
 # todo ``asvec``
@@ -271,6 +272,23 @@ def test_cross_product_of_orthonormal_vectors():
     expects = Vec3([0, 0, 1])
 
     assert current == expects
+
+
+# ``dot``
+
+
+def test_dot_product_of_same_vectors():
+    i = Vec3(1, 0, 0)
+    j = Vec3(1, 0, 0)
+
+    assert i.dot(j) == abs(i) == abs(i)
+
+
+def test_dot_product_of_orthonornal_vectors():
+    i = Vec3(1, 0, 0)
+    j = Vec3(0, 1, 0)
+    
+    assert i.dot(j) == 0
 
 
 # ``rotate``
@@ -358,10 +376,10 @@ def test_sub_operator():
     assert current == expects 
 
 
-# ``*`` operator
+# ``*`` operator aka dot product
 
 
-def test_mull_operator_with_vector():
+def test_mull_operator():
     lhs = Vec3([1, 1, 1])
     rhs = Vec3([1, 1, 1])
 
@@ -371,7 +389,20 @@ def test_mull_operator_with_vector():
     assert current == expects 
 
 
-def test_mull_operator_with_scalar():
+# ``**`` operator aka cross product
+
+
+def test_pow_operator_with_vector():
+    lhs = Vec3([1, 0, 0])
+    rhs = Vec3([0, 1, 0])
+
+    current = lhs ** rhs
+    expects = lhs.cross(rhs)
+
+    assert current == expects 
+
+
+def test_pow_operator_with_scalar():
     lhs = 2
     rhs = Vec3([1, 1, 1])
 
@@ -379,10 +410,6 @@ def test_mull_operator_with_scalar():
     expects = Vec3([2, 2, 2])
 
     assert current == expects 
-
-
-# ** operator
-
 
 def test_length_method():
     u = Vec3([1])
