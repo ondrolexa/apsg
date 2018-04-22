@@ -4,7 +4,7 @@
 Unit tests for `apsg` core module.
 
 Use this steps for unit test:
-    
+
 - Arrange all necessary preconditions and inputs.
 - Act on the object or method under test.
 - Assert that the expected results have occurred.
@@ -42,7 +42,7 @@ def is_hashable(obj):
 
 @pytest.mark.skip
 def test_that_vector_is_hashable():
-    assert is_hashable(Vec3([1, 2, 3])) 
+    assert is_hashable(Vec3([1, 2, 3]))
 
 
 def test_that_vec3_string_gets_three_digits_when_vec2dd_settings_is_false():
@@ -51,21 +51,21 @@ def test_that_vec3_string_gets_three_digits_when_vec2dd_settings_is_false():
     vec = Vec3([1, 2, 3])
 
     current = str(vec)
-    expects = "V(1.000, 2.000, 3.000)"    
-    
+    expects = "V(1.000, 2.000, 3.000)"
+
     assert current == expects
 
 
 def test_that_vec3_string_gets_dip_and_dir_when_vec2dd_settings_is_true():
     settings["vec2dd"] = True
-    
+
     vec = Vec3([1, 2, 3])
-    
+
     current = str(vec)
     expects = "V:63/53"
 
     assert current == expects
-    
+
     settings["vec2dd"] = False
 
 
@@ -90,12 +90,12 @@ def test_that_equality_operator_is_transitive():
     v = Vec3([1, 2, 3])
     w = Vec3([1, 2, 3])
 
-    assert u == v and v == w and u == w 
+    assert u == v and v == w and u == w
 
 
 def test_that_equality_operator_precision_limits():
     """
-    This is not the best method how to test a floating point precision limits, 
+    This is not the best method how to test a floating point precision limits,
     but I will keep it here for a future work.
     """
     lhs = Vec3([1.00000000000000001] * 3)
@@ -131,16 +131,16 @@ def test_inequality_operator():
 def test_that_hash_is_same_for_identical_vectors():
     lhs = Vec3([1, 2, 3])
     rhs = Vec3([1, 2, 3])
-    
-    assert hash(lhs) == hash(rhs)    
+
+    assert hash(lhs) == hash(rhs)
 
 
 @pytest.mark.skip
 def test_that_hash_is_not_same_for_different_vectors():
     lhs = Vec3([1, 2, 3])
     rhs = Vec3([3, 2, 1])
-    
-    assert not hash(lhs) == hash(rhs)    
+
+    assert not hash(lhs) == hash(rhs)
 
 
 # ``upper``
@@ -193,10 +193,10 @@ def test_that_vector_is_normalized():
 
 def test_dipdir():
     v = Vec3([1, 0, 0])
-    
+
     current = v.dd
     expects = (0.0, 0.0)
-    
+
     assert current == expects
 
 
@@ -262,13 +262,13 @@ def test_that_angle_between_vectors_is_180():
 
 
 def test_cross_product_of_colinear_vectors():
-    
+
     lhs = Vec3([1, 0, 0])
     rhs = Vec3([-1, 0, 0])
 
     current = lhs.cross(rhs)
     expects = Vec3([0, 0, 0])
-    
+
     assert current == expects
 
 
@@ -295,7 +295,7 @@ def test_dot_product_of_same_vectors():
 def test_dot_product_of_orthonornal_vectors():
     i = Vec3(1, 0, 0)
     j = Vec3(0, 1, 0)
-    
+
     assert i.dot(j) == 0
 
 
@@ -322,7 +322,7 @@ def test_rotation_by_90_around(z):
     current = v.rotate(z, 90)
     expects = Vec3([-1, 1, 1])
 
-    assert current == expects  
+    assert current == expects
 
 
 def test_rotation_by_180_around(z):
@@ -330,7 +330,7 @@ def test_rotation_by_180_around(z):
     current = v.rotate(z, 180)
     expects = Vec3([-1, -1, 1])
 
-    assert current == expects  
+    assert current == expects
 
 
 def test_rotation_by_360_around(z):
@@ -338,8 +338,8 @@ def test_rotation_by_360_around(z):
     current = v.rotate(z, 360)
     expects = Vec3([1, 1, 1])
 
-    assert current == expects  
-    
+    assert current == expects
+
 
 # ``project``
 
@@ -368,7 +368,7 @@ def test_add_operator():
     current = lhs + rhs
     expects = Vec3([2, 2, 2])
 
-    assert current == expects 
+    assert current == expects
 
 
 # ``-`` operator
@@ -381,7 +381,7 @@ def test_sub_operator():
     current = lhs - rhs
     expects = Vec3([0, 0, 0])
 
-    assert current == expects 
+    assert current == expects
 
 
 # ``*`` operator aka dot product
@@ -394,7 +394,7 @@ def test_mull_operator():
     current = lhs * rhs
     expects = lhs.dot(rhs)
 
-    assert current == expects 
+    assert current == expects
 
 
 # ``**`` operator aka cross product
@@ -407,7 +407,7 @@ def test_pow_operator_with_vector():
     current = lhs ** rhs
     expects = lhs.cross(rhs)
 
-    assert current == expects 
+    assert current == expects
 
 
 def test_pow_operator_with_scalar():
@@ -417,7 +417,7 @@ def test_pow_operator_with_scalar():
     current = lhs * rhs
     expects = Vec3([2, 2, 2])
 
-    assert current == expects 
+    assert current == expects
 
 
 # ``len``
@@ -551,5 +551,3 @@ def test_fault_rotation_sense():
 def test_ortensor_orthogonal():
     f = Group.randn_fol(1)[0]
     assert np.allclose(*Ortensor(Group([f.V, f.rake(-45), f.rake(45)])).eigenvals)
-
-
