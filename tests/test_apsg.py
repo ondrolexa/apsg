@@ -35,10 +35,10 @@ def is_hashable(obj):
         return False
 
 
-
 # ############################################################################
 # Vector
 # ############################################################################
+
 
 @pytest.mark.skip
 def test_that_vector_is_hashable():
@@ -70,6 +70,7 @@ def test_that_vec3_string_gets_dip_and_dir_when_vec2dd_settings_is_true():
 
 
 # ``==`` operator
+
 
 def test_that_equality_operator_works():
     lhs = Vec3([1.000] * 3)
@@ -112,11 +113,15 @@ def test_that_equality_operator_is_transitive():
 
 # ``!=`` operator
 
+
 def test_inequality_operator():
     lhs = Vec3([1, 2, 3])
     rhs = Vec3([3, 2, 1])
 
     assert lhs != rhs
+
+
+# ``hash``
 
 
 @pytest.mark.skip
@@ -411,12 +416,19 @@ def test_pow_operator_with_scalar():
 
     assert current == expects 
 
+
+# ``len``
+
+
 def test_length_method():
     u = Vec3([1])
     v = Vec3([1, 2])
     w = Vec3([1, 2, 3])
 
     len(u) == len(v) == len(w) == 3
+
+
+# ``[]`` operator
 
 
 def test_getitem():
