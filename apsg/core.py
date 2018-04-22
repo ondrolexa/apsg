@@ -24,7 +24,7 @@ from .helpers import (
 
 
 __all__ = (
-    'Vec3', 'Lin', 'Fol', 'Pair', 'Fault', 'Group', 'PairSet', 'FaultSet',
+    'Vec', 'Lin', 'Fol', 'Pair', 'Fault', 'Group', 'PairSet', 'FaultSet',
     'Ortensor', 'Cluster', 'StereoGrid', 'G', 'settings'
 )
 
@@ -34,13 +34,13 @@ __all__ = (
 settings = dict(notation='dd', vec2dd=False)
 
 
-class Vec3(np.ndarray):
+class Vec(np.ndarray):
 
     """
-     ``Vec3`` is base class to store 3-dimensional vectors derived from
+     ``Vec`` is base class to store 3-dimensional vectors derived from
     ``numpy.ndarray`` on which ``Lin`` and ``Fol`` classes are based.
 
-    ``Vec3`` support most of common vector algebra using following operators:
+    ``Vec`` support most of common vector algebra using following operators:
       - ``+`` - vector addition
       - ``-`` - vector subtraction
       - ``*`` - dot product
@@ -61,12 +61,12 @@ class Vec3(np.ndarray):
             The magnitude of the vector if `inc` is not `None`.
 
     Returns:
-      ``Vec3`` object
+      ``Vec`` object
 
     Example:
-      >>> v = Vec3([1, 0.2, 1.6])
-      >>> v = Vec3(120, 60)       # dip-dir and dip of unit length vector
-      >>> v = Vec3(120, 60, 3)    # dip-dir, dip and magnitude of vector
+      >>> v = Vec([1, 0.2, 1.6])
+      >>> v = Vec(120, 60)       # dip-dir and dip of unit length vector
+      >>> v = Vec(120, 60, 3)    # dip-dir, dip and magnitude of vector
     """
 
     def __new__(cls, arr, inc=None, mag=1.0):
@@ -108,7 +108,7 @@ class Vec3(np.ndarray):
         if np.isscalar(other):
             return pow(abs(self), other)
         else:
-            return Vec3(np.cross(self, other))
+            return Vec(np.cross(self, other))
 
     def __eq__(self, other):
         """
@@ -153,7 +153,7 @@ class Vec3(np.ndarray):
         Returns a new vector with inverted `z` coordinate.
         """
 
-        return Vec3((self[0], self[1], -self[2]))
+        return Vec((self[0], self[1], -self[2]))
 
     @property
     def uv(self): 
@@ -164,7 +164,7 @@ class Vec3(np.ndarray):
           unit vector of ``self``
 
         Example:
-          >>> u = Vec3([1,1,1])
+          >>> u = Vec([1,1,1])
           >>> u.uv
           V(0.577, 0.577, 0.577)
 
@@ -177,13 +177,13 @@ class Vec3(np.ndarray):
         Computes the cross product of two vectors.
 
         Args:
-          other: other ``Vec3`` vector
+          other: other ``Vec`` vector
 
         Returns:
           The cross product of `self` and `other`
 
         Example:
-          >>> v = Vec3([0, 2, -2])
+          >>> v = Vec([0, 2, -2])
           >>> u.cross(v)
           V(-4.000, 2.000, 2.000)
 
@@ -196,7 +196,7 @@ class Vec3(np.ndarray):
         Computes the angle between two vectors in degrees.
 
         Args:
-          other: other ``Vec3`` vector
+          other: other ``Vec`` vector
 
         Returns:
           angle of `self` and `other` in degrees
@@ -216,7 +216,7 @@ class Vec3(np.ndarray):
         Returns rotated vector about axis.
 
         Args:
-          axis (``Vec3``): axis of rotation
+          axis (``Vec``): axis of rotation
           angle (float): angle of rotation in degrees
 
         Returns:
@@ -229,7 +229,7 @@ class Vec3(np.ndarray):
 
         """
 
-        e = Vec3(self)  # rotate all types as vectors
+        e = Vec(self)  # rotate all types as vectors
         k = axis.uv
         r = (cosd(angle) * e +
              sind(angle) * k.cross(e) +
@@ -242,7 +242,7 @@ class Vec3(np.ndarray):
         Returns projection of vector `u` onto vector `v`.
 
         Args:
-          other (``Vec3``): other vector
+          other (``Vec``): other vector
 
         Returns:
           vector representation of `self` projected onto 'other'
@@ -265,7 +265,7 @@ class Vec3(np.ndarray):
         `u` to vector `v`.
 
         Args:
-          other (``Vec3``): other vector
+          other (``Vec``): other vector
 
         Returns:
           ``Defgrad`` rotational matrix
@@ -323,7 +323,7 @@ class Vec3(np.ndarray):
         Converts `self` to ``Lin`` object.
 
         Example:
-          >>> u = Vec3([1,1,1])
+          >>> u = Vec([1,1,1])
           >>> u.aslin
           L:45/35
         """
@@ -336,7 +336,7 @@ class Vec3(np.ndarray):
         Converts `self` to ``Fol`` object.
 
         Example:
-          >>> u = Vec3([1,1,1])
+          >>> u = Vec([1,1,1])
           >>> u.asfol
           S:225/55
         """
@@ -344,33 +344,33 @@ class Vec3(np.ndarray):
         return self.copy().view(Fol)
 
     @property
-    def asvec3(self):
+    def asVec(self):
         """
-        Converts `self` to ``Vec3`` object.
+        Converts `self` to ``Vec`` object.
 
         Example:
           >>> l = Lin(120,50)
-          >>> l.asvec3
+          >>> l.asVec
           V(-0.321, 0.557, 0.766)
         """
 
-        return self.copy().view(Vec3)
+        return self.copy().view(Vec)
 
     @property
     def V(self):
         """
-        Converts `self` to ``Vec3`` object.
+        Converts `self` to ``Vec`` object.
 
-        Alias of ``asvec3`` property.
+        Alias of ``asVec`` property.
         """
 
-        return self.copy().view(Vec3)
+        return self.copy().view(Vec)
 
 
-class Lin(Vec3):
+class Lin(Vec):
 
     """
-    Class to store linear feature. It provides all ``Vec3`` methods and
+    Class to store linear feature. It provides all ``Vec`` methods and
     properties but behave as axial vector.
 
     Args:
@@ -387,7 +387,7 @@ class Lin(Vec3):
              sind(azi) * cosd(inc),
              sind(inc)]
 
-        return Vec3(v).view(cls)
+        return Vec(v).view(cls)
 
     def __repr__(self):
         return 'L:{:.0f}/{:.0f}'.format(*self.dd)
@@ -485,10 +485,10 @@ class Lin(Vec3):
         return azi, inc
 
 
-class Fol(Vec3):
+class Fol(Vec):
 
     """
-    Class to store planar feature. It provides all ``Vec3`` methods and
+    Class to store planar feature. It provides all ``Vec`` methods and
     properties but plane normal behave as axial vector.
 
     Args:
@@ -511,7 +511,7 @@ class Fol(Vec3):
              -sind(azi) * sind(inc),
              cosd(inc)]
 
-        return Vec3(v).view(cls)
+        return Vec(v).view(cls)
 
     def __repr__(self):
         return 'S:{:.0f}/{:.0f}'.format(*getattr(self, settings['notation']))
@@ -651,7 +651,7 @@ class Fol(Vec3):
 
     @property
     def dv(self):
-        """Returns dip vector ``Vec3`` object.
+        """Returns dip vector ``Vec`` object.
 
         Example:
           >>> f = Fol(120,50)
@@ -661,10 +661,10 @@ class Fol(Vec3):
         """
         azi, inc = self.dd
 
-        return Lin(azi, inc).view(Vec3)
+        return Lin(azi, inc).view(Vec)
 
     def rake(self, rake):
-        """Returns vector ``Vec3`` object with given rake.
+        """Returns vector ``Vec`` object with given rake.
 
         Example:
           >>> f = Fol(120,50)
@@ -703,11 +703,11 @@ class Pair(object):
         if misfit > 20:
             warnings.warn('Warning: Misfit angle is %.1f degrees.' % misfit)
         ax = fol**lin
-        ang = (Vec3(lin).angle(fol) - 90) / 2
+        ang = (Vec(lin).angle(fol) - 90) / 2
         fol = fol.rotate(ax, ang)
         lin = lin.rotate(ax, -ang)
-        self.fvec = Vec3(fol)
-        self.lvec = Vec3(lin)
+        self.fvec = Vec(fol)
+        self.lvec = Vec(lin)
         self.misfit = misfit
 
     def __repr__(self):
@@ -730,7 +730,7 @@ class Pair(object):
         """Rotates ``Pair`` by angle `phi` about `axis`.
 
         Args:
-          axis (``Vec3``): axis of rotation
+          axis (``Vec``): axis of rotation
           phi (float): angle of rotation in degrees
 
         Example:
@@ -788,11 +788,11 @@ class Pair(object):
         """
         t = deepcopy(self)
         if kwargs.get('norm', False):
-            t.lvec = np.dot(F, t.lvec).view(Vec3).uv
-            t.fvec = np.dot(t.fvec, np.linalg.inv(F)).view(Vec3).uv
+            t.lvec = np.dot(F, t.lvec).view(Vec).uv
+            t.fvec = np.dot(t.fvec, np.linalg.inv(F)).view(Vec).uv
         else:
-            t.lvec = np.dot(F, t.lvec).view(Vec3)
-            t.fvec = np.dot(t.fvec, np.linalg.inv(F)).view(Vec3)
+            t.lvec = np.dot(F, t.lvec).view(Vec)
+            t.fvec = np.dot(t.fvec, np.linalg.inv(F)).view(Vec)
         return t
 
 
@@ -836,7 +836,7 @@ class Fault(Pair):
 
     @classmethod
     def from_vecs(cls, fvec, lvec):
-        """Create ``Fault`` from two ortogonal ``Vec3`` objects
+        """Create ``Fault`` from two ortogonal ``Vec`` objects
 
         Args:
           fvec: vector normal to fault plane
@@ -844,7 +844,7 @@ class Fault(Pair):
 
         """
         orax = fvec**lvec
-        rax = Vec3(*fvec.aslin.dd)**Vec3(*lvec.dd)
+        rax = Vec(*fvec.aslin.dd)**Vec(*lvec.dd)
         sense = 1 - 2 * (orax == rax)
         data = getattr(fvec.asfol, settings['notation']) + lvec.dd + (sense,)
         return cls(*data)
@@ -870,19 +870,19 @@ class Fault(Pair):
     @property
     def sense(self):
         """Return sense of movement (+/-1)"""
-        # return 2 * int(self.fvec**self.lvec == Vec3(self.fol**self.lin)) - 1
+        # return 2 * int(self.fvec**self.lvec == Vec(self.fol**self.lin)) - 1
         orax = self.fvec.uv**self.lvec.uv
-        rax = Vec3(*self.fol.aslin.dd)**Vec3(*self.lin.dd)
+        rax = Vec(*self.fol.aslin.dd)**Vec(*self.lin.dd)
         return 2 * (orax == rax) - 1
 
     @property
     def pvec(self):
-        """Return P axis as ``Vec3``"""
+        """Return P axis as ``Vec``"""
         return self.fvec.rotate(self.rax, -45)
 
     @property
     def tvec(self):
-        """Return T-axis as ``Vec3``."""
+        """Return T-axis as ``Vec``."""
         return self.fvec.rotate(self.rax, 45)
 
     @property
@@ -907,7 +907,7 @@ class Fault(Pair):
 
 
 class Group(list):
-    """Group is homogeneous group of ``Vec3``, ``Fol`` or ``Lin`` objects.
+    """Group is homogeneous group of ``Vec``, ``Fol`` or ``Lin`` objects.
 
     ``Group`` provide append and extend methods as well as list indexing
     to get or set individual items. It also supports following operators:
@@ -918,7 +918,7 @@ class Group(list):
     See following methods and properties for additional operations.
 
     Args:
-      data (list): list of ``Vec3``, ``Fol`` or ``Lin`` objects
+      data (list): list of ``Vec``, ``Fol`` or ``Lin`` objects
       name (str): Name of group
 
     Returns:
@@ -931,7 +931,7 @@ class Group(list):
         assert issubclass(type(data), list), 'Argument must be list of data.'
         assert len(data) > 0, 'Empty group is not allowed.'
         tp = type(data[0])
-        assert issubclass(tp, Vec3), 'Data must be Fol, Lin or Vec3 type.'
+        assert issubclass(tp, Vec), 'Data must be Fol, Lin or Vec type.'
         assert all([isinstance(e, tp) for e in data]), \
             'All data in group must be of same type.'
         super(Group, self).__init__(data)
@@ -1077,14 +1077,14 @@ class Group(list):
         return Group([e.asfol for e in self], name=self.name)
 
     @property
-    def asvec3(self):
-        """Return ``Group`` object with all data converted to ``Vec3``."""
-        return Group([e.asvec3 for e in self], name=self.name)
+    def asVec(self):
+        """Return ``Group`` object with all data converted to ``Vec``."""
+        return Group([e.asVec for e in self], name=self.name)
 
     @property
     def V(self):
-        """Return ``Group`` object with all data converted to ``Vec3``."""
-        return Group([e.asvec3 for e in self], name=self.name)
+        """Return ``Group`` object with all data converted to ``Vec``."""
+        return Group([e.asVec for e in self], name=self.name)
 
     @property
     def R(self):
@@ -1099,24 +1099,24 @@ class Group(list):
         As axial summing is not commutative we use vectorial summing of
         centered data for Fol and Lin
         """
-        if self.type == Vec3:
-            r = Vec3(np.sum(self, axis=0))
+        if self.type == Vec:
+            r = Vec(np.sum(self, axis=0))
         elif self.type == Lin:
             _, _, u = np.linalg.svd(self.ortensor.cov)
             # centered
             cntr = self.transform(u).rotate(Lin(90, 0), 90)
             # all points Z-ward
-            cg = Group.from_array(*cntr.dd, typ=Vec3)
+            cg = Group.from_array(*cntr.dd, typ=Vec)
             r = cg.R.aslin.rotate(Lin(90, 0), -90).transform(u.T)
         elif self.type == Fol:
             _, _, u = np.linalg.svd(self.ortensor.cov)
             # centered
             cntr = self.transform(u).rotate(Lin(90, 0), 90)
             # all points Z-ward
-            cg = Group.from_array(*cntr.aslin.dd, typ=Vec3)
+            cg = Group.from_array(*cntr.aslin.dd, typ=Vec)
             r = cg.R.asfol.rotate(Lin(90, 0), -90).transform(u.T)
         else:
-            raise TypeError('Wrong argument type! Only Vec3, Lin and Fol!')
+            raise TypeError('Wrong argument type! Only Vec, Lin and Fol!')
         return r
 
     @property
@@ -1184,7 +1184,7 @@ class Group(list):
             for e in self:
                 for f in other:
                     res.append(e**f)
-        elif issubclass(type(other), Vec3):
+        elif issubclass(type(other), Vec):
             for e in self:
                 res.append(e**other)
         else:
@@ -1211,7 +1211,7 @@ class Group(list):
         resultant.
 
         """
-        v = self.asvec3
+        v = self.asVec
         alldone = np.all(v.angle(v.R) <= 90)
         while not alldone:
             ang = v.angle(v.R)
@@ -1246,7 +1246,7 @@ class Group(list):
             for e in self:
                 for f in other:
                     res.append(e.angle(f))
-        elif issubclass(type(other), Vec3):
+        elif issubclass(type(other), Vec):
             for e in self:
                 res.append(e.angle(other))
         else:
@@ -1394,8 +1394,8 @@ class Group(list):
         return cls.from_array(azi + 180, 90 - inc, typ=Fol, name=name)
 
     @classmethod
-    def sfs_vec3(cls, N=1000, name='Default'):
-        """Method to create ``Group`` of uniformly distributed ``Vec3`` objects.
+    def sfs_Vec(cls, N=1000, name='Default'):
+        """Method to create ``Group`` of uniformly distributed ``Vec`` objects.
         Spherical Fibonacci Spiral points on a sphere algorithm adopted from
         John Burkardt.
 
@@ -1406,7 +1406,7 @@ class Group(list):
           name: name of dataset. Default is 'Default'
 
         Example:
-          >>> v = Group.sfs_vec3(300)
+          >>> v = Group.sfs_Vec(300)
           >>> v.ortensor.eigenvals
           array([ 0.33346453,  0.33333475,  0.33320072])
         """
@@ -1416,12 +1416,12 @@ class Group(list):
         sp = i2 / N
         cp = np.sqrt((N + i2) * (N - i2)) / N
         dc = np.array([cp * np.sin(theta), cp * np.cos(theta), sp]).T
-        return cls([Vec3(d) for d in dc], name=name)
+        return cls([Vec(d) for d in dc], name=name)
 
     @classmethod
     def sfs_lin(cls, N=500, name='Default'):
         """Method to create ``Group`` of uniformly distributed ``Lin`` objects.
-        Based on ``Group.sfs_vec3`` method, but only half of sphere is used.
+        Based on ``Group.sfs_Vec`` method, but only half of sphere is used.
 
         Args:
           N: number of objects to be generated. Default 500
@@ -1432,14 +1432,14 @@ class Group(list):
           >>> g.ortensor.eigenvals
           array([ 0.33417707,  0.33333973,  0.33248319])
         """
-        g = cls.sfs_vec3(N=2 * N)
+        g = cls.sfs_Vec(N=2 * N)
         # no antipodal
         return cls([d.aslin for d in g if d[2] > 0], name=name)
 
     @classmethod
     def sfs_fol(cls, N=500, name='Default'):
         """Method to create ``Group`` of uniformly distributed ``Fol`` objects.
-        Based on ``Group.sfs_vec3`` method, but only half of sphere is used.
+        Based on ``Group.sfs_Vec`` method, but only half of sphere is used.
 
         Args:
           N: number of objects to be generated. Default 500
@@ -1450,13 +1450,13 @@ class Group(list):
           >>> g.ortensor.eigenvals
           array([ 0.33417707,  0.33333973,  0.33248319])
         """
-        g = cls.sfs_vec3(N=2 * N)
+        g = cls.sfs_Vec(N=2 * N)
         # no antipodal
         return cls([d.asfol for d in g if d[2] > 0], name=name)
 
     @classmethod
-    def gss_vec3(cls, N=1000, name='Default'):
-        """Method to create ``Group`` of uniformly distributed ``Vec3`` objects.
+    def gss_Vec(cls, N=1000, name='Default'):
+        """Method to create ``Group`` of uniformly distributed ``Vec`` objects.
         Golden Section Spiral points on a sphere algorithm.
 
         http://www.softimageblog.com/archives/115
@@ -1466,7 +1466,7 @@ class Group(list):
           name: name of dataset. Default is 'Default'
 
         Example:
-          >>> v = Group.gss_vec3(300)
+          >>> v = Group.gss_Vec(300)
           >>> v.ortensor.eigenvals
           array([ 0.33335689,  0.33332315,  0.33331996])
         """
@@ -1477,12 +1477,12 @@ class Group(list):
         r = np.sqrt(1 - y * y)
         phi = k * inc
         dc = np.array([np.cos(phi) * r, y, np.sin(phi) * r]).T
-        return cls([Vec3(d) for d in dc], name=name)
+        return cls([Vec(d) for d in dc], name=name)
 
     @classmethod
     def gss_lin(cls, N=500, name='Default'):
         """Method to create ``Group`` of uniformly distributed ``Lin`` objects.
-        Based on ``Group.gss_vec3`` method, but only half of sphere is used.
+        Based on ``Group.gss_Vec`` method, but only half of sphere is used.
 
         Args:
           N: number of objects to be generated. Default 500
@@ -1493,14 +1493,14 @@ class Group(list):
           >>> g.ortensor.eigenvals
           array([ 0.33498373,  0.3333366 ,  0.33167967])
         """
-        g = cls.gss_vec3(N=2 * N)
+        g = cls.gss_Vec(N=2 * N)
         # no antipodal
         return cls([d.aslin for d in g if d[2] > 0], name=name)
 
     @classmethod
     def gss_fol(cls, N=500, name='Default'):
         """Method to create ``Group`` of uniformly distributed ``Fol`` objects.
-        Based on ``Group.gss_vec3`` method, but only half of sphere is used.
+        Based on ``Group.gss_Vec`` method, but only half of sphere is used.
 
         Args:
           N: number of objects to be generated.  Default 500
@@ -1511,7 +1511,7 @@ class Group(list):
           >>> g.ortensor.eigenvals
           array([ 0.33498373,  0.3333366 ,  0.33167967])
         """
-        g = cls.gss_vec3(N=2 * N)
+        g = cls.gss_Vec(N=2 * N)
         # no antipodal
         return cls([d.asfol for d in g if d[2] > 0], name=name)
 
@@ -1556,7 +1556,7 @@ class Group(list):
         """
         assert issubclass(type(p), Pair), 'Argument must be Pair object.'
         k = KentDistribution(p.lvec, p.fvec.cross(p.lvec), p.fvec, kappa, beta)
-        g = Group([Vec3(v).aslin for v in k.rvs(N)])
+        g = Group([Vec(v).aslin for v in k.rvs(N)])
         return g
 
     def to_file(self, filename='group.dat'):
@@ -1785,7 +1785,7 @@ class PairSet(list):
 
     @property
     def fvec(self):
-        """Return vectors of Fol of PairSet as Group of Vec3"""
+        """Return vectors of Fol of PairSet as Group of Vec"""
         return Group([e.fvec for e in self], name=self.name)
 
     @property
@@ -1795,7 +1795,7 @@ class PairSet(list):
 
     @property
     def lvec(self):
-        """Return vectors of Lin part of PairSet as Group of Vec3"""
+        """Return vectors of Lin part of PairSet as Group of Vec"""
         return Group([e.lvec for e in self], name=self.name)
 
     @property
@@ -1862,12 +1862,12 @@ class FaultSet(PairSet):
 
     @property
     def pvec(self):
-        """Return p-axes of FaultSet as Group of Vec3"""
+        """Return p-axes of FaultSet as Group of Vec"""
         return Group([e.pvec for e in self], name=self.name)
 
     @property
     def tvec(self):
-        """Return t-axes of FaultSet as Group of Vec3"""
+        """Return t-axes of FaultSet as Group of Vec"""
         return Group([e.tvec for e in self], name=self.name)
 
     @property
@@ -1901,7 +1901,7 @@ class FaultSet(PairSet):
 
         def angmech2(dc, fs):
             val = 0
-            d = Vec3(dc).aslin
+            d = Vec(dc).aslin
             for f in fs:
                 s = 2 * float(np.sign(dc.dot(f.fvec)) == np.sign(dc.dot(f.lvec))) - 1
                 lprob = (1 - abs(45 - f.lin.angle(d)) / 45)
@@ -1982,7 +1982,7 @@ class Ortensor(object):
     See following methods and properties for additional operations.
 
     Args:
-      data (``Group``): grou of ``Vec3``, ``Fol`` or ``Lin`` objects
+      data (``Group``): grou of ``Vec``, ``Fol`` or ``Lin`` objects
 
     Returns:
       ``Ortensor`` object
@@ -2038,9 +2038,9 @@ class Ortensor(object):
             e1, e2, e3 = self.eigenvals
         else:
             e1 = e2 = e3 = 1.0
-        return Group([e1 * Vec3(self.vects[0]),
-                      e2 * Vec3(self.vects[1]),
-                      e3 * Vec3(self.vects[2])])
+        return Group([e1 * Vec(self.vects[0]),
+                      e2 * Vec(self.vects[1]),
+                      e3 * Vec(self.vects[2])])
 
     @property
     def eigenlins(self):
@@ -2238,7 +2238,7 @@ class Cluster(object):
     Cluster object provides hierarchical clustering using `scipy.cluster` routines.
 
     The distance matrix is calculated as an angle between features, where ``Fol`` and
-    ``Lin`` use axial angles while ``Vec3`` uses direction angles.
+    ``Lin`` use axial angles while ``Vec`` uses direction angles.
     """
 
     def __init__(self, d, **kwargs):

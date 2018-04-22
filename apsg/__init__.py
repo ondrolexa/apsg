@@ -13,7 +13,7 @@ from .plotting import StereoNet, FabricPlot
 
 
 __all__ = (
-    'Vec3', 'Fol', 'Lin', 'Pair', 'Fault', 'Group', 'PairSet',
+    'Vec', 'Fol', 'Lin', 'Pair', 'Fault', 'Group', 'PairSet',
     'FaultSet', 'Ortensor', 'Cluster', 'StereoGrid', 'G', 'settings'
     'SDB', 'DefGrad', 'VelGrad', 'Stress', 'sind', 'cosd', 'tand', 'acosd', 'asind',
     'atand', 'atan2d', 'StereoNet', 'FabricPlot'

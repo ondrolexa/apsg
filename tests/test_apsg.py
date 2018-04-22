@@ -19,7 +19,7 @@ import pytest
 import numpy as np
 
 
-from apsg import Vec3, Fol, Lin, Fault, Pair, Group, DefGrad, Ortensor, settings
+from apsg import Vec, Fol, Lin, Fault, Pair, Group, DefGrad, Ortensor, settings
 
 
 # ############################################################################
@@ -42,13 +42,13 @@ def is_hashable(obj):
 
 @pytest.mark.skip
 def test_that_vector_is_hashable():
-    assert is_hashable(Vec3([1, 2, 3]))
+    assert is_hashable(Vec([1, 2, 3]))
 
 
-def test_that_vec3_string_gets_three_digits_when_vec2dd_settings_is_false():
+def test_that_Vec_string_gets_three_digits_when_vec2dd_settings_is_false():
     settings["vec2dd"] = False
 
-    vec = Vec3([1, 2, 3])
+    vec = Vec([1, 2, 3])
 
     current = str(vec)
     expects = "V(1.000, 2.000, 3.000)"
@@ -56,10 +56,10 @@ def test_that_vec3_string_gets_three_digits_when_vec2dd_settings_is_false():
     assert current == expects
 
 
-def test_that_vec3_string_gets_dip_and_dir_when_vec2dd_settings_is_true():
+def test_that_Vec_string_gets_dip_and_dir_when_vec2dd_settings_is_true():
     settings["vec2dd"] = True
 
-    vec = Vec3([1, 2, 3])
+    vec = Vec([1, 2, 3])
 
     current = str(vec)
     expects = "V:63/53"
@@ -73,22 +73,22 @@ def test_that_vec3_string_gets_dip_and_dir_when_vec2dd_settings_is_true():
 
 
 def test_that_equality_operator_is_reflexive():
-    u = Vec3(1, 2, 3)
+    u = Vec(1, 2, 3)
 
     assert u == u
 
 
 def test_that_equality_operator_is_symetric():
-    u = Vec3([1, 2, 3])
-    v = Vec3([1, 2, 3])
+    u = Vec([1, 2, 3])
+    v = Vec([1, 2, 3])
 
     assert u == v and v == u
 
 
 def test_that_equality_operator_is_transitive():
-    u = Vec3([1, 2, 3])
-    v = Vec3([1, 2, 3])
-    w = Vec3([1, 2, 3])
+    u = Vec([1, 2, 3])
+    v = Vec([1, 2, 3])
+    w = Vec([1, 2, 3])
 
     assert u == v and v == w and u == w
 
@@ -98,14 +98,14 @@ def test_that_equality_operator_precision_limits():
     This is not the best method how to test a floating point precision limits,
     but I will keep it here for a future work.
     """
-    lhs = Vec3([1.00000000000000001] * 3)
-    rhs = Vec3([1.00000000000000009] * 3)
+    lhs = Vec([1.00000000000000001] * 3)
+    rhs = Vec([1.00000000000000009] * 3)
 
     assert lhs == rhs
 
 
 def test_that_equality_operator_returns_false_for_none():
-    lhs = Vec3([1, 0, 0])
+    lhs = Vec([1, 0, 0])
     rhs = None
 
     current = lhs == rhs
@@ -118,8 +118,8 @@ def test_that_equality_operator_returns_false_for_none():
 
 
 def test_inequality_operator():
-    lhs = Vec3([1, 2, 3])
-    rhs = Vec3([3, 2, 1])
+    lhs = Vec([1, 2, 3])
+    rhs = Vec([3, 2, 1])
 
     assert lhs != rhs
 
@@ -129,16 +129,16 @@ def test_inequality_operator():
 
 @pytest.mark.skip
 def test_that_hash_is_same_for_identical_vectors():
-    lhs = Vec3([1, 2, 3])
-    rhs = Vec3([1, 2, 3])
+    lhs = Vec([1, 2, 3])
+    rhs = Vec([1, 2, 3])
 
     assert hash(lhs) == hash(rhs)
 
 
 @pytest.mark.skip
 def test_that_hash_is_not_same_for_different_vectors():
-    lhs = Vec3([1, 2, 3])
-    rhs = Vec3([3, 2, 1])
+    lhs = Vec([1, 2, 3])
+    rhs = Vec([3, 2, 1])
 
     assert not hash(lhs) == hash(rhs)
 
@@ -147,13 +147,13 @@ def test_that_hash_is_not_same_for_different_vectors():
 
 
 def test_that_vector_is_upper():
-    vec = Vec3([0, 0, -1])
+    vec = Vec([0, 0, -1])
 
     assert vec.upper
 
 
 def test_that_vector_is_not_upper():
-    vec = Vec3([0, 0, 1])
+    vec = Vec([0, 0, 1])
 
     assert not vec.upper
 
@@ -162,8 +162,8 @@ def test_that_vector_is_not_upper():
 
 
 def test_that_vector_is_flipped():
-    current = Vec3([0, 0, 1]).flip
-    expects = Vec3([0, 0, -1])
+    current = Vec([0, 0, 1]).flip
+    expects = Vec([0, 0, -1])
 
     assert current == expects
 
@@ -172,7 +172,7 @@ def test_that_vector_is_flipped():
 
 
 def test_absolute_value():
-    current = abs(Vec3([1, 2, 3]))
+    current = abs(Vec([1, 2, 3]))
     expects = 3.7416573867739413
 
     assert current == expects
@@ -182,8 +182,8 @@ def test_absolute_value():
 
 
 def test_that_vector_is_normalized():
-    current = Vec3([1, 2, 3]).uv
-    expects = Vec3([0.26726124191242442, 0.5345224838248488, 0.8017837257372732])
+    current = Vec([1, 2, 3]).uv
+    expects = Vec([0.26726124191242442, 0.5345224838248488, 0.8017837257372732])
 
     assert current == expects
 
@@ -192,7 +192,7 @@ def test_that_vector_is_normalized():
 
 
 def test_dipdir():
-    v = Vec3([1, 0, 0])
+    v = Vec([1, 0, 0])
 
     current = v.dd
     expects = (0.0, 0.0)
@@ -204,22 +204,22 @@ def test_dipdir():
 
 
 def test_aslin_conversion():
-    assert str(Vec3([1, 1, 1]).aslin) == 'L:45/35'
+    assert str(Vec([1, 1, 1]).aslin) == 'L:45/35'
 
 
 def test_lin_to_vec_to_lin():
-    assert Vec3(Lin(110, 37)).aslin == Lin(110, 37)
+    assert Vec(Lin(110, 37)).aslin == Lin(110, 37)
 
 
 # fixme ``asfol``
 
 
 def test_asfol_conversion():
-    assert str(Vec3([1, 1, 1]).asfol) == 'S:225/55'
+    assert str(Vec([1, 1, 1]).asfol) == 'S:225/55'
 
 
 def test_fol_to_vec_to_fol():
-    assert Vec3(Fol(213, 52)).asfol == Fol(213, 52)
+    assert Vec(Fol(213, 52)).asfol == Fol(213, 52)
 
 
 # todo ``asvec``
@@ -229,8 +229,8 @@ def test_fol_to_vec_to_fol():
 
 
 def test_that_angle_between_vectors_is_0():
-    lhs = Vec3([1, 0, 0])
-    rhs = Vec3([1, 0, 0])
+    lhs = Vec([1, 0, 0])
+    rhs = Vec([1, 0, 0])
 
     current = lhs.angle(rhs)
     expects = 0 # degrees
@@ -239,8 +239,8 @@ def test_that_angle_between_vectors_is_0():
 
 
 def test_that_angle_between_vectors_is_90():
-    lhs = Vec3([1, 0, 0])
-    rhs = Vec3([0, 1, 1])
+    lhs = Vec([1, 0, 0])
+    rhs = Vec([0, 1, 1])
 
     current = lhs.angle(rhs)
     expects = 90 # degrees
@@ -249,8 +249,8 @@ def test_that_angle_between_vectors_is_90():
 
 
 def test_that_angle_between_vectors_is_180():
-    lhs = Vec3([1, 0, 0])
-    rhs = Vec3([-1, 0, 0])
+    lhs = Vec([1, 0, 0])
+    rhs = Vec([-1, 0, 0])
 
     current = lhs.angle(rhs)
     expects = 180 # degrees
@@ -263,21 +263,21 @@ def test_that_angle_between_vectors_is_180():
 
 def test_cross_product_of_colinear_vectors():
 
-    lhs = Vec3([1, 0, 0])
-    rhs = Vec3([-1, 0, 0])
+    lhs = Vec([1, 0, 0])
+    rhs = Vec([-1, 0, 0])
 
     current = lhs.cross(rhs)
-    expects = Vec3([0, 0, 0])
+    expects = Vec([0, 0, 0])
 
     assert current == expects
 
 
 def test_cross_product_of_orthonormal_vectors():
-    e1 = Vec3([1, 0, 0])
-    e2 = Vec3([0, 1, 0])
+    e1 = Vec([1, 0, 0])
+    e2 = Vec([0, 1, 0])
 
     current = e1.cross(e2)
-    expects = Vec3([0, 0, 1])
+    expects = Vec([0, 0, 1])
 
     assert current == expects
 
@@ -286,15 +286,15 @@ def test_cross_product_of_orthonormal_vectors():
 
 
 def test_dot_product_of_same_vectors():
-    i = Vec3(1, 0, 0)
-    j = Vec3(1, 0, 0)
+    i = Vec(1, 0, 0)
+    j = Vec(1, 0, 0)
 
     assert i.dot(j) == abs(i) == abs(i)
 
 
 def test_dot_product_of_orthonornal_vectors():
-    i = Vec3(1, 0, 0)
-    j = Vec3(0, 1, 0)
+    i = Vec(1, 0, 0)
+    j = Vec(0, 1, 0)
 
     assert i.dot(j) == 0
 
@@ -304,39 +304,39 @@ def test_dot_product_of_orthonornal_vectors():
 
 @pytest.fixture
 def x():
-    return Vec3([1, 0, 0])
+    return Vec([1, 0, 0])
 
 
 @pytest.fixture
 def y():
-    return Vec3([0, 1, 0])
+    return Vec([0, 1, 0])
 
 
 @pytest.fixture
 def z():
-    return Vec3([0, 0, 1])
+    return Vec([0, 0, 1])
 
 
 def test_rotation_by_90_around(z):
-    v = Vec3([1, 1, 1])
+    v = Vec([1, 1, 1])
     current = v.rotate(z, 90)
-    expects = Vec3([-1, 1, 1])
+    expects = Vec([-1, 1, 1])
 
     assert current == expects
 
 
 def test_rotation_by_180_around(z):
-    v = Vec3([1, 1, 1])
+    v = Vec([1, 1, 1])
     current = v.rotate(z, 180)
-    expects = Vec3([-1, -1, 1])
+    expects = Vec([-1, -1, 1])
 
     assert current == expects
 
 
 def test_rotation_by_360_around(z):
-    v = Vec3([1, 1, 1])
+    v = Vec([1, 1, 1])
     current = v.rotate(z, 360)
-    expects = Vec3([1, 1, 1])
+    expects = Vec([1, 1, 1])
 
     assert current == expects
 
@@ -345,9 +345,9 @@ def test_rotation_by_360_around(z):
 
 
 def test_projection_of_xy_onto(z):
-    xz = Vec3([1, 0, 1])
+    xz = Vec([1, 0, 1])
     current = xz.proj(z)
-    expects = Vec3([0, 0, 1])
+    expects = Vec([0, 0, 1])
 
     assert current == expects
 
@@ -362,11 +362,11 @@ def test_projection_of_xy_onto(z):
 
 
 def test_add_operator():
-    lhs = Vec3([1, 1, 1])
-    rhs = Vec3([1, 1, 1])
+    lhs = Vec([1, 1, 1])
+    rhs = Vec([1, 1, 1])
 
     current = lhs + rhs
-    expects = Vec3([2, 2, 2])
+    expects = Vec([2, 2, 2])
 
     assert current == expects
 
@@ -375,11 +375,11 @@ def test_add_operator():
 
 
 def test_sub_operator():
-    lhs = Vec3([1, 1, 1])
-    rhs = Vec3([1, 1, 1])
+    lhs = Vec([1, 1, 1])
+    rhs = Vec([1, 1, 1])
 
     current = lhs - rhs
-    expects = Vec3([0, 0, 0])
+    expects = Vec([0, 0, 0])
 
     assert current == expects
 
@@ -388,8 +388,8 @@ def test_sub_operator():
 
 
 def test_mull_operator():
-    lhs = Vec3([1, 1, 1])
-    rhs = Vec3([1, 1, 1])
+    lhs = Vec([1, 1, 1])
+    rhs = Vec([1, 1, 1])
 
     current = lhs * rhs
     expects = lhs.dot(rhs)
@@ -401,8 +401,8 @@ def test_mull_operator():
 
 
 def test_pow_operator_with_vector():
-    lhs = Vec3([1, 0, 0])
-    rhs = Vec3([0, 1, 0])
+    lhs = Vec([1, 0, 0])
+    rhs = Vec([0, 1, 0])
 
     current = lhs ** rhs
     expects = lhs.cross(rhs)
@@ -412,10 +412,10 @@ def test_pow_operator_with_vector():
 
 def test_pow_operator_with_scalar():
     lhs = 2
-    rhs = Vec3([1, 1, 1])
+    rhs = Vec([1, 1, 1])
 
     current = lhs * rhs
-    expects = Vec3([2, 2, 2])
+    expects = Vec([2, 2, 2])
 
     assert current == expects
 
@@ -424,9 +424,9 @@ def test_pow_operator_with_scalar():
 
 
 def test_length_method():
-    u = Vec3([1])
-    v = Vec3([1, 2])
-    w = Vec3([1, 2, 3])
+    u = Vec([1])
+    v = Vec([1, 2])
+    w = Vec([1, 2, 3])
 
     len(u) == len(v) == len(w) == 3
 
@@ -435,7 +435,7 @@ def test_length_method():
 
 
 def test_getitem():
-    v = Vec3([1, 2, 3])
+    v = Vec([1, 2, 3])
     assert all((v[0] == 1, v[1] == 2, v[2] == 3))
 
 
@@ -472,7 +472,7 @@ def test_resultant_rdegree():
 def test_group_heterogenous_error():
     with pytest.raises(Exception) as exc:
         g = Group([1, 2, 3])
-        assert "Data must be Fol, Lin or Vec3 type." ==  str(exc.exception)
+        assert "Data must be Fol, Lin or Vec type." ==  str(exc.exception)
 
 
 # ############################################################################
