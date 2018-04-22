@@ -23,8 +23,26 @@ from apsg import Vec3, Fol, Lin, Fault, Pair, Group, DefGrad, Ortensor, settings
 
 
 # ############################################################################
+# Helpers
+# ############################################################################
+
+
+def is_hashable(obj):
+    try:
+        hash(obj)
+        return True
+    except:
+        return False
+
+
+
+# ############################################################################
 # Vector
 # ############################################################################
+
+@pytest.mark.skip
+def test_that_vector_is_hashable():
+    assert is_hashable(Vec3([1, 2, 3])) 
 
 
 def test_that_vec3_string_gets_three_digits_when_vec2dd_settings_is_false():
@@ -90,7 +108,7 @@ def test_that_equality_operator_is_transitive():
     assert u == v and v == w and u == w 
 
 
-def teste_inequality_operator():
+def test_inequality_operator():
     lhs = Vec3([1, 2, 3])
     rhs = Vec3([3, 2, 1])
 
@@ -167,33 +185,201 @@ def test_that_mul_operator_applied_to_orthogonal_vectors_returns_proper_dot_prod
     assert (i * j) == 0
 
 
-# TODO #
+# ``dd``
 
-# dd
 
-# aslin
+def test_dipdir():
+    v = Vec3([1, 0, 0])
+    
+    current = v.dd
+    expects = (0.0, 0.0)
+    
+    assert current == expects
 
-# asfol
 
-# asvec
+# fixme ``aslin``
 
-# angle
+# TypeError: ufunc 'multiply' did not contain a loop with signature matching types dtype('<U21') dtype('<U21') dtype('<U21')
+@pytest.mark.skip 
+def test_aslin_conversion():
+    assert Vec3([1, 1, 1]).aslin == 'L:45/35'
 
-# cross
 
-# rotate
+# fixme ``asfol``
 
-# project
+# TypeError: ufunc 'multiply' did not contain a loop with signature matching types dtype('<U21') dtype('<U21') dtype('<U21')
+@pytest.mark.skip 
+def test_asfol_conversion():
+    assert Vec3([1, 1, 1]).asfol() == 'S:225/55'
 
-# H
 
-# transform
+# todo ``asvec``
 
-# + operator
 
-# - operator
+# ``angle``
 
-# * operator
+
+def test_that_angle_between_vectors_is_0():
+    lhs = Vec3([1, 0, 0])
+    rhs = Vec3([1, 0, 0])
+
+    current = lhs.angle(rhs)
+    expects = 0 # degrees
+
+    assert current == expects
+
+
+def test_that_angle_between_vectors_is_90():
+    lhs = Vec3([1, 0, 0])
+    rhs = Vec3([0, 1, 1])
+
+    current = lhs.angle(rhs)
+    expects = 90 # degrees
+
+    assert current == expects
+
+
+def test_that_angle_between_vectors_is_180():
+    lhs = Vec3([1, 0, 0])
+    rhs = Vec3([-1, 0, 0])
+
+    current = lhs.angle(rhs)
+    expects = 180 # degrees
+
+    assert current == expects
+
+
+# ``cross``
+
+
+def test_cross_product_of_colinear_vectors():
+    
+    lhs = Vec3([1, 0, 0])
+    rhs = Vec3([-1, 0, 0])
+
+    current = lhs.cross(rhs)
+    expects = Vec3([0, 0, 0])
+    
+    assert current == expects
+
+
+def test_cross_product_of_orthonormal_vectors():
+    e1 = Vec3([1, 0, 0])
+    e2 = Vec3([0, 1, 0])
+
+    current = e1.cross(e2)
+    expects = Vec3([0, 0, 1])
+
+    assert current == expects
+
+
+# ``rotate``
+
+
+@pytest.fixture
+def x():
+    return Vec3([1, 0, 0])
+
+
+@pytest.fixture
+def y():
+    return Vec3([0, 1, 0])
+
+
+@pytest.fixture
+def z():
+    return Vec3([0, 0, 1])
+
+
+def test_rotation_by_90_around(z):
+    v = Vec3([1, 1, 1])
+    current = v.rotate(z, 90)
+    expects = Vec3([-1, 1, 1])
+
+    assert current == expects  
+
+
+def test_rotation_by_180_around(z):
+    v = Vec3([1, 1, 1])
+    current = v.rotate(z, 180)
+    expects = Vec3([-1, -1, 1])
+
+    assert current == expects  
+
+
+def test_rotation_by_360_around(z):
+    v = Vec3([1, 1, 1])
+    current = v.rotate(z, 360)
+    expects = Vec3([1, 1, 1])
+
+    assert current == expects  
+    
+
+# ``project``
+
+
+def test_projection_of_xy_onto(z):
+    xz = Vec3([1, 0, 1])
+    current = xz.proj(z)
+    expects = Vec3([0, 0, 1])
+
+    assert current == expects
+
+
+# todo ``H``
+
+
+# todo ``transform``
+
+
+# ``+`` operator
+
+
+def test_add_operator():
+    lhs = Vec3([1, 1, 1])
+    rhs = Vec3([1, 1, 1])
+
+    current = lhs + rhs
+    expects = Vec3([2, 2, 2])
+
+    assert current == expects 
+
+
+# ``-`` operator
+
+
+def test_sub_operator():
+    lhs = Vec3([1, 1, 1])
+    rhs = Vec3([1, 1, 1])
+
+    current = lhs - rhs
+    expects = Vec3([0, 0, 0])
+
+    assert current == expects 
+
+
+# ``*`` operator
+
+
+def test_mull_operator_with_vector():
+    lhs = Vec3([1, 1, 1])
+    rhs = Vec3([1, 1, 1])
+
+    current = lhs * rhs
+    expects = lhs.dot(rhs)
+
+    assert current == expects 
+
+
+def test_mull_operator_with_scalar():
+    lhs = 2
+    rhs = Vec3([1, 1, 1])
+
+    current = lhs * rhs
+    expects = Vec3([2, 2, 2])
+
+    assert current == expects 
+
 
 # ** operator
 
@@ -204,6 +390,11 @@ def test_length_method():
     w = Vec3([1, 2, 3])
 
     len(u) == len(v) == len(w) == 3
+
+
+def test_getitem():
+    v = Vec3([1, 2, 3])
+    assert all((v[0] == 1, v[1] == 2, v[2] == 3))
 
 
 # ############################################################################
