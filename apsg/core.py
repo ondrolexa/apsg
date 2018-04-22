@@ -108,8 +108,8 @@ class Vec3(np.ndarray):
         if np.isscalar(other):
             return pow(abs(self), other)
         else:
-            return self.cross(other)
-
+            return Vec3(np.cross(self, other))
+            
     def __eq__(self, other):
         """
         Returns `True` if vectors are equal, otherwise `False`.
@@ -189,7 +189,7 @@ class Vec3(np.ndarray):
 
         """
 
-        return Vec3(np.cross(self, other))
+        return self ** other
 
     def angle(self, other):
         """
