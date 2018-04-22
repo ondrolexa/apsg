@@ -2,7 +2,7 @@
 
 
 from .core import (
-    Vec3, Fol, Lin, Pair, Fault, Group, PairSet,
+    Vec, Fol, Lin, Pair, Fault, Group, PairSet,
     FaultSet, Ortensor, Cluster, StereoGrid, G, settings
 )
 
