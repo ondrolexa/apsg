@@ -35,20 +35,19 @@ def is_hashable(obj):
         return False
 
 
-@pytest.fixture
-def x():
-    return Vec3([1, 0, 0])
-
-@pytest.fixture
-def y():
-    return Vec3([0, 1, 0])
-
-@pytest.fixture
-def z():
-    return Vec3([0, 0, 1])
-
-
 class TestVector:
+
+    @pytest.fixture
+    def x(self):
+        return Vec3([1, 0, 0])
+
+    @pytest.fixture
+    def y(self):
+        return Vec3([0, 1, 0])
+
+    @pytest.fixture
+    def z(self):
+        return Vec3([0, 0, 1])
 
     @pytest.mark.skip
     def test_that_vector_is_hashable(self):
