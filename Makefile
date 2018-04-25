@@ -35,7 +35,7 @@ lint:
 	flake8 apsg tests
 
 test:
-	python setup.py test
+	pipenv run py.test --verbose
 
 test-all:
 	tox

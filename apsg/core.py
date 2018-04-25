@@ -91,7 +91,7 @@ class Vec3(np.ndarray):
         Returns the dot product of two vectors.
         """
 
-        return np.dot(self, other)
+        return np.dot(self, other) # What about `numpy.inner`?
 
     def __abs__(self):
         """
@@ -114,18 +114,22 @@ class Vec3(np.ndarray):
         """
         Returns `True` if vectors are equal, otherwise `False`.
         """
+        if not isinstance(other, self.__class__):
+            return False
 
-        return bool(abs(self - other) < 1e-15)
+        return self is other or abs(self - other) < 1e-15
 
     def __ne__(self, other):
         """
         Returns `True` if vectors are not equal, otherwise `False`.
+
+        Overrides the default implementation (unnecessary in Python 3).
         """
 
         return not self == other
 
-    # def __hash__(self):
-        # return NotImplementedError
+    def __hash__(self):
+        return NotImplementedError
 
     @property
     def type(self):
@@ -138,7 +142,7 @@ class Vec3(np.ndarray):
     @property
     def upper(self):
         """
-        Returns ``True`` if z-coordinate is negative.
+        Returns `True` if z-coordinate is negative, otherwise `False`.
         """
 
         return np.sign(self[2]) < 0
@@ -146,7 +150,7 @@ class Vec3(np.ndarray):
     @property
     def flip(self):
         """
-        Invert z-coordinate of vector.
+        Returns a new vector with inverted `z` coordinate.
         """
 
         return Vec3((self[0], self[1], -self[2]))
@@ -179,7 +183,7 @@ class Vec3(np.ndarray):
           The cross product of `self` and `other`
 
         Example:
-          >>> v = Vec3([0,2,-2])
+          >>> v = Vec3([0, 2, -2])
           >>> u.cross(v)
           V(-4.000, 2.000, 2.000)
 
@@ -207,16 +211,16 @@ class Vec3(np.ndarray):
         else:
             return acosd(np.clip(np.dot(self.uv, other.uv), -1, 1))
 
-    def rotate(self, axis, phi):
+    def rotate(self, axis, angle):
         """
         Returns rotated vector about axis.
 
         Args:
           axis (``Vec3``): axis of rotation
-          phi (float): angle of rotation in degrees
+          angle (float): angle of rotation in degrees
 
         Returns:
-          vector represenatation of `self` rotated `phi` degrees about
+          vector represenatation of `self` rotated `angle` degrees about
           vector `axis`. Rotation is clockwise along axis direction.
 
         Example:
@@ -227,9 +231,9 @@ class Vec3(np.ndarray):
 
         e = Vec3(self)  # rotate all types as vectors
         k = axis.uv
-        r = (cosd(phi) * e +
-             sind(phi) * k.cross(e) +
-             (1 - cosd(phi)) * k * (k * e))
+        r = (cosd(angle) * e +
+             sind(angle) * k.cross(e) +
+             (1 - cosd(angle)) * k * (k * e))
 
         return r.view(type(self))
 
@@ -299,58 +303,6 @@ class Vec3(np.ndarray):
         return res
 
     @property
-    def aslin(self):
-        """
-        Converts `self` to ``Lin`` object.
-
-        Example:
-          >>> u = Vec3([1,1,1])
-          >>> u.aslin
-          L:45/35
-
-        """
-
-        return self.copy().view(Lin)
-
-    @property
-    def asfol(self):
-        """
-        Converts `self` to ``Fol`` object.
-
-        Example:
-          >>> u = Vec3([1,1,1])
-          >>> u.asfol
-          S:225/55
-
-        """
-
-        return self.copy().view(Fol)
-
-    @property
-    def asvec3(self):
-        """
-        Converts `self` to ``Vec3`` object.
-
-        Example:
-          >>> l = Lin(120,50)
-          >>> l.asvec3
-          V(-0.321, 0.557, 0.766)
-
-        """
-
-        return self.copy().view(Vec3)
-
-    @property
-    def V(self):
-        """
-        Converts `self` to ``Vec3`` object.
-
-        Alias of ``asvec3`` property.
-        """
-
-        return self.copy().view(Vec3)
-
-    @property
     def dd(self):
         """
         Returns dip-direction, dip tuple.
@@ -364,6 +316,55 @@ class Vec3(np.ndarray):
         inc = asind(n[2])
 
         return dec, inc
+
+    @property
+    def aslin(self):
+        """
+        Converts `self` to ``Lin`` object.
+
+        Example:
+          >>> u = Vec3([1,1,1])
+          >>> u.aslin
+          L:45/35
+        """
+
+        return self.copy().view(Lin)
+
+    @property
+    def asfol(self):
+        """
+        Converts `self` to ``Fol`` object.
+
+        Example:
+          >>> u = Vec3([1,1,1])
+          >>> u.asfol
+          S:225/55
+        """
+
+        return self.copy().view(Fol)
+
+    @property
+    def asvec3(self):
+        """
+        Converts `self` to ``Vec3`` object.
+
+        Example:
+          >>> l = Lin(120,50)
+          >>> l.asvec3
+          V(-0.321, 0.557, 0.766)
+        """
+
+        return self.copy().view(Vec3)
+
+    @property
+    def V(self):
+        """
+        Converts `self` to ``Vec3`` object.
+
+        Alias of ``asvec3`` property.
+        """
+
+        return self.copy().view(Vec3)
 
 
 class Lin(Vec3):
