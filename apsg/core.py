@@ -108,7 +108,7 @@ class Vec3(np.ndarray):
         if np.isscalar(other):
             return pow(abs(self), other)
         else:
-            return Vec3(np.cross(self, other))
+            return self.cross(other)
 
     def __eq__(self, other):
         """
@@ -128,7 +128,7 @@ class Vec3(np.ndarray):
 
         return not self == other
 
-    def __hash__(self):  
+    def __hash__(self):
         return NotImplementedError
 
     @property
@@ -156,7 +156,7 @@ class Vec3(np.ndarray):
         return Vec3((self[0], self[1], -self[2]))
 
     @property
-    def uv(self): 
+    def uv(self):
         """
         Normalizes the vector to unit length.
 
@@ -189,7 +189,7 @@ class Vec3(np.ndarray):
 
         """
 
-        return self ** other
+        return Vec3(np.cross(self, other))
 
     def angle(self, other):
         """
