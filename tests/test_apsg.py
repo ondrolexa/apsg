@@ -239,6 +239,13 @@ class TestVector:
 
         assert lhs.cross(rhs) == (-rhs).cross(lhs)
 
+    def test_that_vector_product_is_distributive_over_addition(self):
+        a = Vec3(1, 0, 0)
+        b = Vec3(0, 1, 0)
+        c = Vec3(0, 0, 1)
+
+        assert a.cross(b + c) == a.cross(b) + a.cross(c)
+
     def test_that_vector_product_is_zero_vector_when_they_are_collinear(self):
         lhs = Vec3([1, 0, 0])
         rhs = Vec3([2, 0, 0])
