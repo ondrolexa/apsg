@@ -117,7 +117,7 @@ class Vec3(np.ndarray):
 
     def __abs__(self):
         """
-        Returns the 2-norm or Euclidean norm of vector.
+        Return the 2-norm or Euclidean norm of vector.
         """
 
         return np.linalg.norm(self)
@@ -388,12 +388,12 @@ class Lin(Vec3):
     It provides all ``Vec3`` methods and properties but behave as axial vector.
 
     Args:
-      azi: The dip direction in degrees.
-      inc: The dip angle in degrees.
+        azi: The dip direction in degrees.
+        inc: The dip angle in degrees.
 
     Example:
-      >>> l = Lin(120, 60)
-      L:120/60
+        >>> l = Lin(120, 60)
+        L:120/60
 
     """
 
@@ -407,7 +407,7 @@ class Lin(Vec3):
 
     def __add__(self, other):
         """
-        Sum of axial data.
+        Sum a `self` with `other`.
         """
         if self * other < 0:
             other = -other
@@ -420,9 +420,8 @@ class Lin(Vec3):
 
     def __sub__(self, other):
         """
-        Subtracts axial data.
+        Subtract a `self` with `other`.
         """
-
         if self * other < 0:
             other = -other
 
@@ -436,31 +435,31 @@ class Lin(Vec3):
 
     def __eq__(self, other):
         """
-        Returns `True` if linear features are equal.
+        Return `True` if linear features are equal.
         """
         return bool(abs(self - other) < 1e-15 or abs(self + other) < 1e-15)
 
     def __ne__(self, other):
         """
-        Returns `True` if linear features are not equal.
+        Return `True` if linear features are not equal.
         """
 
         return not (self == other or self == -other)
 
     def dot(self, other):
         """
-        Computes the axial dot product.
+        Calculate the axial dot product.
         """
         return abs(np.dot(self, other))
 
     def cross(self, other):
         """
-        Constructs planar feature defined by two linear features.
+        Create planar feature defined by two linear features.
 
         Example:
-          >>> l=Lin(120,10)
-          >>> l.cross(Lin(160,30))
-          S:196/35
+            >>> l=Lin(120,10)
+            >>> l.cross(Lin(160,30))
+            S:196/35
         """
         return (
             other.cross(self)
@@ -470,7 +469,7 @@ class Lin(Vec3):
 
     def angle(self, other):
         """
-        Returns angle (<90) of two linear features in degrees.
+        Return an angle (<90) between two linear features in degrees.
 
         Example:
           >>> u.angle(v)
@@ -485,7 +484,7 @@ class Lin(Vec3):
     @property
     def dd(self):
         """
-        Returns dip-direction, dip tuple.
+        Return dip direction and dip angle tuple.
         """
         n = self.uv
         if n[2] < 0:
@@ -515,7 +514,7 @@ class Fol(Vec3):
 
     def __new__(cls, azi, inc):
         """
-        Create planar feature.
+        Create a planar feature.
         """
 
         if settings["notation"] == "rhr":
@@ -554,7 +553,6 @@ class Fol(Vec3):
         return super(Fol, self).__sub__(other)
 
     def __isub__(self, other):
-
         if self * other < 0:
             other = -other
 
@@ -562,28 +560,25 @@ class Fol(Vec3):
 
     def __eq__(self, other):
         """
-        Returns `True` if planar features are equal, otherwise `False`.
+        Return `True` if planar features are equal, otherwise `False`.
         """
 
         return bool(abs(self - other) < 1e-15 or abs(self + other) < 1e-15)
 
     def __ne__(self, other):
         """
-        Returns `False` if planar features are equal, otherwise `True`.
+        Return `False` if planar features are equal, otherwise `True`.
         """
 
         return not (self == other or self == -other)
 
-    #
-    # FIXME Implement the `__hash__` method because the `__eq__` method is overridden.
-    #
-
     def angle(self, other):
-        """Returns angle of two planar features in degrees
+        """
+        Return angle of two planar features in degrees.
 
         Example:
-          >>> u.angle(v)
-          90.0
+            >>> u.angle(v)
+            90.0
 
         """
         if isinstance(other, Group):
@@ -593,12 +588,12 @@ class Fol(Vec3):
 
     def cross(self, other):
         """
-        Returns linear feature defined as intersection of two planar features.
+        Return linear feature defined as intersection of two planar features.
 
         Example:
-          >>> f=Fol(60,30)
-          >>> f.cross(Fol(120,40))
-          L:72/29
+            >>> f=Fol(60,30)
+            >>> f.cross(Fol(120,40))
+            L:72/29
 
         """
         if isinstance(other, Group):
@@ -615,7 +610,7 @@ class Fol(Vec3):
 
     def transform(self, F, **kwargs):
         """
-        Returns affine transformation of planar feature by matrix `F`.
+        Return affine transformation of planar feature by matrix `F`.
 
         Args:
           F (``DefGrad`` or ``numpy.array``): transformation matrix
@@ -662,12 +657,13 @@ class Fol(Vec3):
 
     @property
     def dv(self):
-        """Returns dip vector ``Vec3`` object.
+        """
+        Return a dip ``Vec3`` object.
 
         Example:
-          >>> f = Fol(120,50)
-          >>> f.dv
-          V(-0.321, 0.557, 0.766)
+            >>> f = Fol(120,50)
+            >>> f.dv
+            V(-0.321, 0.557, 0.766)
 
         """
         azi, inc = self.dd
@@ -675,13 +671,14 @@ class Fol(Vec3):
         return Lin(azi, inc).view(Vec3)
 
     def rake(self, rake):
-        """Returns vector ``Vec3`` object with given rake.
+        """
+        Return a ``Vec3`` object with given rake.
 
         Example:
-          >>> f = Fol(120,50)
-          >>> f.rake(30)
-          V(-0.911, -0.155, 0.383)
-          >>> f.rake(30).aslin
+            >>> f = Fol(120,50)
+            >>> f.rake(30)
+            V(-0.911, -0.155, 0.383)
+            >>> f.rake(30).aslin
 
         """
 
@@ -689,21 +686,21 @@ class Fol(Vec3):
 
 
 class Pair(object):
-
-    """Class to store pair of planar and linear feature.
+    """
+    The class to store pair of planar and linear feature.
 
     When ``Pair`` object is created, both planar and linear feature are
     adjusted, so linear feature perfectly fit onto planar one. Warning
     is issued, when misfit angle is bigger than 20 degrees.
 
     Args:
-      fazi (float): Dip direction of planar feature in degrees
-      finc (float): dip of planar feature in degrees
-      lazi (float): Dip direction of linear feature in degrees
-      linc (float): dip of linear feature in degrees
+        fazi (float): Dip direction of planar feature in degrees
+        finc (float): dip of planar feature in degrees
+        lazi (float): Dip direction of linear feature in degrees
+        linc (float): dip of linear feature in degrees
 
     Example:
-      >>> p = Pair(140, 30, 110, 26)
+        >>> p = Pair(140, 30, 110, 26)
 
     """
 
@@ -727,12 +724,13 @@ class Pair(object):
 
     @classmethod
     def from_pair(cls, fol, lin):
-        """Create ``Pair`` from ``Fol`` and ``Lin`` objects
+        """
+        Create ``Pair`` from ``Fol`` and ``Lin`` objects.
 
         Example:
-          >>> f = Fol(140, 30)
-          >>> l = Lin(110, 26)
-          >>> p = Pair.from_pair(f, l)
+            >>> f = Fol(140, 30)
+            >>> l = Lin(110, 26)
+            >>> p = Pair.from_pair(f, l)
         """
         data = getattr(fol, settings["notation"]) + lin.dd
         return cls(*data)
@@ -741,13 +739,13 @@ class Pair(object):
         """Rotates ``Pair`` by angle `phi` about `axis`.
 
         Args:
-          axis (``Vec3``): axis of rotation
-          phi (float): angle of rotation in degrees
+            axis (``Vec3``): axis of rotation
+            phi (float): angle of rotation in degrees
 
         Example:
-          >>> p = Pair(140, 30, 110, 26)
-          >>> p.rotate(Lin(40, 50), 120)
-          P:210/83-287/60
+            >>> p = Pair(140, 30, 110, 26)
+            >>> p.rotate(Lin(40, 50), 120)
+            P:210/83-287/60
 
         """
         rot = deepcopy(self)
@@ -761,40 +759,40 @@ class Pair(object):
 
     @property
     def fol(self):
-        """Returns planar feature of ``Pair`` as ``Fol``.
-
+        """
+        Return a planar feature of ``Pair`` as ``Fol``.
         """
         return self.fvec.asfol
 
     @property
     def lin(self):
-        """Returns linear feature of ``Pair`` as ``Lin``.
-
+        """
+        Return a linear feature of ``Pair`` as ``Lin``.
         """
         return self.lvec.aslin
 
     @property
     def rax(self):
-        """Returns oriented vector perpendicular to both ``Fol`` and ``Lin``.
-
+        """
+        Return an oriented vector perpendicular to both ``Fol`` and ``Lin``.
         """
         return self.fvec ** self.lvec
 
     def transform(self, F, **kwargs):
-        """Returns affine transformation of ``Pair`` by matrix `F`.
+        """Return an affine transformation of ``Pair`` by matrix `F`.
 
         Args:
-          F (``DefGrad`` or ``numpy.array``): transformation matrix
+            F (``DefGrad`` or ``numpy.array``): transformation matrix
 
         Keyword Args:
-          norm: normalize transformed vectors. True or False. Dafault False
+            norm: normalize transformed vectors. True or False. Dafault False
 
         Returns:
-          representation of affine transformation (dot product) of `self`
-          by `F`
+            representation of affine transformation (dot product) of `self`
+            by `F`
 
         Example:
-          >>> p.transform(F)
+            >>> p.transform(F)
 
         """
         t = deepcopy(self)
@@ -817,14 +815,14 @@ class Fault(Pair):
     is issued, when misfit angle is bigger than 20 degrees.
 
     Args:
-      fazi (float): dip direction of planar feature in degrees
-      finc (float): dip of planar feature in degrees
-      lazi (float): dip direction of linear feature in degrees
-      linc (float): dip of linear feature in degrees
-      sense (float): sense of movement +/-1 hanging-wall up/down
+        fazi (float): dip direction of planar feature in degrees
+        finc (float): dip of planar feature in degrees
+        lazi (float): dip direction of linear feature in degrees
+        linc (float): dip of linear feature in degrees
+        sense (float): sense of movement +/-1 hanging-wall up/down
 
     Example:
-      >>> p = Fault(140, 30, 110, 26, -1)
+        >>> p = Fault(140, 30, 110, 26, -1)
 
     """
 
@@ -917,25 +915,26 @@ class Fault(Pair):
 
 
 class Group(list):
-    """Group is homogeneous group of ``Vec3``, ``Fol`` or ``Lin`` objects.
+    """
+    Represents a homogeneous group of ``Vec3``, ``Fol`` or ``Lin`` objects.
 
     ``Group`` provide append and extend methods as well as list indexing
     to get or set individual items. It also supports following operators:
-      - ``+`` - merge groups
-      - ``**`` - mutual cross product
-      - ``abs`` - array of magnitudes (lengths) of all objects
+        - ``+`` - merge groups
+        - ``**`` - mutual cross product
+        - ``abs`` - array of magnitudes (lengths) of all objects
 
     See following methods and properties for additional operations.
 
     Args:
-      data (list): list of ``Vec3``, ``Fol`` or ``Lin`` objects
-      name (str): Name of group
+        data (list): list of ``Vec3``, ``Fol`` or ``Lin`` objects
+        name (str): Name of group
 
     Returns:
-      ``Group`` object
+        ``Group`` object
 
     Example:
-      >>> g = Group([Lin(120, 20), Lin(151, 23), Lin(137, 28)])
+        >>> g = Group([Lin(120, 20), Lin(151, 23), Lin(137, 28)])
     """
 
     def __init__(self, data, name="Default"):
@@ -1007,7 +1006,7 @@ class Group(list):
     @property
     def upper(self):
         """
-        Returns boolean array of z-coordinate negative test
+        Return boolean array of z-coordinate negative test
         """
 
         return np.asarray([e.upper for e in self])
@@ -2327,8 +2326,8 @@ class Group(list):
 
 
 class PairSet(list):
-    """PairSet is homogeneous group of ``Pair`` objects
-
+    """
+    Represents a homogeneous group of ``Pair`` objects.
     """
 
     def __init__(self, data, name="Default"):
@@ -2447,7 +2446,8 @@ class PairSet(list):
 
 
 class FaultSet(PairSet):
-    """FaultSet is homogeneous group of ``Fault`` objects
+    """
+    Represents a homogeneous group of ``Fault`` objects.
 
     """
 
@@ -3080,28 +3080,29 @@ class FaultSet(PairSet):
 
 
 class Ortensor(object):
-    """Ortensor is orientation tensor, which characterize data distribution
+    """
+    Represents an orientation tensor, which characterize data distribution
     using eigenvalue method. See (Watson 1966, Scheidegger 1965).
 
     See following methods and properties for additional operations.
 
     Args:
-      data (``Group``): grou of ``Vec3``, ``Fol`` or ``Lin`` objects
+        data (``Group``): grou of ``Vec3``, ``Fol`` or ``Lin`` objects
 
     Returns:
-      ``Ortensor`` object
+        ``Ortensor`` object
 
     Example:
-      >>> g = Group.examples('B2')
-      >>> ot = Ortensor(g)
-      >>> ot
-      Ortensor: B2 Kind: prolate
-      (E1:0.9825,E2:0.01039,E3:0.007101)
-      [[ 0.19780807 -0.13566589 -0.35878837]
-       [-0.13566589  0.10492993  0.25970594]
-       [-0.35878837  0.25970594  0.697262  ]]
+        >>> g = Group.examples('B2')
+        >>> ot = Ortensor(g)
+        >>> ot
+        Ortensor: B2 Kind: prolate
+        (E1:0.9825,E2:0.01039,E3:0.007101)
+        [[ 0.19780807 -0.13566589 -0.35878837]
+        [-0.13566589  0.10492993  0.25970594]
+        [-0.35878837  0.25970594  0.697262  ]]
       >>> ot.eigenlins.data
-      [L:144/57, L:360/28, L:261/16]
+        [L:144/57, L:360/28, L:261/16]
 
     """
 
@@ -3228,7 +3229,8 @@ class Ortensor(object):
 
 
 class StereoGrid(object):
-    """Class to store regular grid of values to be contoured on ``StereoNet``.
+    """
+    The class to store regular grid of values to be contoured on ``StereoNet``.
 
     ``StereoGrid`` object could be calculated from ``Group`` object or by user-
     defined function, which accept unit vector as argument.
@@ -3349,9 +3351,8 @@ class StereoGrid(object):
 
 
 class Cluster(object):
-
     """
-    Cluster object provides hierarchical clustering using `scipy.cluster` routines.
+    Provides a hierarchical clustering using `scipy.cluster` routines.
 
     The distance matrix is calculated as an angle between features, where ``Fol`` and
     ``Lin`` use axial angles while ``Vec3`` uses direction angles.
@@ -3470,7 +3471,7 @@ class Cluster(object):
 
 def G(s, typ=Lin, name="Default"):
     """
-    Create group from space separated string of dip directions and dips.
+    Create a group from space separated string of dip directions and dips.
     """
 
     vals = np.fromstring(s, sep=" ")
