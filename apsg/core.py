@@ -35,17 +35,16 @@ settings = dict(notation='dd', vec2dd=False)
 
 
 class Vec3(np.ndarray):
-
     """
-     ``Vec3`` is base class to store 3-dimensional vectors derived from
+    ``Vec3`` is base class to store 3-dimensional vectors derived from
     ``numpy.ndarray`` on which ``Lin`` and ``Fol`` classes are based.
 
     ``Vec3`` support most of common vector algebra using following operators:
-      - ``+`` - vector addition
-      - ``-`` - vector subtraction
-      - ``*`` - dot product
-      - ``**`` - cross product
-      - ``abs`` - magnitude (length) of vector
+        - ``+`` - vector addition
+        - ``-`` - vector subtraction
+        - ``*`` - dot product
+        - ``**`` - cross product
+        - ``abs`` - magnitude (length) of vector
 
       See following methods and properties for additional operations.
 
@@ -64,9 +63,11 @@ class Vec3(np.ndarray):
       ``Vec3`` object
 
     Example:
-      >>> v = Vec3([1, 0.2, 1.6])
-      >>> v = Vec3(120, 60)       # dip-dir and dip of unit length vector
-      >>> v = Vec3(120, 60, 3)    # dip-dir, dip and magnitude of vector
+        >>> v = Vec3([1, 0.2, 1.6])
+        # The dip direction and dip angle of vector with magnitude of 1.
+        >>> v = Vec3(120, 60)
+        # The dip direction and dip angle of vector with magnitude of 3.
+        >>> v = Vec3(120, 60, 3)
     """
 
     def __new__(cls, arr, inc=None, mag=1.0):
@@ -88,9 +89,8 @@ class Vec3(np.ndarray):
 
     def __mul__(self, other):
         """
-        Returns the dot product of two vectors.
+        Return the dot product of two vectors.
         """
-
         return np.dot(self, other) # What about `numpy.inner`?
 
     def __abs__(self):
@@ -102,9 +102,8 @@ class Vec3(np.ndarray):
 
     def __pow__(self, other):
         """
-        Returns cross product if argument is vector or power of vector.
+        Return cross product if argument is vector or power of vector.
         """
-
         if np.isscalar(other):
             return pow(abs(self), other)
         else:
@@ -112,20 +111,18 @@ class Vec3(np.ndarray):
 
     def __eq__(self, other):
         """
-        Returns `True` if vectors are equal, otherwise `False`.
+        Return `True` if vectors are equal, otherwise `False`.
         """
         if not isinstance(other, self.__class__):
             return False
-
         return self is other or abs(self - other) < 1e-15
 
     def __ne__(self, other):
         """
-        Returns `True` if vectors are not equal, otherwise `False`.
+        Return `True` if vectors are not equal, otherwise `False`.
 
         Overrides the default implementation (unnecessary in Python 3).
         """
-
         return not self == other
 
     def __hash__(self):
@@ -134,39 +131,36 @@ class Vec3(np.ndarray):
     @property
     def type(self):
         """
-        Returns the type of ``self``.
+        Return the type of ``self``.
         """
-
         return type(self)
 
     @property
     def upper(self):
         """
-        Returns `True` if z-coordinate is negative, otherwise `False`.
+        Return `True` if z-coordinate is negative, otherwise `False`.
         """
-
         return np.sign(self[2]) < 0
 
     @property
     def flip(self):
         """
-        Returns a new vector with inverted `z` coordinate.
+        Return a new vector with inverted `z` coordinate.
         """
-
         return Vec3((self[0], self[1], -self[2]))
 
     @property
     def uv(self):
         """
-        Normalizes the vector to unit length.
+        Normalize the vector to unit length.
 
         Returns:
-          unit vector of ``self``
+            unit vector of ``self``
 
         Example:
-          >>> u = Vec3([1,1,1])
-          >>> u.uv
-          V(0.577, 0.577, 0.577)
+            >>> u = Vec3([1,1,1])
+            >>> u.uv
+            V(0.577, 0.577, 0.577)
 
         """
 
@@ -174,7 +168,7 @@ class Vec3(np.ndarray):
 
     def cross(self, other):
         """
-        Computes the cross product of two vectors.
+        Calculate the cross product of two vectors.
 
         Args:
           other: other ``Vec3`` vector
@@ -193,17 +187,17 @@ class Vec3(np.ndarray):
 
     def angle(self, other):
         """
-        Computes the angle between two vectors in degrees.
+        Calculate the angle between two vectors in degrees.
 
         Args:
-          other: other ``Vec3`` vector
+            other: other ``Vec3`` vector
 
         Returns:
-          angle of `self` and `other` in degrees
+            angle of `self` and `other` in degrees
 
         Example:
-          >>> u.angle(v)
-          90.0
+            >>> u.angle(v)
+            90.0
         """
 
         if isinstance(other, Group):
@@ -213,19 +207,19 @@ class Vec3(np.ndarray):
 
     def rotate(self, axis, angle):
         """
-        Returns rotated vector about axis.
+        Return rotated vector about axis.
 
         Args:
-          axis (``Vec3``): axis of rotation
-          angle (float): angle of rotation in degrees
+            axis (``Vec3``): axis of rotation
+            angle (float): angle of rotation in degrees
 
         Returns:
-          vector represenatation of `self` rotated `angle` degrees about
-          vector `axis`. Rotation is clockwise along axis direction.
+            vector represenatation of `self` rotated `angle` degrees about
+            vector `axis`. Rotation is clockwise along axis direction.
 
         Example:
-          >>> v.rotate(u, 60)
-          V(-2.000, 2.000, -0.000)
+            >>> v.rotate(u, 60)
+            V(-2.000, 2.000, -0.000)
 
         """
 
@@ -239,19 +233,19 @@ class Vec3(np.ndarray):
 
     def proj(self, other):
         """
-        Returns projection of vector `u` onto vector `v`.
+        Return projection of vector `u` onto vector `v`.
 
         Args:
-          other (``Vec3``): other vector
+            other (``Vec3``): other vector
 
         Returns:
-          vector representation of `self` projected onto 'other'
+            vector representation of `self` projected onto 'other'
 
         Example:
-           >> u.proj(v)
+            >> u.proj(v)
 
         Note:
-          To project on plane use: `u - u.proj(v)`, where `v` is plane normal.
+            To project on plane use: `u - u.proj(v)`, where `v` is plane normal.
 
         """
 
@@ -261,18 +255,18 @@ class Vec3(np.ndarray):
 
     def H(self, other):
         """
-        Returns ``DefGrad`` rotational matrix H which rotate vector
+        Return ``DefGrad`` rotational matrix H which rotate vector
         `u` to vector `v`.
 
         Args:
-          other (``Vec3``): other vector
+            other (``Vec3``): other vector
 
         Returns:
-          ``Defgrad`` rotational matrix
+            ``Defgrad`` rotational matrix
 
         Example:
-          >>> u.transform(u.H(v)) == v
-          True
+            >>> u.transform(u.H(v)) == v
+            True
 
         """
         from .tensors import DefGrad
@@ -280,20 +274,20 @@ class Vec3(np.ndarray):
 
     def transform(self, F, **kwargs):
         """
-        Returns affine transformation of vector `u` by matrix `F`.
+        Return affine transformation of vector `u` by matrix `F`.
 
         Args:
-          F (``DefGrad`` or ``numpy.array``): transformation matrix
+            F (``DefGrad`` or ``numpy.array``): transformation matrix
 
         Keyword Args:
-          norm: normalize transformed vectors. True or False. Dafault False
+            norm: normalize transformed vectors. True or False. Dafault False
 
         Returns:
-          vector representation of affine transformation (dot product)
-          of `self` by `F`
+            vector representation of affine transformation (dot product)
+            of `self` by `F`
 
         Example:
-          >>> u.transform(F)
+            >>> u.transform(F)
 
         """
         if kwargs.get('norm', False):
@@ -305,7 +299,7 @@ class Vec3(np.ndarray):
     @property
     def dd(self):
         """
-        Returns dip-direction, dip tuple.
+        Return dip-direction, dip tuple.
 
         Example:
           >>> azi, inc = v.dd
@@ -320,65 +314,63 @@ class Vec3(np.ndarray):
     @property
     def aslin(self):
         """
-        Converts `self` to ``Lin`` object.
+        Convert `self` to ``Lin`` object.
 
         Example:
-          >>> u = Vec3([1,1,1])
-          >>> u.aslin
-          L:45/35
+            >>> u = Vec3([1,1,1])
+            >>> u.aslin
+            L:45/35
         """
-
         return self.copy().view(Lin)
 
     @property
     def asfol(self):
         """
-        Converts `self` to ``Fol`` object.
+        Convert `self` to ``Fol`` object.
 
         Example:
-          >>> u = Vec3([1,1,1])
-          >>> u.asfol
-          S:225/55
+            >>> u = Vec3([1,1,1])
+            >>> u.asfol
+            S:225/55
         """
-
         return self.copy().view(Fol)
 
     @property
     def asvec3(self):
         """
-        Converts `self` to ``Vec3`` object.
+        Convert `self` to ``Vec3`` object.
 
         Example:
-          >>> l = Lin(120,50)
-          >>> l.asvec3
-          V(-0.321, 0.557, 0.766)
+            >>> l = Lin(120,50)
+            >>> l.asvec3
+            V(-0.321, 0.557, 0.766)
         """
-
         return self.copy().view(Vec3)
 
     @property
     def V(self):
         """
-        Converts `self` to ``Vec3`` object.
+        Convert `self` to ``Vec3`` object.
 
-        Alias of ``asvec3`` property.
+        Note:
+            This is an alias of ``asvec3`` property.
         """
-
         return self.copy().view(Vec3)
 
 
 class Lin(Vec3):
-
     """
-    Class to store linear feature. It provides all ``Vec3`` methods and
-    properties but behave as axial vector.
+    Represents a linear feature.
+
+    It provides all ``Vec3`` methods and properties but behave as axial vector.
 
     Args:
-      azi: dip direction of linear feature in degrees
-      inc: dip of linear feature in degrees
+      azi: The dip direction in degrees.
+      inc: The dip angle in degrees.
 
     Example:
       >>> l = Lin(120, 60)
+      L:120/60
 
     """
 
@@ -478,17 +470,19 @@ class Lin(Vec3):
 
 
 class Fol(Vec3):
-
     """
-    Class to store planar feature. It provides all ``Vec3`` methods and
-    properties but plane normal behave as axial vector.
+    Represents a planar feature.
+
+    It provides all ``Vec3`` methods and properties but plane normal behave
+    as axial vector.
 
     Args:
-      azi: dip direction of planar feature in degrees
-      inc: dip of planar feature in degrees
+      azi: The dip direction in degrees.
+      inc: The dip angle in degrees.
 
     Example:
       >>> f = Fol(120, 60)
+      F:120/60
 
     """
 
