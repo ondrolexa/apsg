@@ -443,7 +443,6 @@ class Lin(Vec3):
         """
         Return `True` if linear features are not equal.
         """
-
         return not (self == other or self == -other)
 
     def dot(self, other):

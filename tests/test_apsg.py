@@ -233,7 +233,22 @@ class TestVector:
 
     # ``cross`` method
 
-    def test_vector_product_of_colinear_vectors(self):
+    def test_that_vector_product_is_anticommutative(self):
+        lhs = Vec3(1, 0, 0)
+        rhs = Vec3(0, 1, 0)
+
+        assert lhs.cross(rhs) == (-rhs).cross(lhs)
+
+    def test_that_vector_product_is_zero_vector_when_they_are_collinear(self):
+        lhs = Vec3([1, 0, 0])
+        rhs = Vec3([2, 0, 0])
+
+        current = lhs.cross(rhs)
+        expects = Vec3([0, 0, 0])
+
+        assert current == expects
+
+    def test_that_vector_product_is_zero_vector_when_they_are_opposite(self):
 
         lhs = Vec3([1, 0, 0])
         rhs = Vec3([-1, 0, 0])
@@ -289,7 +304,7 @@ class TestVector:
 
         assert current == expects
 
-    # ``project``
+    # ``proj`` method
 
     def test_projection_of_xy_onto(self, z):
         xz = Vec3([1, 0, 1])
@@ -299,12 +314,7 @@ class TestVector:
         assert current == expects
 
     # todo ``H``
-
-
     # todo ``transform``
-
-
-    # ``+`` operator
 
     def test_add_operator(self):
         lhs = Vec3([1, 1, 1])
@@ -314,8 +324,6 @@ class TestVector:
         expects = Vec3([2, 2, 2])
 
         assert current == expects
-
-    # ``-`` operator
 
     def test_sub_operator(self):
         lhs = Vec3([1, 1, 1])
@@ -357,16 +365,12 @@ class TestVector:
 
         assert current == expects
 
-    # ``len`` operator
-
     def test_length_method(self):
         u = Vec3([1])
         v = Vec3([1, 2])
         w = Vec3([1, 2, 3])
 
         len(u) == len(v) == len(w) == 3
-
-    # ``[]`` operator
 
     def test_getitem_operator(self):
         v = Vec3([1, 2, 3])
