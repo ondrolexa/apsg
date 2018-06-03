@@ -373,6 +373,69 @@ class TestVector:
         assert all((v[0] == 1, v[1] == 2, v[2] == 3))
 
 
+class TestLineation:
+    """
+    The lineation is represented as axial (pseudo) vector.
+    """
+
+    @pytest.fixture
+    def x(self):
+        return Lin(0, 0)
+
+    @pytest.fixture
+    def y(self):
+        return Lin(90, 0)
+
+    @pytest.mark.skip
+    def test_repr(self, x):
+        assert repr(x) == "Lin(1.0,0,0)"
+
+    def test_str(self, x):
+        assert str(x) == "L:0/0"
+
+    def test_equality_for_oposite_dir_and_zero_dip(self, y):
+        assert y == -y
+
+    def test_that_strike_0_is_same_as_360(self):
+        v1 = Lin(0, 0)
+        v2 = Lin(360, 0)
+
+        assert v1 == v2
+
+    def test_cross_product(self):
+        l1 = Lin(110, 22)
+        l2 = Lin(163, 47)
+        p = l1 ** l2
+
+        assert np.allclose(p.angle(l1), p.angle(l2), 90)
+
+    def test_axial_add(self):
+        l1, l2 = Group.randn_lin(2)
+
+        assert l1.transform(l1.H(l2)) == l2
+
+    def test_axial_add__simple(self):
+        v1 = Lin(45, 0)
+        v2 = Lin(315, 0)
+
+        assert (v1 + v2).uv == Lin(90, 0)
+        assert (v2 + v1).uv == Lin(270, 0)
+        assert (v1 + v2) == (v2 + v1)
+
+    def test_axial_sub__simple(self):
+        v1 = Lin(45, 0)
+        v2 = Lin(315, 0)
+
+        assert str(v1 - v2) == str(Lin(360, 0))
+
+    def test_vec_H(self):
+        m = Lin(135, 10) + Lin(315, 10)
+        assert m.uv == Lin(135, 0)
+
+    def test_lin_vector_dd(self):
+        l = Lin(120, 30)
+        assert Lin(*l.V.dd) == l
+
 # ############################################################################
 # Group
 # ############################################################################
