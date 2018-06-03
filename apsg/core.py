@@ -396,7 +396,6 @@ class Lin(Vec3):
         """
         Sum of axial data.
         """
-
         if self * other < 0:
             other = -other
         return super(Lin, self).__add__(other)
@@ -435,19 +434,11 @@ class Lin(Vec3):
 
         return not (self == other or self == -other)
 
-    def angle(self, other):
+    def dot(self, other):
         """
-        Returns angle (<90) of two linear features in degrees.
-
-        Example:
-          >>> u.angle(v)
-          90.0
+        Computes the axial dot product.
         """
-
-        if isinstance(other, Group):
-            return other.angle(self)
-        else:
-            return acosd(np.clip(self.uv.dot(other.uv), -1, 1))
+        return abs(np.dot(self, other))
 
     def cross(self, other):
         """
@@ -458,24 +449,25 @@ class Lin(Vec3):
           >>> l.cross(Lin(160,30))
           S:196/35
         """
-        if isinstance(other, Group):
-            return other.cross(self)
-        else:
-            return np.cross(self, other).view(Fol)
+        return other.cross(self) if isinstance(other, Group) \
+            else np.cross(self, other).view(Fol)
 
-    def dot(self, other):
+    def angle(self, other):
         """
-        Computes the axial dot product.
-        """
+        Returns angle (<90) of two linear features in degrees.
 
-        return abs(np.dot(self, other))
+        Example:
+          >>> u.angle(v)
+          90.0
+        """
+        return other.angle(self) if isinstance(other, Group) \
+            else acosd(np.clip(self.uv.dot(other.uv), -1, 1))
 
     @property
     def dd(self):
         """
         Returns dip-direction, dip tuple.
         """
-
         n = self.uv
         if n[2] < 0:
             n = -n

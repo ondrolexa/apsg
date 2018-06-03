@@ -11,7 +11,7 @@ Use this steps for unit test:
 
 
 Proper unit tests should fail for exactly one reason
-(that’s why you should be using one assert per unit test.)
+(that’s why you usually should be using one assert per unit test.)
 """
 
 
@@ -122,7 +122,7 @@ class TestVector:
 
         assert lhs != rhs
 
-    # ``hash``
+    # ``hash`` method
 
     @pytest.mark.skip
     def test_that_hash_is_same_for_identical_vectors(self):
@@ -138,7 +138,7 @@ class TestVector:
 
         assert not hash(lhs) == hash(rhs)
 
-    # ``upper``
+    # ``upper`` property
 
     def test_that_vector_is_upper(self):
         vec = Vec3([0, 0, -1])
@@ -150,7 +150,7 @@ class TestVector:
 
         assert not vec.upper
 
-    # ``flip``
+    # ``flip`` property
 
     def test_that_vector_is_flipped(self):
         current = Vec3([0, 0, 1]).flip
@@ -158,7 +158,7 @@ class TestVector:
 
         assert current == expects
 
-    # ``abs``
+    # ``abs`` operator
 
     def test_absolute_value(self):
         current = abs(Vec3([1, 2, 3]))
@@ -166,7 +166,7 @@ class TestVector:
 
         assert current == expects
 
-    # ``uv``
+    # ``uv`` property
 
     def test_that_vector_is_normalized(self):
         current = Vec3([1, 2, 3]).uv
@@ -174,9 +174,9 @@ class TestVector:
 
         assert current == expects
 
-    # ``dd``
+    # ``dd`` property
 
-    def test_dipdir(self):
+    def test_dd_property(self):
         v = Vec3([1, 0, 0])
 
         current = v.dd
@@ -184,36 +184,36 @@ class TestVector:
 
         assert current == expects
 
-    # fixme ``aslin``
+    # ``aslin`` property
 
     def test_aslin_conversion(self):
-        assert str(Vec3([1, 1, 1]).aslin) == 'L:45/35'
+        assert str(Vec3([1, 1, 1]).aslin) == str(Lin(45, 35))     # `Vec` to `Lin`
+        assert str(Vec3(Lin(110, 37)).aslin) == str(Lin(110, 37)) # `Lin` to `Vec` to `Lin`
 
-    def test_lin_to_vec_to_lin(self):
-        assert Vec3(Lin(110, 37)).aslin == Lin(110, 37)
-
-    # fixme ``asfol``
+    # ``asfol`` property
 
     def test_asfol_conversion(self):
-        assert str(Vec3([1, 1, 1]).asfol) == 'S:225/55'
+        assert str(Vec3([1, 1, 1]).asfol) == str(Fol(225, 55))    # `Vec` to `Fol`
+        assert str(Vec3(Fol(213, 52)).asfol) == str(Fol(213, 52)) # `Fol` to `Vec` to `Fol`
 
-    def test_fol_to_vec_to_fol(self):
-        assert Vec3(Fol(213, 52)).asfol == Fol(213, 52)
+    # ``asvec`` property
 
-    # todo ``asvec``
+    @pytest.mark.skip
+    def test_asvec_conversion(self):
+        assert str(Vec3(1, 1, 1).asvec3) == str(Vec3([1, 1, 1]).uv)
 
-    # ``angle``
+    # ``angle`` property
 
-    def test_that_angle_between_vectors_is_0(self):
+    def test_that_angle_between_vectors_is_0_degrees_when_they_are_collinear(self):
         lhs = Vec3([1, 0, 0])
-        rhs = Vec3([1, 0, 0])
+        rhs = Vec3([2, 0, 0])
 
         current = lhs.angle(rhs)
-        expects = 0 # degrees
+        expects = 0
 
         assert current == expects
 
-    def test_that_angle_between_vectors_is_90(self):
+    def test_that_angle_between_vectors_is_90_degrees_when_they_are_perpendicular(self):
         lhs = Vec3([1, 0, 0])
         rhs = Vec3([0, 1, 1])
 
@@ -222,7 +222,7 @@ class TestVector:
 
         assert current == expects
 
-    def test_that_angle_between_vectors_is_180(self):
+    def test_that_angle_between_vectors_is_180_degrees_when_they_are_opposite(self):
         lhs = Vec3([1, 0, 0])
         rhs = Vec3([-1, 0, 0])
 
@@ -231,9 +231,9 @@ class TestVector:
 
         assert current == expects
 
-    # ``cross``
+    # ``cross`` method
 
-    def test_cross_product_of_colinear_vectors(self):
+    def test_vector_product_of_colinear_vectors(self):
 
         lhs = Vec3([1, 0, 0])
         rhs = Vec3([-1, 0, 0])
@@ -243,7 +243,7 @@ class TestVector:
 
         assert current == expects
 
-    def test_cross_product_of_orthonormal_vectors(self):
+    def test_vector_product_of_orthonormal_vectors(self):
         e1 = Vec3([1, 0, 0])
         e2 = Vec3([0, 1, 0])
 
@@ -252,37 +252,37 @@ class TestVector:
 
         assert current == expects
 
-    # ``dot``
+    # ``dot`` method
 
-    def test_dot_product_of_same_vectors(self):
+    def test_scalar_product_of_same_vectors(self):
         i = Vec3(1, 0, 0)
         j = Vec3(1, 0, 0)
 
         assert i.dot(j) == abs(i) == abs(i)
 
-    def test_dot_product_of_orthonornal_vectors(self):
+    def test_scalar_product_of_orthonornal_vectors(self):
         i = Vec3(1, 0, 0)
         j = Vec3(0, 1, 0)
 
         assert i.dot(j) == 0
 
-    # ``rotate``
+    # ``rotate`` method
 
-    def test_rotation_by_90_around(self, z):
+    def test_rotation_by_90_degrees_around_axis(self, z):
         v = Vec3([1, 1, 1])
         current = v.rotate(z, 90)
         expects = Vec3([-1, 1, 1])
 
         assert current == expects
 
-    def test_rotation_by_180_around(self, z):
+    def test_rotation_by_180_degrees_around_axis(self, z):
         v = Vec3([1, 1, 1])
         current = v.rotate(z, 180)
         expects = Vec3([-1, -1, 1])
 
         assert current == expects
 
-    def test_rotation_by_360_around(self, z):
+    def test_rotation_by_360_degrees_around_axis(self, z):
         v = Vec3([1, 1, 1])
         current = v.rotate(z, 360)
         expects = Vec3([1, 1, 1])
@@ -357,7 +357,7 @@ class TestVector:
 
         assert current == expects
 
-    # ``len``
+    # ``len`` operator
 
     def test_length_method(self):
         u = Vec3([1])
@@ -368,7 +368,7 @@ class TestVector:
 
     # ``[]`` operator
 
-    def test_getitem(self):
+    def test_getitem_operator(self):
         v = Vec3([1, 2, 3])
         assert all((v[0] == 1, v[1] == 2, v[2] == 3))
 
@@ -396,43 +396,51 @@ class TestLineation:
     def test_equality_for_oposite_dir_and_zero_dip(self, y):
         assert y == -y
 
-    def test_that_strike_0_is_same_as_360(self):
-        v1 = Lin(0, 0)
-        v2 = Lin(360, 0)
+    def test_that_azimuth_0_is_same_as_360(self):
+        assert Lin(0, 0) == Lin(360, 0)
 
-        assert v1 == v2
+    def test_scalar_product(self):
+        pass
 
-    def test_cross_product(self):
+    def test_vector_product(self):
+        l1 = Lin(110, 22)
+        l2 = Lin(163, 47)
+        p = l1.cross(l2)
+
+        assert np.allclose(p.angle(l1), p.angle(l2), 90)
+
+    def test_vector_product_operator(self):
         l1 = Lin(110, 22)
         l2 = Lin(163, 47)
         p = l1 ** l2
 
         assert np.allclose(p.angle(l1), p.angle(l2), 90)
 
-    def test_axial_add(self):
+    def test_add_operator(self):
         l1, l2 = Group.randn_lin(2)
 
         assert l1.transform(l1.H(l2)) == l2
 
-    def test_axial_add__simple(self):
+    def test_add_operator__simple(self):
         v1 = Lin(45, 0)
         v2 = Lin(315, 0)
 
+        # The `v2` is converted from 2. quadrant to 4. quadrant.
         assert (v1 + v2).uv == Lin(90, 0)
+
+        # The `v1` is converted from 1. quadrant to 3. quadrant.
         assert (v2 + v1).uv == Lin(270, 0)
+
+        # Anyway, axial add is commutative.
         assert (v1 + v2) == (v2 + v1)
 
-    def test_axial_sub__simple(self):
+    def test_sub_operator__simple(self):
         v1 = Lin(45, 0)
         v2 = Lin(315, 0)
 
-        assert str(v1 - v2) == str(Lin(360, 0))
+        assert (v1 - v2).uv == Lin(360, 0)
 
-    def test_vec_H(self):
-        m = Lin(135, 10) + Lin(315, 10)
-        assert m.uv == Lin(135, 0)
-
-    def test_lin_vector_dd(self):
+    def test_dd_property(self):
         l = Lin(120, 30)
         assert Lin(*l.V.dd) == l
 
