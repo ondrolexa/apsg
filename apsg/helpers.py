@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+
 from __future__ import division
 import numpy as np
 from scipy.stats import uniform
@@ -106,9 +107,10 @@ def eformat(f, prec):
     return "{:.{:d}f}E{:0d}".format(float(m), prec, int(e))
 
 
-# ----------------------------------------------------------------
+# ############################################################################
 # Following counting routines are from Joe Kington's mplstereonet
 # https://github.com/joferkington/mplstereonet
+# ############################################################################
 
 
 def _kamb_radius(n, sigma):
@@ -122,8 +124,12 @@ def _kamb_units(n, radius):
     return np.sqrt(n * radius * (1 - radius))
 
 
+# ############################################################################
 # All of the following kernel functions return an _unsummed_ distribution and
-# a normalization factor
+# a normalization factor.
+# ############################################################################
+
+
 def _exponential_kamb(cos_dist, sigma=3):
     """Kernel function from Vollmer for exponential smoothing."""
     n = float(cos_dist.size)
@@ -173,11 +179,7 @@ def _schmidt_count(cos_dist, sigma=None):
     return count, cos_dist.size * radius
 
 
-# ------------------------------------------------------------------
-
-
 class KentDistribution(object):
-
     """
     The algorithms here are partially based on methods described in:
     [The Fisher-Bingham Distribution on the Sphere, John T. Kent
@@ -273,6 +275,15 @@ class KentDistribution(object):
 
         self._cached_rvs = np.array([], dtype=np.float64)
         self._cached_rvs.shape = (0, 3)
+
+    def __repr__(self):
+        return "kent(%s, %s, %s, %s, %s)" % (
+            self.theta,
+            self.phi,
+            self.psi,
+            self.kappa,
+            self.beta,
+        )
 
     @property
     def Gamma(self):
@@ -415,7 +426,8 @@ class KentDistribution(object):
 
     def normalize_prime(self, cache=dict(), return_num_iterations=False):
         """
-        Returns the derivative of the normalization factor with respect to kappa and beta.
+        Returns the derivative of the normalization factor with respect
+        to kappa and beta.
         """
 
         (k, b) = (self.kappa, self.beta)
@@ -505,7 +517,8 @@ class KentDistribution(object):
 
     def log_likelihood_prime(self, xs):
         """
-        Returns the derivative with respect to kappa and beta of the log likelihood for xs.
+        Returns the derivative with respect to kappa and beta of the log
+        likelihood for xs.
         """
 
         retval = self.log_pdf_prime(xs)
@@ -532,24 +545,15 @@ class KentDistribution(object):
         If n_samples is an integer value N then N samples are returned in an array with shape (N, 3)
         """
 
-        num_samples = 1 if n_samples == None else n_samples
+        num_samples = 1 if n_samples is None else n_samples
         rvs = self._cached_rvs
         while len(rvs) < num_samples:
             new_rvs = self._rvs_helper()
             rvs = np.concatenate([rvs, new_rvs])
-        if n_samples == None:
+        if n_samples is None:
             self._cached_rvs = rvs[1:]
             return rvs[0]
         else:
             self._cached_rvs = rvs[num_samples:]
             retval = rvs[:num_samples]
             return retval
-
-    def __repr__(self):
-        return "kent(%s, %s, %s, %s, %s)" % (
-            self.theta,
-            self.phi,
-            self.psi,
-            self.kappa,
-            self.beta,
-        )

@@ -14,7 +14,6 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 from .helpers import (
     KentDistribution,
     sind,

@@ -10,11 +10,10 @@ from .core import Vec3, Group, Pair, Fault
 from .helpers import sind, cosd
 
 
-__all__ = ["DefGrad", "VelGrad", "Stress"]
+__all__ = ("DefGrad", "VelGrad", "Stress")
 
 
 class DefGrad(np.ndarray):
-
     """
     ``DefGrad`` store deformation gradient tensor derived from numpy.ndarray.
 
@@ -249,7 +248,6 @@ class DefGrad(np.ndarray):
 
 
 class VelGrad(np.ndarray):
-
     """
     ``VelGrad`` store velocity gradient tensor derived from numpy.ndarray.
 
@@ -322,7 +320,6 @@ class VelGrad(np.ndarray):
 
 
 class Stress(np.ndarray):
-
     """
     ``Stress`` store stress tensor derived from numpy.ndarray.
 
