@@ -11,7 +11,7 @@ import sqlite3
 
 from .core import Fol, Lin, Group
 
-__all__ = ['SDB']
+__all__ = ["SDB"]
 
 
 class SDB(object):
@@ -36,29 +36,33 @@ class SDB(object):
         return super(SDB, cls).__new__(cls)
 
     def __repr__(self):
-        return 'PySDB database version: {}'.format(self.meta('version'))
+        return "PySDB database version: {}".format(self.meta("version"))
 
     def meta(self, name):
-        if name == 'crs':
-            val = self.conn.execute("SELECT value FROM meta WHERE name='crs'").fetchall()
+        if name == "crs":
+            val = self.conn.execute(
+                "SELECT value FROM meta WHERE name='crs'"
+            ).fetchall()
             if not val:
-                name = 'proj4'
-        return self.conn.execute("SELECT value FROM meta WHERE name='{}'".format(name)).fetchall()[0][0]
+                name = "proj4"
+        return self.conn.execute(
+            "SELECT value FROM meta WHERE name='{}'".format(name)
+        ).fetchall()[0][0]
 
     def info(self, verbose=False):
-        print('PySDB database version: {}'.format(self.meta('version')))
-        print('PySDB database crs: {}'.format(self.meta('crs')))
-        print('PySDB database version: {}'.format(self.meta('created')))
-        print('PySDB database version: {}'.format(self.meta('updated')))
-        print('Number of sites: {}'.format(len(self.sites())))
-        print('Number of units: {}'.format(len(self.units())))
-        print('Number of structures: {}'.format(len(self.structures())))
+        print("PySDB database version: {}".format(self.meta("version")))
+        print("PySDB database crs: {}".format(self.meta("crs")))
+        print("PySDB database version: {}".format(self.meta("created")))
+        print("PySDB database version: {}".format(self.meta("updated")))
+        print("Number of sites: {}".format(len(self.sites())))
+        print("Number of units: {}".format(len(self.units())))
+        print("Number of structures: {}".format(len(self.structures())))
         r = self.execsql(self._make_select())
-        print('Number of measurements: {}'.format(len(r)))
+        print("Number of measurements: {}".format(len(r)))
         if verbose:
             for s in self.structures():
                 r = self.execsql(self._make_select(structs=s))
-                print('   Number of {} measurements: {}'.format(s, len(r)))
+                print("   Number of {} measurements: {}".format(s, len(r)))
 
     def _make_select(self, structs=None, sites=None, units=None, tags=None):
         w = []
@@ -66,39 +70,39 @@ class SDB(object):
             if isinstance(structs, str):
                 w.append("structype.structure='%s'" % structs)
             elif isinstance(structs, (list, tuple)):
-                u = ' OR '.join(["structype.structure='%s'" % struct
-                                 for struct in structs])
+                u = " OR ".join(
+                    ["structype.structure='%s'" % struct for struct in structs]
+                )
                 w.append("(" + u + ")")
             else:
-                raise ValueError('Keyword structs must be list or string.')
+                raise ValueError("Keyword structs must be list or string.")
         if sites:
             if isinstance(sites, str):
                 w.append("sites.name='%s'" % sites)
             elif isinstance(sites, (list, tuple)):
-                u = ' OR '.join(["sites.name='%s'" % site for site in sites])
+                u = " OR ".join(["sites.name='%s'" % site for site in sites])
                 w.append("(" + u + ")")
             else:
-                raise ValueError('Keyword sites must be list or string.')
+                raise ValueError("Keyword sites must be list or string.")
         if units:
             if isinstance(units, str):
                 w.append("unit='%s'" % units)
             elif isinstance(units, (list, tuple)):
-                u = ' OR '.join(["unit='%s'" % unit for unit in units])
+                u = " OR ".join(["unit='%s'" % unit for unit in units])
                 w.append("(" + u + ")")
             else:
-                raise ValueError('Keyword units must be list or string.')
+                raise ValueError("Keyword units must be list or string.")
         if tags:
             if isinstance(tags, str):
                 w.append("tags.name like '%%%s%%'" % tags)
             elif isinstance(tags, (list, tuple)):
-                u = ' AND '.join(["tags.name like '%%%s%%'" % tag
-                                  for tag in tags])
+                u = " AND ".join(["tags.name like '%%%s%%'" % tag for tag in tags])
                 w.append("(" + u + ")")
             else:
-                raise ValueError('Keyword tags must be list or string.')
+                raise ValueError("Keyword tags must be list or string.")
         sel = SDB._SELECT
         if w:
-            sel += " WHERE " + ' AND '.join(w) + " GROUP BY structdata.id"
+            sel += " WHERE " + " AND ".join(w) + " GROUP BY structdata.id"
         else:
             sel += " GROUP BY structdata.id"
         return sel
@@ -109,24 +113,23 @@ class SDB(object):
     def structures(self, **kwargs):
         """Return list of structures in data. For kwargs see group method."""
         dtsel = self._make_select(**kwargs)
-        return list(set([el['structure'] for el in self.execsql(dtsel)]))
+        return list(set([el["structure"] for el in self.execsql(dtsel)]))
 
     def sites(self, **kwargs):
         """Return list of sites in data. For kwargs see group method."""
         dtsel = self._make_select(**kwargs)
-        return list(set([el['name'] for el in self.execsql(dtsel)]))
+        return list(set([el["name"] for el in self.execsql(dtsel)]))
 
     def units(self, **kwargs):
         """Return list of units in data. For kwargs see group method."""
         dtsel = self._make_select(**kwargs)
-        return list(set([el['unit'] for el in self.execsql(dtsel)]))
+        return list(set([el["unit"] for el in self.execsql(dtsel)]))
 
     def tags(self, **kwargs):
         """Return list of tags in data. For kwargs see group method."""
         dtsel = self._make_select(**kwargs)
-        tags = [el['tags'] for el in self.execsql(dtsel)
-                if el['tags'] is not None]
-        return list(set(','.join(tags).split(',')))
+        tags = [el["tags"] for el in self.execsql(dtsel) if el["tags"] is not None]
+        return list(set(",".join(tags).split(",")))
 
     def group(self, struct, **kwargs):
         """Method to retrieve data from SDB database to apsg.Group
@@ -146,9 +149,13 @@ class SDB(object):
         tpsel = "SELECT planar FROM structype WHERE structure='{}'".format(struct)
         tp = self.execsql(tpsel)[0][0]
         if tp:
-            res = Group([Fol(el['azimuth'], el['inclination'])
-                         for el in self.execsql(dtsel)], name=struct)
+            res = Group(
+                [Fol(el["azimuth"], el["inclination"]) for el in self.execsql(dtsel)],
+                name=struct,
+            )
         else:
-            res = Group([Lin(el['azimuth'], el['inclination'])
-                         for el in self.execsql(dtsel)], name=struct)
+            res = Group(
+                [Lin(el["azimuth"], el["inclination"]) for el in self.execsql(dtsel)],
+                name=struct,
+            )
         return res

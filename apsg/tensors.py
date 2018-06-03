@@ -10,7 +10,7 @@ from .core import Vec3, Group, Pair, Fault
 from .helpers import sind, cosd
 
 
-__all__ = ['DefGrad', 'VelGrad', 'Stress']
+__all__ = ["DefGrad", "VelGrad", "Stress"]
 
 
 class DefGrad(np.ndarray):
@@ -31,17 +31,19 @@ class DefGrad(np.ndarray):
 
     def __new__(cls, array):
         # casting to our class
-        assert np.shape(array) == (3, 3), 'DefGrad must be 3x3 2D array'
+        assert np.shape(array) == (3, 3), "DefGrad must be 3x3 2D array"
         obj = np.asarray(array).view(cls)
-        obj.name = 'D'
+        obj.name = "D"
         return obj
 
     def __repr__(self):
-        return 'DefGrad:\n' + str(self)
+        return "DefGrad:\n" + str(self)
 
     def __mul__(self, other):
-        assert np.shape(other) == (3, 3), \
-            'DefGrad could by multiplied with 3x3 2D array'
+        assert np.shape(other) == (
+            3,
+            3,
+        ), "DefGrad could by multiplied with 3x3 2D array"
         return np.dot(self, other)
 
     def __pow__(self, n):
@@ -74,16 +76,16 @@ class DefGrad(np.ndarray):
         xc, yc, zc = x * (1 - c), y * (1 - c), z * (1 - c)
         xyc, yzc, zxc = x * yc, y * zc, z * xc
 
-        return cls([
-            [x * xc + c, xyc - zs, zxc + ys],
-            [xyc + zs, y * yc + c, yzc - xs],
-            [zxc - ys, yzc + xs, z * zc + c]])
+        return cls(
+            [
+                [x * xc + c, xyc - zs, zxc + ys],
+                [xyc + zs, y * yc + c, yzc - xs],
+                [zxc - ys, yzc + xs, z * zc + c],
+            ]
+        )
 
     @classmethod
-    def from_comp(cls,
-                  xx=1, xy=0, xz=0,
-                  yx=0, yy=1, yz=0,
-                  zx=0, zy=0, zz=1):
+    def from_comp(cls, xx=1, xy=0, xz=0, yx=0, yy=1, yz=0, zx=0, zy=0, zz=1):
         """Return ``DefGrad`` tensor. Default is identity tensor.
 
         Keyword Args:
@@ -104,9 +106,9 @@ class DefGrad(np.ndarray):
     @classmethod
     def from_pair(cls, p):
 
-        assert issubclass(type(p), Pair), 'Data must be of Pair type.'
+        assert issubclass(type(p), Pair), "Data must be of Pair type."
 
-        return cls(np.array([p.lvec, p.fvec**p.lvec, p.fvec]).T)
+        return cls(np.array([p.lvec, p.fvec ** p.lvec, p.fvec]).T)
 
     @property
     def I(self):
@@ -169,9 +171,7 @@ class DefGrad(np.ndarray):
 
         U, _, _ = np.linalg.svd(self)
 
-        return Group([Vec3(U.T[0]),
-                      Vec3(U.T[1]),
-                      Vec3(U.T[2])])
+        return Group([Vec3(U.T[0]), Vec3(U.T[1]), Vec3(U.T[2])])
 
     @property
     def eigenlins(self):
@@ -209,7 +209,7 @@ class DefGrad(np.ndarray):
 
         from scipy.linalg import polar
 
-        _, U = polar(self, 'right')
+        _, U = polar(self, "right")
 
         return DefGrad(U)
 
@@ -221,7 +221,7 @@ class DefGrad(np.ndarray):
 
         from scipy.linalg import polar
 
-        _, V = polar(self, 'left')
+        _, V = polar(self, "left")
 
         return DefGrad(V)
 
@@ -229,6 +229,7 @@ class DefGrad(np.ndarray):
     def axisangle(self):
         """Return rotation part of ``DefGrad`` axis, angle tuple."""
         from scipy.linalg import polar
+
         R, _ = polar(self)
         w, W = np.linalg.eig(R.T)
         i = np.where(abs(np.real(w) - 1.0) < 1e-8)[0]
@@ -238,11 +239,11 @@ class DefGrad(np.ndarray):
         # rotation angle depending on direction
         cosa = (np.trace(R) - 1.0) / 2.0
         if abs(axis[2]) > 1e-8:
-            sina = (R[1, 0] + (cosa-1.0)*axis[0]*axis[1]) / axis[2]
+            sina = (R[1, 0] + (cosa - 1.0) * axis[0] * axis[1]) / axis[2]
         elif abs(axis[1]) > 1e-8:
-            sina = (R[0, 2] + (cosa-1.0)*axis[0]*axis[2]) / axis[1]
+            sina = (R[0, 2] + (cosa - 1.0) * axis[0] * axis[2]) / axis[1]
         else:
-            sina = (R[2, 1] + (cosa-1.0)*axis[1]*axis[2]) / axis[0]
+            sina = (R[2, 1] + (cosa - 1.0) * axis[1] * axis[2]) / axis[0]
         angle = np.rad2deg(np.arctan2(sina, cosa))
         return axis, angle
 
@@ -265,13 +266,13 @@ class VelGrad(np.ndarray):
 
     def __new__(cls, array):
         # casting to our class
-        assert np.shape(array) == (3, 3), 'VelGrad must be 3x3 2D array'
+        assert np.shape(array) == (3, 3), "VelGrad must be 3x3 2D array"
         obj = np.asarray(array).view(cls)
-        obj.name = 'L'
+        obj.name = "L"
         return obj
 
     def __repr__(self):
-        return 'VelGrad:\n' + str(self)
+        return "VelGrad:\n" + str(self)
 
     def __pow__(self, n):
         # matrix power
@@ -286,10 +287,7 @@ class VelGrad(np.ndarray):
         return not self == other
 
     @classmethod
-    def from_comp(cls,
-                  xx=0, xy=0, xz=0,
-                  yx=0, yy=0, yz=0,
-                  zx=0, zy=0, zz=0):
+    def from_comp(cls, xx=0, xy=0, xz=0, yx=0, yy=0, yz=0, zx=0, zy=0, zz=0):
         """Return ``VelGrad`` tensor. Default is zero tensor.
 
         Keyword Args:
@@ -304,14 +302,12 @@ class VelGrad(np.ndarray):
            [ 0.   0.  -0.1]]
 
         """
-        return cls([
-            [xx, xy, xz],
-            [yx, yy, yz],
-            [zx, zy, zz]])
+        return cls([[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]])
 
     def defgrad(self, time=1):
         """Return ``DefGrad`` accumulated after given time"""
         from scipy.linalg import expm
+
         return DefGrad(expm(self * time))
 
     @property
@@ -344,18 +340,19 @@ class Stress(np.ndarray):
     def __new__(cls, array):
         # casting to our class
 
-        assert np.shape(array) == (3, 3), 'Stress must be 3x3 2D array'
-        assert np.allclose(np.asarray(array), np.asarray(array).T), \
-            'Stress tensor must be symmetrical'
+        assert np.shape(array) == (3, 3), "Stress must be 3x3 2D array"
+        assert np.allclose(
+            np.asarray(array), np.asarray(array).T
+        ), "Stress tensor must be symmetrical"
 
         obj = np.asarray(array).view(cls)
-        obj.name = 'S'
+        obj.name = "S"
 
         return obj
 
     def __repr__(self):
 
-        return 'Stress:\n' + str(self)
+        return "Stress:\n" + str(self)
 
     def __pow__(self, n):
         # matrix power
@@ -444,9 +441,7 @@ class Stress(np.ndarray):
 
         _, U = np.linalg.eig(self)
 
-        return Group([Vec3(U.T[0]),
-                      Vec3(U.T[1]),
-                      Vec3(U.T[2])])
+        return Group([Vec3(U.T[0]), Vec3(U.T[1]), Vec3(U.T[2])])
 
     @property
     def eigenlins(self):

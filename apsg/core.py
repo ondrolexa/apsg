@@ -17,21 +17,43 @@ import matplotlib.pyplot as plt
 
 from .helpers import (
     KentDistribution,
-    sind, cosd, acosd, asind, atand, atan2d, angle_metric, l2v, getldd,
-    _linear_inverse_kamb, _square_inverse_kamb, _schmidt_count, _kamb_count,
-    _exponential_kamb
+    sind,
+    cosd,
+    acosd,
+    asind,
+    atand,
+    atan2d,
+    angle_metric,
+    l2v,
+    getldd,
+    _linear_inverse_kamb,
+    _square_inverse_kamb,
+    _schmidt_count,
+    _kamb_count,
+    _exponential_kamb,
 )
 
 
 __all__ = (
-    'Vec3', 'Lin', 'Fol', 'Pair', 'Fault', 'Group', 'PairSet', 'FaultSet',
-    'Ortensor', 'Cluster', 'StereoGrid', 'G', 'settings'
+    "Vec3",
+    "Lin",
+    "Fol",
+    "Pair",
+    "Fault",
+    "Group",
+    "PairSet",
+    "FaultSet",
+    "Ortensor",
+    "Cluster",
+    "StereoGrid",
+    "G",
+    "settings",
 )
 
 
 # Default module settings (singleton).
 
-settings = dict(notation='dd', vec2dd=False)
+settings = dict(notation="dd", vec2dd=False)
 
 
 class Vec3(np.ndarray):
@@ -78,10 +100,10 @@ class Vec3(np.ndarray):
         return obj
 
     def __repr__(self):
-        if settings['vec2dd']:
-            result = 'V:{:.0f}/{:.0f}'.format(*self.dd)
+        if settings["vec2dd"]:
+            result = "V:{:.0f}/{:.0f}".format(*self.dd)
         else:
-            result = 'V({:.3f}, {:.3f}, {:.3f})'.format(*self)
+            result = "V({:.3f}, {:.3f}, {:.3f})".format(*self)
         return result
 
     def __str__(self):
@@ -91,7 +113,7 @@ class Vec3(np.ndarray):
         """
         Return the dot product of two vectors.
         """
-        return np.dot(self, other) # What about `numpy.inner`?
+        return np.dot(self, other)  # What about `numpy.inner`?
 
     def __abs__(self):
         """
@@ -225,9 +247,7 @@ class Vec3(np.ndarray):
 
         e = Vec3(self)  # rotate all types as vectors
         k = axis.uv
-        r = (cosd(angle) * e +
-             sind(angle) * k.cross(e) +
-             (1 - cosd(angle)) * k * (k * e))
+        r = cosd(angle) * e + sind(angle) * k.cross(e) + (1 - cosd(angle)) * k * (k * e)
 
         return r.view(type(self))
 
@@ -270,7 +290,10 @@ class Vec3(np.ndarray):
 
         """
         from .tensors import DefGrad
-        return DefGrad(np.outer(self + other, (self + other).T) / (1 + self * other) - np.eye(3))
+
+        return DefGrad(
+            np.outer(self + other, (self + other).T) / (1 + self * other) - np.eye(3)
+        )
 
     def transform(self, F, **kwargs):
         """
@@ -290,7 +313,7 @@ class Vec3(np.ndarray):
             >>> u.transform(F)
 
         """
-        if kwargs.get('norm', False):
+        if kwargs.get("norm", False):
             res = np.dot(F, self).view(type(self)).uv
         else:
             res = np.dot(F, self).view(type(self))
@@ -375,14 +398,12 @@ class Lin(Vec3):
     """
 
     def __new__(cls, azi, inc):
-        v = [cosd(azi) * cosd(inc),
-             sind(azi) * cosd(inc),
-             sind(inc)]
+        v = [cosd(azi) * cosd(inc), sind(azi) * cosd(inc), sind(inc)]
 
         return Vec3(v).view(cls)
 
     def __repr__(self):
-        return 'L:{:.0f}/{:.0f}'.format(*self.dd)
+        return "L:{:.0f}/{:.0f}".format(*self.dd)
 
     def __add__(self, other):
         """
@@ -441,8 +462,11 @@ class Lin(Vec3):
           >>> l.cross(Lin(160,30))
           S:196/35
         """
-        return other.cross(self) if isinstance(other, Group) \
+        return (
+            other.cross(self)
+            if isinstance(other, Group)
             else np.cross(self, other).view(Fol)
+        )
 
     def angle(self, other):
         """
@@ -452,8 +476,11 @@ class Lin(Vec3):
           >>> u.angle(v)
           90.0
         """
-        return other.angle(self) if isinstance(other, Group) \
+        return (
+            other.angle(self)
+            if isinstance(other, Group)
             else acosd(np.clip(self.uv.dot(other.uv), -1, 1))
+        )
 
     @property
     def dd(self):
@@ -491,16 +518,14 @@ class Fol(Vec3):
         Create planar feature.
         """
 
-        if settings['notation'] == 'rhr':
+        if settings["notation"] == "rhr":
             azi += 90
-        v = [-cosd(azi) * sind(inc),
-             -sind(azi) * sind(inc),
-             cosd(inc)]
+        v = [-cosd(azi) * sind(inc), -sind(azi) * sind(inc), cosd(inc)]
 
         return Vec3(v).view(cls)
 
     def __repr__(self):
-        return 'S:{:.0f}/{:.0f}'.format(*getattr(self, settings['notation']))
+        return "S:{:.0f}/{:.0f}".format(*getattr(self, settings["notation"]))
 
     def __add__(self, other):
         """
@@ -606,7 +631,7 @@ class Fol(Vec3):
           >>> f.transform(F)
 
         """
-        if kwargs.get('norm', False):
+        if kwargs.get("norm", False):
             res = np.dot(self, np.linalg.inv(F)).view(type(self)).uv
         else:
             res = np.dot(self, np.linalg.inv(F)).view(type(self))
@@ -687,8 +712,8 @@ class Pair(object):
         lin = Lin(lazi, linc)
         misfit = 90 - fol.angle(lin)
         if misfit > 20:
-            warnings.warn('Warning: Misfit angle is %.1f degrees.' % misfit)
-        ax = fol**lin
+            warnings.warn("Warning: Misfit angle is %.1f degrees." % misfit)
+        ax = fol ** lin
         ang = (Vec3(lin).angle(fol) - 90) / 2
         fol = fol.rotate(ax, ang)
         lin = lin.rotate(ax, -ang)
@@ -697,8 +722,8 @@ class Pair(object):
         self.misfit = misfit
 
     def __repr__(self):
-        vals = getattr(self.fol, settings['notation']) + self.lin.dd
-        return 'P:{:.0f}/{:.0f}-{:.0f}/{:.0f}'.format(*vals)
+        vals = getattr(self.fol, settings["notation"]) + self.lin.dd
+        return "P:{:.0f}/{:.0f}-{:.0f}/{:.0f}".format(*vals)
 
     @classmethod
     def from_pair(cls, fol, lin):
@@ -709,7 +734,7 @@ class Pair(object):
           >>> l = Lin(110, 26)
           >>> p = Pair.from_pair(f, l)
         """
-        data = getattr(fol, settings['notation']) + lin.dd
+        data = getattr(fol, settings["notation"]) + lin.dd
         return cls(*data)
 
     def rotate(self, axis, phi):
@@ -753,7 +778,7 @@ class Pair(object):
         """Returns oriented vector perpendicular to both ``Fol`` and ``Lin``.
 
         """
-        return self.fvec**self.lvec
+        return self.fvec ** self.lvec
 
     def transform(self, F, **kwargs):
         """Returns affine transformation of ``Pair`` by matrix `F`.
@@ -773,7 +798,7 @@ class Pair(object):
 
         """
         t = deepcopy(self)
-        if kwargs.get('norm', False):
+        if kwargs.get("norm", False):
             t.lvec = np.dot(F, t.lvec).view(Vec3).uv
             t.fvec = np.dot(t.fvec, np.linalg.inv(F)).view(Vec3).uv
         else:
@@ -804,20 +829,19 @@ class Fault(Pair):
     """
 
     def __init__(self, fazi, finc, lazi, linc, sense):
-        assert np.sign(sense) != 0, \
-            'Sense parameter must be positive or negative'
+        assert np.sign(sense) != 0, "Sense parameter must be positive or negative"
         super(Fault, self).__init__(fazi, finc, lazi, linc)
         self.lvec = np.sign(sense) * self.lvec
 
     def __repr__(self):
-        s = ['', '+', '-'][self.sense]
-        vals = getattr(self.fol, settings['notation']) + self.lin.dd + (s,)
-        return 'F:{:.0f}/{:.0f}-{:.0f}/{:.0f} {:s}'.format(*vals)
+        s = ["", "+", "-"][self.sense]
+        vals = getattr(self.fol, settings["notation"]) + self.lin.dd + (s,)
+        return "F:{:.0f}/{:.0f}-{:.0f}/{:.0f} {:s}".format(*vals)
 
     @classmethod
     def from_pair(cls, fol, lin, sense):
         """Create ``Fault`` with given sense from ``Fol`` and ``Lin`` objects"""
-        data = getattr(fol, settings['notation']) + lin.dd + (sense,)
+        data = getattr(fol, settings["notation"]) + lin.dd + (sense,)
         return cls(*data)
 
     @classmethod
@@ -829,10 +853,10 @@ class Fault(Pair):
           lvec: vector parallel to movement
 
         """
-        orax = fvec**lvec
-        rax = Vec3(*fvec.aslin.dd)**Vec3(*lvec.dd)
+        orax = fvec ** lvec
+        rax = Vec3(*fvec.aslin.dd) ** Vec3(*lvec.dd)
         sense = 1 - 2 * (orax == rax)
-        data = getattr(fvec.asfol, settings['notation']) + lvec.dd + (sense,)
+        data = getattr(fvec.asfol, settings["notation"]) + lvec.dd + (sense,)
         return cls(*data)
 
     def rotate(self, axis, phi):
@@ -857,8 +881,8 @@ class Fault(Pair):
     def sense(self):
         """Return sense of movement (+/-1)"""
         # return 2 * int(self.fvec**self.lvec == Vec3(self.fol**self.lin)) - 1
-        orax = self.fvec.uv**self.lvec.uv
-        rax = Vec3(*self.fol.aslin.dd)**Vec3(*self.lin.dd)
+        orax = self.fvec.uv ** self.lvec.uv
+        rax = Vec3(*self.fol.aslin.dd) ** Vec3(*self.lin.dd)
         return 2 * (orax == rax) - 1
 
     @property
@@ -884,12 +908,12 @@ class Fault(Pair):
     @property
     def m(self):
         """Return kinematic M-plane as ``Fol``"""
-        return (self.fvec**self.lvec).asfol
+        return (self.fvec ** self.lvec).asfol
 
     @property
     def d(self):
         """Return dihedra plane as ``Fol``"""
-        return (self.rax**self.fvec).asfol
+        return (self.rax ** self.fvec).asfol
 
 
 class Group(list):
@@ -913,19 +937,21 @@ class Group(list):
     Example:
       >>> g = Group([Lin(120, 20), Lin(151, 23), Lin(137, 28)])
     """
-    def __init__(self, data, name='Default'):
-        assert issubclass(type(data), list), 'Argument must be list of data.'
-        assert len(data) > 0, 'Empty group is not allowed.'
+
+    def __init__(self, data, name="Default"):
+        assert issubclass(type(data), list), "Argument must be list of data."
+        assert len(data) > 0, "Empty group is not allowed."
         tp = type(data[0])
-        assert issubclass(tp, Vec3), 'Data must be Fol, Lin or Vec3 type.'
-        assert all([isinstance(e, tp) for e in data]), \
-            'All data in group must be of same type.'
+        assert issubclass(tp, Vec3), "Data must be Fol, Lin or Vec3 type."
+        assert all(
+            [isinstance(e, tp) for e in data]
+        ), "All data in group must be of same type."
         super(Group, self).__init__(data)
         self.type = tp
         self.name = name
 
     def __repr__(self):
-        return 'G:%g %s (%s)' % (len(self), self.type.__name__, self.name)
+        return "G:%g %s (%s)" % (len(self), self.type.__name__, self.name)
 
     def __abs__(self):
         # abs returns array of euclidean norms
@@ -933,8 +959,8 @@ class Group(list):
 
     def __add__(self, other):
         # merge Datasets
-        assert isinstance(other, Group), 'Only groups could be merged'
-        assert self.type is other.type, 'Only same type groups could be merged'
+        assert isinstance(other, Group), "Only groups could be merged"
+        assert self.type is other.type, "Only same type groups could be merged"
         return Group(list(self) + other, name=self.name)
 
     def __pow__(self, other):
@@ -947,8 +973,9 @@ class Group(list):
             return self.cross(other)
 
     def __setitem__(self, key, value):
-        assert isinstance(value, self.type), \
-            'item is not of type %s' % self.type.__name__
+        assert isinstance(value, self.type), (
+            "item is not of type %s" % self.type.__name__
+        )
         super(Group, self).__setitem__(key, value)
 
     def __getitem__(self, key):
@@ -958,15 +985,16 @@ class Group(list):
         if isinstance(key, list) or isinstance(key, tuple):
             key = np.asarray(key)
         if isinstance(key, np.ndarray):
-            if key.dtype == 'bool':
+            if key.dtype == "bool":
                 key = np.flatnonzero(key)
             return Group([self[i] for i in key])
         else:
             return super(Group, self).__getitem__(key)
 
     def append(self, item):
-        assert isinstance(item, self.type), \
-            'item is not of type %s' % self.type.__name__
+        assert isinstance(item, self.type), (
+            "item is not of type %s" % self.type.__name__
+        )
         super(Group, self).append(item)
 
     def extend(self, items=()):
@@ -995,7 +1023,7 @@ class Group(list):
         return list(self)
 
     @classmethod
-    def from_csv(cls, fname, typ=Lin, delimiter=',', acol=1, icol=2):
+    def from_csv(cls, fname, typ=Lin, delimiter=",", acol=1, icol=2):
         """Create ``Group`` object from csv file
 
         Args:
@@ -1012,11 +1040,11 @@ class Group(list):
 
         """
         from os.path import basename
-        dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
-        return cls.from_array(dt[acol - 1], dt[icol - 1],
-                              typ=typ, name=basename(fname))
 
-    def to_csv(self, fname, delimiter=',', rounded=False):
+        dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
+        return cls.from_array(dt[acol - 1], dt[icol - 1], typ=typ, name=basename(fname))
+
+    def to_csv(self, fname, delimiter=",", rounded=False):
         """Save ``Group`` object to csv file
 
         Args:
@@ -1031,10 +1059,10 @@ class Group(list):
             data = np.round(self.dd.T).astype(int)
         else:
             data = self.dd.T
-        np.savetxt(fname, data, fmt='%g', delimiter=',', header=self.name)
+        np.savetxt(fname, data, fmt="%g", delimiter=",", header=self.name)
 
     @classmethod
-    def from_array(cls, azis, incs, typ=Lin, name='Default'):
+    def from_array(cls, azis, incs, typ=Lin, name="Default"):
         """Create ``Group`` object from arrays of dip directions and dips
 
         Args:
@@ -1102,7 +1130,7 @@ class Group(list):
             cg = Group.from_array(*cntr.aslin.dd, typ=Vec3)
             r = cg.R.asfol.rotate(Lin(90, 0), -90).transform(u.T)
         else:
-            raise TypeError('Wrong argument type! Only Vec3, Lin and Fol!')
+            raise TypeError("Wrong argument type! Only Vec3, Lin and Fol!")
         return r
 
     @property
@@ -1131,13 +1159,13 @@ class Group(list):
         fisher_stats property returns dictionary with `k`, `csd` and
         `a95` keywords.
         """
-        stats = {'k': np.inf, 'a95': 180.0, 'csd': 0.0}
+        stats = {"k": np.inf, "a95": 180.0, "csd": 0.0}
         N = len(self)
         R = abs(self.R)
         if N != R:
-            stats['k'] = (N - 1) / (N - R)
-            stats['csd'] = 81 / np.sqrt(stats['k'])
-        stats['a95'] = acosd(1 - ((N - R) / R) * (20**(1 / (N - 1)) - 1))
+            stats["k"] = (N - 1) / (N - R)
+            stats["csd"] = 81 / np.sqrt(stats["k"])
+        stats["a95"] = acosd(1 - ((N - R) / R) * (20 ** (1 / (N - 1)) - 1))
         return stats
 
     @property
@@ -1165,16 +1193,16 @@ class Group(list):
         if other is None:
             for i in range(len(self) - 1):
                 for j in range(i + 1, len(self)):
-                    res.append(self[i]**self[j])
+                    res.append(self[i] ** self[j])
         elif isinstance(other, Group):
             for e in self:
                 for f in other:
-                    res.append(e**f)
+                    res.append(e ** f)
         elif issubclass(type(other), Vec3):
             for e in self:
-                res.append(e**other)
+                res.append(e ** other)
         else:
-            raise TypeError('Wrong argument type!')
+            raise TypeError("Wrong argument type!")
         return Group(res, name=self.name)
 
     def rotate(self, axis, phi):
@@ -1236,7 +1264,7 @@ class Group(list):
             for e in self:
                 res.append(e.angle(other))
         else:
-            raise TypeError('Wrong argument type!')
+            raise TypeError("Wrong argument type!")
         return np.array(res)
 
     def proj(self, vec):
@@ -1284,7 +1312,7 @@ class Group(list):
         return np.array([d.rhr for d in self]).T
 
     @classmethod
-    def randn_lin(cls, N=100, mean=Lin(0, 90), sig=20, name='Default'):
+    def randn_lin(cls, N=100, mean=Lin(0, 90), sig=20, name="Default"):
         """Method to create ``Group`` of normaly distributed random ``Lin`` objects.
 
         Keyword Args:
@@ -1306,7 +1334,7 @@ class Group(list):
         return cls(data, name=name).rotate(Lin(ta + 90, 0), 90 - td)
 
     @classmethod
-    def randn_fol(cls, N=100, mean=Fol(0, 0), sig=20, name='Default'):
+    def randn_fol(cls, N=100, mean=Fol(0, 0), sig=20, name="Default"):
         """Method to create ``Group`` of normaly distributed random ``Fol`` objects.
 
         Keyword Args:
@@ -1328,7 +1356,7 @@ class Group(list):
         return cls(data, name=name).rotate(Lin(ta - 90, 0), td)
 
     @classmethod
-    def uniform_lin(cls, N=500, name='Default'):
+    def uniform_lin(cls, N=500, name="Default"):
         """Method to create ``Group`` of uniformly distributed ``Lin`` objects.
 
         Keyword Args:
@@ -1360,7 +1388,7 @@ class Group(list):
         return cls.from_array(azi, inc, typ=Lin, name=name)
 
     @classmethod
-    def uniform_fol(cls, N=500, name='Default'):
+    def uniform_fol(cls, N=500, name="Default"):
         """Method to create ``Group`` of uniformly distributed ``Fol`` objects.
 
         Keyword Args:
@@ -1375,12 +1403,12 @@ class Group(list):
         """
         lins = cls.uniform_lin(N=N)
         azi, inc = lins.dd
-        if settings['notation'] == 'rhr':
+        if settings["notation"] == "rhr":
             azi -= 90
         return cls.from_array(azi + 180, 90 - inc, typ=Fol, name=name)
 
     @classmethod
-    def sfs_vec3(cls, N=1000, name='Default'):
+    def sfs_vec3(cls, N=1000, name="Default"):
         """Method to create ``Group`` of uniformly distributed ``Vec3`` objects.
         Spherical Fibonacci Spiral points on a sphere algorithm adopted from
         John Burkardt.
@@ -1405,7 +1433,7 @@ class Group(list):
         return cls([Vec3(d) for d in dc], name=name)
 
     @classmethod
-    def sfs_lin(cls, N=500, name='Default'):
+    def sfs_lin(cls, N=500, name="Default"):
         """Method to create ``Group`` of uniformly distributed ``Lin`` objects.
         Based on ``Group.sfs_vec3`` method, but only half of sphere is used.
 
@@ -1423,7 +1451,7 @@ class Group(list):
         return cls([d.aslin for d in g if d[2] > 0], name=name)
 
     @classmethod
-    def sfs_fol(cls, N=500, name='Default'):
+    def sfs_fol(cls, N=500, name="Default"):
         """Method to create ``Group`` of uniformly distributed ``Fol`` objects.
         Based on ``Group.sfs_vec3`` method, but only half of sphere is used.
 
@@ -1441,7 +1469,7 @@ class Group(list):
         return cls([d.asfol for d in g if d[2] > 0], name=name)
 
     @classmethod
-    def gss_vec3(cls, N=1000, name='Default'):
+    def gss_vec3(cls, N=1000, name="Default"):
         """Method to create ``Group`` of uniformly distributed ``Vec3`` objects.
         Golden Section Spiral points on a sphere algorithm.
 
@@ -1466,7 +1494,7 @@ class Group(list):
         return cls([Vec3(d) for d in dc], name=name)
 
     @classmethod
-    def gss_lin(cls, N=500, name='Default'):
+    def gss_lin(cls, N=500, name="Default"):
         """Method to create ``Group`` of uniformly distributed ``Lin`` objects.
         Based on ``Group.gss_vec3`` method, but only half of sphere is used.
 
@@ -1484,7 +1512,7 @@ class Group(list):
         return cls([d.aslin for d in g if d[2] > 0], name=name)
 
     @classmethod
-    def gss_fol(cls, N=500, name='Default'):
+    def gss_fol(cls, N=500, name="Default"):
         """Method to create ``Group`` of uniformly distributed ``Fol`` objects.
         Based on ``Group.gss_vec3`` method, but only half of sphere is used.
 
@@ -1502,7 +1530,7 @@ class Group(list):
         return cls([d.asfol for d in g if d[2] > 0], name=name)
 
     @classmethod
-    def fisher_lin(cls, N=100, mean=Lin(0, 90), kappa=20, name='Default'):
+    def fisher_lin(cls, N=100, mean=Lin(0, 90), kappa=20, name="Default"):
         """Method to create ``Group`` of ``Lin`` objects distributed
         according to Fisher distribution.
 
@@ -1524,7 +1552,7 @@ class Group(list):
         return g.rotate(Lin(ta + 90, 0), 90 - td)
 
     @classmethod
-    def kent_lin(cls, p, kappa=20, beta=0, N=500, name='Default'):
+    def kent_lin(cls, p, kappa=20, beta=0, N=500, name="Default"):
         """Method to create ``Group`` of ``Lin`` objects distributed
         according to Kent distribution (Kent, 1982) - The 5-parameter
         Fisher–Bingham distribution.
@@ -1540,33 +1568,33 @@ class Group(list):
           >>> p = Pair(135, 30, 90, 22)
           >>> g = Group.kent_lin(p, 30, 5, 300)
         """
-        assert issubclass(type(p), Pair), 'Argument must be Pair object.'
+        assert issubclass(type(p), Pair), "Argument must be Pair object."
         k = KentDistribution(p.lvec, p.fvec.cross(p.lvec), p.fvec, kappa, beta)
         g = Group([Vec3(v).aslin for v in k.rvs(N)])
         return g
 
-    def to_file(self, filename='group.dat'):
+    def to_file(self, filename="group.dat"):
         """Save group to file.
 
         Keyword Args:
           filename (str): name of file to save. Default 'group.dat'
 
         """
-        with open(filename, 'wb') as file:
+        with open(filename, "wb") as file:
             pickle.dump(self, file)
-        print('Group saved to file %s' % filename)
+        print("Group saved to file %s" % filename)
 
     @classmethod
-    def from_file(cls, filename='group.dat'):
+    def from_file(cls, filename="group.dat"):
         """Load group to file.
 
         Keyword Args:
           filename (str): name of data file to load. Default 'group.dat'
 
         """
-        with open(filename, 'rb') as file:
+        with open(filename, "rb") as file:
             data = pickle.load(file)
-        print('Group loaded from file %s' % filename)
+        print("Group loaded from file %s" % filename)
         return cls(data, name=filename)
 
     def bootstrap(self, N=100, size=None):
@@ -1607,73 +1635,692 @@ class Group(list):
         typs = {}
         # Embleton (1970) - Measurements of magnetic remanence in specimens
         # of Palaeozoic red-beds from Argentina.
-        azis['B2'] = [122.5, 130.5, 132.5, 148.5, 140.0, 133.0, 157.5, 153.0,
-                      140.0, 147.5, 142.0, 163.5, 141.0, 156.0, 139.5, 153.5,
-                      151.5, 147.5, 141.0, 143.5, 131.5, 147.5, 147.0, 149.0,
-                      144.0, 139.5]
-        incs['B2'] = [55.5, 58.0, 44.0, 56.0, 63.0, 64.5, 53.0, 44.5, 61.5,
-                      54.5, 51.0, 56.0, 59.5, 56.5, 54.0, 47.5, 61.0, 58.5,
-                      57.0, 67.5, 62.5, 63.5, 55.5, 62.0, 53.5, 58.0]
-        typs['B2'] = Lin
+        azis["B2"] = [
+            122.5,
+            130.5,
+            132.5,
+            148.5,
+            140.0,
+            133.0,
+            157.5,
+            153.0,
+            140.0,
+            147.5,
+            142.0,
+            163.5,
+            141.0,
+            156.0,
+            139.5,
+            153.5,
+            151.5,
+            147.5,
+            141.0,
+            143.5,
+            131.5,
+            147.5,
+            147.0,
+            149.0,
+            144.0,
+            139.5,
+        ]
+        incs["B2"] = [
+            55.5,
+            58.0,
+            44.0,
+            56.0,
+            63.0,
+            64.5,
+            53.0,
+            44.5,
+            61.5,
+            54.5,
+            51.0,
+            56.0,
+            59.5,
+            56.5,
+            54.0,
+            47.5,
+            61.0,
+            58.5,
+            57.0,
+            67.5,
+            62.5,
+            63.5,
+            55.5,
+            62.0,
+            53.5,
+            58.0,
+        ]
+        typs["B2"] = Lin
         # Cohen (1983) - Facing directions of conically folded planes.
-        azis['B4'] = [269, 265, 271, 272, 268, 267, 265, 265, 265, 263, 267, 267,
-                      270, 270, 265, 95, 100, 95, 90, 271, 267, 272, 270, 273,
-                      271, 269, 270, 267, 266, 268, 269, 270, 269, 270, 272, 271,
-                      271, 270, 273, 271, 270, 274, 275, 274, 270, 268, 97, 95,
-                      90, 95, 94, 93, 93, 93, 95, 96, 100, 104, 102, 108, 99, 112,
-                      110, 100, 95, 93, 91, 92, 92, 95, 89, 93, 100, 270, 261,
-                      275, 276, 275, 277, 276, 273, 273, 271, 275, 277, 275, 276,
-                      279, 277, 278, 280, 275, 270, 275, 276, 255, 105, 99, 253,
-                      96, 93, 92, 91, 91, 90, 89, 89, 96, 105, 90, 76, 91, 91, 91,
-                      90, 95, 90, 92, 92, 95, 100, 135, 98, 92, 90, 99, 175, 220,
-                      266, 235, 231, 256, 272, 276, 276, 275, 273, 266, 276, 274,
-                      275, 274, 272, 273, 270, 103, 95, 98, 96, 111, 96, 92, 91,
-                      90, 90]
-        incs['B4'] = [48, 57, 61, 59, 58, 60, 59, 58, 60, 59, 59, 53, 50, 48, 61,
-                      40, 56, 67, 52, 49, 60, 47, 50, 48, 50, 53, 52, 58, 60, 60,
-                      62, 61, 62, 60, 58, 59, 56, 53, 49, 49, 53, 50, 46, 45, 60,
-                      68, 75, 47, 48, 50, 48, 49, 45, 41, 42, 40, 51, 70, 74, 71,
-                      51, 75, 73, 60, 49, 44, 41, 51, 45, 50, 41, 44, 68, 67, 73,
-                      50, 40, 60, 47, 47, 54, 60, 62, 57, 43, 53, 40, 40, 42, 44,
-                      60, 65, 76, 63, 71, 80, 77, 72, 80, 60, 48, 49, 48, 46, 44,
-                      43, 40, 58, 65, 39, 48, 38, 43, 42, 49, 39, 43, 44, 48, 61,
-                      68, 80, 60, 49, 45, 62, 79, 79, 72, 76, 77, 71, 60, 42, 50,
-                      41, 60, 73, 43, 50, 46, 51, 56, 50, 40, 73, 57, 60, 54, 71,
-                      54, 50, 48, 48, 51]
-        typs['B4'] = Lin
+        azis["B4"] = [
+            269,
+            265,
+            271,
+            272,
+            268,
+            267,
+            265,
+            265,
+            265,
+            263,
+            267,
+            267,
+            270,
+            270,
+            265,
+            95,
+            100,
+            95,
+            90,
+            271,
+            267,
+            272,
+            270,
+            273,
+            271,
+            269,
+            270,
+            267,
+            266,
+            268,
+            269,
+            270,
+            269,
+            270,
+            272,
+            271,
+            271,
+            270,
+            273,
+            271,
+            270,
+            274,
+            275,
+            274,
+            270,
+            268,
+            97,
+            95,
+            90,
+            95,
+            94,
+            93,
+            93,
+            93,
+            95,
+            96,
+            100,
+            104,
+            102,
+            108,
+            99,
+            112,
+            110,
+            100,
+            95,
+            93,
+            91,
+            92,
+            92,
+            95,
+            89,
+            93,
+            100,
+            270,
+            261,
+            275,
+            276,
+            275,
+            277,
+            276,
+            273,
+            273,
+            271,
+            275,
+            277,
+            275,
+            276,
+            279,
+            277,
+            278,
+            280,
+            275,
+            270,
+            275,
+            276,
+            255,
+            105,
+            99,
+            253,
+            96,
+            93,
+            92,
+            91,
+            91,
+            90,
+            89,
+            89,
+            96,
+            105,
+            90,
+            76,
+            91,
+            91,
+            91,
+            90,
+            95,
+            90,
+            92,
+            92,
+            95,
+            100,
+            135,
+            98,
+            92,
+            90,
+            99,
+            175,
+            220,
+            266,
+            235,
+            231,
+            256,
+            272,
+            276,
+            276,
+            275,
+            273,
+            266,
+            276,
+            274,
+            275,
+            274,
+            272,
+            273,
+            270,
+            103,
+            95,
+            98,
+            96,
+            111,
+            96,
+            92,
+            91,
+            90,
+            90,
+        ]
+        incs["B4"] = [
+            48,
+            57,
+            61,
+            59,
+            58,
+            60,
+            59,
+            58,
+            60,
+            59,
+            59,
+            53,
+            50,
+            48,
+            61,
+            40,
+            56,
+            67,
+            52,
+            49,
+            60,
+            47,
+            50,
+            48,
+            50,
+            53,
+            52,
+            58,
+            60,
+            60,
+            62,
+            61,
+            62,
+            60,
+            58,
+            59,
+            56,
+            53,
+            49,
+            49,
+            53,
+            50,
+            46,
+            45,
+            60,
+            68,
+            75,
+            47,
+            48,
+            50,
+            48,
+            49,
+            45,
+            41,
+            42,
+            40,
+            51,
+            70,
+            74,
+            71,
+            51,
+            75,
+            73,
+            60,
+            49,
+            44,
+            41,
+            51,
+            45,
+            50,
+            41,
+            44,
+            68,
+            67,
+            73,
+            50,
+            40,
+            60,
+            47,
+            47,
+            54,
+            60,
+            62,
+            57,
+            43,
+            53,
+            40,
+            40,
+            42,
+            44,
+            60,
+            65,
+            76,
+            63,
+            71,
+            80,
+            77,
+            72,
+            80,
+            60,
+            48,
+            49,
+            48,
+            46,
+            44,
+            43,
+            40,
+            58,
+            65,
+            39,
+            48,
+            38,
+            43,
+            42,
+            49,
+            39,
+            43,
+            44,
+            48,
+            61,
+            68,
+            80,
+            60,
+            49,
+            45,
+            62,
+            79,
+            79,
+            72,
+            76,
+            77,
+            71,
+            60,
+            42,
+            50,
+            41,
+            60,
+            73,
+            43,
+            50,
+            46,
+            51,
+            56,
+            50,
+            40,
+            73,
+            57,
+            60,
+            54,
+            71,
+            54,
+            50,
+            48,
+            48,
+            51,
+        ]
+        typs["B4"] = Lin
         # Powell, Cole & Cudahy (1985) - Orientations of axial-plane cleavage
         # surfaces of F1 folds in Ordovician turbidites.
-        azis['B11'] = [65, 75, 233, 39, 53, 58, 50, 231, 220, 30, 59, 44, 54, 251,
-                       233, 52, 26, 40, 266, 67, 61, 72, 54, 32, 238, 84, 230, 228,
-                       230, 231, 40, 233, 234, 225, 234, 222, 230, 51, 46, 207,
-                       221, 58, 48, 222, 10, 52, 49, 36, 225, 221, 216, 194, 228,
-                       27, 226, 58, 35, 37, 235, 38, 227, 34, 225, 53, 57, 66, 45,
-                       47, 54, 45, 60, 51, 42, 52, 63]
+        azis["B11"] = [
+            65,
+            75,
+            233,
+            39,
+            53,
+            58,
+            50,
+            231,
+            220,
+            30,
+            59,
+            44,
+            54,
+            251,
+            233,
+            52,
+            26,
+            40,
+            266,
+            67,
+            61,
+            72,
+            54,
+            32,
+            238,
+            84,
+            230,
+            228,
+            230,
+            231,
+            40,
+            233,
+            234,
+            225,
+            234,
+            222,
+            230,
+            51,
+            46,
+            207,
+            221,
+            58,
+            48,
+            222,
+            10,
+            52,
+            49,
+            36,
+            225,
+            221,
+            216,
+            194,
+            228,
+            27,
+            226,
+            58,
+            35,
+            37,
+            235,
+            38,
+            227,
+            34,
+            225,
+            53,
+            57,
+            66,
+            45,
+            47,
+            54,
+            45,
+            60,
+            51,
+            42,
+            52,
+            63,
+        ]
 
-        incs['B11'] = [50, 53, 85, 82, 82, 66, 75, 85, 87, 85, 82, 88, 86, 82, 83,
-                       86, 80, 78, 85, 89, 85, 85, 86, 67, 87, 86, 81, 85, 79, 86,
-                       88, 84, 87, 88, 83, 82, 89, 82, 82, 67, 85, 87, 82, 82, 82,
-                       75, 68, 89, 81, 87, 63, 86, 81, 81, 89, 62, 81, 88, 70, 80,
-                       77, 85, 74, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90]
-        typs['B11'] = Fol
+        incs["B11"] = [
+            50,
+            53,
+            85,
+            82,
+            82,
+            66,
+            75,
+            85,
+            87,
+            85,
+            82,
+            88,
+            86,
+            82,
+            83,
+            86,
+            80,
+            78,
+            85,
+            89,
+            85,
+            85,
+            86,
+            67,
+            87,
+            86,
+            81,
+            85,
+            79,
+            86,
+            88,
+            84,
+            87,
+            88,
+            83,
+            82,
+            89,
+            82,
+            82,
+            67,
+            85,
+            87,
+            82,
+            82,
+            82,
+            75,
+            68,
+            89,
+            81,
+            87,
+            63,
+            86,
+            81,
+            81,
+            89,
+            62,
+            81,
+            88,
+            70,
+            80,
+            77,
+            85,
+            74,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+        ]
+        typs["B11"] = Fol
         # Powell, Cole & Cudahy (1985) - Orientations of axial-plane cleavage
         # surfaces of F1 folds in Ordovician turbidites.
-        azis['B12'] = [122, 132, 141, 145, 128, 133, 130, 129, 124, 120, 137, 141,
-                       151, 138, 135, 135, 156, 156, 130, 112, 116, 113, 117, 110,
-                       106, 106, 98, 84, 77, 111, 122, 140, 48, 279, 19, 28, 28,
-                       310, 310, 331, 326, 332, 3, 324, 308, 304, 304, 299, 293,
-                       293, 306, 310, 313, 319, 320, 320, 330, 327, 312, 317, 314,
-                       312, 311, 307, 311, 310, 310, 305, 305, 301, 301, 300]
+        azis["B12"] = [
+            122,
+            132,
+            141,
+            145,
+            128,
+            133,
+            130,
+            129,
+            124,
+            120,
+            137,
+            141,
+            151,
+            138,
+            135,
+            135,
+            156,
+            156,
+            130,
+            112,
+            116,
+            113,
+            117,
+            110,
+            106,
+            106,
+            98,
+            84,
+            77,
+            111,
+            122,
+            140,
+            48,
+            279,
+            19,
+            28,
+            28,
+            310,
+            310,
+            331,
+            326,
+            332,
+            3,
+            324,
+            308,
+            304,
+            304,
+            299,
+            293,
+            293,
+            306,
+            310,
+            313,
+            319,
+            320,
+            320,
+            330,
+            327,
+            312,
+            317,
+            314,
+            312,
+            311,
+            307,
+            311,
+            310,
+            310,
+            305,
+            305,
+            301,
+            301,
+            300,
+        ]
 
-        incs['B12'] = [80, 72, 63, 51, 62, 53, 53, 52, 48, 45, 44, 44, 34, 37, 38,
-                       40, 25, 15, 22, 63, 35, 28, 28, 22, 33, 37, 32, 27, 24, 8,
-                       6, 8, 11, 8, 6, 6, 8, 20, 21, 18, 25, 28, 32, 32, 32, 34,
-                       38, 37, 44, 45, 48, 42, 47, 45, 43, 45, 50, 70, 59, 66, 65,
-                       70, 66, 67, 83, 66, 69, 69, 72, 67, 69, 82]
-        typs['B12'] = Fol
+        incs["B12"] = [
+            80,
+            72,
+            63,
+            51,
+            62,
+            53,
+            53,
+            52,
+            48,
+            45,
+            44,
+            44,
+            34,
+            37,
+            38,
+            40,
+            25,
+            15,
+            22,
+            63,
+            35,
+            28,
+            28,
+            22,
+            33,
+            37,
+            32,
+            27,
+            24,
+            8,
+            6,
+            8,
+            11,
+            8,
+            6,
+            6,
+            8,
+            20,
+            21,
+            18,
+            25,
+            28,
+            32,
+            32,
+            32,
+            34,
+            38,
+            37,
+            44,
+            45,
+            48,
+            42,
+            47,
+            45,
+            43,
+            45,
+            50,
+            70,
+            59,
+            66,
+            65,
+            70,
+            66,
+            67,
+            83,
+            66,
+            69,
+            69,
+            72,
+            67,
+            69,
+            82,
+        ]
+        typs["B12"] = Fol
 
         if name is None:
-            print('Available sample datasets:')
+            print("Available sample datasets:")
             print(list(typs.keys()))
         else:
             return cls.from_array(azis[name], incs[name], typs[name], name=name)
@@ -1683,28 +2330,31 @@ class PairSet(list):
     """PairSet is homogeneous group of ``Pair`` objects
 
     """
-    def __init__(self, data, name='Default'):
-        assert issubclass(type(data), list), 'Argument must be list of data.'
-        assert len(data) > 0, 'Empty PairSet is not allowed.'
+
+    def __init__(self, data, name="Default"):
+        assert issubclass(type(data), list), "Argument must be list of data."
+        assert len(data) > 0, "Empty PairSet is not allowed."
         tp = type(data[0])
-        assert issubclass(tp, Pair), 'Data must be of Pair type.'
-        assert all([isinstance(e, tp) for e in data]), \
-            'All data in PairSet must be of same type.'
+        assert issubclass(tp, Pair), "Data must be of Pair type."
+        assert all(
+            [isinstance(e, tp) for e in data]
+        ), "All data in PairSet must be of same type."
         super(PairSet, self).__init__(data)
         self.type = tp
         self.name = name
 
     def __repr__(self):
-        return 'P:%g %s (%s)' % (len(self), self.type.__name__, self.name)
+        return "P:%g %s (%s)" % (len(self), self.type.__name__, self.name)
 
     def __add__(self, other):
         # merge sets
-        assert self.type is other.type, 'Only same type could be merged'
+        assert self.type is other.type, "Only same type could be merged"
         return PairSet(list(self) + other, name=self.name)
 
     def __setitem__(self, key, value):
-        assert isinstance(value, self.type), \
-            'item is not of type %s' % self.type.__name__
+        assert isinstance(value, self.type), (
+            "item is not of type %s" % self.type.__name__
+        )
         super(FaultSet, self).__setitem__(key, value)
 
     def __getitem__(self, key):
@@ -1714,15 +2364,16 @@ class PairSet(list):
         if isinstance(key, list) or isinstance(key, tuple):
             key = np.asarray(key)
         if isinstance(key, np.ndarray):
-            if key.dtype == 'bool':
+            if key.dtype == "bool":
                 key = np.flatnonzero(key)
             return type(self)([self[i] for i in key])
         else:
             return super(type(self), self).__getitem__(key)
 
     def append(self, item):
-        assert isinstance(item, self.type), \
-            'item is not of type %s' % self.type.__name__
+        assert isinstance(item, self.type), (
+            "item is not of type %s" % self.type.__name__
+        )
         super(PairSet, self).append(item)
 
     def extend(self, items=()):
@@ -1738,26 +2389,31 @@ class PairSet(list):
         return type(self)([f.rotate(axis, phi) for f in self], name=self.name)
 
     @classmethod
-    def from_csv(cls, fname, delimiter=',',
-                 facol=1, ficol=2, lacol=3, licol=4):
+    def from_csv(cls, fname, delimiter=",", facol=1, ficol=2, lacol=3, licol=4):
         """Read PairSet from csv file"""
         from os.path import basename
-        dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
-        return cls.from_array(dt[facol - 1], dt[ficol - 1],
-                              dt[lacol - 1], dt[licol - 1],
-                              name=basename(fname))
 
-    def to_csv(self, fname, delimiter=',', rounded=False):
+        dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
+        return cls.from_array(
+            dt[facol - 1],
+            dt[ficol - 1],
+            dt[lacol - 1],
+            dt[licol - 1],
+            name=basename(fname),
+        )
+
+    def to_csv(self, fname, delimiter=",", rounded=False):
         if rounded:
-            data = np.c_[np.round(self.fol.dd.T).astype(int),
-                         np.round(self.lin.dd.T).astype(int)]
+            data = np.c_[
+                np.round(self.fol.dd.T).astype(int), np.round(self.lin.dd.T).astype(int)
+            ]
         else:
             data = np.c_[self.fol.dd.T, self.lin.dd.T]
 
-        np.savetxt(fname, data, fmt='%g', delimiter=',', header=self.name)
+        np.savetxt(fname, data, fmt="%g", delimiter=",", header=self.name)
 
     @classmethod
-    def from_array(cls, fazis, fincs, lazis, lincs, name='Default'):
+    def from_array(cls, fazis, fincs, lazis, lincs, name="Default"):
         """Create PairSet from arrays of dip directions and dips"""
         data = []
         for fazi, finc, lazi, linc in zip(fazis, fincs, lazis, lincs):
@@ -1794,42 +2450,51 @@ class FaultSet(PairSet):
     """FaultSet is homogeneous group of ``Fault`` objects
 
     """
-    def __init__(self, data, name='Default'):
-        assert issubclass(type(data), list), 'Argument must be list of data.'
-        assert len(data) > 0, 'Empty FaultSet is not allowed.'
+
+    def __init__(self, data, name="Default"):
+        assert issubclass(type(data), list), "Argument must be list of data."
+        assert len(data) > 0, "Empty FaultSet is not allowed."
         tp = type(data[0])
-        assert issubclass(tp, Fault), 'Data must be of Fault type.'
-        assert all([isinstance(e, tp) for e in data]), \
-            'All data in FaultSet must be of same type.'
+        assert issubclass(tp, Fault), "Data must be of Fault type."
+        assert all(
+            [isinstance(e, tp) for e in data]
+        ), "All data in FaultSet must be of same type."
         super(FaultSet, self).__init__(data)
         self.type = tp
         self.name = name
 
     def __repr__(self):
-        return 'F:%g %s (%s)' % (len(self), self.type.__name__, self.name)
+        return "F:%g %s (%s)" % (len(self), self.type.__name__, self.name)
 
     @classmethod
-    def from_csv(cls, fname, delimiter=',',
-                 facol=1, ficol=2, lacol=3, licol=4, scol=5):
+    def from_csv(cls, fname, delimiter=",", facol=1, ficol=2, lacol=3, licol=4, scol=5):
         """Read FaultSet from csv file"""
         from os.path import basename
-        dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
-        return cls.from_array(dt[facol - 1], dt[ficol - 1],
-                              dt[lacol - 1], dt[licol - 1],
-                              dt[scol - 1], name=basename(fname))
 
-    def to_csv(self, fname, delimiter=',', rounded=False):
+        dt = np.loadtxt(fname, dtype=float, delimiter=delimiter).T
+        return cls.from_array(
+            dt[facol - 1],
+            dt[ficol - 1],
+            dt[lacol - 1],
+            dt[licol - 1],
+            dt[scol - 1],
+            name=basename(fname),
+        )
+
+    def to_csv(self, fname, delimiter=",", rounded=False):
         if rounded:
-            data = np.c_[np.round(self.fol.dd.T).astype(int),
-                         np.round(self.lin.dd.T).astype(int),
-                         self.sense.astype(int)]
+            data = np.c_[
+                np.round(self.fol.dd.T).astype(int),
+                np.round(self.lin.dd.T).astype(int),
+                self.sense.astype(int),
+            ]
         else:
             data = np.c_[self.fol.dd.T, self.lin.dd.T, self.sense]
 
-        np.savetxt(fname, data, fmt='%g', delimiter=',', header=self.name)
+        np.savetxt(fname, data, fmt="%g", delimiter=",", header=self.name)
 
     @classmethod
-    def from_array(cls, fazis, fincs, lazis, lincs, senses, name='Default'):
+    def from_array(cls, fazis, fincs, lazis, lincs, senses, name="Default"):
         """Create dataset from arrays of dip directions and dips"""
         data = []
         for fazi, finc, lazi, linc, sense in zip(fazis, fincs, lazis, lincs, senses):
@@ -1844,7 +2509,7 @@ class FaultSet(PairSet):
     @property
     def p(self):
         """Return p-axes of FaultSet as Group of Lin"""
-        return Group([e.p for e in self], name=self.name + '-P')
+        return Group([e.p for e in self], name=self.name + "-P")
 
     @property
     def pvec(self):
@@ -1859,19 +2524,19 @@ class FaultSet(PairSet):
     @property
     def t(self):
         """Return t-axes of FaultSet as Group of Lin"""
-        return Group([e.t for e in self], name=self.name + '-T')
+        return Group([e.t for e in self], name=self.name + "-T")
 
     @property
     def m(self):
         """Return m-planes of FaultSet as Group of Fol"""
-        return Group([e.m for e in self], name=self.name + '-M')
+        return Group([e.m for e in self], name=self.name + "-M")
 
     @property
     def d(self):
         """Return dihedra planes of FaultSet as Group of Fol"""
-        return Group([e.d for e in self], name=self.name + '-D')
+        return Group([e.d for e in self], name=self.name + "-D")
 
-    def angmech(self, method='classic'):
+    def angmech(self, method="classic"):
         """Implementation of Angelier-Mechler dihedra method
 
         Args:
@@ -1879,6 +2544,7 @@ class FaultSet(PairSet):
           to individual positions, while 'probability' returns maximum
           likelihood estimate.
         """
+
         def angmech(dc, fs):
             val = 0
             for f in fs:
@@ -1890,13 +2556,13 @@ class FaultSet(PairSet):
             d = Vec3(dc).aslin
             for f in fs:
                 s = 2 * float(np.sign(dc.dot(f.fvec)) == np.sign(dc.dot(f.lvec))) - 1
-                lprob = (1 - abs(45 - f.lin.angle(d)) / 45)
-                fprob = (1 - abs(45 - f.fol.angle(d)) / 45)
+                lprob = 1 - abs(45 - f.lin.angle(d)) / 45
+                fprob = 1 - abs(45 - f.fol.angle(d)) / 45
                 val += s * lprob * fprob
             return val
 
         d = StereoGrid()
-        if method == 'probability':
+        if method == "probability":
             d.apply_func(angmech2, self)
         else:
             d.apply_func(angmech, self)
@@ -1918,47 +2584,499 @@ class FaultSet(PairSet):
         lazis, lincs = {}, {}
         senses = {}
         # Lexa (2008) - reactivated joints - Lipnice
-        fazis['MELE'] = [95, 66, 42, 14, 126, 12, 14, 150, 35, 26, 138, 140, 132,
-                         50, 52, 70, 152, 70, 184, 194, 330, 150, 72, 80, 188, 186,
-                         72, 138, 72, 184, 308, 128, 60, 130, 105, 130, 124, 135, 292,
-                         30, 36, 282, 95, 88, 134, 120, 26, 2, 8, 6, 140, 60,
-                         60, 98, 88, 94, 110, 114, 8, 100, 16, 20, 120, 10, 120,
-                         10, 124, 30, 22, 204, 4, 254, 296, 244, 210, 22, 250, 210,
-                         130, 206, 210, 4, 258, 260, 272, 96, 105, 120, 214, 96, 22,
-                         88, 26, 110]
-        fincs['MELE'] = [80, 85, 46, 62, 78, 62, 66, 70, 45, 58, 80, 80, 80, 88, 88, 60, 82,
-                         32, 82, 80, 80, 85, 40, 30, 82, 82, 46, 85, 30, 88, 85, 88, 52, 75,
-                         85, 76, 80, 88, 80, 50, 50, 38, 85, 42, 68, 80, 65, 60, 65, 65, 60,
-                         50, 50, 75, 70, 85, 70, 62, 36, 60, 66, 50, 68, 38, 72, 90, 88, 90,
-                         90, 85, 90, 75, 85, 85, 85, 82, 75, 85, 75, 88, 89, 68, 88, 82, 72,
-                         78, 85, 85, 60, 88, 62, 58, 56, 72]
-        lazis['MELE'] = [119, 154, 110, 296, 41, 295, 291, 232, 106, 105, 49, 227, 45,
-                         139, 142, 149, 241, 89, 98, 110, 55, 60, 91, 105, 98, 96,
-                         103, 226, 104, 95, 37, 217, 112, 48, 16, 46, 39, 46, 15,
-                         108, 100, 4, 8, 102, 51, 207, 299, 283, 290, 287, 62, 333,
-                         7, 185, 359, 5, 21, 31, 90, 14, 290, 102, 49, 93, 35,
-                         280, 213, 120, 292, 114, 274, 320, 19, 332, 299, 295, 332, 297,
-                         49, 296, 300, 276, 176, 275, 253, 103, 184, 30, 134, 6, 108,
-                         49, 112, 27]
-        lincs['MELE'] = [79, 20, 22, 21, 21, 23, 16, 22, 18, 16, 8, 18, 18, 25, 5, 18, 5,
-                         31, 25, 32, 27, 3, 38, 28, 2, 2, 42, 22, 26, 25, 10, 15, 38, 26,
-                         10, 23, 26, 28, 35, 14, 28, 6, 32, 41, 16, 16, 6, 19, 23, 22, 19,
-                         4, 35, 10, 3, 8, 2, 13, 6, 7, 10, 10, 38, 6, 14, 20, 28, 0,
-                         15, 5, 45, 57, 54, 20, 10, 21, 28, 30, 30, 10, 12, 6, 76, 82, 71,
-                         78, 66, 5, 16, 2, 7, 51, 6, 20]
-        senses['MELE'] = [-1, -1, -1, 1, -1, 1, 1, 1, -1, -1, -1, 1, -1, -1, -1, -1, -1,
-                          -1, 1, 1, 1, -1, -1, -1, 1, 1, -1, 1, -1, 1, 1, 1, -1, -1,
-                          -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, 1, 1, 1, 1, 1, -1,
-                          1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, 1, 1, -1,
-                          1, 1, 1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, 1, -1, -1, -1,
-                          -1, 1, -1, 1, -1, -1, -1, -1, -1]
+        fazis["MELE"] = [
+            95,
+            66,
+            42,
+            14,
+            126,
+            12,
+            14,
+            150,
+            35,
+            26,
+            138,
+            140,
+            132,
+            50,
+            52,
+            70,
+            152,
+            70,
+            184,
+            194,
+            330,
+            150,
+            72,
+            80,
+            188,
+            186,
+            72,
+            138,
+            72,
+            184,
+            308,
+            128,
+            60,
+            130,
+            105,
+            130,
+            124,
+            135,
+            292,
+            30,
+            36,
+            282,
+            95,
+            88,
+            134,
+            120,
+            26,
+            2,
+            8,
+            6,
+            140,
+            60,
+            60,
+            98,
+            88,
+            94,
+            110,
+            114,
+            8,
+            100,
+            16,
+            20,
+            120,
+            10,
+            120,
+            10,
+            124,
+            30,
+            22,
+            204,
+            4,
+            254,
+            296,
+            244,
+            210,
+            22,
+            250,
+            210,
+            130,
+            206,
+            210,
+            4,
+            258,
+            260,
+            272,
+            96,
+            105,
+            120,
+            214,
+            96,
+            22,
+            88,
+            26,
+            110,
+        ]
+        fincs["MELE"] = [
+            80,
+            85,
+            46,
+            62,
+            78,
+            62,
+            66,
+            70,
+            45,
+            58,
+            80,
+            80,
+            80,
+            88,
+            88,
+            60,
+            82,
+            32,
+            82,
+            80,
+            80,
+            85,
+            40,
+            30,
+            82,
+            82,
+            46,
+            85,
+            30,
+            88,
+            85,
+            88,
+            52,
+            75,
+            85,
+            76,
+            80,
+            88,
+            80,
+            50,
+            50,
+            38,
+            85,
+            42,
+            68,
+            80,
+            65,
+            60,
+            65,
+            65,
+            60,
+            50,
+            50,
+            75,
+            70,
+            85,
+            70,
+            62,
+            36,
+            60,
+            66,
+            50,
+            68,
+            38,
+            72,
+            90,
+            88,
+            90,
+            90,
+            85,
+            90,
+            75,
+            85,
+            85,
+            85,
+            82,
+            75,
+            85,
+            75,
+            88,
+            89,
+            68,
+            88,
+            82,
+            72,
+            78,
+            85,
+            85,
+            60,
+            88,
+            62,
+            58,
+            56,
+            72,
+        ]
+        lazis["MELE"] = [
+            119,
+            154,
+            110,
+            296,
+            41,
+            295,
+            291,
+            232,
+            106,
+            105,
+            49,
+            227,
+            45,
+            139,
+            142,
+            149,
+            241,
+            89,
+            98,
+            110,
+            55,
+            60,
+            91,
+            105,
+            98,
+            96,
+            103,
+            226,
+            104,
+            95,
+            37,
+            217,
+            112,
+            48,
+            16,
+            46,
+            39,
+            46,
+            15,
+            108,
+            100,
+            4,
+            8,
+            102,
+            51,
+            207,
+            299,
+            283,
+            290,
+            287,
+            62,
+            333,
+            7,
+            185,
+            359,
+            5,
+            21,
+            31,
+            90,
+            14,
+            290,
+            102,
+            49,
+            93,
+            35,
+            280,
+            213,
+            120,
+            292,
+            114,
+            274,
+            320,
+            19,
+            332,
+            299,
+            295,
+            332,
+            297,
+            49,
+            296,
+            300,
+            276,
+            176,
+            275,
+            253,
+            103,
+            184,
+            30,
+            134,
+            6,
+            108,
+            49,
+            112,
+            27,
+        ]
+        lincs["MELE"] = [
+            79,
+            20,
+            22,
+            21,
+            21,
+            23,
+            16,
+            22,
+            18,
+            16,
+            8,
+            18,
+            18,
+            25,
+            5,
+            18,
+            5,
+            31,
+            25,
+            32,
+            27,
+            3,
+            38,
+            28,
+            2,
+            2,
+            42,
+            22,
+            26,
+            25,
+            10,
+            15,
+            38,
+            26,
+            10,
+            23,
+            26,
+            28,
+            35,
+            14,
+            28,
+            6,
+            32,
+            41,
+            16,
+            16,
+            6,
+            19,
+            23,
+            22,
+            19,
+            4,
+            35,
+            10,
+            3,
+            8,
+            2,
+            13,
+            6,
+            7,
+            10,
+            10,
+            38,
+            6,
+            14,
+            20,
+            28,
+            0,
+            15,
+            5,
+            45,
+            57,
+            54,
+            20,
+            10,
+            21,
+            28,
+            30,
+            30,
+            10,
+            12,
+            6,
+            76,
+            82,
+            71,
+            78,
+            66,
+            5,
+            16,
+            2,
+            7,
+            51,
+            6,
+            20,
+        ]
+        senses["MELE"] = [
+            -1,
+            -1,
+            -1,
+            1,
+            -1,
+            1,
+            1,
+            1,
+            -1,
+            -1,
+            -1,
+            1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            1,
+            1,
+            1,
+            -1,
+            -1,
+            -1,
+            1,
+            1,
+            -1,
+            1,
+            -1,
+            1,
+            1,
+            1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            1,
+            -1,
+            -1,
+            1,
+            -1,
+            -1,
+            -1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            -1,
+            1,
+            -1,
+            1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            1,
+            -1,
+            -1,
+            -1,
+            -1,
+            1,
+            1,
+            -1,
+            1,
+            1,
+            1,
+            -1,
+            -1,
+            -1,
+            -1,
+            1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            1,
+            -1,
+            -1,
+            -1,
+            -1,
+            1,
+            -1,
+            1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+        ]
 
         if name is None:
-            print('Available sample datasets:')
+            print("Available sample datasets:")
             print(list(senses.keys()))
         else:
-            return cls.from_array(fazis[name], fincs[name], lazis[name], lincs[name],
-                                  senses[name], name=name)
+            return cls.from_array(
+                fazis[name],
+                fincs[name],
+                lazis[name],
+                lincs[name],
+                senses[name],
+                name=name,
+            )
 
 
 class Ortensor(object):
@@ -1986,20 +3104,23 @@ class Ortensor(object):
       [L:144/57, L:360/28, L:261/16]
 
     """
+
     def __init__(self, d, **kwargs):
-        assert isinstance(d, Group), 'Only group could be passed to Ortensor'
+        assert isinstance(d, Group), "Only group could be passed to Ortensor"
         self.cov = np.dot(np.array(d).T, np.array(d)) / len(d)
         self.name = d.name
         vc, vv = np.linalg.eig(self.cov)
         ix = np.argsort(vc)[::-1]
         self.eigenvals = vc[ix]
         self.vects = vv.T[ix]
-        self.scaled = kwargs.get('scaled', False)
+        self.scaled = kwargs.get("scaled", False)
 
     def __repr__(self):
-        return 'Ortensor: %s Kind: %s\n' % (self.name, self.kind) + \
-            '(E1:%.4g,E2:%.4g,E3:%.4g)\n' % tuple(self.eigenvals) + \
-            str(self.cov)
+        return (
+            "Ortensor: %s Kind: %s\n" % (self.name, self.kind)
+            + "(E1:%.4g,E2:%.4g,E3:%.4g)\n" % tuple(self.eigenvals)
+            + str(self.cov)
+        )
 
     @property
     def E1(self):
@@ -2024,9 +3145,13 @@ class Ortensor(object):
             e1, e2, e3 = self.eigenvals
         else:
             e1 = e2 = e3 = 1.0
-        return Group([e1 * Vec3(self.vects[0]),
-                      e2 * Vec3(self.vects[1]),
-                      e3 * Vec3(self.vects[2])])
+        return Group(
+            [
+                e1 * Vec3(self.vects[0]),
+                e2 * Vec3(self.vects[1]),
+                e3 * Vec3(self.vects[2]),
+            ]
+        )
 
     @property
     def eigenlins(self):
@@ -2076,12 +3201,12 @@ class Ortensor(object):
     @property
     def I(self):
         """Intensity index - Lisle, 1985"""
-        return 7.5 * np.sum((self.eigenvals - 1 / 3)**2)
+        return 7.5 * np.sum((self.eigenvals - 1 / 3) ** 2)
 
     @property
     def kind(self):
         """Return descriptive type of ellipsoid"""
-        return {False: 'oblate', True: 'prolate'}[self.shape > 1]
+        return {False: "oblate", True: "prolate"}[self.shape > 1]
 
     @property
     def MADp(self):
@@ -2122,18 +3247,22 @@ class StereoGrid(object):
       weighted: use euclidean norms as weights. Default False
 
     """
+
     def __init__(self, d=None, **kwargs):
         self.initgrid(**kwargs)
         if d:
-            assert isinstance(d, Group), 'StereoGrid need Group as argument'
+            assert isinstance(d, Group), "StereoGrid need Group as argument"
             self.calculate_density(np.asarray(d), **kwargs)
 
     def initgrid(self, **kwargs):
         import matplotlib.tri as tri
+
         # parse options
-        grid = kwargs.get('grid', 'radial')
-        if grid == 'radial':
-            ctn_points = int(np.round(np.sqrt(kwargs.get('npoints', 1800)) / 0.280269786))
+        grid = kwargs.get("grid", "radial")
+        if grid == "radial":
+            ctn_points = int(
+                np.round(np.sqrt(kwargs.get("npoints", 1800)) / 0.280269786)
+            )
             # calc grid
             self.xg = 0
             self.yg = 0
@@ -2141,14 +3270,14 @@ class StereoGrid(object):
                 theta = np.linspace(0, 360, np.round(ctn_points * rho + 1))[:-1]
                 self.xg = np.hstack((self.xg, rho * sind(theta)))
                 self.yg = np.hstack((self.yg, rho * cosd(theta)))
-        elif grid == 'ortho':
-            n = int(np.round(np.sqrt(kwargs.get('npoints', 1800) - 4) / 0.8685725142))
+        elif grid == "ortho":
+            n = int(np.round(np.sqrt(kwargs.get("npoints", 1800) - 4) / 0.8685725142))
             x, y = np.meshgrid(np.linspace(-1, 1, n), np.linspace(-1, 1, n))
-            d2 = (x**2 + y**2) <= 1
+            d2 = (x ** 2 + y ** 2) <= 1
             self.xg = np.hstack((0, 1, 0, -1, x[d2]))
             self.yg = np.hstack((1, 0, -1, 0, y[d2]))
         else:
-            raise TypeError('Wrong grid type!')
+            raise TypeError("Wrong grid type!")
         self.dcgrid = l2v(*getldd(self.xg, self.yg)).T
         self.n = self.dcgrid.shape[0]
         self.values = np.zeros(self.n, dtype=np.float)
@@ -2159,17 +3288,18 @@ class StereoGrid(object):
 
         """
         # parse options
-        sigma = kwargs.get('sigma', 1 / len(dcdata) ** (-1 / 7))
-        weighted = kwargs.get('weighted', False)
-        method = kwargs.get('method', 'exp_kamb')
-        trim = kwargs.get('trim', False)
+        sigma = kwargs.get("sigma", 1 / len(dcdata) ** (-1 / 7))
+        weighted = kwargs.get("weighted", False)
+        method = kwargs.get("method", "exp_kamb")
+        trim = kwargs.get("trim", False)
 
-        func = {'linear_kamb': _linear_inverse_kamb,
-                'square_kamb': _square_inverse_kamb,
-                'schmidt': _schmidt_count,
-                'kamb': _kamb_count,
-                'exp_kamb': _exponential_kamb,
-                }[method]
+        func = {
+            "linear_kamb": _linear_inverse_kamb,
+            "square_kamb": _square_inverse_kamb,
+            "schmidt": _schmidt_count,
+            "kamb": _kamb_count,
+            "exp_kamb": _exponential_kamb,
+        }[method]
 
         # weights are given by euclidean norms of data
         if weighted:
@@ -2197,7 +3327,7 @@ class StereoGrid(object):
     def contourf(self, *args, **kwargs):
         """ Show filled contours of values."""
         plt.figure()
-        plt.gca().set_aspect('equal')
+        plt.gca().set_aspect("equal")
         plt.tricontourf(self.triang, self.values, *args, **kwargs)
         plt.colorbar()
         plt.show()
@@ -2205,7 +3335,7 @@ class StereoGrid(object):
     def contour(self, *args, **kwargs):
         """ Show contours of values."""
         plt.figure()
-        plt.gca().set_aspect('equal')
+        plt.gca().set_aspect("equal")
         plt.tricontour(self.triang, self.values, *args, **kwargs)
         plt.colorbar()
         plt.show()
@@ -2213,8 +3343,8 @@ class StereoGrid(object):
     def plotcountgrid(self):
         """ Show counting grid."""
         plt.figure()
-        plt.gca().set_aspect('equal')
-        plt.triplot(self.triang, 'bo-')
+        plt.gca().set_aspect("equal")
+        plt.triplot(self.triang, "bo-")
         plt.show()
 
 
@@ -2228,27 +3358,30 @@ class Cluster(object):
     """
 
     def __init__(self, d, **kwargs):
-        assert isinstance(d, Group), 'Only group could be clustered'
+        assert isinstance(d, Group), "Only group could be clustered"
         self.data = Group(d.copy())
-        self.maxclust = kwargs.get('maxclust', 2)
-        self.angle = kwargs.get('angle', None)
-        self.method = kwargs.get('method', 'average')
+        self.maxclust = kwargs.get("maxclust", 2)
+        self.angle = kwargs.get("angle", None)
+        self.method = kwargs.get("method", "average")
         self.pdist = self.data.angle()
         self.linkage()
 
     def __repr__(self):
-        if hasattr(self, 'groups'):
-            info = 'Already %d clusters created.' % len(self.groups)
+        if hasattr(self, "groups"):
+            info = "Already %d clusters created." % len(self.groups)
         else:
-            info = 'Not yet clustered. Use cluster() method.'
+            info = "Not yet clustered. Use cluster() method."
         if self.angle is not None:
-            crit = 'Criterion: Angle\nSettings: angle=%.4g\n' % (self.angle)
+            crit = "Criterion: Angle\nSettings: angle=%.4g\n" % (self.angle)
         else:
-            crit = 'Criterion: Maxclust\nSettings: muxclust=%.4g\n' % (self.maxclust)
-        return 'Clustering object\n' + \
-               'Number of data: %d\n' % len(self.data) + \
-               'Linkage method: %s\n' % self.method + \
-               crit + info
+            crit = "Criterion: Maxclust\nSettings: muxclust=%.4g\n" % (self.maxclust)
+        return (
+            "Clustering object\n"
+            + "Number of data: %d\n" % len(self.data)
+            + "Linkage method: %s\n" % self.method
+            + crit
+            + info
+        )
 
     def cluster(self, **kwargs):
         """Do clustering on data
@@ -2261,14 +3394,16 @@ class Cluster(object):
           angle: maximum cophenetic distance(angle) in clusters
         """
         from scipy.cluster.hierarchy import fcluster
-        self.maxclust = kwargs.get('maxclust', 2)
-        self.angle = kwargs.get('angle', None)
+
+        self.maxclust = kwargs.get("maxclust", 2)
+        self.angle = kwargs.get("angle", None)
         if self.angle is not None:
-            self.idx = fcluster(self.Z, self.angle, criterion='distance')
+            self.idx = fcluster(self.Z, self.angle, criterion="distance")
         else:
-            self.idx = fcluster(self.Z, self.maxclust, criterion='maxclust')
-        self.groups = tuple(self.data[np.flatnonzero(self.idx == c)]
-                            for c in np.unique(self.idx))
+            self.idx = fcluster(self.Z, self.maxclust, criterion="maxclust")
+        self.groups = tuple(
+            self.data[np.flatnonzero(self.idx == c)] for c in np.unique(self.idx)
+        )
 
     def linkage(self, **kwargs):
         """Do linkage of distance matrix
@@ -2277,9 +3412,9 @@ class Cluster(object):
           method: The linkage algorithm to use
         """
         from scipy.cluster.hierarchy import linkage
-        self.method = kwargs.get('method', 'average')
-        self.Z = linkage(self.pdist, method=self.method,
-                         metric=angle_metric)
+
+        self.method = kwargs.get("method", "average")
+        self.Z = linkage(self.pdist, method=self.method, metric=angle_metric)
 
     def dendrogram(self, **kwargs):
         """Show dendrogram
@@ -2288,6 +3423,7 @@ class Cluster(object):
         """
         from scipy.cluster.hierarchy import dendrogram
         import matplotlib.pyplot as plt
+
         dendrogram(self.Z, **kwargs)
         plt.show()
 
@@ -2298,15 +3434,16 @@ class Cluster(object):
         """
         from scipy.cluster.hierarchy import fcluster
         import matplotlib.pyplot as plt
+
         if n is None:
-            idx = fcluster(self.Z, len(self.data), criterion='maxclust')
+            idx = fcluster(self.Z, len(self.data), criterion="maxclust")
             nclust = list(np.arange(1, np.sqrt(idx.max() / 2) + 1, dtype=int))
         else:
             nclust = list(np.arange(1, n + 1, dtype=int))
         within_grp_var = []
         mean_var = []
         for n in nclust:
-            idx = fcluster(self.Z, n, criterion='maxclust')
+            idx = fcluster(self.Z, n, criterion="maxclust")
             grp = [np.flatnonzero(idx == c) for c in np.unique(idx)]
             # between_grp_var = Group([self.data[ix].R.uv for ix in grp]).var
             var = [100 * self.data[ix].var for ix in grp]
@@ -2314,10 +3451,10 @@ class Cluster(object):
             mean_var.append(np.mean(var))
         if not no_plot:
             plt.boxplot(within_grp_var, positions=nclust)
-            plt.plot(nclust, mean_var, 'k')
-            plt.xlabel('Number of clusters')
-            plt.ylabel('Variance')
-            plt.title('Within-groups variance vs. number of clusters')
+            plt.plot(nclust, mean_var, "k")
+            plt.xlabel("Number of clusters")
+            plt.ylabel("Variance")
+            plt.title("Within-groups variance vs. number of clusters")
             plt.show()
         else:
             return nclust, within_grp_var
@@ -2331,12 +3468,11 @@ class Cluster(object):
 # HELPERS #
 
 
-def G(s, typ=Lin, name='Default'):
+def G(s, typ=Lin, name="Default"):
     """
     Create group from space separated string of dip directions and dips.
     """
 
-    vals = np.fromstring(s, sep=' ')
+    vals = np.fromstring(s, sep=" ")
 
-    return Group.from_array(vals[::2], vals[1::2],
-                            typ=typ, name=name)
+    return Group.from_array(vals[::2], vals[1::2], typ=typ, name=name)
