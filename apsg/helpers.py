@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+
 from __future__ import division
 import numpy as np
 from scipy.stats import uniform
@@ -7,6 +8,7 @@ from scipy.special import gamma as gamma_fun
 from scipy.special import iv as modified_bessel_2ndkind
 from scipy.special import ivp as modified_bessel_2ndkind_derivative
 from scipy.stats import norm as gauss
+
 
 def sind(x):
     return np.sin(np.deg2rad(x))
@@ -37,25 +39,31 @@ def atan2d(x1, x2):
 
 
 def getldd(x, y):
-    return (atan2d(x, y) % 360,
-            90 - 2 * asind(np.sqrt((x * x + y * y) / 2)))
+    return (atan2d(x, y) % 360, 90 - 2 * asind(np.sqrt((x * x + y * y) / 2)))
 
 
 def getfdd(x, y):
-    return (atan2d(-x, -y) % 360,
-            2 * asind(np.sqrt((x * x + y * y) / 2)))
+    return (atan2d(-x, -y) % 360, 2 * asind(np.sqrt((x * x + y * y) / 2)))
 
 
 def l2v(azi, inc):
-    return np.array([np.atleast_1d(cosd(azi) * cosd(inc)),
-                     np.atleast_1d(sind(azi) * cosd(inc)),
-                     np.atleast_1d(sind(inc))])
+    return np.array(
+        [
+            np.atleast_1d(cosd(azi) * cosd(inc)),
+            np.atleast_1d(sind(azi) * cosd(inc)),
+            np.atleast_1d(sind(inc)),
+        ]
+    )
 
 
 def p2v(azi, inc):
-    return np.array([np.atleast_1d(-cosd(azi) * sind(inc)),
-                     np.atleast_1d(-sind(azi) * sind(inc)),
-                     np.atleast_1d(cosd(inc))])
+    return np.array(
+        [
+            np.atleast_1d(-cosd(azi) * sind(inc)),
+            np.atleast_1d(-sind(azi) * sind(inc)),
+            np.atleast_1d(cosd(inc)),
+        ]
+    )
 
 
 def v2l(u):
@@ -82,8 +90,11 @@ def l2xy(azi, inc):
 
 
 def rodrigues(k, v, theta):
-    return v * cosd(theta) + np.cross(k.T, v.T).T * sind(theta) + \
-        k * np.dot(k.T, v) * (1 - cosd(theta))
+    return (
+        v * cosd(theta)
+        + np.cross(k.T, v.T).T * sind(theta)
+        + k * np.dot(k.T, v) * (1 - cosd(theta))
+    )
 
 
 def angle_metric(u, v):
@@ -91,19 +102,21 @@ def angle_metric(u, v):
 
 
 def eformat(f, prec):
-    s = '{:e}'.format(f)
-    m, e = s.split('e')
-    return '{:.{:d}f}E{:0d}'.format(float(m), prec, int(e))
+    s = "{:e}".format(f)
+    m, e = s.split("e")
+    return "{:.{:d}f}E{:0d}".format(float(m), prec, int(e))
 
-# ----------------------------------------------------------------
+
+# ############################################################################
 # Following counting routines are from Joe Kington's mplstereonet
 # https://github.com/joferkington/mplstereonet
+# ############################################################################
 
 
 def _kamb_radius(n, sigma):
     """Radius of kernel for Kamb-style smoothing."""
-    a = sigma**2 / (float(n) + sigma**2)
-    return (1 - a)
+    a = sigma ** 2 / (float(n) + sigma ** 2)
+    return 1 - a
 
 
 def _kamb_units(n, radius):
@@ -111,14 +124,18 @@ def _kamb_units(n, radius):
     return np.sqrt(n * radius * (1 - radius))
 
 
+# ############################################################################
 # All of the following kernel functions return an _unsummed_ distribution and
-# a normalization factor
+# a normalization factor.
+# ############################################################################
+
+
 def _exponential_kamb(cos_dist, sigma=3):
     """Kernel function from Vollmer for exponential smoothing."""
     n = float(cos_dist.size)
-    f = 2 * (1.0 + n / sigma**2)
+    f = 2 * (1.0 + n / sigma ** 2)
     count = np.exp(f * (cos_dist - 1))
-    units = np.sqrt(n * (f / 2.0 - 1) / f**2)
+    units = np.sqrt(n * (f / 2.0 - 1) / f ** 2)
     return count, units
 
 
@@ -128,7 +145,7 @@ def _linear_inverse_kamb(cos_dist, sigma=3):
     radius = _kamb_radius(n, sigma)
     f = 2 / (1 - radius)
     # cos_dist = cos_dist[cos_dist >= radius]
-    count = (f * (cos_dist - radius))
+    count = f * (cos_dist - radius)
     count[cos_dist < radius] = 0
     return count, _kamb_units(n, radius)
 
@@ -137,9 +154,9 @@ def _square_inverse_kamb(cos_dist, sigma=3):
     """Kernel function from Vollemer for inverse square smoothing."""
     n = float(cos_dist.size)
     radius = _kamb_radius(n, sigma)
-    f = 3 / (1 - radius)**2
+    f = 3 / (1 - radius) ** 2
     # cos_dist = cos_dist[cos_dist >= radius]
-    count = (f * (cos_dist - radius)**2)
+    count = f * (cos_dist - radius) ** 2
     count[cos_dist < radius] = 0
     return count, _kamb_units(n, radius)
 
@@ -156,15 +173,13 @@ def _kamb_count(cos_dist, sigma=3):
 def _schmidt_count(cos_dist, sigma=None):
     """Schmidt (a.k.a. 1%) counting kernel function."""
     radius = 0.01
-    count = ((1 - cos_dist) <= radius)
+    count = (1 - cos_dist) <= radius
     # To offset the count.sum() - 0.5 required for the kamb methods...
     count = 0.5 / count.size + count
     return count, cos_dist.size * radius
-# ------------------------------------------------------------------
 
 
 class KentDistribution(object):
-
     """
     The algorithms here are partially based on methods described in:
     [The Fisher-Bingham Distribution on the Sphere, John T. Kent
@@ -180,11 +195,17 @@ class KentDistribution(object):
 
     @staticmethod
     def create_matrix_H(theta, phi):
-        return np.array([[np.cos(theta), -np.sin(theta), 0.0],
-                        [np.sin(theta) * np.cos(phi),
-                         np.cos(theta) * np.cos(phi), -np.sin(phi)],
-                        [np.sin(theta) * np.sin(phi),
-                         np.cos(theta) * np.sin(phi), np.cos(phi)]])
+        return np.array(
+            [
+                [np.cos(theta), -np.sin(theta), 0.0],
+                [
+                    np.sin(theta) * np.cos(phi),
+                    np.cos(theta) * np.cos(phi),
+                    -np.sin(phi),
+                ],
+                [np.sin(theta) * np.sin(phi), np.cos(theta) * np.sin(phi), np.cos(phi)],
+            ]
+        )
 
     @staticmethod
     def create_matrix_Ht(theta, phi):
@@ -192,8 +213,13 @@ class KentDistribution(object):
 
     @staticmethod
     def create_matrix_K(psi):
-        return np.array([[1.0, 0.0, 0.0], [0.0, np.cos(psi), -np.sin(psi)],
-                        [0.0, np.sin(psi), np.cos(psi)]])
+        return np.array(
+            [
+                [1.0, 0.0, 0.0],
+                [0.0, np.cos(psi), -np.sin(psi)],
+                [0.0, np.sin(psi), np.cos(psi)],
+            ]
+        )
 
     @staticmethod
     def create_matrix_Kt(psi):
@@ -207,8 +233,7 @@ class KentDistribution(object):
 
     @staticmethod
     def create_matrix_Gammat(theta, phi, psi):
-        return np.transpose(KentDistribution.create_matrix_Gamma(theta,
-                            phi, psi))
+        return np.transpose(KentDistribution.create_matrix_Gamma(theta, phi, psi))
 
     @staticmethod
     def spherical_coordinates_to_gammas(theta, phi, psi):
@@ -226,8 +251,7 @@ class KentDistribution(object):
 
     @staticmethod
     def gammas_to_spherical_coordinates(gamma1, gamma2):
-        (theta, phi) = \
-            KentDistribution.gamma1_to_spherical_coordinates(gamma1)
+        (theta, phi) = KentDistribution.gamma1_to_spherical_coordinates(gamma1)
         Ht = KentDistribution.create_matrix_Ht(theta, phi)
         u = np.inner(Ht, np.reshape(gamma2, (1, 3)))
         psi = np.arctan2(u[2][0], u[1][0])
@@ -240,15 +264,26 @@ class KentDistribution(object):
         self.kappa = float(kappa)
         self.beta = float(beta)
 
-        (self.theta, self.phi, self.psi) = \
-            KentDistribution.gammas_to_spherical_coordinates(self.gamma1,
-                                                             self.gamma2)
+        (
+            self.theta,
+            self.phi,
+            self.psi,
+        ) = KentDistribution.gammas_to_spherical_coordinates(self.gamma1, self.gamma2)
 
         for gamma in (gamma1, gamma2, gamma3):
             assert len(gamma) == 3
 
         self._cached_rvs = np.array([], dtype=np.float64)
         self._cached_rvs.shape = (0, 3)
+
+    def __repr__(self):
+        return "kent(%s, %s, %s, %s, %s)" % (
+            self.theta,
+            self.phi,
+            self.psi,
+            self.kappa,
+            self.beta,
+        )
 
     @property
     def Gamma(self):
@@ -274,8 +309,9 @@ class KentDistribution(object):
             else:
 
                 while True:
-                    a = np.exp(np.log(b) * 2 * j + np.log(0.5 * k) * (-2 * j
-                            - 0.5)) * I(2 * j + 0.5, k)
+                    a = np.exp(
+                        np.log(b) * 2 * j + np.log(0.5 * k) * (-2 * j - 0.5)
+                    ) * I(2 * j + 0.5, k)
                     a /= G(j + 1)
                     a *= G(j + 0.5)
                     result += a
@@ -296,8 +332,7 @@ class KentDistribution(object):
         """
 
         if return_num_iterations:
-            (normalize, num_iter) = \
-                self.normalize(return_num_iterations=True)
+            (normalize, num_iter) = self.normalize(return_num_iterations=True)
             return (np.log(normalize), num_iter)
         else:
             return np.log(self.normalize())
@@ -368,8 +403,7 @@ class KentDistribution(object):
         Returns the derivative of the pdf with respect to kappa and beta.
         """
 
-        return self.pdf(xs, normalize) * self.log_pdf_prime(xs,
-                normalize)
+        return self.pdf(xs, normalize) * self.log_pdf_prime(xs, normalize)
 
     def log_pdf_prime(self, xs, normalize=True):
         """
@@ -392,46 +426,67 @@ class KentDistribution(object):
 
     def normalize_prime(self, cache=dict(), return_num_iterations=False):
         """
-        Returns the derivative of the normalization factor with respect to kappa and beta.
+        Returns the derivative of the normalization factor with respect
+        to kappa and beta.
         """
 
         (k, b) = (self.kappa, self.beta)
         if not (k, b) in cache:
             G = gamma_fun
             I = modified_bessel_2ndkind
-            dIdk = lambda v, z: modified_bessel_2ndkind_derivative(v,
-                    z, 1)
+            dIdk = lambda v, z: modified_bessel_2ndkind_derivative(v, z, 1)
             (dcdk, dcdb) = (0.0, 0.0)
             j = 0
             if b == 0:
-                dcdk = G(j + 0.5) / G(j + 1) * ((-0.5 * j - 0.125) * k
-                        ** (-2 * j - 1.5)) * I(2 * j + 0.5, k)
-                dcdk += G(j + 0.5) / G(j + 1) * (0.5 * k) ** (-2 * j
-                        - 0.5) * dIdk(2 * j + 0.5, k)
+                dcdk = (
+                    G(j + 0.5)
+                    / G(j + 1)
+                    * ((-0.5 * j - 0.125) * k ** (-2 * j - 1.5))
+                    * I(2 * j + 0.5, k)
+                )
+                dcdk += (
+                    G(j + 0.5)
+                    / G(j + 1)
+                    * (0.5 * k) ** (-2 * j - 0.5)
+                    * dIdk(2 * j + 0.5, k)
+                )
 
                 dcdb = 0.0
             else:
                 while True:
-                    dk = (-1 * j - 0.25) * np.exp(np.log(b) * 2 * j + np.og(0.5
-                            * k) * (-2 * j - 1.5)) * I(2 * j + 0.5, k)
-                    dk += np.exp(np.log(b) * 2 * j + np.log(0.5 * k) * (-2 * j
-                              - 0.5)) * dIdk(2 * j + 0.5, k)
+                    dk = (
+                        (-1 * j - 0.25)
+                        * np.exp(np.log(b) * 2 * j + np.og(0.5 * k) * (-2 * j - 1.5))
+                        * I(2 * j + 0.5, k)
+                    )
+                    dk += np.exp(
+                        np.log(b) * 2 * j + np.log(0.5 * k) * (-2 * j - 0.5)
+                    ) * dIdk(2 * j + 0.5, k)
                     dk /= G(j + 1)
                     dk *= G(j + 0.5)
 
-                    db = 2 * j * np.exp(np.log(b) * (2 * j - 1) + np.log(0.5
-                            * k) * (-2 * j - 0.5)) * I(2 * j + 0.5, k)
+                    db = (
+                        2
+                        * j
+                        * np.exp(
+                            np.log(b) * (2 * j - 1) + np.log(0.5 * k) * (-2 * j - 0.5)
+                        )
+                        * I(2 * j + 0.5, k)
+                    )
                     db /= G(j + 1)
                     db *= G(j + 0.5)
                     dcdk += dk
                     dcdb += db
 
                     j += 1
-                    if abs(dk) < abs(dcdk) * 1E-12 and abs(db) \
-                        < abs(dcdb) * 1E-12 and j > 5:
+                    if (
+                        abs(dk) < abs(dcdk) * 1E-12
+                        and abs(db) < abs(dcdb) * 1E-12
+                        and j > 5
+                    ):
                         break
 
-        # print("dc", dcdk, dcdb, "(", k, b)
+            # print("dc", dcdk, dcdb, "(", k, b)
 
             cache[k, b] = 2 * np.pi * np.array([dcdk, dcdb])
         if return_num_iterations:
@@ -445,8 +500,9 @@ class KentDistribution(object):
         """
 
         if return_num_iterations:
-            (normalize_prime, num_iter) = \
-                self.normalize_prime(return_num_iterations=True)
+            (normalize_prime, num_iter) = self.normalize_prime(
+                return_num_iterations=True
+            )
             return (normalize_prime / self.normalize(), num_iter)
         else:
             return self.normalize_prime() / self.normalize()
@@ -461,7 +517,8 @@ class KentDistribution(object):
 
     def log_likelihood_prime(self, xs):
         """
-        Returns the derivative with respect to kappa and beta of the log likelihood for xs.
+        Returns the derivative with respect to kappa and beta of the log
+        likelihood for xs.
         """
 
         retval = self.log_pdf_prime(xs)
@@ -488,19 +545,15 @@ class KentDistribution(object):
         If n_samples is an integer value N then N samples are returned in an array with shape (N, 3)
         """
 
-        num_samples = (1 if n_samples == None else n_samples)
+        num_samples = 1 if n_samples is None else n_samples
         rvs = self._cached_rvs
         while len(rvs) < num_samples:
             new_rvs = self._rvs_helper()
             rvs = np.concatenate([rvs, new_rvs])
-        if n_samples == None:
+        if n_samples is None:
             self._cached_rvs = rvs[1:]
             return rvs[0]
         else:
             self._cached_rvs = rvs[num_samples:]
             retval = rvs[:num_samples]
             return retval
-
-    def __repr__(self):
-        return 'kent(%s, %s, %s, %s, %s)' % (self.theta, self.phi,
-                self.psi, self.kappa, self.beta)
