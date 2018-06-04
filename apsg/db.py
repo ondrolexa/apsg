@@ -10,7 +10,7 @@ import sqlite3
 from .core import Fol, Lin, Group
 
 
-__all__ = "SDB"
+__all__ = ("SDB",)
 
 
 class SDB(object):
