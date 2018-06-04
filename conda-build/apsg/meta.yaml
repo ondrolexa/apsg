@@ -2,11 +2,11 @@
 
 package:
   name: apsg
-  version: {{ data.get('version') }}
+  version: {{ data.version }}
 
 source:
   git_url: https://github.com/ondrolexa/apsg.git
-  git_rev: {{ data.get('version') }}
+  git_rev: {{ data.version }}
 
 build:
   noarch: python
