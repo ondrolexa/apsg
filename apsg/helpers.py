@@ -420,7 +420,7 @@ class KentDistribution(object):
         dfdb = g2x ** 2 - g3x ** 2
         df = np.array([dfdk, dfdb])
         if normalize:
-            return np.transpose(transpose(df) - self.log_normalize_prime())
+            return np.transpose(np.transpose(df) - self.log_normalize_prime())
         else:
             return df
 
