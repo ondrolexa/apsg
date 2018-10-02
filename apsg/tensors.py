@@ -117,16 +117,19 @@ class DefGrad(np.ndarray):
 
         return np.linalg.inv(self)
 
-    def rotate(self, vector, theta):
+    def rotate(self, vector, theta=0):
         """
         Rotate tensor around axis by angle theta.
 
         Using rotation matrix it returns ``F = R * F * R . T``.
         """
 
-        R = DefGrad.from_axis(vector, theta)
+        if isinstance(vector, DefGrad):
+            R = vector
+        else:
+            R = DefGrad.from_axis(vector, theta)
 
-        return R * self * R.T
+        return DefGrad(R * self * R.T)
 
     @property
     def eigenvals(self):
@@ -246,6 +249,12 @@ class DefGrad(np.ndarray):
         angle = np.rad2deg(np.arctan2(sina, cosa))
         return axis, angle
 
+    def velgrad(self, time=1):
+        """Return ``VelGrad`` for given time"""
+        from scipy.linalg import logm
+
+        return VelGrad(logm(self) / time)
+
 
 class VelGrad(np.ndarray):
     """
@@ -307,6 +316,20 @@ class VelGrad(np.ndarray):
         from scipy.linalg import expm
 
         return DefGrad(expm(self * time))
+
+    def rotate(self, vector, theta=0):
+        """
+        Rotate tensor around axis by angle theta.
+
+        Using rotation matrix it returns ``F = R * F * R . T``.
+        """
+
+        if isinstance(vector, DefGrad):
+            R = vector
+        else:
+            R = DefGrad.from_axis(vector, theta)
+
+        return VelGrad(R * self * R.T)
 
     @property
     def rate(self):
@@ -388,14 +411,17 @@ class Stress(np.ndarray):
 
         return cls([[xx, xy, xz], [xy, yy, yz], [xz, yz, zz]])
 
-    def rotate(self, vector, theta):
+    def rotate(self, vector, theta=0):
         """
         Rotate tensor around axis by angle theta.
 
         Using rotation matrix it returns ``S = R * S * R . T``
         """
 
-        R = DefGrad.from_axis(vector, theta)
+        if isinstance(vector, DefGrad):
+            R = vector
+        else:
+            R = DefGrad.from_axis(vector, theta)
 
         return Stress(R * self * R.T)
 

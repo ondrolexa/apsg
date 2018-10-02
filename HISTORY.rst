@@ -158,3 +158,5 @@ Changes
 * axisangle property to calculate axis and angle from rotation matrix
 * StereoNet arc method added
 * Vec3 and Group upper and flip properties implemented
+* DefGrad, VelGrad and Stress rotate method accepts also rotation matrix
+* velgrad method added to DefGrad to calculate matrix logarithm
