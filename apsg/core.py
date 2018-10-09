@@ -3254,6 +3254,29 @@ class StereoGrid(object):
             assert isinstance(d, Group), "StereoGrid need Group as argument"
             self.calculate_density(np.asarray(d), **kwargs)
 
+    def __repr__(self):
+        return (
+            "StereoGrid with %d points.\n" % self.n
+            + "Maximum: %.4g at %s\n" % (self.max, self.max_at)
+            + "Minimum: %.4g at %s" % (self.min, self.min_at)
+        )
+
+    @property
+    def min(self):
+        return self.values.min()
+    
+    @property
+    def max(self):
+        return self.values.max()
+
+    @property
+    def min_at(self):
+        return Vec3(self.dcgrid[self.values.argmin()]).aslin
+
+    @property
+    def max_at(self):
+        return Vec3(self.dcgrid[self.values.argmax()]).aslin
+
     def initgrid(self, **kwargs):
         import matplotlib.tri as tri
 
@@ -3326,25 +3349,40 @@ class StereoGrid(object):
 
     def contourf(self, *args, **kwargs):
         """ Show filled contours of values."""
-        plt.figure()
-        plt.gca().set_aspect("equal")
+        fig, ax = plt.subplots()
+        # Projection circle
+        ax.text(0, 1.02, "N", ha="center", va="baseline", fontsize=16)
+        ax.add_artist(plt.Circle((0, 0), 1, color="w", zorder=0))
+        ax.add_artist(plt.Circle((0, 0), 1, color="None", ec="k", zorder=3))
+        ax.set_aspect("equal")
         plt.tricontourf(self.triang, self.values, *args, **kwargs)
         plt.colorbar()
+        plt.axis('off')
         plt.show()
 
     def contour(self, *args, **kwargs):
         """ Show contours of values."""
-        plt.figure()
-        plt.gca().set_aspect("equal")
+        fig, ax = plt.subplots()
+        # Projection circle
+        ax.text(0, 1.02, "N", ha="center", va="baseline", fontsize=16)
+        ax.add_artist(plt.Circle((0, 0), 1, color="w", zorder=0))
+        ax.add_artist(plt.Circle((0, 0), 1, color="None", ec="k", zorder=3))
+        ax.set_aspect("equal")
         plt.tricontour(self.triang, self.values, *args, **kwargs)
         plt.colorbar()
+        plt.axis('off')
         plt.show()
 
     def plotcountgrid(self):
         """ Show counting grid."""
-        plt.figure()
-        plt.gca().set_aspect("equal")
+        fig, ax = plt.subplots()
+        # Projection circle
+        ax.text(0, 1.02, "N", ha="center", va="baseline", fontsize=16)
+        ax.add_artist(plt.Circle((0, 0), 1, color="w", zorder=0))
+        ax.add_artist(plt.Circle((0, 0), 1, color="None", ec="k", zorder=3))
+        ax.set_aspect("equal")
         plt.triplot(self.triang, "bo-")
+        plt.axis('off')
         plt.show()
 
 
