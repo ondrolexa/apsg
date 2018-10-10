@@ -151,7 +151,7 @@ Changes
 * Automatic kernel density estimate for contouring
 * UserWarnings fix
 
-0.5.2 (XX YYY 2018)
+0.5.2 (10 Oct 2018)
 ~~~~~~~~~~~~~~~~~~~
 * Fischer distribution sampling added
 * transform method has norm kwarg to normalize tranformed vectors

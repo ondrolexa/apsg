@@ -321,17 +321,17 @@ class Vec3(np.ndarray):
     @property
     def dd(self):
         """
-        Return dip-direction, dip tuple.
+        Return azimuth, inclination tuple.
 
         Example:
           >>> azi, inc = v.dd
         """
 
         n = self.uv
-        dec = atan2d(n[1], n[0]) % 360
+        azi = atan2d(n[1], n[0]) % 360
         inc = asind(n[2])
 
-        return dec, inc
+        return azi, inc
 
     @property
     def aslin(self):
@@ -675,12 +675,13 @@ class Fol(Vec3):
         Example:
             >>> f = Fol(120,50)
             >>> f.rake(30)
-            V(-0.911, -0.155, 0.383)
+            V(0.589, 0.711, 0.383)
             >>> f.rake(30).aslin
+            L:50/23
 
         """
 
-        return self.dv.rotate(self, rake - 90)
+        return self.dv.rotate(self.dd, rake - 90)
 
 
 class Pair(object):
