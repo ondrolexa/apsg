@@ -52,6 +52,6 @@ __all__ = (
     "FabricPlot",
 )
 
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 __author__ = "Ondrej Lexa"
 __email__ = "lexa.ondrej@gmail.com"
