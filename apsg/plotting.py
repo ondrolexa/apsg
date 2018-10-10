@@ -487,7 +487,13 @@ class StereoNet(object):
         if clines:
             self.fig.axes[self.active].tricontour(d.triang, d.values, *args, colors="k")
         if legend:
-            self._add_colorbar(cs)
+            #self._add_colorbar(cs)
+            if self.ncols > 1:
+                pass
+                # add horizontal, calculate positions (divide bars and spaces)
+            else:
+                cbaxes = self.fig.add_axes([0.1, 0.15, 0.03, 0.7])
+                self.fig.colorbar(cs, cax=cbaxes)
         self.draw()
 
     def contour(self, obj, *args, **kwargs):
@@ -514,7 +520,13 @@ class StereoNet(object):
                 args = (levels,)
         cs = self.fig.axes[self.active].tricontour(d.triang, d.values, *args, **kwargs)
         if legend:
-            self._add_colorbar(cs)
+            #self._add_colorbar(cs)
+            if self.ncols > 1:
+                pass
+                # add horizontal, calculate positions (divide bars and spaces)
+            else:
+                cbaxes = self.fig.add_axes([0.1, 0.15, 0.03, 0.7])
+                self.fig.colorbar(cs, cax=cbaxes)
         self.draw()
 
     def _add_colorbar(self, cs):
