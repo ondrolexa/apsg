@@ -41,10 +41,40 @@ warnings.filterwarnings("ignore", category=mcb.mplDeprecation)
 class StereoNet(object):
 
     """
-    StereoNet class for Schmidt net plotting.
+    ``StereoNet`` class for Schmidt net plotting.
 
     A stereonet is a lower hemisphere graph on to which a variety of geological
     data can be plotted.
+
+    If args are provided plot is immediately shown. If no args are provided,
+    following methods and properties could be used for additional operations.
+
+    Args:
+        any plottable APSG class (most of data classes and tensors)
+
+    Keyword Args:
+        fol_plot: default method for ``Fol`` instances. ['plane' or 'pole']
+                  Default 'plane'
+        title: figure title. Default ''
+        figsize: Figure size
+        ncols: number of subplot columns. Default 1
+        ticks: show ticks. Default True
+        grid: show grid lines. Default False
+        gridlw: grid lines width. Default 1
+        grid_style: grid lines style. Default 'k:'
+        cbpad: colorbar padding. Default 0.1
+
+        Other keyword arguments are passed to matplotlib plot.
+
+    Example:
+        # Immediate plot
+        >>> StereoNet(Fol(120, 30), Lin(36, 8))
+        # StereoNet API
+        >>> s = StereoNet()
+        >>> g = Group.randn_lin(mean=Lin(40, 20))
+        >>> s.contourf(g, 8, legend=True, sigma=2)
+        >>> s.line(g, 'g.', label='My data')
+        >>> s.show()
     """
 
     def __init__(self, *args, **kwargs):
@@ -52,6 +82,7 @@ class StereoNet(object):
         self.grid = kwargs.pop("grid", False)
         self.gridlw = kwargs.pop("gridlw", 1)
         self.ncols = kwargs.pop("ncols", 1)
+        self.cbpad = kwargs.pop("cbpad", 0.1)
         self.grid_style = kwargs.pop("grid_style", "k:")
         self.fol_plot = kwargs.pop("fol_plot", "plane")
         figsize = kwargs.pop("figsize", None)
@@ -487,12 +518,14 @@ class StereoNet(object):
         if clines:
             self.fig.axes[self.active].tricontour(d.triang, d.values, *args, colors="k")
         if legend:
-            #self._add_colorbar(cs)
             if self.ncols > 1:
-                pass
+                ab = self.fig.axes[self.active].get_position().bounds
+                cbaxes = self.fig.add_axes([ab[0] + self.cbpad * ab[2], 0.1, (1 - 2 * self.cbpad) * ab[2], 0.03])
+                self.fig.colorbar(cs, cax=cbaxes, orientation='horizontal')
                 # add horizontal, calculate positions (divide bars and spaces)
             else:
-                cbaxes = self.fig.add_axes([0.1, 0.15, 0.03, 0.7])
+                ab = self.fig.axes[self.active].get_position().bounds
+                cbaxes = self.fig.add_axes([0.1, ab[1] + self.cbpad * ab[3], 0.03, (1 - 2 * self.cbpad) * ab[3]])
                 self.fig.colorbar(cs, cax=cbaxes)
         self.draw()
 
@@ -520,24 +553,26 @@ class StereoNet(object):
                 args = (levels,)
         cs = self.fig.axes[self.active].tricontour(d.triang, d.values, *args, **kwargs)
         if legend:
-            #self._add_colorbar(cs)
             if self.ncols > 1:
-                pass
+                ab = self.fig.axes[self.active].get_position().bounds
+                cbaxes = self.fig.add_axes([ab[0] + self.cbpad * ab[2], 0.1, (1 - 2 * self.cbpad) * ab[2], 0.03])
+                self.fig.colorbar(cs, cax=cbaxes, orientation='horizontal')
                 # add horizontal, calculate positions (divide bars and spaces)
             else:
-                cbaxes = self.fig.add_axes([0.1, 0.15, 0.03, 0.7])
+                ab = self.fig.axes[self.active].get_position().bounds
+                cbaxes = self.fig.add_axes([0.1, ab[1] + self.cbpad * ab[3], 0.03, (1 - 2 * self.cbpad) * ab[3]])
                 self.fig.colorbar(cs, cax=cbaxes)
         self.draw()
 
-    def _add_colorbar(self, cs):
-        divider = make_axes_locatable(self.fig.axes[self.active])
-        cax = divider.append_axes("left", size="5%", pad=0.5)
-        plt.colorbar(cs, cax=cax)
-        # modify tick labels
-        # cb = plt.colorbar(cs, cax=cax)
-        # lbl = [item.get_text()+'S' for item in cb.ax.get_yticklabels()]
-        # lbl[lbl.index(next(l for l in lbl if l.startswith('0')))] = 'E'
-        # cb.set_ticklabels(lbl)
+    # def _add_colorbar(self, cs):
+    #     divider = make_axes_locatable(self.fig.axes[self.active])
+    #     cax = divider.append_axes("left", size="5%", pad=0.5)
+    #     plt.colorbar(cs, cax=cax)
+    #     # modify tick labels
+    #     # cb = plt.colorbar(cs, cax=cax)
+    #     # lbl = [item.get_text()+'S' for item in cb.ax.get_yticklabels()]
+    #     # lbl[lbl.index(next(l for l in lbl if l.startswith('0')))] = 'E'
+    #     # cb.set_ticklabels(lbl)
 
     def axtitle(self, title):
         self._axtitle[self.active] = self.fig.axes[self.active].set_title(title)

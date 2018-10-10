@@ -176,12 +176,12 @@ class Vec3(np.ndarray):
         Normalize the vector to unit length.
 
         Returns:
-            unit vector of ``self``
+          unit vector of ``self``
 
         Example:
-            >>> u = Vec3([1,1,1])
-            >>> u.uv
-            V(0.577, 0.577, 0.577)
+          >>> u = Vec3([1,1,1])
+          >>> u.uv
+          V(0.577, 0.577, 0.577)
 
         """
 
@@ -302,7 +302,7 @@ class Vec3(np.ndarray):
             F (``DefGrad`` or ``numpy.array``): transformation matrix
 
         Keyword Args:
-            norm: normalize transformed vectors. True or False. Dafault False
+            norm: normalize transformed vectors. [True or False] Default False
 
         Returns:
             vector representation of affine transformation (dot product)
@@ -3265,7 +3265,7 @@ class StereoGrid(object):
     @property
     def min(self):
         return self.values.min()
-    
+
     @property
     def max(self):
         return self.values.max()

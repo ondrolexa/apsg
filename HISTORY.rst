@@ -165,3 +165,7 @@ Changes
 0.5.3 (10 Oct 2018)
 ~~~~~~~~~~~~~~~~~~~
 * Bugfix release
+
+0.5.4 (XX YYY 2018)
+~~~~~~~~~~~~~~~~~~~
+* StereoNet has cbpad keyword for colorbar padding
