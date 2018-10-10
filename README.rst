@@ -23,5 +23,5 @@ You can see APSG in action in accompanied Jupyter notebook http://nbviewer.jupyt
 
 And for fun check how simply you can animate stereonets http://nbviewer.jupyter.org/github/ondrolexa/apsg/blob/master/animation_example.ipynb
 
-* Free software: BSD license
+* Free software: MIT license
 * Documentation: https://apsg.readthedocs.org.

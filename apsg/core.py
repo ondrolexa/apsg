@@ -681,7 +681,7 @@ class Fol(Vec3):
 
         """
 
-        return self.dv.rotate(self.dd, rake - 90)
+        return self.dv.rotate(self, rake - 90)
 
 
 class Pair(object):

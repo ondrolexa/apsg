@@ -45,9 +45,9 @@ test:
 
 about:
   home: http://ondrolexa.github.io/apsg
-  license: BSD License
+  license: MIT License
   summary: 'APSG - structural geology module for Python'
-  license_family: BSD
+  license_family: MIT
   doc_url: https://apsg.readthedocs.org
   dev_url: https://github.com/ondrolexa/apsg
 
