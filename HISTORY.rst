@@ -169,3 +169,4 @@ Changes
 0.5.4 (XX YYY 2018)
 ~~~~~~~~~~~~~~~~~~~
 * StereoNet has cbpad keyword for colorbar padding
+* FabricPlot bug introduced in 0.5.2 fixed.

@@ -729,7 +729,7 @@ class FabricPlot(object):
             x = self.A[0] * (1 - r) + self.C[0] * r
             x = np.vstack((x, x + tick[0]))
             y = self.A[1] * (1 - r) + self.C[1] * r
-            y = np.vstsettingsack((y, y + tick[1]))
+            y = np.vstack((y, y + tick[1]))
             self.ax.plot(x, y, "k", lw=1)
 
         self.ax.set_title("Fabric plot")
