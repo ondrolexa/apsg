@@ -173,3 +173,10 @@ Changes
 
 0.5.5 (XX YYY 2018)
 ~~~~~~~~~~~~~~~~~~~
+* Stress always gives eigenvalues sorted
+* Stress I1, I2, I3 properties for invariants implemented
+* Stress mean_stress property implemented
+* Stress hydrostatic and deviatoric properties implemented
+* precision added to settings to control numerical comparisms
+* figsize added to settings to control figure size accross APSG
+* Animation examples fixed

@@ -19,7 +19,8 @@ import pytest
 import numpy as np
 
 
-from apsg import Vec3, Fol, Lin, Fault, Pair, Group, DefGrad, Ortensor, settings
+from apsg import Vec3, Fol, Lin, Fault, Pair, Group, settings
+from apsg import Ortensor, DefGrad, VelGrad, Stress
 
 
 # ############################################################################
@@ -33,6 +34,11 @@ def is_hashable(obj):
         return True
     except:
         return False
+
+
+# ############################################################################
+# Vectors
+# ############################################################################
 
 
 class TestVector:
@@ -277,10 +283,9 @@ class TestVector:
     # ``dot`` method
 
     def test_scalar_product_of_same_vectors(self):
-        i = Vec3(1, 0, 0)
-        j = Vec3(1, 0, 0)
+        i = Vec3(1, 2, 3)
 
-        assert i.dot(j) == abs(i) == abs(i)
+        assert np.allclose(i.dot(i), abs(i)**2)
 
     def test_scalar_product_of_orthonornal_vectors(self):
         i = Vec3(1, 0, 0)
@@ -333,11 +338,11 @@ class TestVector:
         assert current == expects
 
     def test_sub_operator(self):
-        lhs = Vec3([1, 1, 1])
-        rhs = Vec3([1, 1, 1])
+        lhs = Vec3([1, 2, 3])
+        rhs = Vec3([3, 1, 2])
 
         current = lhs - rhs
-        expects = Vec3([0, 0, 0])
+        expects = Vec3([-2, 1, 1])
 
         assert current == expects
 
@@ -350,7 +355,7 @@ class TestVector:
         current = lhs * rhs
         expects = lhs.dot(rhs)
 
-        assert current == expects
+        assert np.allclose(current, expects)
 
     # ``**`` operator aka cross product
 
@@ -364,24 +369,28 @@ class TestVector:
         assert current == expects
 
     def test_pow_operator_with_scalar(self):
-        lhs = 2
-        rhs = Vec3([1, 1, 1])
+        lhs = Vec3([1, 1, 1])
+        rhs = 2
 
-        current = lhs * rhs
-        expects = Vec3([2, 2, 2])
+        current = lhs ** rhs
+        expects = np.dot(lhs, lhs)
 
-        assert current == expects
+        assert np.allclose(current, expects)
 
     def test_length_method(self):
-        u = Vec3([1])
-        v = Vec3([1, 2])
         w = Vec3([1, 2, 3])
 
-        len(u) == len(v) == len(w) == 3
+        assert len(w) == 3
 
     def test_getitem_operator(self):
         v = Vec3([1, 2, 3])
+
         assert all((v[0] == 1, v[1] == 2, v[2] == 3))
+
+
+# ############################################################################
+# Lineation
+# ############################################################################
 
 
 class TestLineation:
@@ -393,10 +402,6 @@ class TestLineation:
     def x(self):
         return Lin(0, 0)
 
-    @pytest.fixture
-    def y(self):
-        return Lin(90, 0)
-
     @pytest.mark.skip
     def test_repr(self, x):
         assert repr(x) == "Lin(1.0,0,0)"
@@ -404,144 +409,155 @@ class TestLineation:
     def test_str(self, x):
         assert str(x) == "L:0/0"
 
-    def test_equality_for_oposite_dir_and_zero_dip(self, y):
-        assert y == -y
+    def test_equality_for_oposite_dir(self):
+        l = Group.randn_lin(1)[0]
+        assert l == -l
 
     def test_that_azimuth_0_is_same_as_360(self):
-        assert Lin(0, 0) == Lin(360, 0)
+        assert Lin(0, 20) == Lin(360, 20)
 
     def test_scalar_product(self):
-        pass
+        l = Group.randn_lin(1)[0]
+        assert np.allclose(l*l, 1)
 
-    def test_vector_product(self):
-        l1 = Lin(110, 22)
-        l2 = Lin(163, 47)
+    def test_cross_product(self):
+        l1, l2 = Group.randn_lin(2)
+        p = l1**l2
+
+        assert np.allclose([p.angle(l1), p.angle(l2)], [90, 90])
+
+    def test_lineation_product(self):
+        l1, l2 = Group.randn_lin(2)
         p = l1.cross(l2)
 
-        assert np.allclose(p.angle(l1), p.angle(l2), 90)
+        assert np.allclose([p.angle(l1), p.angle(l2)], [90, 90])
 
-    def test_vector_product_operator(self):
-        l1 = Lin(110, 22)
-        l2 = Lin(163, 47)
-        p = l1 ** l2
+    def test_lineation_product_operator(self):
+        l1, l2 = Group.randn_lin(2)
 
-        assert np.allclose(p.angle(l1), p.angle(l2), 90)
+        assert l1.cross(l2) == l1 ** l2
 
-    def test_add_operator(self):
+    def test_mutual_rotation(self):
         l1, l2 = Group.randn_lin(2)
 
         assert l1.transform(l1.H(l2)) == l2
 
+    def test_angle_under_rotation(self):
+        l1, l2 = Group.randn_lin(2)
+        D = DefGrad.from_axis(Lin(45, 45), 60)
+
+        assert np.allclose(l1.angle(l2), l1.transform(D).angle(l2.transform(D)))
+
     def test_add_operator__simple(self):
-        v1 = Lin(45, 0)
-        v2 = Lin(315, 0)
+        l1, l2 = Group.randn_lin(2)
 
-        # The `v2` is converted from 2. quadrant to 4. quadrant.
-        assert (v1 + v2).uv == Lin(90, 0)
-
-        # The `v1` is converted from 1. quadrant to 3. quadrant.
-        assert (v2 + v1).uv == Lin(270, 0)
+        assert l1 + l2 == l1 + (-l2)
 
         # Anyway, axial add is commutative.
-        assert (v1 + v2) == (v2 + v1)
+        assert l1 + l2 == l2 + l1 
 
     def test_sub_operator__simple(self):
-        v1 = Lin(45, 0)
-        v2 = Lin(315, 0)
+        l1, l2 = Group.randn_lin(2)
 
-        assert (v1 - v2).uv == Lin(360, 0)
+        assert l1 - l2 == l1 - (-l2)
+
+        # Anyway, axial sub is commutative.
+        assert l1 - l2 == l2 - l1
 
     def test_dd_property(self):
         l = Lin(120, 30)
-        assert Lin(*l.V.dd) == l
-
-# ############################################################################
-# Group
-# ############################################################################
-
-
-def test_rotation_rdegree():
-    g = Group.randn_lin()
-    assert np.allclose(g.rotate(Lin(45, 45), 90).rdegree, g.rdegree)
-
-
-def test_rotation_angle_lin():
-    l1, l2 = Group.randn_lin(2)
-    D = DefGrad.from_axis(Lin(45, 45), 60)
-    assert np.allclose(l1.angle(l2), l1.transform(D).angle(l2.transform(D)))
-
-
-def test_rotation_angle_fol():
-    f1, f2 = Group.randn_fol(2)
-    D = DefGrad.from_axis(Lin(45, 45), 60)
-    assert np.allclose(f1.angle(f2), f1.transform(D).angle(f2.transform(D)))
-
-
-def test_resultant_rdegree():
-    g = Group.from_array([45, 135, 225, 315], [45, 45, 45, 45], Lin)
-    c1 = g.R.uv == Lin(0, 90)
-    c2 = np.allclose(abs(g.R), np.sqrt(8))
-    c3 = np.allclose((g.rdegree/100 + 1)**2, 2)
-    assert c1 and c2 and c3
-
-
-def test_group_heterogenous_error():
-    with pytest.raises(Exception) as exc:
-        g = Group([1, 2, 3])
-        assert "Data must be Fol, Lin or Vec3 type." ==  str(exc.exception)
-
-
-# ############################################################################
-# Lineation
-# ############################################################################
-
-
-def test_cross_product():
-    l1 = Lin(110, 22)
-    l2 = Lin(163, 47)
-    p = l1**l2
-    assert np.allclose(p.angle(l1), p.angle(l2), 90)
-
-
-def test_axial_addition():
-    l1, l2 = Group.randn_lin(2)
-    assert l1.transform(l1.H(l2)) == l2
-
-
-def test_vec_H():
-    m = Lin(135, 10) + Lin(315, 10)
-    assert m.uv == Lin(135, 0)
-
-
-def test_group_heterogenous_error():
-    with pytest.raises(Exception) as exc:
-        g = Group([Fol(10, 10), Lin(20, 20)])
-        assert "All data in group must be of same type." == str(exc.exception)
-
-
-def test_pair_misfit():
-    n, l = Group.randn_lin(2)
-    f = n.asfol
-    p = Pair.from_pair(f, f - l.proj(f))
-    assert np.allclose(p.misfit, 0)
-
-
-def test_pair_rotate():
-    n, l = Group.randn_lin(2)
-    f = n.asfol
-    p = Pair.from_pair(f, f - l.proj(f))
-    pr = p.rotate(Lin(45, 45), 120)
-    assert np.allclose(p.fvec.angle(p.lvec), pr.fvec.angle(pr.lvec), 90)
-
-
-def test_lin_vector_dd():
-    l = Lin(120, 30)
-    assert Lin(*l.V.dd) == l
+        assert Lin(*l.dd) == l
 
 
 # ############################################################################
 # Foliation
 # ############################################################################
+
+
+class TestFoliation:
+
+    def test_angle_under_rotation(self):
+        f1, f2 = Group.randn_fol(2)
+        D = DefGrad.from_axis(Lin(45, 45), 60)
+
+        assert np.allclose(f1.angle(f2), f1.transform(D).angle(f2.transform(D)))
+
+
+# ############################################################################
+# Group
+# ############################################################################
+
+class TestGroup:
+
+    def test_rdegree_under_rotation(self):
+        g = Group.randn_lin()
+        assert np.allclose(g.rotate(Lin(45, 45), 90).rdegree, g.rdegree)
+
+
+    def test_resultant_rdegree(self):
+        g = Group.from_array([45, 135, 225, 315], [45, 45, 45, 45], Lin)
+        c1 = g.R.uv == Lin(0, 90)
+        c2 = np.allclose(abs(g.R), np.sqrt(8))
+        c3 = np.allclose((g.rdegree/100 + 1)**2, 2)
+        assert c1 and c2 and c3
+
+
+    def test_group_heterogenous_error(self):
+        with pytest.raises(Exception) as exc:
+            g = Group([1, 2, 3])
+            assert "Data must be Fol, Lin or Vec3 type." ==  str(exc.exception)
+
+
+    def test_group_heterogenous_error(self):
+        with pytest.raises(Exception) as exc:
+            g = Group([Fol(10, 10), Lin(20, 20)])
+            assert "All data in group must be of same type." == str(exc.exception)
+
+    def test_centered_group(self):
+        g = Group.randn_lin(mean=Lin(40, 50))
+        gc = g.centered
+        el = gc.ortensor.eigenlins
+        assert el[0] == Lin(0, 90) and el[1] == Lin(90, 0) and el[2] == Lin(0, 0)
+
+
+# ############################################################################
+# Pair
+# ############################################################################
+
+
+def test_pair_misfit():
+    n, l = Group.randn_lin(2)
+    f = n ** l
+    p = Pair.from_pair(f, l)
+    assert np.allclose(p.misfit, 0)
+
+
+def test_pair_rotate():
+    n, l = Group.randn_lin(2)
+    f = n ** l
+    p = Pair.from_pair(f, l)
+    pr = p.rotate(Lin(45, 45), 120)
+    assert np.allclose([p.fvec.angle(p.lvec), pr.fvec.angle(pr.lvec)], [90, 90])
+
+
+def test_pair_equal():
+    n, l = Group.randn_lin(2)
+    f = n ** l
+    p = Pair.from_pair(f, l)
+    assert p == Pair.from_pair(f, l)
+    assert p == Pair.from_pair(f, -l)
+    assert p == Pair.from_pair(-f, l)
+    assert p == Pair.from_pair(-f, -l)
+
+
+# ############################################################################
+# Axial->Vector->DD
+# ############################################################################
+
+
+def test_lin_vector_dd():
+    l = Lin(120, 30)
+    assert Lin(*l.V.dd) == l
 
 
 def test_fol_vector_dd():
@@ -554,6 +570,12 @@ def test_fol_vector_dd():
 # ############################################################################
 
 
+def test_fault_flip():
+    f = Fault(90, 30, 110, 28, -1)
+    fr = f.rotate(f.rax, 180)
+    assert (f.p == fr.p) and (f.t == fr.t)
+
+
 def test_fault_rotation_sense():
     f = Fault(90, 30, 110, 28, -1)
     assert repr(f.rotate(Lin(220, 10), 60)) == 'F:343/37-301/29 +'
@@ -564,6 +586,42 @@ def test_fault_rotation_sense():
 # ############################################################################
 
 
-def test_ortensor_orthogonal():
+def test_ortensor_uniform():
     f = Group.randn_fol(1)[0]
-    assert np.allclose(*Ortensor(Group([f.V, f.rake(-45), f.rake(45)])).eigenvals)
+    assert np.allclose(Ortensor(Group([f.V, f.rake(-45), f.rake(45)])).eigenvals, [1/3, 1/3, 1/3])
+
+# ############################################################################
+# DefGrad
+# ############################################################################
+
+
+def test_orthogonality_rotation_matrix():
+    l = Group.randn_lin(1)[0]
+    a = np.random.randint(180)
+    R = DefGrad.from_axis(l, a)
+    assert np.allclose(R * R.T, np.eye(3))
+
+
+# ############################################################################
+# Stress
+# ############################################################################
+
+
+def test_stress_component():
+    S = Stress.from_comp(xx=2, yy=2, zz=1, xy=1, xz=3, yz=-2)
+    n = Vec3([1,2,-2]).uv
+    sn, tau = S.stress_comp(n)
+    assert np.allclose([abs(sn), abs(tau)], [abs(S.normal_stress(n)), S.shear_stress(n)])
+
+
+def test_stress_invariants_calculation():
+    S = Stress.from_comp(xx=4, yy=6, zz=8, xy=1, xz=2)
+    assert np.allclose([S.I1, S.I2, S.I3], [18, 99, 160])
+
+
+def test_stress_invariants_under_rotation():
+    S = Stress.from_comp(xx=4, yy=6, zz=8, xy=1, xz=2)
+    l = Group.randn_lin(1)[0]
+    a = np.random.randint(180)
+    Sr = S.rotate(l, a)
+    assert np.allclose([S.I1, S.I2, S.I3], [Sr.I1, Sr.I2, Sr.I3])

@@ -52,7 +52,10 @@ __all__ = (
 
 # Default module settings (singleton).
 
-settings = dict(notation="dd", vec2dd=False)
+settings = dict(notation="dd",          # Default notation for Fol dd or rhr
+                vec2dd=False,           # Show Vec3 as 
+                precision=1e-12,        # Numerical precision for comparism
+                figsize=(8, 6))         # Default figure size
 
 
 class Vec3(np.ndarray):
@@ -136,7 +139,7 @@ class Vec3(np.ndarray):
         """
         if not isinstance(other, self.__class__):
             return False
-        return self is other or abs(self - other) < 1e-15
+        return self is other or abs(self - other) < settings["precision"]
 
     def __ne__(self, other):
         """
@@ -387,8 +390,8 @@ class Lin(Vec3):
     It provides all ``Vec3`` methods and properties but behave as axial vector.
 
     Args:
-        azi: The dip direction in degrees.
-        inc: The dip angle in degrees.
+        azi: The plunge direction or trend in degrees.
+        inc: The plunge in degrees.
 
     Example:
         >>> l = Lin(120, 60)
@@ -436,7 +439,7 @@ class Lin(Vec3):
         """
         Return `True` if linear features are equal.
         """
-        return bool(abs(self - other) < 1e-15 or abs(self + other) < 1e-15)
+        return bool(abs(self - other) < settings["precision"] or abs(self + other) < settings["precision"])
 
     def __ne__(self, other):
         """
@@ -482,7 +485,7 @@ class Lin(Vec3):
     @property
     def dd(self):
         """
-        Return dip direction and dip angle tuple.
+        Return trend and plunge tuple.
         """
         n = self.uv
         if n[2] < 0:
@@ -501,7 +504,7 @@ class Fol(Vec3):
     as axial vector.
 
     Args:
-      azi: The dip direction in degrees.
+      azi: The dip azimuth in degrees.
       inc: The dip angle in degrees.
 
     Example:
@@ -561,7 +564,7 @@ class Fol(Vec3):
         Return `True` if planar features are equal, otherwise `False`.
         """
 
-        return bool(abs(self - other) < 1e-15 or abs(self + other) < 1e-15)
+        return bool(abs(self - other) < settings["precision"] or abs(self + other) < settings["precision"])
 
     def __ne__(self, other):
         """
@@ -693,10 +696,10 @@ class Pair(object):
     is issued, when misfit angle is bigger than 20 degrees.
 
     Args:
-        fazi (float): Dip direction of planar feature in degrees
+        fazi (float): dip azimuth of planar feature in degrees
         finc (float): dip of planar feature in degrees
-        lazi (float): Dip direction of linear feature in degrees
-        linc (float): dip of linear feature in degrees
+        lazi (float): plunge direction of linear feature in degrees
+        linc (float): plunge of linear feature in degrees
 
     Example:
         >>> p = Pair(140, 30, 110, 26)
@@ -720,6 +723,21 @@ class Pair(object):
     def __repr__(self):
         vals = getattr(self.fol, settings["notation"]) + self.lin.dd
         return "P:{:.0f}/{:.0f}-{:.0f}/{:.0f}".format(*vals)
+
+    def __eq__(self, other):
+        """
+        Return `True` if pairs are equal, otherwise `False`.
+        """
+        if not isinstance(other, self.__class__):
+            return False
+        return (self.fol == other.fol) and (self.lin == other.lin)
+
+    def __ne__(self, other):
+        """
+        Return `True` if pairs are not equal, otherwise `False`.
+
+        """
+        return not self == other
 
     @classmethod
     def from_pair(cls, fol, lin):
@@ -814,10 +832,10 @@ class Fault(Pair):
     is issued, when misfit angle is bigger than 20 degrees.
 
     Args:
-        fazi (float): dip direction of planar feature in degrees
+        fazi (float): dip azimuth of planar feature in degrees
         finc (float): dip of planar feature in degrees
-        lazi (float): dip direction of linear feature in degrees
-        linc (float): dip of linear feature in degrees
+        lazi (float): plunge direction of linear feature in degrees
+        linc (float): plunge of linear feature in degrees
         sense (float): sense of movement +/-1 hanging-wall up/down
 
     Example:
@@ -834,6 +852,21 @@ class Fault(Pair):
         s = ["", "+", "-"][self.sense]
         vals = getattr(self.fol, settings["notation"]) + self.lin.dd + (s,)
         return "F:{:.0f}/{:.0f}-{:.0f}/{:.0f} {:s}".format(*vals)
+
+    def __eq__(self, other):
+        """
+        Return `True` if faults are equal, otherwise `False`.
+        """
+        if not isinstance(other, self.__class__):
+            return False
+        return (self.p == other.p) and (self.t == other.t)
+
+    def __ne__(self, other):
+        """
+        Return `True` if faults are not equal, otherwise `False`.
+
+        """
+        return not self == other
 
     @classmethod
     def from_pair(cls, fol, lin, sense):
@@ -1061,10 +1094,10 @@ class Group(list):
 
     @classmethod
     def from_array(cls, azis, incs, typ=Lin, name="Default"):
-        """Create ``Group`` object from arrays of dip directions and dips
+        """Create ``Group`` object from arrays of azimuths and inclinations
 
         Args:
-          azis: list or array of dip directions
+          azis: list or array of azimuths
           incs: list or array of inclinations
 
         Keyword Args:
@@ -1301,7 +1334,7 @@ class Group(list):
 
     @property
     def dd(self):
-        """Return array of dip directions and dips of ``Group``"""
+        """Return array of azimuths and inclinations of ``Group``"""
         return np.array([d.dd for d in self]).T
 
     @property
@@ -2412,7 +2445,7 @@ class PairSet(list):
 
     @classmethod
     def from_array(cls, fazis, fincs, lazis, lincs, name="Default"):
-        """Create PairSet from arrays of dip directions and dips"""
+        """Create PairSet from arrays of azimuths and inclinations"""
         data = []
         for fazi, finc, lazi, linc in zip(fazis, fincs, lazis, lincs):
             data.append(Pair(fazi, finc, lazi, linc))
@@ -2494,7 +2527,7 @@ class FaultSet(PairSet):
 
     @classmethod
     def from_array(cls, fazis, fincs, lazis, lincs, senses, name="Default"):
-        """Create dataset from arrays of dip directions and dips"""
+        """Create dataset from arrays of azimuths and inclinations"""
         data = []
         for fazi, finc, lazi, linc, sense in zip(fazis, fincs, lazis, lincs, senses):
             data.append(Fault(fazi, finc, lazi, linc, sense))
@@ -3350,7 +3383,7 @@ class StereoGrid(object):
 
     def contourf(self, *args, **kwargs):
         """ Show filled contours of values."""
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=settings["figsize"])
         # Projection circle
         ax.text(0, 1.02, "N", ha="center", va="baseline", fontsize=16)
         ax.add_artist(plt.Circle((0, 0), 1, color="w", zorder=0))
@@ -3363,7 +3396,7 @@ class StereoGrid(object):
 
     def contour(self, *args, **kwargs):
         """ Show contours of values."""
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=settings["figsize"])
         # Projection circle
         ax.text(0, 1.02, "N", ha="center", va="baseline", fontsize=16)
         ax.add_artist(plt.Circle((0, 0), 1, color="w", zorder=0))
@@ -3376,7 +3409,7 @@ class StereoGrid(object):
 
     def plotcountgrid(self):
         """ Show counting grid."""
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=settings["figsize"])
         # Projection circle
         ax.text(0, 1.02, "N", ha="center", va="baseline", fontsize=16)
         ax.add_artist(plt.Circle((0, 0), 1, color="w", zorder=0))
@@ -3460,9 +3493,9 @@ class Cluster(object):
         See ``scipy.cluster.hierarchy.dendrogram`` for possible kwargs.
         """
         from scipy.cluster.hierarchy import dendrogram
-        import matplotlib.pyplot as plt
 
-        dendrogram(self.Z, **kwargs)
+        fig, ax = plt.subplots(figsize=settings["figsize"])
+        dendrogram(self.Z, ax=ax, **kwargs)
         plt.show()
 
     def elbow(self, no_plot=False, n=None):
@@ -3471,7 +3504,6 @@ class Cluster(object):
         Elbow criterion could be used to determine number of clusters.
         """
         from scipy.cluster.hierarchy import fcluster
-        import matplotlib.pyplot as plt
 
         if n is None:
             idx = fcluster(self.Z, len(self.data), criterion="maxclust")
@@ -3488,11 +3520,12 @@ class Cluster(object):
             within_grp_var.append(var)
             mean_var.append(np.mean(var))
         if not no_plot:
-            plt.boxplot(within_grp_var, positions=nclust)
-            plt.plot(nclust, mean_var, "k")
-            plt.xlabel("Number of clusters")
-            plt.ylabel("Variance")
-            plt.title("Within-groups variance vs. number of clusters")
+            fig, ax = plt.subplots(figsize=settings["figsize"])
+            ax.boxplot(within_grp_var, positions=nclust)
+            ax.plot(nclust, mean_var, "k")
+            ax.set_xlabel("Number of clusters")
+            ax.set_ylabel("Variance")
+            ax.set_title("Within-groups variance vs. number of clusters")
             plt.show()
         else:
             return nclust, within_grp_var
@@ -3508,7 +3541,7 @@ class Cluster(object):
 
 def G(s, typ=Lin, name="Default"):
     """
-    Create a group from space separated string of dip directions and dips.
+    Create a group from space separated string of azimuths and inclinations.
     """
 
     vals = np.fromstring(s, sep=" ")
