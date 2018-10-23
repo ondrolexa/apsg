@@ -53,7 +53,7 @@ __all__ = (
 # Default module settings (singleton).
 
 settings = dict(notation="dd",          # Default notation for Fol dd or rhr
-                vec2dd=False,           # Show Vec3 as 
+                vec2dd=False,           # Show Vec3 as plunge direction and plunge
                 precision=1e-12,        # Numerical precision for comparism
                 figsize=(8, 6))         # Default figure size
 
@@ -151,6 +151,14 @@ class Vec3(np.ndarray):
 
     def __hash__(self):
         return NotImplementedError
+
+    @classmethod
+    def rand(cls):
+        """
+        Random unit vector from distribution on sphere
+        """
+
+        return cls(np.random.randn(3)).uv
 
     @property
     def type(self):
@@ -293,9 +301,7 @@ class Vec3(np.ndarray):
         """
         from .tensors import DefGrad
 
-        return DefGrad(
-            np.outer(self + other, (self + other).T) / (1 + self * other) - np.eye(3)
-        )
+        return DefGrad.from_axis(self ** other, self.V.angle(other))
 
     def transform(self, F, **kwargs):
         """
@@ -447,6 +453,14 @@ class Lin(Vec3):
         """
         return not (self == other or self == -other)
 
+    @classmethod
+    def rand(cls):
+        """
+        Random Lin
+        """
+
+        return Vec3.rand().aslin
+
     def dot(self, other):
         """
         Calculate the axial dot product.
@@ -572,6 +586,14 @@ class Fol(Vec3):
         """
 
         return not (self == other or self == -other)
+
+    @classmethod
+    def rand(cls):
+        """
+        Random Fol
+        """
+
+        return Vec3.rand().asfol
 
     def angle(self, other):
         """
@@ -738,6 +760,18 @@ class Pair(object):
 
         """
         return not self == other
+
+    @classmethod
+    def rand(cls):
+        """
+        Random Pair
+        """
+
+        lin, per = Lin.rand(), Lin.rand()
+        fol = lin ** per
+        fazi, finc = fol.dd
+        lazi, linc = lin.dd
+        return cls(fazi, finc, lazi, linc)
 
     @classmethod
     def from_pair(cls, fol, lin):
@@ -3150,9 +3184,9 @@ class Ortensor(object):
 
     def __repr__(self):
         return (
-            "Ortensor: %s Kind: %s\n" % (self.name, self.kind)
-            + "(E1:%.4g,E2:%.4g,E3:%.4g)\n" % tuple(self.eigenvals)
-            + str(self.cov)
+            "Ortensor: %s Kind: %s\n" % (self.name, self.kind) +
+            "(E1:%.4g,E2:%.4g,E3:%.4g)\n" % tuple(self.eigenvals) +
+            str(self.cov)
         )
 
     @property
@@ -3290,9 +3324,9 @@ class StereoGrid(object):
 
     def __repr__(self):
         return (
-            "StereoGrid with %d points.\n" % self.n
-            + "Maximum: %.4g at %s\n" % (self.max, self.max_at)
-            + "Minimum: %.4g at %s" % (self.min, self.min_at)
+            "StereoGrid with %d points.\n" % self.n +
+            "Maximum: %.4g at %s\n" % (self.max, self.max_at) +
+            "Minimum: %.4g at %s" % (self.min, self.min_at)
         )
 
     @property
@@ -3447,11 +3481,11 @@ class Cluster(object):
         else:
             crit = "Criterion: Maxclust\nSettings: muxclust=%.4g\n" % (self.maxclust)
         return (
-            "Clustering object\n"
-            + "Number of data: %d\n" % len(self.data)
-            + "Linkage method: %s\n" % self.method
-            + crit
-            + info
+            "Clustering object\n" +
+            "Number of data: %d\n" % len(self.data) +
+            "Linkage method: %s\n" % self.method +
+            crit +
+            info
         )
 
     def cluster(self, **kwargs):

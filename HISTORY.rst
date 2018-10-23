@@ -180,3 +180,5 @@ Changes
 * precision added to settings to control numerical comparisms
 * figsize added to settings to control figure size accross APSG
 * Animation examples fixed
+* rand class method implemented for Fol, Lin, Vec3 and Pair to
+generate random instance
