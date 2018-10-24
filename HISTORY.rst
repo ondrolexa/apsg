@@ -182,7 +182,8 @@ Changes
 * Stress mean_stress property implemented
 * Stress hydrostatic and deviatoric properties implemented
 * precision added to settings to control numerical comparisms
-* figsize added to settings to control figure size accross APSG
+* figsize added to settings to control figure size across APSG
 * Animation examples fixed
 * rand class method implemented for Fol, Lin, Vec3 and Pair to
   generate random instance
+* Group to_csv and from_csv improved

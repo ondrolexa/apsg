@@ -19,7 +19,7 @@ import pytest
 import numpy as np
 
 
-from apsg import Vec3, Fol, Lin, Fault, Pair, Group, settings
+from apsg import Vec3, Fol, Lin, Fault, Pair, Group, FaultSet, settings
 from apsg import Ortensor, DefGrad, VelGrad, Stress
 
 
@@ -516,6 +516,10 @@ class TestGroup:
         el = gc.ortensor.eigenlins
         assert el[0] == Lin(0, 90) and el[1] == Lin(90, 0) and el[2] == Lin(0, 0)
 
+    def test_group_examples(self):
+        exlist = Group.examples()
+        for ex in exlist:
+            g = Group.examples(ex)
 
 # ############################################################################
 # Pair
@@ -573,6 +577,10 @@ def test_fault_rotation_sense():
     f = Fault(90, 30, 110, 28, -1)
     assert repr(f.rotate(Lin(220, 10), 60)) == 'F:343/37-301/29 +'
 
+def test_faultset_examples():
+    exlist = FaultSet.examples()
+    for ex in exlist:
+        g = FaultSet.examples(ex)
 
 # ############################################################################
 # Ortensor
