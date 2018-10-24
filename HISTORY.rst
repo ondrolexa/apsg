@@ -166,7 +166,19 @@ Changes
 ~~~~~~~~~~~~~~~~~~~
 * Bugfix release
 
-0.5.4 (XX YYY 2018)
+0.5.4 (19 Oct 2018)
 ~~~~~~~~~~~~~~~~~~~
 * StereoNet has cbpad keyword for colorbar padding
 * FabricPlot bug introduced in 0.5.2 fixed.
+
+0.5.5 (XX YYY 2018)
+~~~~~~~~~~~~~~~~~~~
+* Stress always gives eigenvalues sorted
+* Stress I1, I2, I3 properties for invariants implemented
+* Stress mean_stress property implemented
+* Stress hydrostatic and deviatoric properties implemented
+* precision added to settings to control numerical comparisms
+* figsize added to settings to control figure size accross APSG
+* Animation examples fixed
+* rand class method implemented for Fol, Lin, Vec3 and Pair to
+generate random instance

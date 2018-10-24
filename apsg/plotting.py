@@ -26,6 +26,7 @@ from .core import (
     FaultSet,
     Ortensor,
     StereoGrid,
+    settings
 )
 from .helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 from .tensors import DefGrad, Stress
@@ -56,7 +57,7 @@ class StereoNet(object):
         fol_plot: default method for ``Fol`` instances. ['plane' or 'pole']
                   Default 'plane'
         title: figure title. Default ''
-        figsize: Figure size
+        figsize: Figure size. Default from settings ()
         ncols: number of subplot columns. Default 1
         ticks: show ticks. Default True
         grid: show grid lines. Default False
@@ -85,7 +86,7 @@ class StereoNet(object):
         self.cbpad = kwargs.pop("cbpad", 0.1)
         self.grid_style = kwargs.pop("grid_style", "k:")
         self.fol_plot = kwargs.pop("fol_plot", "plane")
-        figsize = kwargs.pop("figsize", None)
+        figsize = kwargs.pop("figsize", settings["figsize"])
         title = kwargs.pop("title", "")
         self._lgd = None
         self.active = 0
@@ -609,7 +610,7 @@ class FabricPlot(object):
     """
 
     def __init__(self, *args, **kwargs):
-        self.fig = plt.figure()
+        self.fig = plt.figure(figsize=settings["figsize"])
         self.fig.canvas.set_window_title("Vollmer fabric plot")
         self.ticks = kwargs.get("ticks", True)
         self.grid = kwargs.get("grid", True)
@@ -931,7 +932,7 @@ def rose(a, bins=13, **kwargs):
     if isinstance(a, Group):
         a, _ = a.dd
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=settings["figsize"])
     ax = fig.add_subplot(111, polar=True)
     ax.set_theta_direction(-1)
     ax.set_theta_zero_location("N")

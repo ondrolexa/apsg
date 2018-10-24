@@ -7,7 +7,7 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
-from .core import Vec3, Fol, Lin, Group
+from .core import Vec3, Fol, Lin, Group, settings
 from .plotting import StereoNet
 from .helpers import sind, cosd, eformat
 
@@ -216,7 +216,7 @@ class Core(object):
     def zijderveld_plot(self):
         N, E, Z = np.array(self.geo).T
         N0, E0, Z0 = self.geo[0]
-        fig, ax = plt.subplots(facecolor="white")
+        fig, ax = plt.subplots(facecolor="white", figsize=settings["figsize"])
         ax.plot(E0, N0, "b+", markersize=14)
         ax.plot(E, N, "bo-", label="Horizontal")
         ax.plot(E0, -Z0, "g+", markersize=14)
@@ -241,7 +241,7 @@ class Core(object):
         plt.show()
 
     def demag_plot(self):
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=settings["figsize"])
         ax.plot(self.nsteps[0], self.MAG[0] / self.MAG.max(), "k+", markersize=14)
         ax.plot(self.nsteps, self.MAG / self.MAG.max(), "ko-")
         ax.set_ylabel("M/Mmax")

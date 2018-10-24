@@ -89,6 +89,9 @@ class DefGrad(np.ndarray):
 
         Keyword Args:
           xx, xy, xz, yx, yy, yz, zx, zy, zz: tensor components
+               aranged as [[xx, xy, xz],
+                           [yx, yy, yz],
+                           [zx, zy, zz]]
 
         Example:
           >>> F = DefGrad.from_comp(xy=1, zy=-0.5)
@@ -299,6 +302,9 @@ class VelGrad(np.ndarray):
 
         Keyword Args:
           xx, xy, xz, yx, yy, yz, zx, zy, zz: tensor components
+               aranged as [[xx, xy, xz],
+                           [yx, yy, yz],
+                           [zx, zy, zz]]
 
         Example:
           >>> L = VelGrad.from_comp(xx=0.1, zz=-0.1)
@@ -398,6 +404,9 @@ class Stress(np.ndarray):
 
         Keyword Args:
           xx, xy, xz, yy, yz, zz: tensor components
+               aranged as [[xx, xy, xz],
+                           [xy, yy, yz],
+                           [xz, yz, zz]]
 
         Example:
           >>> S = Stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
@@ -426,12 +435,37 @@ class Stress(np.ndarray):
         return Stress(R * self * R.T)
 
     @property
+    def mean_stress(self):
+        """
+        Mean stress
+        """
+        
+        return self.I1 / 3
+
+    @property
+    def hydrostatic(self):
+        """
+        Mean hydrostatic stress tensor component
+        """
+
+        return Stress(np.diag(self.mean_stress * np.ones(3)))
+
+    @property
+    def deviatoric(self):
+        """
+        A stress deviator tensor component
+        """
+
+        return self - self.hydrostatic
+
+    @property
     def eigenvals(self):
         """
         Return tuple of eigenvalues
         """
 
         vals, _ = np.linalg.eig(self)
+        vals = vals[vals.argsort()]
 
         return tuple(vals)
 
@@ -460,19 +494,65 @@ class Stress(np.ndarray):
         return self.eigenvals[2]
 
     @property
-    def eigenvects(self):
+    def I1(self):
+        """
+        First invariant
+        """
 
-        _, U = np.linalg.eig(self)
+        return np.trace(self)
+
+    @property
+    def I2(self):
+        """
+        Second invariant
+        """
+
+        return (self.I1**2 - np.trace(self**2)) / 2
+
+    @property
+    def I3(self):
+        """
+        Third invariant
+        """
+
+        return np.linalg.det(self)
+
+    @property
+    def diagonalized(self):
+        """
+        Returns Stress tensor in a coordinate system with axes oriented to the principal directions and
+        orthogonal matrix R, which brings actual coordinate system to principal one.
+
+        """
+
+        vals, U = np.linalg.eig(self)
+
+        return Stress(np.diag(vals)), DefGrad(U.T)
+
+    @property
+    def eigenvects(self):
+        """
+        Returns Group of three eigenvectors represented as ``Vec3``
+        """
+
+        vals, U = np.linalg.eig(self)
+        U = U[:, vals.argsort()]
 
         return Group([Vec3(U.T[0]), Vec3(U.T[1]), Vec3(U.T[2])])
 
     @property
     def eigenlins(self):
+        """
+        Returns Group of three eigenvectors represented as ``Lin``
+        """
 
         return self.eigenvects.aslin
 
     @property
     def eigenfols(self):
+        """
+        Returns Group of three eigenvectors represented as ``Fol``
+        """
 
         return self.eigenvects.asfol
 
@@ -521,13 +601,10 @@ class Stress(np.ndarray):
 
     def normal_stress(self, n):
         """
-        Return magnitude of normal stress component on plane given
-        by normal vector.
+        Return normal stress component on plane given by normal vector.
         """
 
-        sn, tau = self.stress_comp(n)
-
-        return abs(sn)
+        return np.dot(n, self.cauchy(n))
 
     def shear_stress(self, n):
         """
@@ -535,6 +612,4 @@ class Stress(np.ndarray):
         by normal vector.
         """
 
-        sn, tau = self.stress_comp(n)
-
-        return abs(tau)
+        return np.sqrt(self.cauchy(n)**2 - self.normal_stress(n)**2)
