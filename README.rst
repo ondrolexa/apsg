@@ -56,10 +56,10 @@ Getting started
 ---------------
 
 You can see APSG in action in accompanied Jupyter notebook
-http://nbviewer.jupyter.org/github/ondrolexa/apsg/blob/master/apsg_tutorial.ipynb
+http://nbviewer.jupyter.org/github/ondrolexa/apsg/blob/master/examples/apsg_tutorial.ipynb
 
 And for fun check how simply you can animate stereonets
-http://nbviewer.jupyter.org/github/ondrolexa/apsg/blob/master/animation_example.ipynb
+http://nbviewer.jupyter.org/github/ondrolexa/apsg/blob/master/examples/animation_example.ipynb
 
 Documentation
 -------------

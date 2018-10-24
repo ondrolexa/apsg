@@ -2,11 +2,11 @@
 Installation
 ============
 
--------------
-Conda package
--------------
+-----------
+Using Conda
+-----------
 
-For Anaconda distribution you can install directly from my personal channel::
+For Anaconda/Miniconda distributions you can install directly from my personal channel::
 
     conda install -c ondrolexa apsg
 
@@ -14,32 +14,21 @@ For Anaconda distribution you can install directly from my personal channel::
 Using pip
 ---------
 
-APSG requires dependencies which could be installed using conda::
+You can install APSG from PyPI::
 
-    conda install numpy matplotlib scipy
+		pip install apsg
 
-or by any other mechanism (see `Installing Scientific Packages <https://packaging.python.org/science/>`_).
+APSG requires dependencies which need to be installed (see `Installing Scientific Packages <https://packaging.python.org/science/>`_).
 
-You can install APSG directly from github using pip::
+--------------
+Master version
+--------------
+
+To install most recent master version use::
 
     pip install https://github.com/ondrolexa/apsg/archive/master.zip
-
-To safely upgrade installed APSG package use::
-
-    pip install --upgrade --upgrade-strategy only-if-needed \
-      https://github.com/ondrolexa/apsg/archive/master.zip
-
-
---------------------
-Developement version
---------------------
-
-To install most recent (and likely less stable) development version use::
-
-    pip install https://github.com/ondrolexa/apsg/archive/develop.zip
 
 To upgrade to latest development version use::
 
     pip install --upgrade --upgrade-strategy only-if-needed \
-      https://github.com/ondrolexa/apsg/archive/develop.zip
-
+      https://github.com/ondrolexa/apsg/archive/master.zip
