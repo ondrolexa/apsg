@@ -128,18 +128,22 @@ Changes
 * Stress tensor with few basic methods implemented
 * StereoGrid keyword argument 'weighted' to control weighting
 * StereoNet kwargs are passed to underlying methods for immediate plots
-* StereoNet tensor method implemented (draw eigenlins or fols based on fol_plot settings)
+* StereoNet tensor method implemented (draw eigenlins or fols based on
+  fol_plot settings)
 * Group totvar property and dot and proj methods implemented
 * Fol and Lin dot method returns absolute value of dot product
 * Vec3 H method implemented
-* StereoNet.contourf method draw contour lines as well by default. Option clines controls it.
+* StereoNet.contourf method draw contour lines as well by default. Option
+  clines controls it.
 * centered bug fixed
-* StereoNet allows simple animations. Add `animate=True` kwarg to plotting method and finally call StereoNet animate method.
+* StereoNet allows simple animations. Add `animate=True` kwarg to plotting
+  method and finally call StereoNet animate method.
 
 0.4.4 (25 Mar 2017)
 ~~~~~~~~~~~~~~~~~~~
 * Group method centered improved
-* Group method halfspace added to reorient all vectors towards resultant halfspace
+* Group method halfspace added to reorient all vectors towards resultant
+  halfspace
 
 0.5.0 (19 Nov 2017)
 ~~~~~~~~~~~~~~~~~~~
@@ -181,4 +185,4 @@ Changes
 * figsize added to settings to control figure size accross APSG
 * Animation examples fixed
 * rand class method implemented for Fol, Lin, Vec3 and Pair to
-generate random instance
+  generate random instance
