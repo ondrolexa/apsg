@@ -10,4 +10,4 @@ Development Lead
 Contributors
 ------------
 
-* David Landa
+* David Landa <david.landa@natur.cuni.cz>

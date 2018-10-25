@@ -19,7 +19,7 @@ class DefGrad(np.ndarray):
 
     Args:
       a (3x3 array_like): Input data, that can be converted to
-      an 3x3 2D array. This includes lists, tuples and ndarrays.
+          3x3 2D array. This includes lists, tuples and ndarrays.
 
     Returns:
       ``DefGrad`` object
@@ -88,10 +88,7 @@ class DefGrad(np.ndarray):
         """Return ``DefGrad`` tensor. Default is identity tensor.
 
         Keyword Args:
-          xx, xy, xz, yx, yy, yz, zx, zy, zz: tensor components
-               aranged as [[xx, xy, xz],
-                           [yx, yy, yz],
-                           [zx, zy, zz]]
+          xx, xy, xz, yx, yy, yz, zx, zy, zz (float): tensor components
 
         Example:
           >>> F = DefGrad.from_comp(xy=1, zy=-0.5)
@@ -265,7 +262,7 @@ class VelGrad(np.ndarray):
 
     Args:
       a (3x3 array_like): Input data, that can be converted to
-      an 3x3 2D array. This includes lists, tuples and ndarrays.
+          3x3 2D array. This includes lists, tuples and ndarrays.
 
     Returns:
       ``VelGrad`` object
@@ -301,10 +298,7 @@ class VelGrad(np.ndarray):
         """Return ``VelGrad`` tensor. Default is zero tensor.
 
         Keyword Args:
-          xx, xy, xz, yx, yy, yz, zx, zy, zz: tensor components
-               aranged as [[xx, xy, xz],
-                           [yx, yy, yz],
-                           [zx, zy, zz]]
+          xx, xy, xz, yx, yy, yz, zx, zy, zz (float): tensor components
 
         Example:
           >>> L = VelGrad.from_comp(xx=0.1, zz=-0.1)
@@ -354,7 +348,7 @@ class Stress(np.ndarray):
 
     Args:
       a (3x3 array_like): Input data, that can be converted to
-      an 3x3 2D array. This includes lists, tuples and ndarrays.
+          3x3 2D array. This includes lists, tuples and ndarrays.
 
     Returns:
       ``Stress`` object
@@ -403,10 +397,7 @@ class Stress(np.ndarray):
         Note that stress tensor must be symmetrical.
 
         Keyword Args:
-          xx, xy, xz, yy, yz, zz: tensor components
-               aranged as [[xx, xy, xz],
-                           [xy, yy, yz],
-                           [xz, yz, zz]]
+          xx, xy, xz, yy, yz, zz (float): tensor components
 
         Example:
           >>> S = Stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
@@ -439,7 +430,7 @@ class Stress(np.ndarray):
         """
         Mean stress
         """
-        
+
         return self.I1 / 3
 
     @property
@@ -580,7 +571,7 @@ class Stress(np.ndarray):
           n: normal given as ``Vec3`` or ``Fol`` object
 
         Example:
-          S = Stress.from_comp(xx=-5, yy=-2, zz=10, xy=8)
+          >>> S = Stress.from_comp(xx=-5, yy=-2, zz=10, xy=8)
           >>> S.fault(Fol(160, 30))
           F:160/30-141/29 +
 

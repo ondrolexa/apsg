@@ -135,7 +135,8 @@ class SDB(object):
 
         Args:
           struct:  name of structure to retrieve
-        Kwargs:
+
+        Keyword Args:
           sites: name or list of names of sites to retrieve from
           units: name or list of names of units to retrieve from
           tags:  tag or list of tags to retrieve

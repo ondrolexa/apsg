@@ -63,14 +63,14 @@ class Vec3(np.ndarray):
     ``Vec3`` is base class to store 3-dimensional vectors derived from
     ``numpy.ndarray`` on which ``Lin`` and ``Fol`` classes are based.
 
-    ``Vec3`` support most of common vector algebra using following operators:
+    ``Vec3`` support most of common vector algebra using following operators
         - ``+`` - vector addition
         - ``-`` - vector subtraction
         - ``*`` - dot product
         - ``**`` - cross product
         - ``abs`` - magnitude (length) of vector
 
-      See following methods and properties for additional operations.
+    Check following methods and properties for additional operations.
 
     Args:
         arr (array_like):
