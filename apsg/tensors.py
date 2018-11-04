@@ -507,10 +507,7 @@ class Stress(np.ndarray):
         orthogonal matrix R, which brings actual coordinate system to principal one.
 
         """
-
-        vals, U = np.linalg.eigh(self)
-
-        return Stress(np.diag(vals)), DefGrad(U.T)
+        return Stress(np.diag(self.eigenvals)), DefGrad(self.vects.T)
 
     @property
     def eigenvects(self):
