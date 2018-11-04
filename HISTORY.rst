@@ -111,7 +111,7 @@ Changes
 * ortensor MADp, MADo, MAD and kind properties added
 
 0.4 (04 Mar 2017)
-~~~~~~~~~~~~~~~~~
+-----------------
 * Density class renamed to StereoGrid
 * Fault sense under rotation fixed
 * FaultSet example provided
@@ -146,7 +146,7 @@ Changes
   halfspace
 
 0.5.0 (19 Nov 2017)
-~~~~~~~~~~~~~~~~~~~
+-------------------
 * bux fix minor release
 
 0.5.1 (05 Dec 2017)
@@ -175,8 +175,8 @@ Changes
 * StereoNet has cbpad keyword for colorbar padding
 * FabricPlot bug introduced in 0.5.2 fixed.
 
-0.5.5 (XX YYY 2018)
-~~~~~~~~~~~~~~~~~~~
+0.6 (XX YYY 2018)
+-----------------
 * Stress always gives eigenvalues sorted
 * Stress I1, I2, I3 properties for invariants implemented
 * Stress mean_stress property implemented
@@ -187,3 +187,4 @@ Changes
 * rand class method implemented for Fol, Lin, Vec3 and Pair to
   generate random instance
 * Group to_csv and from_csv improved
+* SDB tags method works properly for multiple tags

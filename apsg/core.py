@@ -2156,7 +2156,7 @@ class Ortensor(object):
         assert isinstance(d, Group), "Only group could be passed to Ortensor"
         self.cov = np.dot(np.array(d).T, np.array(d)) / len(d)
         self.name = d.name
-        vc, vv = np.linalg.eig(self.cov)
+        vc, vv = np.linalg.eigh(self.cov)
         ix = np.argsort(vc)[::-1]
         self.eigenvals = vc[ix]
         self.vects = vv.T[ix]

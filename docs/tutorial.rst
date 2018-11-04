@@ -300,6 +300,20 @@ is also impleneted, e.g. Woodcock's ``shape`` and ``strength`` or Vollmer's
 StereoNet class
 ---------------
 
+When ``StereoNet`` class instance is created with arguments, they are
+immidiatelly plotted and shown. Most of the objects provided by **APSG**
+could be plotted. Here we use the ``Group`` object and principal planes
+and lines of ``Ortensor``:
+
+    >>> StereoNet(g, ot.eigenfols, ot.eigenlins)
+
+.. image:: _static/images/figure_17.png
+
+When ``StereoNet`` class instance is created without arguments,
+several methods and properties could be used for additional operations.
+To finalize plot we can use ``show`` method (not needed in jupyter
+notebooks)
+
 Any ``Fol``, ``Lin``, ``Group`` object could be visualized as plane,
 line or pole in stereographic projection using ``StereoNet`` class::
 
@@ -310,15 +324,6 @@ line or pole in stereographic projection using ``StereoNet`` class::
     >>> s.show()
 
 .. image:: _static/images/figure_1.png
-
-When ``StereoNet`` class instance is created with arguments, they are
-immidiatelly plotted. Most of the objects provided by **APSG** could be
-plotted. Here we use the ``Group`` object and principal planes and lines
-of ``Ortensor``:
-
-    >>> StereoNet(g, ot.eigenfols, ot.eigenlins)
-
-.. image:: _static/images/figure_17.png
 
 A cones (or small circles) could be plotted as well::
 
@@ -511,7 +516,7 @@ features which should spatialy overlap::
 .. image:: _static/images/figure_8.png
 
 ``StereoNet`` has method ``arrow`` to draw arrow. Here is example
-of Hoeppner plot for variable fault orientation within given stress field:: 
+of Hoeppner plot for variable fault orientation within given stress field::
 
     >>> S = Stress([[-8, 0, 0],[0, -5, 0],[0, 0, -1]]).rotate(Lin(90,45), 45)
     >>> d = StereoGrid(npoints=300)

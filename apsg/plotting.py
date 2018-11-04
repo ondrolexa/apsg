@@ -44,8 +44,8 @@ class StereoNet(object):
     """
     ``StereoNet`` class for Schmidt net plotting.
 
-    A stereonet is a lower hemisphere graph on to which a variety of geological
-    data can be plotted.
+    A stereonet is a lower hemisphere Schmidt net on to which a variety
+    of geological data can be plotted.
 
     If args are provided plot is immediately shown. If no args are provided,
     following methods and properties could be used for additional operations.
@@ -160,12 +160,12 @@ class StereoNet(object):
             # plt.pause(0.001)
 
     def new(self):
-        """Re-initialize StereoNet figure"""
+        """Re-initialize existing StereoNet figure"""
         if self.closed:
             self.__init__()
 
     def cla(self):
-        """Clear projection"""
+        """Clear axes and draw empty projection"""
 
         def lat(a, phi):
             return self._cone(l2v(a, 0), l2v(a, phi), limit=89.9999, res=91)
@@ -285,6 +285,7 @@ class StereoNet(object):
         return x, y, u, v
 
     def arrow(self, pos_lin, dir_lin=None, sense=1, **kwargs):
+        """Draw arrow at given position in given direction"""
         animate = kwargs.pop("animate", False)
         x, y, u, v = self._arrow(pos_lin, dir_lin, sense=1)
         a = self.fig.axes[self.active].quiver(
@@ -292,9 +293,11 @@ class StereoNet(object):
         )
         p = self.fig.axes[self.active].scatter(x, y, color="k", s=5, zorder=6)
         if animate:
-            return tuple(a + p)
+            self.artists.append(tuple(a + p))
+        self.draw()
 
     def arc(self, f1, f2, *args, **kwargs):
+        """Draw great circle segment between two points"""
         assert issubclass(type(f1), Vec3) and issubclass(
             type(f2), Vec3
         ), "Arguments mustr be subclass of Vec3"
@@ -311,6 +314,7 @@ class StereoNet(object):
         self.draw()
 
     def plane(self, obj, *args, **kwargs):
+        """Draw Fol as great circle"""
         assert obj.type is Fol, "Only Fol instance could be plotted as plane."
         if "zorder" not in kwargs:
             kwargs["zorder"] = 5
@@ -337,6 +341,7 @@ class StereoNet(object):
         self.draw()
 
     def line(self, obj, *args, **kwargs):
+        """Draw Lin as point"""
         assert obj.type is Lin, "Only Lin instance could be plotted as line."
         if "zorder" not in kwargs:
             kwargs["zorder"] = 5
@@ -354,7 +359,8 @@ class StereoNet(object):
         self.draw()
 
     def vector(self, obj, *args, **kwargs):
-        """ This mimics plotting on upper and lower hemisphere"""
+        """ This mimics plotting on lower and upper hemisphere using
+        full and hollow symbols"""
         assert issubclass(
             obj.type, Vec3
         ), "Only Vec3-like instance could be plotted as line."
@@ -397,6 +403,7 @@ class StereoNet(object):
         self.draw()
 
     def pole(self, obj, *args, **kwargs):
+        """Draw Fol as pole"""
         assert obj.type is Fol, "Only Fol instance could be plotted as poles."
         if "zorder" not in kwargs:
             kwargs["zorder"] = 5
@@ -414,6 +421,7 @@ class StereoNet(object):
         self.draw()
 
     def cone(self, obj, alpha, *args, **kwargs):
+        """Draw small circle"""
         assert obj.type is Lin, "Only Lin instance could be used as cone axis."
         if "zorder" not in kwargs:
             kwargs["zorder"] = 5
@@ -448,7 +456,7 @@ class StereoNet(object):
         self.draw()
 
     def pair(self, obj, *arg, **kwargs):
-        """Plot a fol-lin pair"""
+        """Draw  Pair as great circle with small point"""
         assert obj.type is Pair, "Only Pair instance could be used."
         animate = kwargs.pop("animate", False)
         h1 = self.plane(obj.fol, *arg, **kwargs)
@@ -459,7 +467,7 @@ class StereoNet(object):
         self.draw()
 
     def fault(self, obj, *arg, **kwargs):
-        """Plot a fault-and-striae plot - Angelier plot"""
+        """Draw a fault-and-striae as in Angelier plot"""
         assert obj.type is Fault, "Only Fault instance could be used."
         animate = kwargs.get("animate", False)
         self.plane(obj.fol, *arg, **kwargs)
@@ -473,7 +481,7 @@ class StereoNet(object):
         self.draw()
 
     def hoeppner(self, obj, *arg, **kwargs):
-        """Plot a tangent lineation plot - Hoeppner plot"""
+        """Draw a fault-and-striae as in tangent lineation plot - Hoeppner plot"""
         assert obj.type is Fault, "Only Fault instance could be used."
         animate = kwargs.get("animate", False)
         self.pole(obj.fol, *arg, **kwargs)
@@ -487,12 +495,20 @@ class StereoNet(object):
         self.draw()
 
     def tensor(self, obj, *arg, **kwargs):
-        """Plot tensor pricipal planes or directions"""
-        getattr(self, self.fol_plot)(obj.eigenfols[0], label=obj.name + "-E1", **kwargs)
-        getattr(self, self.fol_plot)(obj.eigenfols[1], label=obj.name + "-E2", **kwargs)
-        getattr(self, self.fol_plot)(obj.eigenfols[2], label=obj.name + "-E3", **kwargs)
+        """Draw tensor pricipal planes as great circles"""
+        eigenfols = kwargs.pop("eigenfols", True)
+        eigenlins = kwargs.pop("eigenlins", False)
+        if eigenfols:
+            self.plane(obj.eigenfols[0], label=obj.name + "-E1", **kwargs)
+            self.plane(obj.eigenfols[1], label=obj.name + "-E2", **kwargs)
+            self.plane(obj.eigenfols[2], label=obj.name + "-E3", **kwargs)
+        if eigenlins:
+            self.line(obj.eigenlins[0], label=obj.name + "-E1", **kwargs)
+            self.line(obj.eigenlins[1], label=obj.name + "-E2", **kwargs)
+            self.line(obj.eigenlins[2], label=obj.name + "-E3", **kwargs)
 
     def contourf(self, obj, *args, **kwargs):
+        """Plot filled contours"""
         clines = kwargs.pop("clines", True)
         legend = kwargs.pop("legend", False)
         if "cmap" not in kwargs and "colors" not in kwargs:
@@ -531,6 +547,7 @@ class StereoNet(object):
         self.draw()
 
     def contour(self, obj, *args, **kwargs):
+        """Plot contour lines"""
         legend = kwargs.pop("legend", False)
         if "cmap" not in kwargs and "colors" not in kwargs:
             kwargs["cmap"] = "Greys"
@@ -576,24 +593,30 @@ class StereoNet(object):
     #     # cb.set_ticklabels(lbl)
 
     def axtitle(self, title):
+        """Add axes title"""
         self._axtitle[self.active] = self.fig.axes[self.active].set_title(title)
         self._axtitle[self.active].set_y(-0.09)
 
     def show(self):
+        """Call matplotlib show"""
         plt.show()
 
     def animate(self, **kwargs):
+        """Return artist animation"""
         blit = kwargs.pop("blit", True)
         return animation.ArtistAnimation(self.fig, self.artists, blit=blit, **kwargs)
 
     def savefig(self, filename="apsg_stereonet.pdf", **kwargs):
-        if self._lgd is None:
-            self.fig.savefig(filename, **kwargs)
-        else:
-            bea = (self._lgd, self._title) + tuple(self._axtitle)
-            self.fig.savefig(
-                filename, bbox_extra_artists=bea, bbox_inches="tight", **kwargs
-            )
+        """Save figure to file"""
+        self.draw()
+        if not self.closed:   # check if figure exists
+            if self._lgd is None:
+                self.fig.savefig(filename, **kwargs)
+            else:
+                bea = (self._lgd, self._title) + tuple(self._axtitle)
+                self.fig.savefig(
+                    filename, bbox_extra_artists=bea, bbox_inches="tight", **kwargs
+                )
 
     def format_coord(self, x, y):
         if np.hypot(x, y) > 1:

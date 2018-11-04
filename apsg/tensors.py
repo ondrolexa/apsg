@@ -367,7 +367,10 @@ class Stress(np.ndarray):
 
         obj = np.asarray(array).view(cls)
         obj.name = "S"
-
+        vals, U = np.linalg.eigh(obj)
+        ix = np.argsort(vals)[::-1]
+        obj.eigenvals = vals[ix]
+        obj.vects = U[:, ix]
         return obj
 
     def __repr__(self):
@@ -450,17 +453,6 @@ class Stress(np.ndarray):
         return self - self.hydrostatic
 
     @property
-    def eigenvals(self):
-        """
-        Return tuple of eigenvalues
-        """
-
-        vals, _ = np.linalg.eig(self)
-        vals = vals[vals.argsort()]
-
-        return tuple(vals)
-
-    @property
     def E1(self):
         """
         Max eigenvalue
@@ -516,7 +508,7 @@ class Stress(np.ndarray):
 
         """
 
-        vals, U = np.linalg.eig(self)
+        vals, U = np.linalg.eigh(self)
 
         return Stress(np.diag(vals)), DefGrad(U.T)
 
@@ -525,11 +517,9 @@ class Stress(np.ndarray):
         """
         Returns Group of three eigenvectors represented as ``Vec3``
         """
-
-        vals, U = np.linalg.eig(self)
-        U = U[:, vals.argsort()]
-
-        return Group([Vec3(U.T[0]), Vec3(U.T[1]), Vec3(U.T[2])])
+        return Group([Vec3(self.vects.T[0]),
+                      Vec3(self.vects.T[1]),
+                      Vec3(self.vects.T[2])])
 
     @property
     def eigenlins(self):
