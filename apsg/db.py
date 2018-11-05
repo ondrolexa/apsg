@@ -76,21 +76,30 @@ class SDB(object):
                 print("Metadata '{}' not updated.".format(name))
                 raise
 
-    def info(self, verbose=False):
+    def info(self, report='basic'):
         lines = []
-        lines.append("PySDB database version: {}".format(self.meta("version")))
-        lines.append("PySDB database crs: {}".format(self.meta("crs")))
-        lines.append("PySDB database version: {}".format(self.meta("created")))
-        lines.append("PySDB database version: {}".format(self.meta("updated")))
-        lines.append("Number of sites: {}".format(len(self.sites())))
-        lines.append("Number of units: {}".format(len(self.units())))
-        lines.append("Number of structures: {}".format(len(self.structures())))
-        r = self.execsql(self._make_select())
-        lines.append("Number of measurements: {}".format(len(r)))
-        if verbose:
+        if report == 'basic':
+            lines.append("PySDB database version: {}".format(self.meta("version")))
+            lines.append("PySDB database CRS: {}".format(self.meta("crs")))
+            lines.append("PySDB database created: {}".format(self.meta("created")))
+            lines.append("PySDB database updated: {}".format(self.meta("updated")))
+            lines.append("Number of sites: {}".format(len(self.sites())))
+            lines.append("Number of units: {}".format(len(self.units())))
+            lines.append("Number of structures: {}".format(len(self.structures())))
+            r = self.execsql(self._make_select())
+            lines.append("Number of measurements: {}".format(len(r)))
+        elif report == 'data':
             for s in self.structures():
                 r = self.execsql(self._make_select(structs=s))
-                lines.append("   Number of {} measurements: {}".format(s, len(r)))
+                if len(r) > 0:
+                    lines.append("Number of {} measurements: {}".format(s, len(r)))
+        elif report == 'tags':
+            for s in self.structures():
+                r = self.execsql(self._make_select(tags=s))
+                if len(r) > 0:
+                    lines.append("{} measurements tagged as {}.".format(len(r), s))
+        else:
+            lines.append('No report.')
 
         return '\n'.join(lines)
 
