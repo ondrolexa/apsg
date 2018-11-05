@@ -44,16 +44,37 @@ class SDB(object):
     def __repr__(self):
         return "PySDB database version: {}".format(self.meta("version"))
 
-    def meta(self, name):
-        if name == "crs":
-            val = self.conn.execute(
-                "SELECT value FROM meta WHERE name='crs'"
-            ).fetchall()
-            if not val:
-                name = "proj4"
-        return self.conn.execute(
-            "SELECT value FROM meta WHERE name='{}'".format(name)
-        ).fetchall()[0][0]
+    def meta(self, name, val=None, delete=False):
+        if delete:
+            try:
+                self.conn.execute("DELETE FROM meta WHERE name=?", (name,))
+                self.conn.commit()
+            except sqlite3.OperationalError:
+                self.conn.rollback()
+                print("Metadata '{}' not deleted.".format(name))
+                raise
+        elif val is None:
+            if name == "crs":  # keep compatible with old sdb files
+                val = self.conn.execute("SELECT value FROM meta WHERE name='crs'").fetchall()
+                if not val:
+                    name = "proj4"
+            res = self.conn.execute("SELECT value FROM meta WHERE name=?", (name,)).fetchall()
+            if res:
+                return res[0][0]
+            else:
+                raise ValueError("SDB: Metadata '{}' does not exists".format(name))
+        else:
+            try:
+                exval = self.conn.execute("SELECT value FROM meta WHERE name=?", (name,)).fetchall()
+                if not exval:
+                    self.conn.execute("INSERT INTO meta (name,value) VALUES (?,?)", (name, val))
+                else:
+                    self.conn.execute("UPDATE meta SET value = ? WHERE name = ?", (val, name))
+                self.conn.commit()
+            except sqlite3.OperationalError:
+                self.conn.rollback()
+                print("Metadata '{}' not updated.".format(name))
+                raise
 
     def info(self, verbose=False):
         lines = []
