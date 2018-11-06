@@ -173,6 +173,10 @@ class StereoNet(object):
         def lon(a, theta):
             return self._cone(p2v(a, theta), l2v(a, theta), limit=80, res=91)
 
+        # recreate default Axes
+        self.fig.clf()
+        self.ax = self.fig.subplots(ncols=self.ncols)
+
         for ax in self.fig.axes:
             ax.cla()
             ax.format_coord = self.format_coord
