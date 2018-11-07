@@ -3,12 +3,12 @@
 Changes
 =======
 
-0.1 (01 Nov 2014)
------------------
+0.1.0 (01 Nov 2014)
+-------------------
 * First release of APSG
 
-0.2 (09 Dec 2014)
------------------
+0.2.0 (09 Dec 2014)
+-------------------
 * new StereoNet class for Schmidt projection
 * Quick plot when data are passed to StereoNet class instantiation
 * mplstereonet dependency depreceated
@@ -34,8 +34,8 @@ Changes
 * StereoNet.getfols method bug fixed.
 * Shell scripts to run interactive session improved.
 
-0.3 (09 Nov 2015)
------------------
+0.3.0 (09 Nov 2015)
+-------------------
 * Group fancy indexing implemented. Group could be indexed by sequences
   of indexes like list, tuple or array as well as sliced.
 * Cluster class with hierarchical clustering implemented
@@ -110,8 +110,8 @@ Changes
 * ortensor is normed by default
 * ortensor MADp, MADo, MAD and kind properties added
 
-0.4 (04 Mar 2017)
------------------
+0.4.0 (04 Mar 2017)
+-------------------
 * Density class renamed to StereoGrid
 * Fault sense under rotation fixed
 * FaultSet example provided
@@ -175,8 +175,8 @@ Changes
 * StereoNet has cbpad keyword for colorbar padding
 * FabricPlot bug introduced in 0.5.2 fixed.
 
-0.6 (XX YYY 2018)
------------------
+0.6.0 (07 Nov 2018)
+-------------------
 * Stress always gives eigenvalues sorted
 * Stress I1, I2, I3 properties for invariants implemented
 * Stress mean_stress property implemented
@@ -188,3 +188,5 @@ Changes
   generate random instance
 * Group to_csv and from_csv improved
 * SDB tags method works properly for multiple tags
+* SDB can modify database metadata
+* QGIS 3 plugin ReadSDB compatibility
