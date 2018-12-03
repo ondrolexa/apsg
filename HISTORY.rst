@@ -190,3 +190,7 @@ Changes
 * SDB tags method works properly for multiple tags
 * SDB can modify database metadata
 * QGIS 3 plugin ReadSDB compatibility
+
+0.6.1 (XX YYY 2018)
+~~~~~~~~~~~~~~~~~~~
+* Stereogrid always use Euclidean norms as weights

@@ -639,7 +639,7 @@ class Fol(Vec3):
           F (``DefGrad`` or ``numpy.array``): transformation matrix
 
         Keyword Args:
-          norm: normalize transformed vectors. True or False. Dafault False
+          norm: normalize transformed vectors. True or False. Default False
 
         Returns:
           representation of affine transformation (dot product) of `self`
@@ -836,7 +836,7 @@ class Pair(object):
             F (``DefGrad`` or ``numpy.array``): transformation matrix
 
         Keyword Args:
-            norm: normalize transformed vectors. True or False. Dafault False
+            norm: normalize transformed vectors. True or False. Default False
 
         Returns:
             representation of affine transformation (dot product) of `self`
@@ -1395,7 +1395,7 @@ class Group(list):
           F: Transformation matrix. Should be array-like value e.g. ``DefGrad``
 
         Keyword Args:
-          norm: normalize transformed vectors. True or False. Dafault False
+          norm: normalize transformed vectors. True or False. Default False
 
         """
         return Group([e.transform(F, **kwargs) for e in self], name=self.name)
@@ -2292,7 +2292,7 @@ class StereoGrid(object):
       method: 'exp_kamb', 'linear_kamb', 'square_kamb', 'schmidt', 'kamb'.
         Default 'exp_kamb'
       trim: Set negative values to zero. Default False
-      weighted: use euclidean norms as weights. Default False
+      Note: Euclidean norms are used as weights. Normalize data if you dont want to use weigths.
 
     """
 
@@ -2360,7 +2360,6 @@ class StereoGrid(object):
         """
         # parse options
         sigma = kwargs.get("sigma", 1 / len(dcdata) ** (-1 / 7))
-        weighted = kwargs.get("weighted", False)
         method = kwargs.get("method", "exp_kamb")
         trim = kwargs.get("trim", False)
 
@@ -2373,11 +2372,8 @@ class StereoGrid(object):
         }[method]
 
         # weights are given by euclidean norms of data
-        if weighted:
-            weights = np.linalg.norm(dcdata, axis=1)
-            weights /= weights.mean()
-        else:
-            weights = np.ones(len(dcdata))
+        weights = np.linalg.norm(dcdata, axis=1)
+        weights /= weights.mean()
         for i in range(self.n):
             dist = np.abs(np.dot(self.dcgrid[i], dcdata.T))
             count, scale = func(dist, sigma)

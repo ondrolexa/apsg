@@ -524,7 +524,7 @@ class StereoNet(object):
         else:
             d = StereoGrid(obj, **kwargs)
             # clean kwargs from StereoGrid keywords
-            for att in ["grid", "npoints", "sigma", "weighted", "method", "trim"]:
+            for att in ["grid", "npoints", "sigma", "method", "trim"]:
                 kwargs.pop(att, None)
         if "levels" not in kwargs:
             if len(args) == 0:
@@ -562,7 +562,7 @@ class StereoNet(object):
         else:
             d = StereoGrid(obj, **kwargs)
             # clean kwargs from StereoGrid keywords
-            for att in ["grid", "npoints", "sigma", "weighted", "method", "trim"]:
+            for att in ["grid", "npoints", "sigma", "method", "trim"]:
                 kwargs.pop(att, None)
         if "levels" not in kwargs:
             if len(args) == 0:
