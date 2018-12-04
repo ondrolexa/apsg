@@ -75,8 +75,8 @@ Donate
 ------
 APSG is an open-source project, available for you for free. It took a lot of time and resources to build this software. If you find this software useful and want to support its future development please consider donating me.
 
-.. image:: http://www.paypal.com/en_US/i/btn/x-click-but04.gif
-    :target: https://paypal.me/ondrolexa
+.. image:: https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif
+    :target: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=QTYZWVUNDUAH8&item_name=APSG+development+donation&currency_code=EUR&source=url
     :alt: Donate via PayPal
 
 License
