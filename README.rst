@@ -71,6 +71,14 @@ Contributing
 
 Most discussion happens on Github_. Feel free to open an issue_ or comment on any open issue or pull request. Check `contributing file`_ for more details.
 
+Donate
+------
+APSG is an open-source project, available for you for free. It took a lot of time and resources to build this software. If you find this software useful and want to support its future development please consider donating me.
+
+.. image:: http://www.paypal.com/en_US/i/btn/x-click-but04.gif
+    :target: https://paypal.me/ondrolexa
+    :alt: Donate via PayPal
+
 License
 -------
 
