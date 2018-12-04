@@ -14,8 +14,8 @@ APSG - python package for structural geologists
 .. image:: https://anaconda.org/ondrolexa/apsg/badges/version.svg
     :target: https://anaconda.org/ondrolexa/apsg
 
-.. image:: https://zenodo.org/badge/24879346.svg
-   :target: https://zenodo.org/badge/latestdoi/24879346
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1479271.svg
+   :target: https://doi.org/10.5281/zenodo.1479271
 
 APSG defines several new python classes to easily manage, analyze and
 visualize orientational structural geology data.
