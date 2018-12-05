@@ -85,7 +85,7 @@ class DefGrad(np.ndarray):
 
     @classmethod
     def from_comp(cls, xx=1, xy=0, xz=0, yx=0, yy=1, yz=0, zx=0, zy=0, zz=1):
-        """Return ``DefGrad`` tensor. Default is identity tensor.
+        """Return ``DefGrad`` tensor defined by individual components. Default is identity tensor.
 
         Keyword Args:
           xx, xy, xz, yx, yy, yz, zx, zy, zz (float): tensor components
@@ -101,6 +101,30 @@ class DefGrad(np.ndarray):
         """
 
         return cls([[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]])
+
+    @classmethod
+    def from_ratios(cls, Rxy=1, Ryz=1):
+        """Return isochoric ``DefGrad`` tensor with axial stretches defined by strain ratios.
+        Default is identity tensor.
+
+        Keyword Args:
+          Rxy, Ryz (float): strain ratios
+
+        Example:
+          >>> F = DefGrad.from_ratios(Rxy=2, Ryz=3)
+          >>> F
+          DefGrad:
+          [[2.28942849 0.         0.        ]
+           [0.         1.14471424 0.        ]
+           [0.         0.         0.38157141]]
+
+        """
+
+        assert Rxy>=1, "Rxy must be greater than or equal to 1."
+        assert Ryz>=1, "Ryz must be greater than or equal to 1."
+
+        y = (Ryz / Rxy)**(1/3)
+        return cls.from_comp(xx=y*Rxy, yy=y, zz=y/Ryz)
 
     @classmethod
     def from_pair(cls, p):
@@ -164,6 +188,110 @@ class DefGrad(np.ndarray):
         """
 
         return self.eigenvals[2]
+
+    @property
+    def e1(self):
+        """
+        Max natural principal strain
+        """
+
+        return np.log(self.eigenvals[0])
+
+    @property
+    def e2(self):
+        """
+        Middle natural principal strain
+        """
+
+        return np.log(self.eigenvals[1])
+
+    @property
+    def e3(self):
+        """
+        Min natural principal strain
+        """
+
+        return np.log(self.eigenvals[2])
+
+    @property
+    def Rxy(self):
+        return self.E1/self.E2
+
+    @property
+    def Ryz(self):
+        return self.E2/self.E3
+
+    @property
+    def e12(self):
+        return self.e1 - self.e2
+
+    @property
+    def e23(self):
+        return self.e2 - self.e3
+
+    @property
+    def k(self):
+        """
+        strain symmetry
+        """
+
+        return (self.Rxy - 1) / (self.Ryz - 1)
+
+    @property
+    def d(self):
+        """
+        strain intensity
+        """
+
+        return sqrt((self.Rxy - 1)**2 + (self.Ryz - 1)**2)
+
+    @property
+    def K(self):
+        """
+        strain symmetry. Ramsay, 1983
+        """
+
+        return self.e12 / self.e23
+
+    @property
+    def D(self):
+        """
+        strain intensity
+        """
+
+        return self.e12**2 + self.e23**2
+
+    @property
+    def r(self):
+        """
+        strain intensity. Watterson, 1968
+        """
+
+        return self.Rxy + self.Ryz - 1
+
+    @property
+    def goct(self):
+        """
+        Natural octahedral unit shear. Nadai, 1963
+        """
+
+        return 2 * np.sqrt((self.e1 - self.e2)**2 + (self.e2 - self.e3)**2 + (self.e1 - self.e3)**2) / 3
+
+    @property
+    def eoct(self):
+        """
+        Natural octahedral unit strain. Nadai, 1963
+        """
+
+        return np.sqrt(3) * self.goct / 2
+
+    @property
+    def lode(self):
+        """
+        Lode parameter. Lode, 1926
+        """
+
+        return (2*self.e2 - self.e1 -self.e3) / (self.e1 - self.e3)
 
     @property
     def eigenvects(self):
@@ -295,7 +423,8 @@ class VelGrad(np.ndarray):
 
     @classmethod
     def from_comp(cls, xx=0, xy=0, xz=0, yx=0, yy=0, yz=0, zx=0, zy=0, zz=0):
-        """Return ``VelGrad`` tensor. Default is zero tensor.
+        """
+        Return ``VelGrad`` tensor. Default is zero tensor.
 
         Keyword Args:
           xx, xy, xz, yx, yy, yz, zx, zy, zz (float): tensor components
@@ -312,10 +441,18 @@ class VelGrad(np.ndarray):
         return cls([[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]])
 
     def defgrad(self, time=1):
-        """Return ``DefGrad`` accumulated after given time"""
-        from scipy.linalg import expm
+        """
+        Return ``DefGrad`` tensor accumulated after given time.
 
-        return DefGrad(expm(self * time))
+        When time is iterable, return list of ``DefGrad`` tensors for each time
+        """
+        from scipy.linalg import expm
+        from collections import Iterable
+
+        if isinstance(time, Iterable):
+            return [DefGrad(expm(self * t)) for t in time]
+        else:
+            return DefGrad(expm(self * time))
 
     def rotate(self, vector, theta=0):
         """
@@ -333,12 +470,18 @@ class VelGrad(np.ndarray):
 
     @property
     def rate(self):
-        """Return rate of deformation tensor"""
+        """
+        Return rate of deformation tensor
+        """
+
         return (self + self.T) / 2
 
     @property
     def spin(self):
-        """Return spin tensor"""
+        """
+        Return spin tensor
+        """
+        
         return (self - self.T) / 2
 
 
