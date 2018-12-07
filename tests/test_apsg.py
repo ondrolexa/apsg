@@ -84,7 +84,7 @@ class TestVector:
     # ``==`` operator
 
     def test_that_equality_operator_is_reflexive(self):
-        u = Vec3(1, 2, 3)
+        u = Vec3([1, 2, 3])
 
         assert u == u
 
@@ -204,9 +204,8 @@ class TestVector:
 
     # ``asvec`` property
 
-    @pytest.mark.skip
     def test_asvec_conversion(self):
-        assert str(Vec3(1, 1, 1).asvec3) == str(Vec3([1, 1, 1]).uv)
+        assert str(Lin(120, 10).asvec3) == str(Vec3(120, 10, 1))
 
     # ``angle`` property
 
@@ -240,15 +239,15 @@ class TestVector:
     # ``cross`` method
 
     def test_that_vector_product_is_anticommutative(self):
-        lhs = Vec3(1, 0, 0)
-        rhs = Vec3(0, 1, 0)
+        lhs = Vec3([1, 0, 0])
+        rhs = Vec3([0, 1, 0])
 
-        assert lhs.cross(rhs) == (-rhs).cross(lhs)
+        assert lhs.cross(rhs) == -rhs.cross(lhs)
 
     def test_that_vector_product_is_distributive_over_addition(self):
-        a = Vec3(1, 0, 0)
-        b = Vec3(0, 1, 0)
-        c = Vec3(0, 0, 1)
+        a = Vec3([1, 0, 0])
+        b = Vec3([0, 1, 0])
+        c = Vec3([0, 0, 1])
 
         assert a.cross(b + c) == a.cross(b) + a.cross(c)
 
@@ -283,13 +282,13 @@ class TestVector:
     # ``dot`` method
 
     def test_scalar_product_of_same_vectors(self):
-        i = Vec3(1, 2, 3)
+        i = Vec3([1, 2, 3])
 
         assert np.allclose(i.dot(i), abs(i)**2)
 
     def test_scalar_product_of_orthonornal_vectors(self):
-        i = Vec3(1, 0, 0)
-        j = Vec3(0, 1, 0)
+        i = Vec3([1, 0, 0])
+        j = Vec3([0, 1, 0])
 
         assert i.dot(j) == 0
 
@@ -589,7 +588,7 @@ def test_faultset_examples():
 
 def test_ortensor_uniform():
     f = Fol.rand()
-    assert np.allclose(Ortensor(Group([f.V, f.rake(-45), f.rake(45)])).eigenvals, np.ones(3) / 3)
+    assert np.allclose(Ortensor.from_group(Group([f.V, f.rake(-45), f.rake(45)]))._evals, np.ones(3) / 3)
 
 # ############################################################################
 # DefGrad

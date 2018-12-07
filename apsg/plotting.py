@@ -24,15 +24,14 @@ from .core import (
     Group,
     PairSet,
     FaultSet,
-    Ortensor,
     StereoGrid,
     settings
 )
 from .helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
-from .tensors import DefGrad, Stress
+from .tensors import DefGrad, Stress, Tensor, Ortensor, Ellipsoid
 
 
-__all__ = ["StereoNet", "FabricPlot", "rose"]
+__all__ = ["StereoNet", "FabricPlot", "rose", "RamsayPlot", "FlinnPlot"]
 
 
 # ignore matplotlib deprecation warnings
@@ -119,7 +118,7 @@ class StereoNet(object):
                     kwargs.pop("label", None)
                     kwargs.pop("legend", None)
                     self.contourf(arg, legend=True, **kwargs)
-                elif typ in [Ortensor, DefGrad, Stress]:
+                elif typ in [Ortensor, Ellipsoid, DefGrad, Stress]:
                     kwargs.pop("label", None)
                     self.tensor(arg, **kwargs)
                 else:
@@ -780,7 +779,7 @@ class FabricPlot(object):
         if type(obj) is Group:
             obj = obj.ortensor
 
-        if type(obj) is not Ortensor:
+        if not isinstance(obj, Tensor):
             raise TypeError("%s argument is not supported!" % type(obj))
 
         # ensure point plot
@@ -794,6 +793,23 @@ class FabricPlot(object):
             kwargs["label"] = obj.name
 
         self.triplot(obj.P, obj.G, obj.R, *args, **kwargs)
+
+        self.draw()
+
+    def path(self, objs, *args, **kwargs):
+        # ensure point plot
+        if "ls" not in kwargs and "linestyle" not in kwargs:
+            kwargs["linestyle"] = "-"
+
+        if not args:
+            if "marker" not in kwargs:
+                kwargs["marker"] = "."
+
+        P = [obj.P for obj in objs]
+        G = [obj.G for obj in objs]
+        R = [obj.R for obj in objs]
+
+        self.triplot(P, G, R, *args, **kwargs)
 
         self.draw()
 
@@ -815,6 +831,284 @@ class FabricPlot(object):
             return ""
         else:
             return "P:{:0.2f} G:{:0.2f} R:{:0.2f}".format(a, b, c)
+
+
+class RamsayPlot(object):
+
+    """
+    Represents the Ramsay deformation plot.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.fig = plt.figure(figsize=settings["figsize"])
+        self.fig.canvas.set_window_title("Ramsay deformation plot")
+        self.ticks = kwargs.get("ticks", True)
+        self.grid = kwargs.get("grid", False)
+        self.grid_style = kwargs.get("grid_style", "k:")
+        self._lgd = None
+        self.cla()
+        # optionally immidiately plot passed objects
+        if args:
+            for arg in args:
+                self.plot(arg)
+            self.show()
+
+    def close(self):
+        plt.close(self.fig)
+
+    @property
+    def closed(self):
+        return not plt.fignum_exists(self.fig.number)
+
+    def draw(self):
+        if self.closed:
+            print(
+                "The DeformationPlot figure have been closed. "
+                "Use new() method or create new one."
+            )
+        else:
+            h, lbls = self.ax.get_legend_handles_labels()
+            if h:
+                self._lgd = self.ax.legend(
+                    h,
+                    lbls,
+                    prop={"size": 11},
+                    borderaxespad=0,
+                    loc='center left',
+                    bbox_to_anchor=(1.1, 0.5),
+                    scatterpoints=1,
+                    numpoints=1,
+                )
+            plt.draw()
+            # plt.pause(0.001)
+
+    def new(self):
+        """
+        Re-initialize ``DeformationPlot`` figure.
+        """
+
+        if self.closed:
+            self.__init__()
+
+    def cla(self):
+        """
+        Clear projection.
+        """
+
+        self.fig.clear()
+        self.ax = self.fig.add_subplot(111)
+        self.ax.format_coord = self.format_coord
+        self.ax.set_aspect('equal')
+        self.ax.set_autoscale_on(True)
+        self.ax.spines['top'].set_color('none')
+        self.ax.spines['right'].set_color('none')
+        self.ax.set_xlabel(r'$\varepsilon_2-\varepsilon_3$')
+        self.ax.set_ylabel(r'$\varepsilon_1-\varepsilon_2$')
+        self.ax.grid(self.grid)
+
+        self.ax.set_title("Ramsay plot")
+
+        self.draw()
+
+    def plot(self, obj, *args, **kwargs):
+        if type(obj) is Group:
+            obj = obj.ortensor
+
+        if not isinstance(obj, Tensor):
+            raise TypeError("%s argument is not supported!" % type(obj))
+
+        # ensure point plot
+        if "ls" not in kwargs and "linestyle" not in kwargs:
+            kwargs["linestyle"] = "none"
+
+        if not args:
+            if "marker" not in kwargs:
+                kwargs["marker"] = "o"
+        if "label" not in kwargs:
+            kwargs["label"] = obj.name
+
+        self.ax.plot(obj.e23, obj.e12, *args, **kwargs)
+
+        self.draw()
+
+    def path(self, objs, *args, **kwargs):
+        # ensure point plot
+        if "ls" not in kwargs and "linestyle" not in kwargs:
+            kwargs["linestyle"] = "-"
+
+        if not args:
+            if "marker" not in kwargs:
+                kwargs["marker"] = "."
+        #if "label" not in kwargs:
+        #    kwargs["label"] = obj.name
+
+        e23 = [obj.e23 for obj in objs]
+        e12 = [obj.e12 for obj in objs]
+
+        self.ax.plot(e23, e12, *args, **kwargs)
+
+        self.draw()
+
+    def show(self):
+        mx = max(self.ax.get_xlim()[1], self.ax.get_ylim()[1])
+        self.ax.set_xlim(0, mx)
+        self.ax.set_ylim(0, mx)
+        self.ax.plot([0, mx], [0, mx], "k", lw=0.5)
+        box = self.ax.get_position()
+        self.ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        plt.show()
+
+    def savefig(self, filename="apsg_ramsayplot.pdf", **kwargs):
+        if self._lgd is None:
+            self.ax.figure.savefig(filename, **kwargs)
+        else:
+            self.ax.figure.savefig(
+                filename, bbox_extra_artists=(self._lgd,), bbox_inches="tight", **kwargs
+            )
+
+    def format_coord(self, x, y):
+        k = y/x if x>0 else 0
+        d = x**2 + y**2
+        return "k:{:0.2f} d:{:0.2f}".format(k, d)
+
+
+class FlinnPlot(object):
+
+    """
+    Represents the Ramsay deformation plot.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.fig = plt.figure(figsize=settings["figsize"])
+        self.fig.canvas.set_window_title("Flinn's deformation plot")
+        self.ticks = kwargs.get("ticks", True)
+        self.grid = kwargs.get("grid", False)
+        self.grid_style = kwargs.get("grid_style", "k:")
+        self._lgd = None
+        self.cla()
+        # optionally immidiately plot passed objects
+        if args:
+            for arg in args:
+                self.plot(arg)
+            self.show()
+
+    def close(self):
+        plt.close(self.fig)
+
+    @property
+    def closed(self):
+        return not plt.fignum_exists(self.fig.number)
+
+    def draw(self):
+        if self.closed:
+            print(
+                "The DeformationPlot figure have been closed. "
+                "Use new() method or create new one."
+            )
+        else:
+            h, lbls = self.ax.get_legend_handles_labels()
+            if h:
+                self._lgd = self.ax.legend(
+                    h,
+                    lbls,
+                    prop={"size": 11},
+                    borderaxespad=0,
+                    loc='center left',
+                    bbox_to_anchor=(1.1, 0.5),
+                    scatterpoints=1,
+                    numpoints=1,
+                )
+            plt.draw()
+            # plt.pause(0.001)
+
+    def new(self):
+        """
+        Re-initialize ``DeformationPlot`` figure.
+        """
+
+        if self.closed:
+            self.__init__()
+
+    def cla(self):
+        """
+        Clear projection.
+        """
+
+        self.fig.clear()
+        self.ax = self.fig.add_subplot(111)
+        self.ax.format_coord = self.format_coord
+        self.ax.set_aspect('equal')
+        self.ax.set_autoscale_on(True)
+        self.ax.spines['top'].set_color('none')
+        self.ax.spines['right'].set_color('none')
+        self.ax.set_xlabel(r'$R_{YZ}$')
+        self.ax.set_ylabel(r'$R_{XY}$')
+        self.ax.grid(self.grid)
+
+        self.ax.set_title("Flinn's plot")
+
+        self.draw()
+
+    def plot(self, obj, *args, **kwargs):
+        if type(obj) is Group:
+            obj = obj.ortensor
+
+        if not isinstance(obj, Tensor):
+            raise TypeError("%s argument is not supported!" % type(obj))
+
+        # ensure point plot
+        if "ls" not in kwargs and "linestyle" not in kwargs:
+            kwargs["linestyle"] = "none"
+
+        if not args:
+            if "marker" not in kwargs:
+                kwargs["marker"] = "o"
+        if "label" not in kwargs:
+            kwargs["label"] = obj.name
+
+        self.ax.plot(obj.Ryz, obj.Rxy, *args, **kwargs)
+
+        self.draw()
+
+    def path(self, objs, *args, **kwargs):
+        # ensure point plot
+        if "ls" not in kwargs and "linestyle" not in kwargs:
+            kwargs["linestyle"] = "-"
+
+        if not args:
+            if "marker" not in kwargs:
+                kwargs["marker"] = "."
+        #if "label" not in kwargs:
+        #    kwargs["label"] = obj.name
+
+        Ryz = [obj.Ryz for obj in objs]
+        Rxy = [obj.Rxy for obj in objs]
+
+        self.ax.plot(Ryz, Rxy, *args, **kwargs)
+
+        self.draw()
+
+    def show(self):
+        mx = max(self.ax.get_xlim()[1], self.ax.get_ylim()[1])
+        self.ax.set_xlim(1, mx)
+        self.ax.set_ylim(1, mx)
+        self.ax.plot([1, mx], [1, mx], "k", lw=0.5)
+        box = self.ax.get_position()
+        self.ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        plt.show()
+
+    def savefig(self, filename="apsg_flinnplot.pdf", **kwargs):
+        if self._lgd is None:
+            self.ax.figure.savefig(filename, **kwargs)
+        else:
+            self.ax.figure.savefig(
+                filename, bbox_extra_artists=(self._lgd,), bbox_inches="tight", **kwargs
+            )
+
+    def format_coord(self, x, y):
+        K = (y - 1)/(x - 1) if x>1 else 0
+        D = np.sqrt((x - 1)**2 + (y - 1)**2)
+        return "K:{:0.2f} D:{:0.2f}".format(K, D)
 
 
 class StereoNetJK(object):

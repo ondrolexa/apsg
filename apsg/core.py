@@ -42,7 +42,6 @@ __all__ = (
     "Group",
     "PairSet",
     "FaultSet",
-    "Ortensor",
     "Cluster",
     "StereoGrid",
     "G",
@@ -1215,14 +1214,14 @@ class Group(list):
         if self.type == Vec3:
             r = Vec3(np.sum(self, axis=0))
         elif self.type == Lin:
-            _, _, u = np.linalg.svd(self.ortensor.cov)
+            _, _, u = np.linalg.svd(self.ortensor._matrix)
             # centered
             cntr = self.transform(u).rotate(Lin(90, 0), 90)
             # all points Z-ward
             cg = Group.from_array(*cntr.dd, typ=Vec3)
             r = cg.R.aslin.rotate(Lin(90, 0), -90).transform(u.T)
         elif self.type == Fol:
-            _, _, u = np.linalg.svd(self.ortensor.cov)
+            _, _, u = np.linalg.svd(self.ortensor._matrix)
             # centered
             cntr = self.transform(u).rotate(Lin(90, 0), 90)
             # all points Z-ward
@@ -1315,7 +1314,7 @@ class Group(list):
         E3(north-south)
 
         """
-        _, _, u = np.linalg.svd(self.ortensor.cov)
+        _, _, u = np.linalg.svd(self.ortensor._matrix)
         return self.transform(u).rotate(Lin(90, 0), 90)
 
     @property
@@ -1381,7 +1380,9 @@ class Group(list):
     @property
     def ortensor(self):
         """Return orientation tensor ``Ortensor`` of ``Group``."""
-        return Ortensor(self)
+        from .tensors import Ortensor
+
+        return Ortensor.from_group(self)
 
     @property
     def cluster(self):
@@ -2123,155 +2124,6 @@ class FaultSet(PairSet):
                 senses[name],
                 name=name,
             )
-
-
-class Ortensor(object):
-    """
-    Represents an orientation tensor, which characterize data distribution
-    using eigenvalue method. See (Watson 1966, Scheidegger 1965).
-
-    See following methods and properties for additional operations.
-
-    Args:
-        data (``Group``): grou of ``Vec3``, ``Fol`` or ``Lin`` objects
-
-    Returns:
-        ``Ortensor`` object
-
-    Example:
-        >>> g = Group.examples('B2')
-        >>> ot = Ortensor(g)
-        >>> ot
-        Ortensor: B2 Kind: prolate
-        (E1:0.9825,E2:0.01039,E3:0.007101)
-        [[ 0.19780807 -0.13566589 -0.35878837]
-        [-0.13566589  0.10492993  0.25970594]
-        [-0.35878837  0.25970594  0.697262  ]]
-      >>> ot.eigenlins.data
-        [L:144/57, L:360/28, L:261/16]
-
-    """
-
-    def __init__(self, d, **kwargs):
-        assert isinstance(d, Group), "Only group could be passed to Ortensor"
-        self.cov = np.dot(np.array(d).T, np.array(d)) / len(d)
-        self.name = d.name
-        vc, vv = np.linalg.eigh(self.cov)
-        ix = np.argsort(vc)[::-1]
-        self.eigenvals = vc[ix]
-        self.vects = vv.T[ix]
-        self.scaled = kwargs.get("scaled", False)
-
-    def __repr__(self):
-        return (
-            "Ortensor: %s Kind: %s\n" % (self.name, self.kind) +
-            "(E1:%.4g,E2:%.4g,E3:%.4g)\n" % tuple(self.eigenvals) +
-            str(self.cov)
-        )
-
-    @property
-    def E1(self):
-        """Max eigenvalue"""
-        return self.eigenvals[0]
-
-    @property
-    def E2(self):
-        """Middle eigenvalue"""
-        return self.eigenvals[1]
-
-    @property
-    def E3(self):
-        """Min eigenvalue"""
-        return self.eigenvals[2]
-
-    @property
-    def eigenvects(self):
-        """Return group of eigenvectors. If scaled property is True their
-        length is scaled by eigenvalues, otherwise with unit length."""
-        if self.scaled:
-            e1, e2, e3 = self.eigenvals
-        else:
-            e1 = e2 = e3 = 1.0
-        return Group(
-            [
-                e1 * Vec3(self.vects[0]),
-                e2 * Vec3(self.vects[1]),
-                e3 * Vec3(self.vects[2]),
-            ]
-        )
-
-    @property
-    def eigenlins(self):
-        """Return group of eigenvectors as Lin objects"""
-        return self.eigenvects.aslin
-
-    @property
-    def eigenfols(self):
-        """Return group of eigenvectors as Fol objects"""
-        return self.eigenvects.asfol
-
-    @property
-    def strength(self):
-        """Woodcock strength"""
-        return np.log(self.E1 / self.E3)
-
-    @property
-    def C(self):
-        """Cylindricity index"""
-        return self.strength
-
-    @property
-    def shape(self):
-        """Woodcock shape"""
-        return np.log(self.E1 / self.E2) / np.log(self.E2 / self.E3)
-
-    @property
-    def P(self):
-        """Point index - Vollmer, 1990"""
-        return self.eigenvals[0] - self.eigenvals[1]
-
-    @property
-    def G(self):
-        """Girdle index - Vollmer, 1990"""
-        return 2 * (self.eigenvals[1] - self.eigenvals[2])
-
-    @property
-    def R(self):
-        """Random index - Vollmer, 1990"""
-        return 3 * self.eigenvals[2]
-
-    @property
-    def B(self):
-        """Cylindricity index - Vollmer, 1990"""
-        return self.P + self.G
-
-    @property
-    def I(self):
-        """Intensity index - Lisle, 1985"""
-        return 7.5 * np.sum((self.eigenvals - 1 / 3) ** 2)
-
-    @property
-    def kind(self):
-        """Return descriptive type of ellipsoid"""
-        return {False: "oblate", True: "prolate"}[self.shape > 1]
-
-    @property
-    def MADp(self):
-        """Return approximate angular deviation from the major axis along E1"""
-        return atand(np.sqrt((1 - self.E1) / self.E1))
-
-    @property
-    def MADo(self):
-        """Return approximate deviation from the plane normal to E3"""
-        return atand(np.sqrt(self.E3 / (1 - self.E3)))
-
-    @property
-    def MAD(self):
-        """Return approximate deviation according to shape"""
-        if self.shape > 1:
-            return self.MADp
-        else:
-            return self.MADo
 
 
 class StereoGrid(object):

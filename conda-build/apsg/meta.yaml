@@ -20,15 +20,15 @@ build:
 
 requirements:
   build:
-    - python
+    - python {{ python }}
     - setuptools
-    - numpy
-    - matplotlib
+    - numpy >=x.x
+    - matplotlib >=2.2.3
     - scipy
 
   run:
-    - python
-    - numpy
+    - python {{ python }}
+    - numpy >=x.x
     - matplotlib
     - scipy
 

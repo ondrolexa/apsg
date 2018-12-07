@@ -7,10 +7,10 @@ from __future__ import division, print_function
 import numpy as np
 
 from .core import Vec3, Group, Pair, Fault
-from .helpers import sind, cosd
+from .helpers import sind, cosd, atand
 
 
-__all__ = ("DefGrad", "VelGrad", "Stress")
+__all__ = ("DefGrad", "VelGrad", "Stress", "Ortensor", "Ellipsoid")
 
 
 class DefGrad(np.ndarray):
@@ -188,110 +188,6 @@ class DefGrad(np.ndarray):
         """
 
         return self.eigenvals[2]
-
-    @property
-    def e1(self):
-        """
-        Max natural principal strain
-        """
-
-        return np.log(self.eigenvals[0])
-
-    @property
-    def e2(self):
-        """
-        Middle natural principal strain
-        """
-
-        return np.log(self.eigenvals[1])
-
-    @property
-    def e3(self):
-        """
-        Min natural principal strain
-        """
-
-        return np.log(self.eigenvals[2])
-
-    @property
-    def Rxy(self):
-        return self.E1/self.E2
-
-    @property
-    def Ryz(self):
-        return self.E2/self.E3
-
-    @property
-    def e12(self):
-        return self.e1 - self.e2
-
-    @property
-    def e23(self):
-        return self.e2 - self.e3
-
-    @property
-    def k(self):
-        """
-        strain symmetry
-        """
-
-        return (self.Rxy - 1) / (self.Ryz - 1)
-
-    @property
-    def d(self):
-        """
-        strain intensity
-        """
-
-        return sqrt((self.Rxy - 1)**2 + (self.Ryz - 1)**2)
-
-    @property
-    def K(self):
-        """
-        strain symmetry. Ramsay, 1983
-        """
-
-        return self.e12 / self.e23
-
-    @property
-    def D(self):
-        """
-        strain intensity
-        """
-
-        return self.e12**2 + self.e23**2
-
-    @property
-    def r(self):
-        """
-        strain intensity. Watterson, 1968
-        """
-
-        return self.Rxy + self.Ryz - 1
-
-    @property
-    def goct(self):
-        """
-        Natural octahedral unit shear. Nadai, 1963
-        """
-
-        return 2 * np.sqrt((self.e1 - self.e2)**2 + (self.e2 - self.e3)**2 + (self.e1 - self.e3)**2) / 3
-
-    @property
-    def eoct(self):
-        """
-        Natural octahedral unit strain. Nadai, 1963
-        """
-
-        return np.sqrt(3) * self.goct / 2
-
-    @property
-    def lode(self):
-        """
-        Lode parameter. Lode, 1926
-        """
-
-        return (2*self.e2 - self.e1 -self.e3) / (self.e1 - self.e3)
 
     @property
     def eigenvects(self):
@@ -734,3 +630,503 @@ class Stress(np.ndarray):
         """
 
         return np.sqrt(self.cauchy(n)**2 - self.normal_stress(n)**2)
+
+
+class Tensor(object):
+    """
+    Tensor metaclass
+
+    See following methods and properties for additional operations.
+
+    """
+
+    def __init__(self, matrix, **kwargs):
+        assert np.shape(matrix) == (3, 3), "Ellipsoid matrix must be 3x3 2D array"
+        self._matrix = np.asarray(matrix)
+        self.name = kwargs.get('name', '')
+        self.scaled = kwargs.get("scaled", False)
+        vc, vv = np.linalg.eigh(self._matrix)
+        ix = np.argsort(vc)[::-1]
+        self._evals = vc[ix]
+        self._evects = vv.T[ix]
+
+    @property
+    def eigenvals(self):
+        """
+        Return tuple of eigenvalues sorted in descending order.
+        """
+
+        return tuple(self._evals)
+
+    @property
+    def eigenvects(self):
+        """
+        Return group of eigenvectors. If scaled property is True their
+        length is scaled by eigenvalues, otherwise unit length.
+        """
+
+        if self.scaled:
+            e1, e2, e3 = self.E1, self.E2, self.E3
+        else:
+            e1 = e2 = e3 = 1.0
+        return Group(
+            [
+                e1 * Vec3(self._evects[0]),
+                e2 * Vec3(self._evects[1]),
+                e3 * Vec3(self._evects[2]),
+            ]
+        )
+
+    @property
+    def eigenlins(self):
+        """
+        Return group of eigenvectors as Lin objects
+        """
+
+        return self.eigenvects.aslin
+
+    @property
+    def eigenfols(self):
+        """
+        Return group of eigenvectors as Fol objects
+        """
+
+        return self.eigenvects.asfol
+
+    @property
+    def strength(self):
+        """
+        Woodcock strength
+        """
+
+        return self.e13
+
+    @property
+    def shape(self):
+        """
+        Woodcock shape
+        """
+
+        return self.K
+
+    @property
+    def kind(self):
+        """
+        Return descriptive type of ellipsoid
+        """
+        nu = self.lode
+        if np.allclose(self.eoct, 0):
+            res = 'O'
+        elif nu < -0.75:
+            res = 'L'
+        elif nu > 0.75:
+            res = 'S'
+        elif nu < -0.15:
+            res = 'LLS'
+        elif nu > 0.15:
+            res = 'SSL'
+        else:
+            res = 'LS'
+        return res
+
+    @property
+    def e1(self):
+        """
+        Max natural principal strain
+        """
+
+        return np.log(self.E1)
+
+    @property
+    def e2(self):
+        """
+        Middle natural principal strain
+        """
+
+        return np.log(self.E2)
+
+    @property
+    def e3(self):
+        """
+        Min natural principal strain
+        """
+
+        return np.log(self.E3)
+
+    @property
+    def Rxy(self):
+        return self.E1/self.E2
+
+    @property
+    def Ryz(self):
+        return self.E2/self.E3
+
+    @property
+    def e12(self):
+        return self.e1 - self.e2
+
+    @property
+    def e13(self):
+        return self.e1 - self.e3
+
+    @property
+    def e23(self):
+        return self.e2 - self.e3
+
+    @property
+    def k(self):
+        """
+        Strain symmetry
+        """
+
+        return (self.Rxy - 1) / (self.Ryz - 1)
+
+    @property
+    def d(self):
+        """
+        Strain intensity
+        """
+
+        return np.sqrt((self.Rxy - 1)**2 + (self.Ryz - 1)**2)
+
+    @property
+    def K(self):
+        """
+        Strain symmetry. Ramsay, 1983
+        """
+
+        return self.e12 / self.e23 if self.e23>0 else np.inf
+
+    @property
+    def D(self):
+        """
+        Strain intensity
+        """
+
+        return self.e12**2 + self.e23**2
+
+    @property
+    def r(self):
+        """
+        Strain intensity. Watterson, 1968
+        """
+
+        return self.Rxy + self.Ryz - 1
+
+    @property
+    def goct(self):
+        """
+        Natural octahedral unit shear. Nadai, 1963
+        """
+
+        return 2 * np.sqrt((self.e1 - self.e2)**2 + (self.e2 - self.e3)**2 + (self.e1 - self.e3)**2) / 3
+
+    @property
+    def eoct(self):
+        """
+        Natural octahedral unit strain. Nadai, 1963
+        """
+
+        return np.sqrt(3) * self.goct / 2
+
+    @property
+    def lode(self):
+        """
+        Lode parameter. Lode, 1926
+        """
+
+        return (2*self.e2 - self.e1 -self.e3) / (self.e1 - self.e3) if (self.e1 - self.e3)>0 else 0
+
+
+class Ortensor(Tensor):
+    """
+    Represents an orientation tensor, which characterize data distribution
+    using eigenvalue method. See (Watson 1966, Scheidegger 1965).
+
+    See following methods and properties for additional operations.
+
+    Args:
+      matrix (3x3 array_like): Input data, that can be converted to
+             3x3 2D matrix. This includes lists, tuples and ndarrays.
+             Array could be also ``Group`` (for backward compatibility)
+
+    Keyword Args:
+      name (str): name od tensor
+      scaled (bool): When True eigenvectors are scaled by eigenvalues.
+                     Otherwise unit length. Default False
+
+    Returns:
+      ``Ortensor`` object
+
+    Example:
+      >>> ot = Ortensor([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
+      >>> ot
+      Ortensor:  Kind: LLS
+      (E1:8,E2:2,E3:1)
+      [[8 0 0]
+       [0 2 0]
+       [0 0 1]]
+
+    """
+
+    def __init__(self, matrix, **kwargs):
+        if isinstance(matrix, Group):
+            if not 'name' in kwargs:
+                kwargs['name'] = matrix.name
+            matrix = np.dot(np.array(matrix).T, np.array(matrix)) / len(matrix)
+        super(Ortensor, self).__init__(matrix, **kwargs)
+
+    @classmethod
+    def from_comp(cls, xx=0, xy=0, xz=0, yy=0, yz=0, zz=0, **kwargs):
+        """
+        Return ``Ortensor`` tensor. Default is identity tensor.
+
+        Note that ``Ortensor`` tensor must be symmetrical.
+
+        Example:
+          >>> ot = Ortensor.from_comp(xx=5, yy=2, zz=10, xy=1)
+          >>> ot
+          Ortensor:  Kind: SSL
+          (E1:10,E2:5.303,E3:1.697)
+          [[ 5  1  0]
+           [ 1  2  0]
+           [ 0  0 10]]
+
+        """
+
+        return cls([[xx, xy, xz], [xy, yy, yz], [xz, yz, zz]], **kwargs)
+
+    @classmethod
+    def from_group(cls, g, **kwargs):
+        """
+        Return ``Ortensor`` of data in ``Group``
+
+        Args:
+            g: ``Group`` of ``Vec3``, ``Lin`` or ``Fol``
+
+        Example:
+          >>> g = Group.examples('B2')
+          >>> ot = Ortensor.from_group(g)
+          >>> ot
+          Ortensor: B2 Kind: L
+          (E1:0.9825,E2:0.01039,E3:0.007101)
+          [[ 0.19780807 -0.13566589 -0.35878837]
+           [-0.13566589  0.10492993  0.25970594]
+           [-0.35878837  0.25970594  0.697262  ]]
+          >>> ot.eigenlins.data
+          [L:144/57, L:360/28, L:261/16]
+
+        """
+
+        if not 'name' in kwargs:
+            kwargs['name'] = g.name
+        return cls(np.dot(np.array(g).T, np.array(g)) / len(g), **kwargs)
+
+    def __repr__(self):
+        return (
+            "Ortensor: %s Kind: %s\n" % (self.name, self.kind) +
+            "(E1:%.4g,E2:%.4g,E3:%.4g)\n" % self.eigenvals +
+            str(self._matrix)
+        )
+
+    @property
+    def E1(self):
+        """
+        Max eigenvalue
+        """
+
+        return self._evals[0]
+
+    @property
+    def E2(self):
+        """
+        Middle eigenvalue
+        """
+
+        return self._evals[1]
+
+    @property
+    def E3(self):
+        """
+        Min eigenvalue
+        """
+
+        return self._evals[2]
+
+    @property
+    def P(self):
+        """
+        Point index - Vollmer, 1990
+        """
+
+        return self._evals[0] - self._evals[1]
+
+    @property
+    def G(self):
+        """
+        Girdle index - Vollmer, 1990
+        """
+
+        return 2 * (self._evals[1] - self._evals[2])
+
+    @property
+    def R(self):
+        """
+        Random index - Vollmer, 1990
+        """
+
+        return 3 * self._evals[2]
+
+    @property
+    def B(self):
+        """
+        Cylindricity index - Vollmer, 1990
+        """
+
+        return self.P + self.G
+
+    @property
+    def Intensity(self):
+        """
+        Intensity index - Lisle, 1985
+        """
+
+        return 7.5 * np.sum((self._evals - 1 / 3) ** 2)
+
+    @property
+    def MADp(self):
+        """
+        Return approximate angular deviation from the major axis along E1
+        """
+
+        return atand(np.sqrt((1 - self.E1) / self.E1))
+
+    @property
+    def MADo(self):
+        """
+        Return approximate deviation from the plane normal to E3
+        """
+
+        return atand(np.sqrt(self.E3 / (1 - self.E3)))
+
+    @property
+    def MAD(self):
+        """
+        Return approximate deviation according to shape
+        """
+
+        if self.shape > 1:
+            return self.MADp
+        else:
+            return self.MADo
+
+
+class Ellipsoid(Tensor):
+    """
+    Ellipsoid class
+
+    See following methods and properties for additional operations.
+
+    Args:
+      matrix (3x3 array_like): Input data, that can be converted to
+             3x3 2D matrix. This includes lists, tuples and ndarrays.
+
+    Returns:
+      ``Ellipsoid`` object
+
+    Example:
+      >>> E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
+      >>> E
+      Ellipsoid:  Kind: LLS
+      (E1:2.828,E2:1.414,E3:1)
+      [[8 0 0]
+       [0 2 0]
+       [0 0 1]]
+
+    """
+
+    def __init__(self, matrix, **kwargs):
+        if isinstance(matrix, DefGrad):
+            matrix = matrix * matrix.T
+        super(Ellipsoid, self).__init__(matrix, **kwargs)
+
+    @classmethod
+    def from_defgrad(cls, F, **kwargs):
+        """
+        Return Finger (Left Cauchy-Green) deformation tensor resulting
+        from deformation F
+
+        Args:
+          F: ``DefGrad`` or any 3x3 array_like object
+
+        Example:
+          >>> F = DefGrad.from_comp(xx=2, xz=1, zz=0.5)
+          >>> E = Ellipsoid.from_defgrad(F)
+          >>> E
+          Ortensor: D Kind: LS
+          (E1:0.9825,E2:0.01039,E3:0.007101)
+          [[ 0.19780807 -0.13566589 -0.35878837]
+           [-0.13566589  0.10492993  0.25970594]
+           [-0.35878837  0.25970594  0.697262  ]]
+
+        """
+        if not 'name' in kwargs:
+            kwargs['name'] = F.name
+        return cls(np.dot(np.array(F), np.array(F).T), **kwargs)
+
+    @classmethod
+    def from_axes(cls, x=1, y=1, z=1, **kwargs):
+        """
+        Return ``Ellipsoid`` tensor defined by principal axes.
+
+        Example:
+          >>> E = Ellipsoid.from_axes(x=4, y=0.5, z=0.5)
+          >>> E
+          Ellipsoid:  Kind: L
+          (E1:4,E2:0.5,E3:0.5)
+          [[16.    0.    0.  ]
+           [ 0.    0.25  0.  ]
+           [ 0.    0.    0.25]]
+
+        """
+
+        return cls([[x*x, 0, 0], [0, y*y, 0], [0, 0, z*z]], **kwargs)
+
+    def __repr__(self):
+        return (
+            "Ellipsoid: %s Kind: %s\n" % (self.name, self.kind) +
+            "(E1:%.4g,E2:%.4g,E3:%.4g)\n" % (self.E1, self.E2, self.E3) +
+            str(self._matrix)
+        )
+
+    @property
+    def E1(self):
+        """
+        Max eigenvalue
+        """
+
+        return np.sqrt(self._evals[0])
+
+    @property
+    def E2(self):
+        """
+        Middle eigenvalue
+        """
+
+        return np.sqrt(self._evals[1])
+
+    @property
+    def E3(self):
+        """
+        Min eigenvalue
+        """
+
+        return np.sqrt(self._evals[2])
+
+    def transform(self, F):
+        """
+        Return ``Ellipsoid`` representing result of deformation F
+        """
+
+        t_matrix = np.dot(F, np.dot(self._matrix, np.transpose(F)))
+        return Ellipsoid(np.asarray(t_matrix), name=self.name)

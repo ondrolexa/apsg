@@ -266,7 +266,7 @@ To calculate orientation tensor of all features in group, we can use
 ``ortensor`` property.::
 
     >>> g.ortensor
-    Ortensor: L1 Kind: prolate
+    Ortensor: L1 Kind: LLS
     (E1:0.954,E2:0.04021,E3:0.005749)
     [[ 0.07398181 -0.09605477 -0.14324311]
      [-0.09605477  0.28446118  0.42092899]
@@ -283,9 +283,9 @@ and ``eigenfols``. Several properties to describe orientation distribution
 is also impleneted, e.g. Woodcock's ``shape`` and ``strength`` or Vollmer's
 ``P``, ``G``, ``R`` and ``C`` indexes.::
 
-    >>> ot = Ortensor(g)
+    >>> ot = Ortensor.from_group(g)
     >>> ot.eigenvals
-    (0.95403846865963882, 0.040212749461964611, 0.0057487818783963102)
+    (0.954038468659639, 0.04021274946196462, 0.005748781878396576)
     >>> ot.eigenvects.data
     [V(0.192, -0.542, -0.818), V(-0.981, -0.082, -0.176), V(-0.028, -0.836, 0.547)]
     >>> ot.eigenlins.data

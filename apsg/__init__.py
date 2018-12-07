@@ -10,7 +10,6 @@ from .core import (
     Group,
     PairSet,
     FaultSet,
-    Ortensor,
     Cluster,
     StereoGrid,
     G,
@@ -18,9 +17,9 @@ from .core import (
 )
 
 from .db import SDB
-from .tensors import DefGrad, VelGrad, Stress
+from .tensors import DefGrad, VelGrad, Stress, Ortensor, Ellipsoid
 from .helpers import sind, cosd, tand, acosd, asind, atand, atan2d
-from .plotting import StereoNet, FabricPlot
+from .plotting import StereoNet, FabricPlot, RamsayPlot, FlinnPlot
 
 
 __all__ = (
@@ -32,7 +31,6 @@ __all__ = (
     "Group",
     "PairSet",
     "FaultSet",
-    "Ortensor",
     "Cluster",
     "StereoGrid",
     "G",
@@ -41,6 +39,8 @@ __all__ = (
     "DefGrad",
     "VelGrad",
     "Stress",
+    "Ortensor",
+    "Ellipsoid",
     "sind",
     "cosd",
     "tand",
@@ -50,6 +50,8 @@ __all__ = (
     "atan2d",
     "StereoNet",
     "FabricPlot",
+    "RamsayPlot",
+    "FlinnPlot"
 )
 
 __version__ = "0.6.0"
