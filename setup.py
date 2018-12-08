@@ -13,11 +13,12 @@ with open('HISTORY.rst') as history_file:
 requirements = [
     'numpy',
     'matplotlib',
-    'scipy'
+    'scipy',
+    'pytest-runner'
 ]
 
-test_requirements = [
-    # TODO: put package test requirements here
+tests_requirements = [
+    'pytest',
 ]
 
 setup(
@@ -46,5 +47,5 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     test_suite='tests',
-    tests_require=test_requirements
+    tests_require=tests_requirements
 )
