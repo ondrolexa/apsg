@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 
+import sys
 from setuptools import setup, find_packages
+
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -17,9 +19,13 @@ requirements = [
     'pytest-runner'
 ]
 
-tests_requirements = [
-    'pytest',
-]
+
+# Recipe from https://pypi.org/project/pytest-runner/
+needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
+pytest_runner = ['pytest-runner'] if needs_pytest else []
+
+tests_requirements = [] + pytest_runner
+
 
 setup(
     name='apsg',

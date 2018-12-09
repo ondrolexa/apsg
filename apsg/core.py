@@ -14,7 +14,7 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .helpers import (
+from apsg.helpers import (
     KentDistribution,
     sind,
     cosd,
@@ -86,11 +86,19 @@ class Vec3(np.ndarray):
       ``Vec3`` object
 
     Example:
-        >>> v = Vec3([1, 0.2, 1.6])
         # The dip direction and dip angle of vector with magnitude of 1.
+        >>> v = Vec3([1, 0.2, 1.6])
+        >>> abs(v)
+        1.0
+
+        # The dip direction and dip angle of vector with magnitude of 1 and 3.
         >>> v = Vec3(120, 60)
-        # The dip direction and dip angle of vector with magnitude of 3.
+        >>> abs(v)
+        1.0
+
         >>> v = Vec3(120, 60, 3)
+        >>> abs(v)
+        3.0
     """
 
     def __new__(cls, arr, inc=None, mag=1.0):
@@ -202,15 +210,16 @@ class Vec3(np.ndarray):
         Calculate the cross product of two vectors.
 
         Args:
-          other: other ``Vec3`` vector
+            other: other ``Vec3`` vector
 
         Returns:
-          The cross product of `self` and `other`
+             The cross product of `self` and `other`.
 
         Example:
-          >>> v = Vec3([0, 2, -2])
-          >>> u.cross(v)
-          V(-4.000, 2.000, 2.000)
+            >>> v = Vec3([1, 0, 0])
+            >>> u = Vec3([0, 0, 1])
+            >>> v.cross(u)
+            V(0.000, -1.000, 0.000)
 
         """
 
@@ -224,10 +233,12 @@ class Vec3(np.ndarray):
             other: other ``Vec3`` vector
 
         Returns:
-            angle of `self` and `other` in degrees
+            The angle between `self` and `other` in degrees.
 
         Example:
-            >>> u.angle(v)
+            >>> v = Vec3([1, 0, 0])
+            >>> u = Vec3([0, 0, 1])
+            >>> v.angle(u)
             90.0
         """
 
@@ -249,8 +260,11 @@ class Vec3(np.ndarray):
             vector `axis`. Rotation is clockwise along axis direction.
 
         Example:
-            >>> v.rotate(u, 60)
-            V(-2.000, 2.000, -0.000)
+            # Rotate `e1` vector around `z` axis.
+            >>> u = Vec3([1, 0, 0])
+            >>> z = Vec3([0, 0, 1])
+            >>> u.rotate(z, 90)
+            V(0.000, 1.000, 0.000)
 
         """
 
@@ -317,7 +331,12 @@ class Vec3(np.ndarray):
             of `self` by `F`
 
         Example:
+            # Reflexion of `y` axis.
+            >>> import numpy as np
+            >>> F = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 1]])
+            >>> u = Vec3([1, 1, 1])
             >>> u.transform(F)
+            V(1.000, -1.000, 1.000)
 
         """
         if kwargs.get("norm", False):
@@ -332,7 +351,13 @@ class Vec3(np.ndarray):
         Return azimuth, inclination tuple.
 
         Example:
+          >>> v = Vec3([1, 0, -1])
           >>> azi, inc = v.dd
+          >>> azi
+          0.0
+          >>> inc
+          -44.99999999999999
+
         """
 
         n = self.uv
