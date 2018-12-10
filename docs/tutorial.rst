@@ -246,7 +246,7 @@ To show data in list you can use ``data`` property::
 
 Property ``R`` gives mean or resultant of all features in group. Note that
 ``Lin`` and ``Fol`` are axial in nature, so resultant vector is not reliable.
- You can use ``ortensor`` property.::
+You can use ``ortensor`` property.::
 
     >>> g.R
     L:110/55
@@ -435,13 +435,10 @@ Setting method to 'probability', maximum likelihood estimate is calculated.::
 .. image:: _static/images/figure_15.png
 
 
-FabricPlots class
-----------------
+Fabric plots
+------------
 **APSG** provides several fabric plots to visualize Tensor-type objects (``Ortensor``,
 ``Ellipsoid``). ``FlinnPlot`` class provide classical Flinn's deformation diagram,
-``RamsayPlot`` class provide Ramsay modification of Flinn's deformation diagram,
-``VollmerPlot`` class provide triangular fabric plot (Vollmer, 1989) and ``HsuPlot``
-class provide Hsu fabric diagram using natural strains.::
 
     >>> g1 = Group.examples('B2')
     >>> g2 = Group.examples('B4')
@@ -450,18 +447,23 @@ class provide Hsu fabric diagram using natural strains.::
 
 .. image:: _static/images/figure_16_1.png
 
+``RamsayPlot`` class provide Ramsay modification of Flinn's deformation diagram,
+
     >>> RamsayPlot(g1, g2, g3);
 
 .. image:: _static/images/figure_16_2.png
+
+``VollmerPlot`` class provide triangular fabric plot (Vollmer, 1989),
 
     >>> VollmerPlot(g1, g2, g3);
 
 .. image:: _static/images/figure_16_3.png
 
+and ``HsuPlot`` class provide Hsu fabric diagram using natural strains.
+
     >>> HsuPlot(g1, g2, g3);
 
 .. image:: _static/images/figure_16_4.png
-
 
 Cluster class
 -------------
