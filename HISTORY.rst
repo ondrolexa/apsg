@@ -11,7 +11,8 @@ Master version
 * DefrGrad from_ratios class method added
 * DefGrad properties k, d, K, D (strain symmetries and intesities) added
 * New class Ellipsoid added to work with ellipsoids
-* RamsayPlot and FlinnPlot implemented
+* FabricPLot renamed to VollmerPlot for consistency
+* RamsayPlot, FlinnPlot and HsuPlot implemented
 * All fabric plots have new path method accepting list of tensors
 
 0.6.0 (07 Nov 2018)

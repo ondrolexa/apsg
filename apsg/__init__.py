@@ -19,7 +19,7 @@ from .core import (
 from .db import SDB
 from .tensors import DefGrad, VelGrad, Stress, Ortensor, Ellipsoid
 from .helpers import sind, cosd, tand, acosd, asind, atand, atan2d
-from .plotting import StereoNet, FabricPlot, RamsayPlot, FlinnPlot
+from .plotting import StereoNet, VollmerPlot, RamsayPlot, FlinnPlot, HsuPlot
 
 
 __all__ = (
@@ -49,9 +49,10 @@ __all__ = (
     "atand",
     "atan2d",
     "StereoNet",
-    "FabricPlot",
+    "VollmerPlot",
     "RamsayPlot",
-    "FlinnPlot"
+    "FlinnPlot",
+    "HsuPlot"
 )
 
 __version__ = "0.6.0"

@@ -435,18 +435,33 @@ Setting method to 'probability', maximum likelihood estimate is calculated.::
 .. image:: _static/images/figure_15.png
 
 
-FabricPlot class
+FabricPlots class
 ----------------
-
-``FabricPlot`` class provide triangular fabric plot (Vollmer, 1989). You
-can pass either ``Ortensor`` or ``Group`` instances::
+**APSG** provides several fabric plots to visualize Tensor-type objects (``Ortensor``,
+``Ellipsoid``). ``FlinnPlot`` class provide classical Flinn's deformation diagram,
+``RamsayPlot`` class provide Ramsay modification of Flinn's deformation diagram,
+``VollmerPlot`` class provide triangular fabric plot (Vollmer, 1989) and ``HsuPlot``
+class provide Hsu fabric diagram using natural strains.::
 
     >>> g1 = Group.examples('B2')
     >>> g2 = Group.examples('B4')
     >>> g3 = Group.uniform_lin(name='Uniform')
-    >>> FabricPlot(g1, g2, g3)
+    >>> FlinnPlot(g1, g2, g3);
 
-.. image:: _static/images/figure_16.png
+.. image:: _static/images/figure_16_1.png
+
+    >>> RamsayPlot(g1, g2, g3);
+
+.. image:: _static/images/figure_16_2.png
+
+    >>> VollmerPlot(g1, g2, g3);
+
+.. image:: _static/images/figure_16_3.png
+
+    >>> HsuPlot(g1, g2, g3);
+
+.. image:: _static/images/figure_16_4.png
+
 
 Cluster class
 -------------
