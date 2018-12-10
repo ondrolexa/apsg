@@ -86,19 +86,18 @@ class Vec3(np.ndarray):
       ``Vec3`` object
 
     Example:
-        # The dip direction and dip angle of vector with magnitude of 1.
-        >>> v = Vec3([1, 0.2, 1.6])
-        >>> abs(v)
-        1.0
+      >>> v = Vec3([1, -2, 3])
+      >>> abs(v)
+      3.7416573867739413
 
-        # The dip direction and dip angle of vector with magnitude of 1 and 3.
-        >>> v = Vec3(120, 60)
-        >>> abs(v)
-        1.0
+      # The dip direction and dip angle of vector with magnitude of 1 and 3.
+      >>> v = Vec3(120, 60)
+      >>> abs(v)
+      1.0
 
-        >>> v = Vec3(120, 60, 3)
-        >>> abs(v)
-        3.0
+      >>> v = Vec3(120, 60, 3)
+      >>> abs(v)
+      3.0
     """
 
     def __new__(cls, arr, inc=None, mag=1.0):
@@ -308,11 +307,13 @@ class Vec3(np.ndarray):
             ``Defgrad`` rotational matrix
 
         Example:
+            >>> u = Vec3(210, 50)
+            >>> v = Vec3(60, 70)
             >>> u.transform(u.H(v)) == v
             True
 
         """
-        from .tensors import DefGrad
+        from apsg.tensors import DefGrad
 
         return DefGrad.from_axis(self ** other, self.V.angle(other))
 
@@ -332,8 +333,7 @@ class Vec3(np.ndarray):
 
         Example:
             # Reflexion of `y` axis.
-            >>> import numpy as np
-            >>> F = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 1]])
+            >>> F = [[1, 0, 0], [0, -1, 0], [0, 0, 1]]
             >>> u = Vec3([1, 1, 1])
             >>> u.transform(F)
             V(1.000, -1.000, 1.000)
@@ -424,7 +424,7 @@ class Lin(Vec3):
         inc: The plunge in degrees.
 
     Example:
-        >>> l = Lin(120, 60)
+        >>> Lin(120, 60)
         L:120/60
 
     """
@@ -496,7 +496,7 @@ class Lin(Vec3):
         Create planar feature defined by two linear features.
 
         Example:
-            >>> l=Lin(120,10)
+            >>> l = Lin(120,10)
             >>> l.cross(Lin(160,30))
             S:196/35
         """
@@ -511,8 +511,9 @@ class Lin(Vec3):
         Return an angle (<90) between two linear features in degrees.
 
         Example:
-          >>> u.angle(v)
-          90.0
+          >>> l = Lin(45, 50)
+          >>> l.angle(Lin(110, 25))
+          55.253518182588884
         """
         return (
             other.angle(self)
@@ -546,8 +547,8 @@ class Fol(Vec3):
       inc: The dip angle in degrees.
 
     Example:
-      >>> f = Fol(120, 60)
-      F:120/60
+      >>> Fol(120, 60)
+      S:120/60
 
     """
 
@@ -624,8 +625,9 @@ class Fol(Vec3):
         Return angle of two planar features in degrees.
 
         Example:
-            >>> u.angle(v)
-            90.0
+            >>> f = Fol(120, 30)
+            >>> f.angle(Fol(210, 60))
+            64.34109372674472
 
         """
         if isinstance(other, Group):
@@ -638,9 +640,9 @@ class Fol(Vec3):
         Return linear feature defined as intersection of two planar features.
 
         Example:
-            >>> f=Fol(60,30)
-            >>> f.cross(Fol(120,40))
-            L:72/29
+          >>> f = Fol(60,30)
+          >>> f.cross(Fol(120,40))
+          L:72/29
 
         """
         if isinstance(other, Group):
@@ -670,7 +672,10 @@ class Fol(Vec3):
           by `F`
 
         Example:
+          >>> F = [[1, 0, 0], [0, 1, 1], [0, 0, 1]]
+          >>> f = Fol(90, 90)
           >>> f.transform(F)
+          S:90/45
 
         """
         if kwargs.get("norm", False):
@@ -867,7 +872,10 @@ class Pair(object):
             by `F`
 
         Example:
-            >>> p.transform(F)
+          >>> F = [[1, 0, 0], [0, 1, 1], [0, 0, 1]]
+          >>> p = Pair(90, 90, 0, 50)
+          >>> p.transform(F)
+          P:90/45-50/37
 
         """
         t = deepcopy(self)
@@ -1125,9 +1133,8 @@ class Group(list):
             When acol and icol are strings they are used as column headers.
 
         Example:
-          >>> g1 = Group.from_csv('file1.csv', typ=Fol)
-          >>> g2 = Group.from_csv('file2.csv', acol=1, icol=2)
-          >>> g3 = Group.from_csv('file3.csv', acol='trend', icol='plunge')
+          >>> g1 = Group.from_csv('file1.csv', typ=Fol)        #doctest: +SKIP
+          >>> g2 = Group.from_csv('file2.csv', acol=1, icol=2) #doctest: +SKIP
 
         """
         from os.path import basename
@@ -1405,7 +1412,7 @@ class Group(list):
     @property
     def ortensor(self):
         """Return orientation tensor ``Ortensor`` of ``Group``."""
-        from .tensors import Ortensor
+        from apsg.tensors import Ortensor
 
         return Ortensor.from_group(self)
 
@@ -1447,9 +1454,10 @@ class Group(list):
           name: name of dataset. Default is 'Default'
 
         Example:
+          >>> np.random.seed(58463123)
           >>> g = Group.randn_lin(100, Lin(120, 40))
           >>> g.R
-          L:120/39
+          L:118/42
 
         """
         data = []
@@ -1469,9 +1477,10 @@ class Group(list):
           name: name of dataset. Default is 'Default'
 
         Example:
+          >>> np.random.seed(58463123)
           >>> g = Group.randn_fol(100, Lin(240, 60))
           >>> g.R
-          S:238/61
+          S:237/60
 
         """
         data = []
@@ -1491,7 +1500,7 @@ class Group(list):
         Example:
           >>> g = Group.uniform_lin(300)
           >>> g.ortensor.eigenvals
-          array([ 0.3354383 ,  0.33228085,  0.33228085])
+          (0.33543830426546456, 0.3322808478672677, 0.3322808478672676)
 
         """
         n = 2 * np.ceil(np.sqrt(N) / 0.564)
@@ -1523,7 +1532,7 @@ class Group(list):
         Example:
           >>> g = Group.uniform_fol(300)
           >>> g.ortensor.eigenvals
-          array([ 0.3354383 ,  0.33228085,  0.33228085])
+          (0.3354383042654646, 0.3322808478672677, 0.3322808478672675)
 
         """
         lins = cls.uniform_lin(N=N)
@@ -1547,7 +1556,7 @@ class Group(list):
         Example:
           >>> v = Group.sfs_vec3(300)
           >>> v.ortensor.eigenvals
-          array([ 0.33346453,  0.33333475,  0.33320072])
+          (0.33346453471636356, 0.33333474915201167, 0.3332007161316248)
         """
         phi = (1 + np.sqrt(5)) / 2
         i2 = 2 * np.arange(N) - N + 1
@@ -1569,7 +1578,7 @@ class Group(list):
         Example:
           >>> g = Group.sfs_lin(300)
           >>> g.ortensor.eigenvals
-          array([ 0.33417707,  0.33333973,  0.33248319])
+          (0.33417707294664595, 0.333339733866985, 0.332483193186369)
         """
         g = cls.sfs_vec3(N=2 * N)
         # no antipodal
@@ -1587,7 +1596,7 @@ class Group(list):
         Example:
           >>> g = Group.sfs_fol(300)
           >>> g.ortensor.eigenvals
-          array([ 0.33417707,  0.33333973,  0.33248319])
+          (0.33417707294664595, 0.333339733866985, 0.332483193186369)
         """
         g = cls.sfs_vec3(N=2 * N)
         # no antipodal
@@ -1607,7 +1616,7 @@ class Group(list):
         Example:
           >>> v = Group.gss_vec3(300)
           >>> v.ortensor.eigenvals
-          array([ 0.33335689,  0.33332315,  0.33331996])
+          (0.3333568856957158, 0.3333231511543691, 0.33331996314991513)
         """
         inc = np.pi * (3 - np.sqrt(5))
         off = 2 / N
@@ -1630,7 +1639,7 @@ class Group(list):
         Example:
           >>> g = Group.gss_lin(300)
           >>> g.ortensor.eigenvals
-          array([ 0.33498373,  0.3333366 ,  0.33167967])
+          (0.33498372991251285, 0.33333659934369725, 0.33167967074378996)
         """
         g = cls.gss_vec3(N=2 * N)
         # no antipodal
@@ -1648,7 +1657,7 @@ class Group(list):
         Example:
           >>> g = Group.gss_fol(300)
           >>> g.ortensor.eigenvals
-          array([ 0.33498373,  0.3333366 ,  0.33167967])
+          (0.33498372991251285, 0.33333659934369725, 0.33167967074378996)
         """
         g = cls.gss_vec3(N=2 * N)
         # no antipodal
@@ -1734,12 +1743,13 @@ class Group(list):
           size: number of data in sample. Default is same as ``Group``.
 
         Example:
+          >>> np.random.seed(58463123)
           >>> g = Group.randn_lin(100, mean=Lin(120,40))
           >>> sm = [gb.R for gb in g.bootstrap(100)]
           >>> g.fisher_stats
-          {'csd': 18.985075817669784, 'a95': 3.4065695594364684, 'k': 18.203100466576508}
+          {'k': 16.1719344862197, 'a95': 3.627369676728579, 'csd': 20.142066812987963}
           >>> Group(sm).fisher_stats
-          {'csd': 1.9142106832769188, 'a95': 0.33404753286607225, 'k': 1790.5669592301119}
+          {'k': 1577.5503256282452, 'a95': 0.3559002104835758, 'csd': 2.0393577026717056}
 
         """
         if size is None:

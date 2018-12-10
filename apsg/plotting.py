@@ -15,7 +15,7 @@ try:
 except ImportError:
     pass
 
-from .core import (
+from apsg.core import (
     Vec3,
     Fol,
     Lin,
@@ -27,8 +27,8 @@ from .core import (
     StereoGrid,
     settings
 )
-from .helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
-from .tensors import DefGrad, Stress, Tensor, Ortensor, Ellipsoid
+from apsg.helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
+from apsg.tensors import DefGrad, Stress, Tensor, Ortensor, Ellipsoid
 
 
 __all__ = ["StereoNet", "VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot", "rose"]
@@ -173,7 +173,7 @@ class StereoNet(object):
             return self._cone(p2v(a, theta), l2v(a, theta), limit=80, res=91)
 
         # recreate default Axes
-        self.fig.clf()
+        self.fig.clear()
         self.ax = self.fig.subplots(ncols=self.ncols)
 
         for ax in self.fig.axes:
@@ -690,7 +690,7 @@ class VollmerPlot(_FabricPlot):
     """
 
     def __init__(self, *args, **kwargs):
-        self.fig = plt.figure(figsize=settings["figsize"])
+        self.fig = plt.figure(figsize=kwargs.pop("figsize", settings["figsize"]))
         self.fig.canvas.set_window_title("Vollmer fabric plot")
         self.ticks = kwargs.get("ticks", True)
         self.grid = kwargs.get("grid", True)
@@ -847,7 +847,7 @@ class RamsayPlot(_FabricPlot):
     """
 
     def __init__(self, *args, **kwargs):
-        self.fig = plt.figure(figsize=settings["figsize"])
+        self.fig = plt.figure(figsize=kwargs.pop("figsize", settings["figsize"]))
         self.fig.canvas.set_window_title("Ramsay deformation plot")
         self.ticks = kwargs.get("ticks", True)
         self.grid = kwargs.get("grid", False)
@@ -941,7 +941,7 @@ class FlinnPlot(_FabricPlot):
     """
 
     def __init__(self, *args, **kwargs):
-        self.fig = plt.figure(figsize=settings["figsize"])
+        self.fig = plt.figure(figsize=kwargs.pop("figsize", settings["figsize"]))
         self.fig.canvas.set_window_title("Flinn's deformation plot")
         self.ticks = kwargs.get("ticks", True)
         self.grid = kwargs.get("grid", False)
@@ -1035,7 +1035,7 @@ class HsuPlot(_FabricPlot):
     """
 
     def __init__(self, *args, **kwargs):
-        self.fig = plt.figure(figsize=settings["figsize"])
+        self.fig = plt.figure(figsize=kwargs.pop("figsize", settings["figsize"]))
         self.fig.canvas.set_window_title("Hsu fabric plot")
         self.ticks = kwargs.get("ticks", True)
         self.grid = kwargs.get("grid", True)
@@ -1255,7 +1255,7 @@ def rose(a, bins=13, **kwargs):
     if isinstance(a, Group):
         a, _ = a.dd
 
-    fig = plt.figure(figsize=settings["figsize"])
+    fig = plt.figure(figsize=kwargs.pop("figsize", settings["figsize"]))
     ax = fig.add_subplot(111, polar=True)
     ax.set_theta_direction(-1)
     ax.set_theta_zero_location("N")

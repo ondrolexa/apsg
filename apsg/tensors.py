@@ -6,8 +6,8 @@ from __future__ import division, print_function
 
 import numpy as np
 
-from .core import Vec3, Group, Pair, Fault
-from .helpers import sind, cosd, atand
+from apsg.core import Vec3, Group, Pair, Fault
+from apsg.helpers import sind, cosd, atand
 
 
 __all__ = ("DefGrad", "VelGrad", "Stress", "Ortensor", "Ellipsoid")
