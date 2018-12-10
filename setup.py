@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
+import sys
 from setuptools import setup, find_packages
 
 with open('README.rst') as readme_file:
@@ -16,9 +16,9 @@ requirements = [
     'scipy'
 ]
 
-test_requirements = [
-    # TODO: put package test requirements here
-]
+# Recipe from https://pypi.org/project/pytest-runner/
+needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
+pytest_runner = ['pytest-runner'] if needs_pytest else []
 
 setup(
     name='apsg',
@@ -46,5 +46,6 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     test_suite='tests',
-    tests_require=test_requirements
+    setup_requires=pytest_runner,
+    tests_require=['pytest']
 )
