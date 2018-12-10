@@ -31,7 +31,7 @@ from .helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 from .tensors import DefGrad, Stress, Tensor, Ortensor, Ellipsoid
 
 
-__all__ = ["StereoNet", "FabricPlot", "rose", "RamsayPlot", "FlinnPlot"]
+__all__ = ["StereoNet", "VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot", "rose"]
 
 
 # ignore matplotlib deprecation warnings
@@ -629,7 +629,61 @@ class StereoNet(object):
             return repr(v.asfol) + " " + repr(v.aslin)
 
 
-class FabricPlot(object):
+class _FabricPlot(object):
+
+    """
+    Metaclas for Fabric plots
+    """
+
+    def close(self):
+        plt.close(self.fig)
+
+    @property
+    def closed(self):
+        return not plt.fignum_exists(self.fig.number)
+
+    def draw(self):
+        if self.closed:
+            print(
+                "The DeformationPlot figure have been closed. "
+                "Use new() method or create new one."
+            )
+        else:
+            h, lbls = self.ax.get_legend_handles_labels()
+            if h:
+                self._lgd = self.ax.legend(
+                    h,
+                    lbls,
+                    prop={"size": 11},
+                    borderaxespad=0,
+                    loc='center left',
+                    bbox_to_anchor=(1.1, 0.5),
+                    scatterpoints=1,
+                    numpoints=1,
+                )
+            plt.draw()
+
+    def new(self):
+        """
+        Re-initialize figure.
+        """
+
+        if self.closed:
+            self.__init__()
+
+    def show(self):
+        plt.show()
+
+    def savefig(self, filename="apsg_fabricplot.pdf", **kwargs):
+        if self._lgd is None:
+            self.ax.figure.savefig(filename, **kwargs)
+        else:
+            self.ax.figure.savefig(
+                filename, bbox_extra_artists=(self._lgd,), bbox_inches="tight", **kwargs
+            )
+
+
+class VollmerPlot(_FabricPlot):
 
     """
     Represents the triangular fabric plot (Vollmer, 1989).
@@ -652,42 +706,6 @@ class FabricPlot(object):
             for arg in args:
                 self.plot(arg)
             self.show()
-
-    def close(self):
-        plt.close(self.fig)
-
-    @property
-    def closed(self):
-        return not plt.fignum_exists(self.fig.number)
-
-    def draw(self):
-        if self.closed:
-            print(
-                "The FabricPlot figure have been closed. "
-                "Use new() method or create new one."
-            )
-        else:
-            h, lbls = self.ax.get_legend_handles_labels()
-            if h:
-                self._lgd = self.ax.legend(
-                    h,
-                    lbls,
-                    prop={"size": 11},
-                    loc=4,
-                    borderaxespad=0,
-                    scatterpoints=1,
-                    numpoints=1,
-                )
-            plt.draw()
-            # plt.pause(0.001)
-
-    def new(self):
-        """
-        Re-initialize ``StereoNet`` figure.
-        """
-
-        if self.closed:
-            self.__init__()
 
     def cla(self):
         """
@@ -813,17 +831,6 @@ class FabricPlot(object):
 
         self.draw()
 
-    def show(self):
-        plt.show()
-
-    def savefig(self, filename="apsg_fabricplot.pdf", **kwargs):
-        if self._lgd is None:
-            self.ax.figure.savefig(filename, **kwargs)
-        else:
-            self.ax.figure.savefig(
-                filename, bbox_extra_artists=(self._lgd,), bbox_inches="tight", **kwargs
-            )
-
     def format_coord(self, x, y):
         a, b = self.Ti.dot(np.r_[x, y] - self.C)
         c = 1 - a - b
@@ -833,7 +840,7 @@ class FabricPlot(object):
             return "P:{:0.2f} G:{:0.2f} R:{:0.2f}".format(a, b, c)
 
 
-class RamsayPlot(object):
+class RamsayPlot(_FabricPlot):
 
     """
     Represents the Ramsay deformation plot.
@@ -852,43 +859,6 @@ class RamsayPlot(object):
             for arg in args:
                 self.plot(arg)
             self.show()
-
-    def close(self):
-        plt.close(self.fig)
-
-    @property
-    def closed(self):
-        return not plt.fignum_exists(self.fig.number)
-
-    def draw(self):
-        if self.closed:
-            print(
-                "The DeformationPlot figure have been closed. "
-                "Use new() method or create new one."
-            )
-        else:
-            h, lbls = self.ax.get_legend_handles_labels()
-            if h:
-                self._lgd = self.ax.legend(
-                    h,
-                    lbls,
-                    prop={"size": 11},
-                    borderaxespad=0,
-                    loc='center left',
-                    bbox_to_anchor=(1.1, 0.5),
-                    scatterpoints=1,
-                    numpoints=1,
-                )
-            plt.draw()
-            # plt.pause(0.001)
-
-    def new(self):
-        """
-        Re-initialize ``DeformationPlot`` figure.
-        """
-
-        if self.closed:
-            self.__init__()
 
     def cla(self):
         """
@@ -958,21 +928,13 @@ class RamsayPlot(object):
         self.ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
         plt.show()
 
-    def savefig(self, filename="apsg_ramsayplot.pdf", **kwargs):
-        if self._lgd is None:
-            self.ax.figure.savefig(filename, **kwargs)
-        else:
-            self.ax.figure.savefig(
-                filename, bbox_extra_artists=(self._lgd,), bbox_inches="tight", **kwargs
-            )
-
     def format_coord(self, x, y):
         k = y/x if x>0 else 0
         d = x**2 + y**2
         return "k:{:0.2f} d:{:0.2f}".format(k, d)
 
 
-class FlinnPlot(object):
+class FlinnPlot(_FabricPlot):
 
     """
     Represents the Ramsay deformation plot.
@@ -991,43 +953,6 @@ class FlinnPlot(object):
             for arg in args:
                 self.plot(arg)
             self.show()
-
-    def close(self):
-        plt.close(self.fig)
-
-    @property
-    def closed(self):
-        return not plt.fignum_exists(self.fig.number)
-
-    def draw(self):
-        if self.closed:
-            print(
-                "The DeformationPlot figure have been closed. "
-                "Use new() method or create new one."
-            )
-        else:
-            h, lbls = self.ax.get_legend_handles_labels()
-            if h:
-                self._lgd = self.ax.legend(
-                    h,
-                    lbls,
-                    prop={"size": 11},
-                    borderaxespad=0,
-                    loc='center left',
-                    bbox_to_anchor=(1.1, 0.5),
-                    scatterpoints=1,
-                    numpoints=1,
-                )
-            plt.draw()
-            # plt.pause(0.001)
-
-    def new(self):
-        """
-        Re-initialize ``DeformationPlot`` figure.
-        """
-
-        if self.closed:
-            self.__init__()
 
     def cla(self):
         """
@@ -1097,13 +1022,90 @@ class FlinnPlot(object):
         self.ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
         plt.show()
 
-    def savefig(self, filename="apsg_flinnplot.pdf", **kwargs):
-        if self._lgd is None:
-            self.ax.figure.savefig(filename, **kwargs)
-        else:
-            self.ax.figure.savefig(
-                filename, bbox_extra_artists=(self._lgd,), bbox_inches="tight", **kwargs
-            )
+    def format_coord(self, x, y):
+        K = (y - 1)/(x - 1) if x>1 else 0
+        D = np.sqrt((x - 1)**2 + (y - 1)**2)
+        return "K:{:0.2f} D:{:0.2f}".format(K, D)
+
+
+class HsuPlot(_FabricPlot):
+
+    """
+    Represents the Hsu fabric plot.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.fig = plt.figure(figsize=settings["figsize"])
+        self.fig.canvas.set_window_title("Hsu fabric plot")
+        self.ticks = kwargs.get("ticks", True)
+        self.grid = kwargs.get("grid", True)
+        self.grid_style = kwargs.get("grid_style", "k:")
+        self._lgd = None
+        self.cla()
+        # optionally immidiately plot passed objects
+        if args:
+            for arg in args:
+                self.plot(arg)
+            self.show()
+
+    def cla(self):
+        """
+        Clear projection.
+        """
+
+        self.fig.clear()
+        self.ax = self.fig.add_subplot(111, polar=True)
+        #self.ax.format_coord = self.format_coord
+        self.ax.set_theta_zero_location('N')
+        self.ax.set_theta_direction(-1)
+        self.ax.set_thetamin(-30)
+        self.ax.set_thetamax(30)
+        self.ax.set_xticks([-np.pi/6, -np.pi/12, 0, np.pi/12, np.pi/6])
+        self.ax.set_xticklabels([-1, -0.5, 0, 0.5, 1])
+        self.ax.set_title(r'$\nu$')
+        self.ax.set_ylabel(r'$\bar{\varepsilon}_s$')
+        self.ax.grid(self.grid)
+
+        self.draw()
+
+    def plot(self, obj, *args, **kwargs):
+        if type(obj) is Group:
+            obj = obj.ortensor
+
+        if not isinstance(obj, Tensor):
+            raise TypeError("%s argument is not supported!" % type(obj))
+
+        # ensure point plot
+        if "ls" not in kwargs and "linestyle" not in kwargs:
+            kwargs["linestyle"] = "none"
+
+        if not args:
+            if "marker" not in kwargs:
+                kwargs["marker"] = "o"
+        if "label" not in kwargs:
+            kwargs["label"] = obj.name
+
+        self.ax.plot(obj.lode*np.pi/6, obj.eoct, *args, **kwargs)
+
+        self.draw()
+
+    def path(self, objs, *args, **kwargs):
+        # ensure point plot
+        if "ls" not in kwargs and "linestyle" not in kwargs:
+            kwargs["linestyle"] = "-"
+
+        if not args:
+            if "marker" not in kwargs:
+                kwargs["marker"] = "."
+        #if "label" not in kwargs:
+        #    kwargs["label"] = obj.name
+
+        lode = [obj.lode*np.pi/6 for obj in objs]
+        eoct = [obj.eoct for obj in objs]
+
+        self.ax.plot(lode, eoct, *args, **kwargs)
+
+        self.draw()
 
     def format_coord(self, x, y):
         K = (y - 1)/(x - 1) if x>1 else 0
