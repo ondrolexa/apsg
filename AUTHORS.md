@@ -1,13 +1,9 @@
-=======
-Credits
-=======
+# Credits
 
-Development Lead
-----------------
+## Development Lead
 
 * Ondrej Lexa <lexa.ondrej@gmail.com>
 
-Contributors
-------------
+## Contributors
 
 * David Landa <david.landa@natur.cuni.cz>

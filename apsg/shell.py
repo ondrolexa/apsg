@@ -18,8 +18,7 @@ except ImportError:
 from pylab import *  # NOQA
 from apsg import *  # NOQA
 
-
-if __name__ == "__main__":
+def main():
     banner = "+----------------------------------------------------------+\n"
     banner += "    APSG toolbox "
     banner += pkg_resources.require("apsg")[0].version
@@ -29,3 +28,6 @@ if __name__ == "__main__":
     vars.update(locals())
     shell = code.InteractiveConsole(vars)
     shell.interact(banner=banner)
+
+if __name__ == "__main__":
+    main()

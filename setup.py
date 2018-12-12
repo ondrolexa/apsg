@@ -2,13 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import sys
+from os import path
 from setuptools import setup, find_packages
 
-with open('README.rst') as readme_file:
-    readme = readme_file.read()
+this_directory = path.abspath(path.dirname(__file__))
 
-with open('HISTORY.rst') as history_file:
-    history = history_file.read().replace('.. :changelog:', '')
+with open(path.join(this_directory, 'README.md')) as f:
+    readme = f.read()
+
+with open(path.join(this_directory, 'HISTORY.md')) as f:
+    history = f.read()
 
 requirements = [
     'numpy',
@@ -25,6 +28,7 @@ setup(
     version='0.6.0',
     description='APSG - structural geology module for Python',
     long_description=readme + '\n\n' + history,
+    long_description_content_type='text/markdown',
     author='Ondrej Lexa',
     author_email='lexa.ondrej@gmail.com',
     url='https://github.com/ondrolexa/apsg',

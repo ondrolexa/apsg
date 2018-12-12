@@ -22,6 +22,3 @@ Contents:
    usage
    contributing
    authors
-
-
-.. include:: ../HISTORY.rst

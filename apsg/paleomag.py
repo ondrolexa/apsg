@@ -7,9 +7,9 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
-from .core import Vec3, Fol, Lin, Group, settings
-from .plotting import StereoNet
-from .helpers import sind, cosd, eformat
+from apsg.core import Vec3, Fol, Lin, Group, settings
+from apsg.plotting import StereoNet
+from apsg.helpers import sind, cosd, eformat
 
 
 __all__ = ["Core"]
@@ -160,7 +160,7 @@ class Core(object):
             self.comments,
         ):
             ln = "{:<4} {: 9.2E} {: 9.2E} {: 9.2E} {: 9.2E} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:4.1f} {}".format(
-                step, *V, MAG, *geo.dd, *strata.dd, a95, comments
+                step, V[0], V[1], V[2], MAG, geo.dd[0], geo.dd[1], strata.dd[0], strata.dd[1], a95, comments
             )
             tb.append(ln)
         return tb
