@@ -2,6 +2,8 @@
 
 ## Master version
 
+## 0.6.1 (12 Dec 2018)
+
 * Stereogrid always use Euclidean norms as weights
 * DefGrad properties e1, e2, e3 (natural principal strains) added
 * DefGrad properties eoct, goct (octahedral strains) added

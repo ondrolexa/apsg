@@ -7,7 +7,7 @@ API to read data from PySDB database
 
 import sqlite3
 import os.path
-from .core import Fol, Lin, Group
+from apsg.core import Fol, Lin, Group
 
 
 __all__ = ("SDB",)
