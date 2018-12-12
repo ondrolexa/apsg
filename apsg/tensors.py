@@ -641,23 +641,36 @@ class Tensor(object):
     """
 
     def __init__(self, matrix, **kwargs):
+
         assert np.shape(matrix) == (3, 3), "Ellipsoid matrix must be 3x3 2D array"
+
         self._matrix = np.asarray(matrix)
         self.name = kwargs.get('name', '')
         self.scaled = kwargs.get("scaled", False)
+
         vc, vv = np.linalg.eigh(self._matrix)
         ix = np.argsort(vc)[::-1]
+
         self._evals = vc[ix]
         self._evects = vv.T[ix]
 
     def __repr__(self):
-        return "{name}({values})".format(self.name, self._matrix)
+        return "{name}({values})".format(
+            name=self.__class__.__name__,
+            values=str(list(map(list, self._matrix))))
 
     def __str__(self):
         return repr(self)
 
     def __eq__(self, other):
-        return  tuple(map(tuple, self._matrix)) ==  tuple(map(tuple, other._matrix))
+
+        if other is None:
+            return False
+
+        if not isinstance(other, (self.__class__,)):
+            return False
+
+        return  tuple(map(tuple, self._matrix)) == tuple(map(tuple, other._matrix))
 
     def __neq__(self, other):
         """
@@ -666,7 +679,7 @@ class Tensor(object):
         return not (self == other)
 
     def __hash__(self):
-        return hash(self._matrix)
+        return hash(tuple(map(tuple, self._matrix)) )
 
     @property
     def eigenvals(self):
