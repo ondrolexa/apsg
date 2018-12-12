@@ -377,7 +377,7 @@ class VelGrad(np.ndarray):
         """
         Return spin tensor
         """
-        
+
         return (self - self.T) / 2
 
 
@@ -634,9 +634,9 @@ class Stress(np.ndarray):
 
 class Tensor(object):
     """
-    Tensor metaclass
+    Tensor metaclass.
 
-    See following methods and properties for additional operations.
+    See the following methods and properties for additional operations.
 
     """
 
@@ -649,6 +649,24 @@ class Tensor(object):
         ix = np.argsort(vc)[::-1]
         self._evals = vc[ix]
         self._evects = vv.T[ix]
+
+    def __repr__(self):
+        return "{name}({values})".format(self.name, self._matrix)
+
+    def __str__(self):
+        return repr(self)
+
+    def __eq__(self, other):
+        return  tuple(map(tuple, self._matrix)) ==  tuple(map(tuple, other._matrix))
+
+    def __neq__(self, other):
+        """
+        Implemented for Python 2.7 commpatibility.
+        """
+        return not (self == other)
+
+    def __hash__(self):
+        return hash(self._matrix)
 
     @property
     def eigenvals(self):

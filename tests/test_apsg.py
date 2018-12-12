@@ -36,6 +36,12 @@ def is_hashable(obj):
         return False
 
 
+def has_same_hash_when_value_objects_are_equals(lhs, rhs):
+    if lsh != rhs:
+        raise Exception("Objects have to equal!")
+    return hash(lhs == rhs)
+
+
 # ############################################################################
 # Vectors
 # ############################################################################
