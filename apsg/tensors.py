@@ -663,18 +663,20 @@ class Tensor(object):
         return repr(self)
 
     def __eq__(self, other):
+        """
+        Return `True` if tensors are equal, otherwise `False`.
+        """
 
-        if other is None:
+        if not isinstance(other, self.__class__):
             return False
 
-        if not isinstance(other, (self.__class__,)):
-            return False
-
-        return  tuple(map(tuple, self._matrix)) == tuple(map(tuple, other._matrix))
+        return tuple(map(tuple, self._matrix)) == tuple(map(tuple, other._matrix))
 
     def __neq__(self, other):
         """
-        Implemented for Python 2.7 commpatibility.
+        Return `True` if tensorss are not equal, otherwise `False`.
+
+        Overrides the default implementation (unnecessary in Python 3).
         """
         return not (self == other)
 
