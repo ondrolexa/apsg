@@ -1015,31 +1015,31 @@ class Ortensor(Tensor):
     @property
     def P(self):
         """
-        Point index - Vollmer, 1990
+        Point index (Vollmer, 1990).
         """
 
-        return self._evals[0] - self._evals[1]
+        return self.E1 - self.E2
 
     @property
     def G(self):
         """
-        Girdle index - Vollmer, 1990
+        Girdle index (Vollmer, 1990).
         """
 
-        return 2 * (self._evals[1] - self._evals[2])
+        return 2 * (self.E2 - self.E3)
 
     @property
     def R(self):
         """
-        Random index - Vollmer, 1990
+        Random index (Vollmer, 1990).
         """
 
-        return 3 * self._evals[2]
+        return 3 * self.E3
 
     @property
     def B(self):
         """
-        Cylindricity index - Vollmer, 1990
+        Cylindricity index (Vollmer, 1990).
         """
 
         return self.P + self.G
@@ -1047,7 +1047,7 @@ class Ortensor(Tensor):
     @property
     def Intensity(self):
         """
-        Intensity index - Lisle, 1985
+        Intensity index (Lisle, 1985).
         """
 
         return 7.5 * np.sum((self._evals - 1 / 3) ** 2)
@@ -1055,7 +1055,7 @@ class Ortensor(Tensor):
     @property
     def MADp(self):
         """
-        Return approximate angular deviation from the major axis along E1
+        Return approximate angular deviation from the major axis along E1.
         """
 
         return atand(np.sqrt((1 - self.E1) / self.E1))
@@ -1063,7 +1063,7 @@ class Ortensor(Tensor):
     @property
     def MADo(self):
         """
-        Return approximate deviation from the plane normal to E3
+        Return approximate deviation from the plane normal to E3.
         """
 
         return atand(np.sqrt(self.E3 / (1 - self.E3)))
