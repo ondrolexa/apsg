@@ -762,6 +762,33 @@ class Tensor(object):
         return res
 
     @property
+    def E1(self):
+        """
+        Return maximum eigenvalue.
+        """
+
+        # Python 2.7 compatible. In the future we can use `abc.abstractproperty` decorator.
+        return NotImplementedError
+
+    @property
+    def E2(self):
+        """
+        Return middle eigenvalue.
+        """
+
+        # Python 2.7 compatible. In the future we can use `abc.abstractproperty` decorator.
+        return NotImplementedError
+
+    @property
+    def E3(self):
+        """
+        Return minimum eigenvalue.
+        """
+
+        # Python 2.7 compatible. In the future we can use `abc.abstractproperty` decorator.
+        return NotImplementedError
+
+    @property
     def e1(self):
         """
         Return maximum natural principal strain.
@@ -832,7 +859,7 @@ class Tensor(object):
     @property
     def D(self):
         """
-        Strain intensity
+        Strain intensity.
         """
 
         return self.e12**2 + self.e23**2
@@ -848,7 +875,7 @@ class Tensor(object):
     @property
     def goct(self):
         """
-        Natural octahedral unit shear. Nadai, 1963
+        Natural octahedral unit shear (Nadai, 1963).
         """
 
         return 2 * np.sqrt((self.e1 - self.e2)**2 + (self.e2 - self.e3)**2 + (self.e1 - self.e3)**2) / 3
@@ -856,7 +883,7 @@ class Tensor(object):
     @property
     def eoct(self):
         """
-        Natural octahedral unit strain. Nadai, 1963
+        Natural octahedral unit strain (Nadai, 1963).
         """
 
         return np.sqrt(3) * self.goct / 2
@@ -964,7 +991,7 @@ class Ortensor(Tensor):
     @property
     def E1(self):
         """
-        Max eigenvalue
+        Return maximum eigenvalue.
         """
 
         return self._evals[0]
@@ -972,7 +999,7 @@ class Ortensor(Tensor):
     @property
     def E2(self):
         """
-        Middle eigenvalue
+        Return middle eigenvalue.
         """
 
         return self._evals[1]
@@ -980,7 +1007,7 @@ class Ortensor(Tensor):
     @property
     def E3(self):
         """
-        Min eigenvalue
+        Return minimum eigenvalue.
         """
 
         return self._evals[2]
