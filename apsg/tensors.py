@@ -1161,7 +1161,7 @@ class Ellipsoid(Tensor):
     @property
     def E1(self):
         """
-        Max eigenvalue
+        Return maximum eigenvalue.
         """
 
         return np.sqrt(self._evals[0])
@@ -1169,7 +1169,7 @@ class Ellipsoid(Tensor):
     @property
     def E2(self):
         """
-        Middle eigenvalue
+        Return middle eigenvalue.
         """
 
         return np.sqrt(self._evals[1])
@@ -1177,7 +1177,7 @@ class Ellipsoid(Tensor):
     @property
     def E3(self):
         """
-        Min eigenvalue
+        Return minimum eigenvalue.
         """
 
         return np.sqrt(self._evals[2])
