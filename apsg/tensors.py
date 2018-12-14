@@ -764,7 +764,7 @@ class Tensor(object):
     @property
     def e1(self):
         """
-        Max natural principal strain
+        Return maximum natural principal strain.
         """
 
         return np.log(self.E1)
@@ -772,7 +772,7 @@ class Tensor(object):
     @property
     def e2(self):
         """
-        Middle natural principal strain
+        Return middle natural principal strain.
         """
 
         return np.log(self.E2)
@@ -780,18 +780,18 @@ class Tensor(object):
     @property
     def e3(self):
         """
-        Min natural principal strain
+        Retrun minimum natural principal strain.
         """
 
         return np.log(self.E3)
 
     @property
     def Rxy(self):
-        return self.E1/self.E2
+        return self.E1 / self.E2
 
     @property
     def Ryz(self):
-        return self.E2/self.E3
+        return self.E2 / self.E3
 
     @property
     def e12(self):
@@ -808,7 +808,7 @@ class Tensor(object):
     @property
     def k(self):
         """
-        Strain symmetry
+        Strain symmetry.
         """
 
         return (self.Rxy - 1) / (self.Ryz - 1)
@@ -816,7 +816,7 @@ class Tensor(object):
     @property
     def d(self):
         """
-        Strain intensity
+        Strain intensity.
         """
 
         return np.sqrt((self.Rxy - 1)**2 + (self.Ryz - 1)**2)
@@ -824,7 +824,7 @@ class Tensor(object):
     @property
     def K(self):
         """
-        Strain symmetry. Ramsay, 1983
+        Strain symmetry (Ramsay, 1983).
         """
 
         return self.e12 / self.e23 if self.e23>0 else np.inf
@@ -840,7 +840,7 @@ class Tensor(object):
     @property
     def r(self):
         """
-        Strain intensity. Watterson, 1968
+        Strain intensity (Watterson, 1968).
         """
 
         return self.Rxy + self.Ryz - 1
@@ -864,7 +864,7 @@ class Tensor(object):
     @property
     def lode(self):
         """
-        Lode parameter. Lode, 1926
+        Lode parameter (Lode, 1926).
         """
 
         return (2*self.e2 - self.e1 -self.e3) / (self.e1 - self.e3) if (self.e1 - self.e3)>0 else 0
