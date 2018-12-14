@@ -672,7 +672,7 @@ class Tensor(object):
 
         return tuple(map(tuple, self._matrix)) == tuple(map(tuple, other._matrix))
 
-    def __neq__(self, other):
+    def __ne__(self, other):
         """
         Return `True` if tensorss are not equal, otherwise `False`.
 
