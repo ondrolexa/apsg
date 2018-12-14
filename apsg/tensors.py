@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 
@@ -377,7 +376,7 @@ class VelGrad(np.ndarray):
         """
         Return spin tensor
         """
-        
+
         return (self - self.T) / 2
 
 
@@ -634,21 +633,54 @@ class Stress(np.ndarray):
 
 class Tensor(object):
     """
-    Tensor metaclass
+    Tensor metaclass.
 
-    See following methods and properties for additional operations.
+    See the following methods and properties for additional operations.
 
     """
 
     def __init__(self, matrix, **kwargs):
+
         assert np.shape(matrix) == (3, 3), "Ellipsoid matrix must be 3x3 2D array"
+
         self._matrix = np.asarray(matrix)
         self.name = kwargs.get('name', '')
         self.scaled = kwargs.get("scaled", False)
+
         vc, vv = np.linalg.eigh(self._matrix)
         ix = np.argsort(vc)[::-1]
+
         self._evals = vc[ix]
         self._evects = vv.T[ix]
+
+    def __repr__(self):
+        return "{name}({values})".format(
+            name=self.__class__.__name__,
+            values=str(list(map(list, self._matrix))))
+
+    def __str__(self):
+        return repr(self)
+
+    def __eq__(self, other):
+        """
+        Return `True` if tensors are equal, otherwise `False`.
+        """
+
+        if not isinstance(other, self.__class__):
+            return False
+
+        return tuple(map(tuple, self._matrix)) == tuple(map(tuple, other._matrix))
+
+    def __ne__(self, other):
+        """
+        Return `True` if tensorss are not equal, otherwise `False`.
+
+        Overrides the default implementation (unnecessary in Python 3).
+        """
+        return not (self == other)
+
+    def __hash__(self):
+        return hash(tuple(map(tuple, self._matrix)) )
 
     @property
     def eigenvals(self):
@@ -730,9 +762,36 @@ class Tensor(object):
         return res
 
     @property
+    def E1(self):
+        """
+        Return maximum eigenvalue.
+        """
+
+        # Python 2.7 compatible. In the future we can use `abc.abstractproperty` decorator.
+        return NotImplementedError
+
+    @property
+    def E2(self):
+        """
+        Return middle eigenvalue.
+        """
+
+        # Python 2.7 compatible. In the future we can use `abc.abstractproperty` decorator.
+        return NotImplementedError
+
+    @property
+    def E3(self):
+        """
+        Return minimum eigenvalue.
+        """
+
+        # Python 2.7 compatible. In the future we can use `abc.abstractproperty` decorator.
+        return NotImplementedError
+
+    @property
     def e1(self):
         """
-        Max natural principal strain
+        Return maximum natural principal strain.
         """
 
         return np.log(self.E1)
@@ -740,7 +799,7 @@ class Tensor(object):
     @property
     def e2(self):
         """
-        Middle natural principal strain
+        Return middle natural principal strain.
         """
 
         return np.log(self.E2)
@@ -748,18 +807,18 @@ class Tensor(object):
     @property
     def e3(self):
         """
-        Min natural principal strain
+        Retrun minimum natural principal strain.
         """
 
         return np.log(self.E3)
 
     @property
     def Rxy(self):
-        return self.E1/self.E2
+        return self.E1 / self.E2
 
     @property
     def Ryz(self):
-        return self.E2/self.E3
+        return self.E2 / self.E3
 
     @property
     def e12(self):
@@ -776,7 +835,7 @@ class Tensor(object):
     @property
     def k(self):
         """
-        Strain symmetry
+        Strain symmetry.
         """
 
         return (self.Rxy - 1) / (self.Ryz - 1)
@@ -784,7 +843,7 @@ class Tensor(object):
     @property
     def d(self):
         """
-        Strain intensity
+        Strain intensity.
         """
 
         return np.sqrt((self.Rxy - 1)**2 + (self.Ryz - 1)**2)
@@ -792,7 +851,7 @@ class Tensor(object):
     @property
     def K(self):
         """
-        Strain symmetry. Ramsay, 1983
+        Strain symmetry (Ramsay, 1983).
         """
 
         return self.e12 / self.e23 if self.e23>0 else np.inf
@@ -800,7 +859,7 @@ class Tensor(object):
     @property
     def D(self):
         """
-        Strain intensity
+        Strain intensity.
         """
 
         return self.e12**2 + self.e23**2
@@ -808,7 +867,7 @@ class Tensor(object):
     @property
     def r(self):
         """
-        Strain intensity. Watterson, 1968
+        Strain intensity (Watterson, 1968).
         """
 
         return self.Rxy + self.Ryz - 1
@@ -816,7 +875,7 @@ class Tensor(object):
     @property
     def goct(self):
         """
-        Natural octahedral unit shear. Nadai, 1963
+        Natural octahedral unit shear (Nadai, 1963).
         """
 
         return 2 * np.sqrt((self.e1 - self.e2)**2 + (self.e2 - self.e3)**2 + (self.e1 - self.e3)**2) / 3
@@ -824,7 +883,7 @@ class Tensor(object):
     @property
     def eoct(self):
         """
-        Natural octahedral unit strain. Nadai, 1963
+        Natural octahedral unit strain (Nadai, 1963).
         """
 
         return np.sqrt(3) * self.goct / 2
@@ -832,7 +891,7 @@ class Tensor(object):
     @property
     def lode(self):
         """
-        Lode parameter. Lode, 1926
+        Lode parameter (Lode, 1926).
         """
 
         return (2*self.e2 - self.e1 -self.e3) / (self.e1 - self.e3) if (self.e1 - self.e3)>0 else 0
@@ -932,7 +991,7 @@ class Ortensor(Tensor):
     @property
     def E1(self):
         """
-        Max eigenvalue
+        Return maximum eigenvalue.
         """
 
         return self._evals[0]
@@ -940,7 +999,7 @@ class Ortensor(Tensor):
     @property
     def E2(self):
         """
-        Middle eigenvalue
+        Return middle eigenvalue.
         """
 
         return self._evals[1]
@@ -948,7 +1007,7 @@ class Ortensor(Tensor):
     @property
     def E3(self):
         """
-        Min eigenvalue
+        Return minimum eigenvalue.
         """
 
         return self._evals[2]
@@ -956,31 +1015,31 @@ class Ortensor(Tensor):
     @property
     def P(self):
         """
-        Point index - Vollmer, 1990
+        Point index (Vollmer, 1990).
         """
 
-        return self._evals[0] - self._evals[1]
+        return self.E1 - self.E2
 
     @property
     def G(self):
         """
-        Girdle index - Vollmer, 1990
+        Girdle index (Vollmer, 1990).
         """
 
-        return 2 * (self._evals[1] - self._evals[2])
+        return 2 * (self.E2 - self.E3)
 
     @property
     def R(self):
         """
-        Random index - Vollmer, 1990
+        Random index (Vollmer, 1990).
         """
 
-        return 3 * self._evals[2]
+        return 3 * self.E3
 
     @property
     def B(self):
         """
-        Cylindricity index - Vollmer, 1990
+        Cylindricity index (Vollmer, 1990).
         """
 
         return self.P + self.G
@@ -988,7 +1047,7 @@ class Ortensor(Tensor):
     @property
     def Intensity(self):
         """
-        Intensity index - Lisle, 1985
+        Intensity index (Lisle, 1985).
         """
 
         return 7.5 * np.sum((self._evals - 1 / 3) ** 2)
@@ -996,7 +1055,7 @@ class Ortensor(Tensor):
     @property
     def MADp(self):
         """
-        Return approximate angular deviation from the major axis along E1
+        Return approximate angular deviation from the major axis along E1.
         """
 
         return atand(np.sqrt((1 - self.E1) / self.E1))
@@ -1004,7 +1063,7 @@ class Ortensor(Tensor):
     @property
     def MADo(self):
         """
-        Return approximate deviation from the plane normal to E3
+        Return approximate deviation from the plane normal to E3.
         """
 
         return atand(np.sqrt(self.E3 / (1 - self.E3)))
@@ -1102,7 +1161,7 @@ class Ellipsoid(Tensor):
     @property
     def E1(self):
         """
-        Max eigenvalue
+        Return maximum eigenvalue.
         """
 
         return np.sqrt(self._evals[0])
@@ -1110,7 +1169,7 @@ class Ellipsoid(Tensor):
     @property
     def E2(self):
         """
-        Middle eigenvalue
+        Return middle eigenvalue.
         """
 
         return np.sqrt(self._evals[1])
@@ -1118,7 +1177,7 @@ class Ellipsoid(Tensor):
     @property
     def E3(self):
         """
-        Min eigenvalue
+        Return minimum eigenvalue.
         """
 
         return np.sqrt(self._evals[2])

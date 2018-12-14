@@ -21,6 +21,7 @@ import numpy as np
 
 from apsg import Vec3, Fol, Lin, Fault, Pair, Group, FaultSet, settings
 from apsg import Ortensor, DefGrad, VelGrad, Stress
+from apsg.tensors import Tensor
 
 
 # ############################################################################
@@ -34,6 +35,18 @@ def is_hashable(obj):
         return True
     except TypeError:
         return False
+
+
+def has_same_hash_when_value_objects_are_equals(lhs, rhs):
+    if lhs != rhs:
+        raise Exception("Objects have to be equal!")
+    return hash(lhs == rhs)
+
+
+def has_not_same_hash_when_value_objects_are_not_equals(lhs, rhs):
+    if lhs == rhs:
+        raise Exception("Objects have not to be equal!")
+    return hash(lhs != rhs)
 
 
 # ############################################################################
@@ -580,6 +593,31 @@ def test_faultset_examples():
     exlist = FaultSet.examples()
     for ex in exlist:
         g = FaultSet.examples(ex)
+
+
+# ############################################################################
+# Tensor
+# ############################################################################
+
+# Note: Tensor type is value object => structural equality
+
+def test_that_tensors_are_equal_and_has_same_hash():
+    lhs = Tensor([[1, 1, 1], [2, 2, 3], [3, 3, 3]])
+    rhs = Tensor([[1, 1, 1], [2, 2, 3], [3, 3, 3]])
+
+    assert has_same_hash_when_value_objects_are_equals(lhs, rhs)
+
+
+def test_that_tensors_are_not_equal_and_has_different_hash():
+    lhs = Tensor([[1, 1, 1], [2, 2, 3], [3, 3, 3]])
+    rhs = Tensor([[3, 3, 3], [2, 2, 3], [1, 1, 1]])
+
+    assert has_not_same_hash_when_value_objects_are_not_equals(lhs, rhs)
+
+
+def test_tensor_repr_and_str():
+    assert "Tensor([[1, 1, 1], [2, 2, 2], [3, 3, 3]])" == str(Tensor([[1, 1, 1], [2, 2, 2], [3, 3, 3]]))
+
 
 # ############################################################################
 # Ortensor
