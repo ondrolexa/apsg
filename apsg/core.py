@@ -298,7 +298,8 @@ class Vec3(np.ndarray):
     def H(self, other):
         """
         Return ``DefGrad`` rotational matrix H which rotate vector
-        `u` to vector `v`.
+        `u` to vector `v`. Axis of rotation is perpendicular to both
+        vectors `u` and `v`.
 
         Args:
             other (``Vec3``): other vector
@@ -886,6 +887,28 @@ class Pair(object):
             t.lvec = np.dot(F, t.lvec).view(Vec3)
             t.fvec = np.dot(t.fvec, np.linalg.inv(F)).view(Vec3)
         return t
+
+    def H(self, other):
+        """
+        Return ``DefGrad`` rotational matrix H which rotate ``Pair``
+        to other ``Pair``.
+
+        Args:
+            other (``Pair``): other pair
+
+        Returns:
+            ``Defgrad`` rotational matrix
+
+        Example:
+            >>> p1 = Pair(58, 36, 81, 34)
+            >>> p2 = Pair(217,42, 162, 27)
+            >>> p1.transform(p1.H(p2)) == p2
+            True
+
+        """
+        from apsg.tensors import DefGrad
+
+        return DefGrad(DefGrad.from_pair(other) * DefGrad.from_pair(self).I)
 
 
 class Fault(Pair):

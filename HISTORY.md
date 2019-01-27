@@ -1,13 +1,15 @@
 # Changes
 
 ## Master version
+* Pair H method to get mutual rotation implemented
+* velgrad method of DefGrad accepts steps kwarg to yield generator
 
-## 0.6.1 (12 Dec 2018)
+### 0.6.1 (12 Dec 2018)
 
 * Stereogrid always use Euclidean norms as weights
 * DefGrad properties e1, e2, e3 (natural principal strains) added
 * DefGrad properties eoct, goct (octahedral strains) added
-* DefrGrad from_ratios class method added
+* DefGrad from_ratios class method added
 * DefGrad properties k, d, K, D (strain symmetries and intesities) added
 * New class Ellipsoid added to work with ellipsoids
 * FabricPLot renamed to VollmerPlot for consistency
@@ -75,7 +77,7 @@
   fol_plot settings)
 * Group totvar property and dot and proj methods implemented
 * Fol and Lin dot method returns absolute value of dot product
-* Vec3 H method implemented
+* Vec3 H method to get mutual rotation implemented
 * StereoNet.contourf method draw contour lines as well by default. Option
   clines controls it.
 * centered bug fixed

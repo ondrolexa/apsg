@@ -27,11 +27,11 @@ class DefGrad(np.ndarray):
       >>> F = DefGrad(np.diag([2, 1, 0.5]))
     """
 
-    def __new__(cls, array):
+    def __new__(cls, array, name='F'):
         # casting to our class
         assert np.shape(array) == (3, 3), "DefGrad must be 3x3 2D array"
         obj = np.asarray(array).view(cls)
-        obj.name = "D"
+        obj.name = name
         return obj
 
     def __repr__(self):
@@ -42,11 +42,11 @@ class DefGrad(np.ndarray):
             3,
             3,
         ), "DefGrad could by multiplied with 3x3 2D array"
-        return np.dot(self, other)
+        return DefGrad(np.dot(self, other))
 
     def __pow__(self, n):
         # matrix power
-        return np.linalg.matrix_power(self, n)
+        return DefGrad(np.linalg.matrix_power(self, n))
 
     def __eq__(self, other):
         # equal
@@ -138,7 +138,7 @@ class DefGrad(np.ndarray):
         Returns the inverse tensor.
         """
 
-        return np.linalg.inv(self)
+        return DefGrad(np.linalg.inv(self))
 
     def rotate(self, vector, theta=0):
         """
@@ -294,11 +294,11 @@ class VelGrad(np.ndarray):
       >>> L = VelGrad(np.diag([0.1, 0, -0.1]))
     """
 
-    def __new__(cls, array):
+    def __new__(cls, array, name='L'):
         # casting to our class
         assert np.shape(array) == (3, 3), "VelGrad must be 3x3 2D array"
         obj = np.asarray(array).view(cls)
-        obj.name = "L"
+        obj.name = name
         return obj
 
     def __repr__(self):
@@ -306,7 +306,7 @@ class VelGrad(np.ndarray):
 
     def __pow__(self, n):
         # matrix power
-        return np.linalg.matrix_power(self, n)
+        return VelGrad(np.linalg.matrix_power(self, n))
 
     def __eq__(self, other):
         # equal
@@ -335,17 +335,20 @@ class VelGrad(np.ndarray):
         """
         return cls([[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]])
 
-    def defgrad(self, time=1):
+    def defgrad(self, time=1, steps=1):
         """
         Return ``DefGrad`` tensor accumulated after given time.
 
-        When time is iterable, return list of ``DefGrad`` tensors for each time
+        Keyword Args:
+            time (float): time of deformation. Default 1
+            steps (int): when bigger than 1, will return a generator of
+                         of ``DefGrad`` tensors for each time.
         """
         from scipy.linalg import expm
-        from collections import Iterable
 
-        if isinstance(time, Iterable):
-            return [DefGrad(expm(self * t)) for t in time]
+        if steps > 1:
+            for t in np.linspace(0, time, steps):
+                yield DefGrad(expm(self * t))
         else:
             return DefGrad(expm(self * time))
 
@@ -369,7 +372,7 @@ class VelGrad(np.ndarray):
         Return rate of deformation tensor
         """
 
-        return (self + self.T) / 2
+        return VelGrad((self + self.T) / 2)
 
     @property
     def spin(self):
@@ -377,7 +380,7 @@ class VelGrad(np.ndarray):
         Return spin tensor
         """
 
-        return (self - self.T) / 2
+        return VelGrad((self - self.T) / 2)
 
 
 class Stress(np.ndarray):
@@ -395,7 +398,7 @@ class Stress(np.ndarray):
       >>> S = Stress([[-8, 0, 0],[0, -5, 0],[0, 0, -1]])
     """
 
-    def __new__(cls, array):
+    def __new__(cls, array, name='S'):
         # casting to our class
 
         assert np.shape(array) == (3, 3), "Stress must be 3x3 2D array"
@@ -404,7 +407,7 @@ class Stress(np.ndarray):
         ), "Stress tensor must be symmetrical"
 
         obj = np.asarray(array).view(cls)
-        obj.name = "S"
+        obj.name = name
         vals, U = np.linalg.eigh(obj)
         ix = np.argsort(vals)[::-1]
         obj.eigenvals = vals[ix]
@@ -418,7 +421,7 @@ class Stress(np.ndarray):
     def __pow__(self, n):
         # matrix power
 
-        return np.linalg.matrix_power(self, n)
+        return Stress(np.linalg.matrix_power(self, n))
 
     def __eq__(self, other):
         # equal
@@ -488,7 +491,7 @@ class Stress(np.ndarray):
         A stress deviator tensor component
         """
 
-        return self - self.hydrostatic
+        return Stress(self - self.hydrostatic)
 
     @property
     def E1(self):
