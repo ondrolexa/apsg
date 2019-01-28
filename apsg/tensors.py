@@ -341,14 +341,13 @@ class VelGrad(np.ndarray):
 
         Keyword Args:
             time (float): time of deformation. Default 1
-            steps (int): when bigger than 1, will return a generator of
-                         of ``DefGrad`` tensors for each time.
+            steps (int): when bigger than 1, will return a list
+                         of ``DefGrad`` tensors for each timestep.
         """
         from scipy.linalg import expm
 
         if steps > 1:
-            for t in np.linspace(0, time, steps):
-                yield DefGrad(expm(self * t))
+            return [DefGrad(expm(self * t)) for t in np.linspace(0, time, steps)]
         else:
             return DefGrad(expm(self * time))
 

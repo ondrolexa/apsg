@@ -2,7 +2,8 @@
 
 ## Master version
 * Pair H method to get mutual rotation implemented
-* velgrad method of DefGrad accepts steps kwarg to yield generator
+* velgrad method of DefGrad accepts steps kwarg
+  to generate list of DefGrad tensors
 
 ### 0.6.1 (12 Dec 2018)
 
