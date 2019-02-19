@@ -278,6 +278,22 @@ class DefGrad(np.ndarray):
 
         return VelGrad(logm(self) / time)
 
+    @property
+    def C(self):
+        """
+        Return right Cauchy–Green deformation tensor or Green's deformation tensor
+        """
+
+        return Tensor(np.dot(self.T, self), name=self.name)
+
+    @property
+    def B(self):
+        """
+        Return left Cauchy–Green deformation tensor or Finger deformation tensor
+        """
+
+        return Tensor(np.dot(self, self.T), name=self.name)
+
 
 class VelGrad(np.ndarray):
     """
@@ -635,7 +651,7 @@ class Stress(np.ndarray):
 
 class Tensor(object):
     """
-    Tensor metaclass.
+    Tensor class.
 
     See the following methods and properties for additional operations.
 
@@ -656,9 +672,11 @@ class Tensor(object):
         self._evects = vv.T[ix]
 
     def __repr__(self):
-        return "{name}({values})".format(
-            name=self.__class__.__name__,
-            values=str(list(map(list, self._matrix))))
+        return (
+            "%s: %s Kind: %s\n" % (self.__class__.__name__, self.name, self.kind) +
+            "(E1:%.4g,E2:%.4g,E3:%.4g)\n" % (self.E1, self.E2, self.E3) +
+            str(self._matrix)
+        )
 
     def __str__(self):
         return repr(self)
@@ -683,6 +701,25 @@ class Tensor(object):
 
     def __hash__(self):
         return hash(tuple(map(tuple, self._matrix)) )
+
+    @classmethod
+    def from_comp(cls, xx=1, xy=0, xz=0, yy=1, yz=0, zz=1, **kwargs):
+        """
+        Return tensor. Default is identity tensor.
+
+        Note that tensor must be symmetrical.
+        """
+
+        return cls([[xx, xy, xz], [xy, yy, yz], [xz, yz, zz]], **kwargs)
+
+    @classmethod
+    def from_axes(cls, x=1, y=1, z=1, **kwargs):
+        """
+        Return diagonal tensor defined by principal axes.
+
+        """
+
+        return cls([[x*x, 0, 0], [0, y*y, 0], [0, 0, z*z]], **kwargs)
 
     @property
     def eigenvals(self):
@@ -766,29 +803,26 @@ class Tensor(object):
     @property
     def E1(self):
         """
-        Return maximum eigenvalue.
+        Return square root of maximum eigenvalue.
         """
 
-        # Python 2.7 compatible. In the future we can use `abc.abstractproperty` decorator.
-        return NotImplementedError
+        return np.sqrt(self._evals[0])
 
     @property
     def E2(self):
         """
-        Return middle eigenvalue.
+        Return square root of middle eigenvalue.
         """
 
-        # Python 2.7 compatible. In the future we can use `abc.abstractproperty` decorator.
-        return NotImplementedError
+        return np.sqrt(self._evals[1])
 
     @property
     def E3(self):
         """
-        Return minimum eigenvalue.
+        Return square root of minimum eigenvalue.
         """
 
-        # Python 2.7 compatible. In the future we can use `abc.abstractproperty` decorator.
-        return NotImplementedError
+        return np.sqrt(self._evals[2])
 
     @property
     def e1(self):
@@ -880,7 +914,7 @@ class Tensor(object):
         Natural octahedral unit shear (Nadai, 1963).
         """
 
-        return 2 * np.sqrt((self.e1 - self.e2)**2 + (self.e2 - self.e3)**2 + (self.e1 - self.e3)**2) / 3
+        return 2 * np.sqrt(self.e12**2 + self.e23**2 + self.e13**2) / 3
 
     @property
     def eoct(self):
@@ -897,6 +931,24 @@ class Tensor(object):
         """
 
         return (2*self.e2 - self.e1 -self.e3) / (self.e1 - self.e3) if (self.e1 - self.e3)>0 else 0
+
+    @property
+    def I(self):
+        """
+        Return inverse tensor.
+        """
+
+        return Tensor(np.linalg.inv(self._matrix), name=self.name)
+
+    def apply(self, x1, x2=None):
+        """
+        Apply Deftensor on vector(s).
+        """
+
+        if x2 is None:
+            return np.dot(x1, np.dot(self._matrix, x1))
+        else:
+            return np.dot(x1, np.dot(self._matrix, x2))
 
 
 class Ortensor(Tensor):
@@ -937,25 +989,6 @@ class Ortensor(Tensor):
             matrix = np.dot(np.array(matrix).T, np.array(matrix)) / len(matrix)
         super(Ortensor, self).__init__(matrix, **kwargs)
 
-    @classmethod
-    def from_comp(cls, xx=0, xy=0, xz=0, yy=0, yz=0, zz=0, **kwargs):
-        """
-        Return ``Ortensor`` tensor. Default is identity tensor.
-
-        Note that ``Ortensor`` tensor must be symmetrical.
-
-        Example:
-          >>> ot = Ortensor.from_comp(xx=5, yy=2, zz=10, xy=1)
-          >>> ot
-          Ortensor:  Kind: SSL
-          (E1:10,E2:5.303,E3:1.697)
-          [[ 5  1  0]
-           [ 1  2  0]
-           [ 0  0 10]]
-
-        """
-
-        return cls([[xx, xy, xz], [xy, yy, yz], [xz, yz, zz]], **kwargs)
 
     @classmethod
     def from_group(cls, g, **kwargs):
@@ -982,13 +1015,6 @@ class Ortensor(Tensor):
         if not 'name' in kwargs:
             kwargs['name'] = g.name
         return cls(np.dot(np.array(g).T, np.array(g)) / len(g), **kwargs)
-
-    def __repr__(self):
-        return (
-            "Ortensor: %s Kind: %s\n" % (self.name, self.kind) +
-            "(E1:%.4g,E2:%.4g,E3:%.4g)\n" % self.eigenvals +
-            str(self._matrix)
-        )
 
     @property
     def E1(self):
@@ -1106,83 +1132,16 @@ class Ellipsoid(Tensor):
 
     """
 
-    def __init__(self, matrix, **kwargs):
-        if isinstance(matrix, DefGrad):
-            matrix = matrix * matrix.T
-        super(Ellipsoid, self).__init__(matrix, **kwargs)
-
     @classmethod
     def from_defgrad(cls, F, **kwargs):
         """
-        Return Finger (Left Cauchy-Green) deformation tensor resulting
-        from deformation F
+        Return ``Ellipsoid`` from ``Defgrad``.
 
-        Args:
-          F: ``DefGrad`` or any 3x3 array_like object
-
-        Example:
-          >>> F = DefGrad.from_comp(xx=2, xz=1, zz=0.5)
-          >>> E = Ellipsoid.from_defgrad(F)
-          >>> E
-          Ortensor: D Kind: LS
-          (E1:0.9825,E2:0.01039,E3:0.007101)
-          [[ 0.19780807 -0.13566589 -0.35878837]
-           [-0.13566589  0.10492993  0.25970594]
-           [-0.35878837  0.25970594  0.697262  ]]
-
-        """
-        if not 'name' in kwargs:
-            kwargs['name'] = F.name
-        return cls(np.dot(np.array(F), np.array(F).T), **kwargs)
-
-    @classmethod
-    def from_axes(cls, x=1, y=1, z=1, **kwargs):
-        """
-        Return ``Ellipsoid`` tensor defined by principal axes.
-
-        Example:
-          >>> E = Ellipsoid.from_axes(x=4, y=0.5, z=0.5)
-          >>> E
-          Ellipsoid:  Kind: L
-          (E1:4,E2:0.5,E3:0.5)
-          [[16.    0.    0.  ]
-           [ 0.    0.25  0.  ]
-           [ 0.    0.    0.25]]
+        It is ellipsoid resulting from deformation of sphere.
 
         """
 
-        return cls([[x*x, 0, 0], [0, y*y, 0], [0, 0, z*z]], **kwargs)
-
-    def __repr__(self):
-        return (
-            "Ellipsoid: %s Kind: %s\n" % (self.name, self.kind) +
-            "(E1:%.4g,E2:%.4g,E3:%.4g)\n" % (self.E1, self.E2, self.E3) +
-            str(self._matrix)
-        )
-
-    @property
-    def E1(self):
-        """
-        Return maximum eigenvalue.
-        """
-
-        return np.sqrt(self._evals[0])
-
-    @property
-    def E2(self):
-        """
-        Return middle eigenvalue.
-        """
-
-        return np.sqrt(self._evals[1])
-
-    @property
-    def E3(self):
-        """
-        Return minimum eigenvalue.
-        """
-
-        return np.sqrt(self._evals[2])
+        return cls(np.dot(F, np.transpose(F)), **kwargs)
 
     def transform(self, F):
         """
@@ -1190,4 +1149,4 @@ class Ellipsoid(Tensor):
         """
 
         t_matrix = np.dot(F, np.dot(self._matrix, np.transpose(F)))
-        return Ellipsoid(np.asarray(t_matrix), name=self.name)
+        return Ellipsoid(t_matrix, name=self.name)

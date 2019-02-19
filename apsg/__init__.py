@@ -17,7 +17,7 @@ from .core import (
 )
 
 from .db import SDB
-from .tensors import DefGrad, VelGrad, Stress, Ortensor, Ellipsoid
+from .tensors import DefGrad, VelGrad, Stress, Tensor, Ortensor, Ellipsoid
 from .helpers import sind, cosd, tand, acosd, asind, atand, atan2d
 from .plotting import StereoNet, VollmerPlot, RamsayPlot, FlinnPlot, HsuPlot
 
@@ -39,6 +39,7 @@ __all__ = (
     "DefGrad",
     "VelGrad",
     "Stress",
+    "Tensor",
     "Ortensor",
     "Ellipsoid",
     "sind",

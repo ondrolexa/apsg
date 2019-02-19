@@ -4,6 +4,7 @@
 * Pair H method to get mutual rotation implemented
 * velgrad method of DefGrad accepts steps kwarg
   to generate list of DefGrad tensors
+* Added Tensor class to work with deformation tensors
 
 ### 0.6.1 (12 Dec 2018)
 
