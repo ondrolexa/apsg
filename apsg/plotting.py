@@ -536,7 +536,9 @@ class StereoNet(object):
                 args = (levels,)
         cs = self.fig.axes[self.active].tricontourf(d.triang, d.values, *args, **kwargs)
         if clines:
-            self.fig.axes[self.active].tricontour(d.triang, d.values, *args, colors="k")
+            kwargs['cmap'] = None
+            kwargs['colors'] = "k"
+            self.fig.axes[self.active].tricontour(d.triang, d.values, *args, **kwargs)
         if legend:
             if self.ncols > 1:
                 ab = self.fig.axes[self.active].get_position().bounds
