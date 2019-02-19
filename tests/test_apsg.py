@@ -20,8 +20,7 @@ import numpy as np
 
 
 from apsg import Vec3, Fol, Lin, Fault, Pair, Group, FaultSet, settings
-from apsg import Ortensor, DefGrad, VelGrad, Stress
-from apsg.tensors import Tensor
+from apsg import Ortensor, DefGrad, VelGrad, Stress, Tensor
 
 
 # ############################################################################
@@ -616,7 +615,7 @@ def test_that_tensors_are_not_equal_and_has_different_hash():
 
 
 def test_tensor_repr_and_str():
-    assert "Tensor([[1, 1, 1], [2, 2, 2], [3, 3, 3]])" == str(Tensor([[1, 1, 1], [2, 2, 2], [3, 3, 3]]))
+    assert "Tensor: T Kind: L\n(E1:2,E2:1,E3:1)\n[[2 1 1]\n [1 2 1]\n [1 1 2]]" == str(Tensor([[2, 1, 1], [1, 2, 1], [1,1, 2]], name='T'))
 
 
 # ############################################################################
@@ -639,6 +638,20 @@ def test_orthogonality_rotation_matrix():
     R = DefGrad.from_axis(lin, a)
     assert np.allclose(R * R.T, np.eye(3))
 
+def test_defgrad_derivation():
+    F = DefGrad.from_comp(xx=2, zz=0.5)
+    L = VelGrad.from_comp(xx=np.log(2), zz=-np.log(2))
+    F.velgrad() == L
+
+# ############################################################################
+# VelGrad
+# ############################################################################
+
+
+def test_velgrad_integration():
+    F = DefGrad.from_comp(xx=2, zz=0.5)
+    L = VelGrad.from_comp(xx=np.log(2), zz=-np.log(2))
+    L.defgrad() == F
 
 # ############################################################################
 # Stress
