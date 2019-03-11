@@ -1990,6 +1990,13 @@ class PairSet(list):
         """Return array of misfits"""
         return np.array([f.misfit for f in self])
 
+    @property
+    def rax(self):
+        """
+        Return vectors perpendicular to both ``Fol`` and ``Lin`` of PairSet as Group of Vec3.
+        """
+        return Group([e.fvec ** e.lvec for e in self], name=self.name)
+
 
 class FaultSet(PairSet):
     """

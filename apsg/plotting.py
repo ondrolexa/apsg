@@ -290,7 +290,7 @@ class StereoNet(object):
     def arrow(self, pos_lin, dir_lin=None, sense=1, **kwargs):
         """Draw arrow at given position in given direction"""
         animate = kwargs.pop("animate", False)
-        x, y, u, v = self._arrow(pos_lin, dir_lin, sense=1)
+        x, y, u, v = self._arrow(pos_lin, dir_lin, sense=sense)
         a = self.fig.axes[self.active].quiver(
             x, y, u, v, width=2, headwidth=5, zorder=6, pivot="mid", units="dots"
         )
