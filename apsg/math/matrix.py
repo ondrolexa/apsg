@@ -4,6 +4,20 @@
 import operator as op
 
 
+"""
+A matrix algebra types and functions.
+
+== Overview
+
+- ``Matrix``
+
+- ``Matrix2``
+
+- ``Matrix3``
+
+"""
+
+
 __all__ = ("Matrix2", "Matrix3")
 
 
@@ -16,13 +30,26 @@ class NonConformableMatrix(Exception):
 
 class Matrix(object):
 
-    __size__ = (0, 0) # (uint, uint)
+    __shape__ = (0, 0) # (uint, uint)
 
     def __init__(self, *elements):
         """
         Take sequence of elements.
         """
         self._elements = elements
+
+    def __getitem__(self, indexes):
+        """
+        >>> m = Matrix(11, 12, 21, 22)
+        >>> m[0, 0], m[0, 1], m[1, 0], m[1, 1]
+        (11, 12, 21, 22)
+
+        """
+        if len(indexes) != len(self.__shape__):
+            raise Exception("Number of indexes must match the shape.")
+
+        i, j = indexes
+        return self._elements[i * self.__shape__[1] + j]
 
     @classmethod
     def from_rows(cls, row):
@@ -38,15 +65,15 @@ class Matrix(object):
 
     @property
     def rows(self):
-        return [self._elements]
+        return [*self._elements]
 
     @property
     def row_count(self): # () -> int
-        return self.__class__.__size__[0]
+        return self.__class__.__shape__[0]
 
     @property
     def column_count(self): # () -> int
-        return self.__class__.__size__[1]
+        return self.__class__.__shape__[1]
 
     def __array__(self):
         return NotImplemented
@@ -101,7 +128,7 @@ class Matrix2(Matrix):
     m_{22} | m_{22}
 
     """
-    __size__ = (2, 2)
+    __shape__ = (2, 2)
 
     def __init__(self, *elements):
         super(Matrix2, self).__init__(*elements)
@@ -119,7 +146,7 @@ class Matrix3(Matrix):
 
     """
 
-    __size__ = (3, 3)
+    __shape__ = (3, 3)
 
     def __init__(self, *elements):
         super(Matrix3, self).__init__(*elements)
@@ -127,7 +154,7 @@ class Matrix3(Matrix):
 
 if __name__ == '__main__':
 
-    m1 = Matrix2(1, 0, 0, 1)
+    m1 = Matrix2(1, 2, 3, 4)
     m2 = Matrix2(0, 1, 1, 0)
 
     print(" __add__")
@@ -140,7 +167,8 @@ if __name__ == '__main__':
 
     print("__matmul__")
     print(m1 @ m2)
-    print(m1 % m2)
+
+    print( m1[0, 0], m1[0, 1], m1[1, 0], m1[1, 1])
 
     # v = Vector2(0, 1)
     # print(

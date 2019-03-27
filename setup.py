@@ -1,55 +1,79 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
+import io
+import os
+import re
 import sys
-from os import path
+
 from setuptools import setup, find_packages
 
-this_directory = path.abspath(path.dirname(__file__))
 
-with open(path.join(this_directory, 'README.md')) as f:
-    readme = f.read()
+HERE = os.path.abspath(os.path.dirname(__file__))
 
-with open(path.join(this_directory, 'HISTORY.md')) as f:
-    history = f.read()
-
-requirements = [
-    'numpy',
-    'matplotlib',
-    'scipy'
-]
 
 # Recipe from https://pypi.org/project/pytest-runner/
-needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
-pytest_runner = ['pytest-runner'] if needs_pytest else []
+needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
+pytest_runner = ["pytest-runner"] if needs_pytest else []
+
+
+def read(*names, **kwargs):
+    """
+    Read the files with a given encoding.
+    """
+    return io.open(os.path.join(
+        os.path.dirname(__file__), *names), encoding=kwargs.get("encoding", "utf8")
+    ).read()
+
+
+# Extract an author, email and version.
+package = {}
+with io.open(os.path.join(HERE, "apsg", "__init__.py"), "rb") as f:
+    file_content = f.read().decode('utf-8')
+    package["author"] = re.search(r"^__author__ = ['\"]([^'\"]*)['\"]", file_content, re.M).group(1)
+    package["version"] = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", file_content, re.M).group(1)
+    package["email"] = re.search(r"^__email__ = ['\"]([^'\"]*)['\"]", file_content, re.M).group(1)
+
 
 setup(
-    name='apsg',
-    version='0.6.1',
-    description='APSG - structural geology module for Python',
-    long_description=readme + '\n\n' + history,
-    long_description_content_type='text/markdown',
-    author='Ondrej Lexa',
-    author_email='lexa.ondrej@gmail.com',
-    url='https://github.com/ondrolexa/apsg',
+    name="apsg",
+    version=package["version"],
+    description="Structural geology package for Python",
+    long_description=read("README.md") + "\n\n" + read("HISTORY.md"),
+    long_description_content_type="text/markdown",
+    author=package["author"],
+    author_email=package["email"],
+    url="https://github.com/ondrolexa/apsg",
     packages=find_packages(),
-    install_requires=requirements,
-    entry_points="""
-    [console_scripts]
-    iapsg=apsg.shell:main
-    """,
+    install_requires=[
+        "matplotlib",
+        "numpy>=1.14",
+        "scipy>=1.0"
+    ],
+    extras_require={
+        "testing": ["pytest"],
+    },
+    setup_requires=pytest_runner,
+    entry_points={
+        "console_scripts": [
+            "iapsg = apsg.__main__:main"
+        ]
+    },
     license="MIT",
     zip_safe=False,
-    keywords='apsg',
+    keywords="apsg",
     classifiers=[
-        'Development Status :: 4 - Beta',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: MIT License',
-        'Natural Language :: English',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7"
     ],
-    test_suite='tests',
-    setup_requires=pytest_runner,
-    tests_require=['pytest']
+    test_suite="tests",
 )

@@ -7,8 +7,8 @@ Runs the interactive shell.
 """
 
 
-import pkg_resources
 import code
+import pkg_resources
 
 try:
     import readline  # NOQA
@@ -17,6 +17,7 @@ except ImportError:
 
 from pylab import *  # NOQA
 from apsg import *  # NOQA
+
 
 def main():
     banner = "+----------------------------------------------------------+\n"
@@ -28,6 +29,7 @@ def main():
     vars.update(locals())
     shell = code.InteractiveConsole(vars)
     shell.interact(banner=banner)
+
 
 if __name__ == "__main__":
     main()

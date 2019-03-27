@@ -1,12 +1,26 @@
 # -*- coding: utf-8 -*-
 
 
+"""
+A vector algebra types and functions.
+
+== Overview
+
+- ``Vector``
+
+- ``Vector2``
+
+- ``Vector3``
+
+"""
+
+
 from apsg.math.matrix import Matrix
 
 
 class Vector(Matrix):
     """
-    Vector as N x 1 Matrix.
+    Vector is represented as N x 1 matrix.
     """
 
     __size__ = (0, 1)
@@ -68,3 +82,4 @@ if __name__ == '__main__':
 
     print(v1 % v2)
 
+    v1 = Vector3(1, 2, 3)
