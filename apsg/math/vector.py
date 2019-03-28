@@ -41,7 +41,9 @@ class Vector2(Vector):
         >>> u = Vector2(1, 0)
         >>> v = Vector2(0, 1)
         >>> u + v
-        Vector2([(1,), (1,)]) # FIXME We want this ``Vector2(1, 1)``!
+        Vector2([(1,), (1,)])
+
+        # FIXME We want this ``Vector2(1, 1)``!
 
     """
 

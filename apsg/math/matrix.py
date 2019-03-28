@@ -25,7 +25,6 @@ A matrix algebra types and functions.
 __all__ = ("Matrix2", "Matrix3")
 
 
-
 class NonConformableMatrix(Exception):
     """
     Raises when matrices are not conformable for a certain operation.
@@ -196,7 +195,7 @@ class Matrix(object):
             other - The scalar or matrix.
         """
         # FIXME if the other is vector (matrix) the result is scalar product.
-        return self.__class__(*map(lambda x: scalar * x, self._elements))
+        return self.__class__(*map(lambda x: other * x, self._elements))
 
     def __rmul__(self, scalar):
         # type: (Scalar) -> Matrix
@@ -244,6 +243,10 @@ class Matrix(object):
     def from_columns(cls, columns):
         ...
 
+    @classmethod
+    def uniform(cls, value):
+        ...
+
     # Properties
 
     @property
@@ -263,6 +266,11 @@ class Matrix(object):
     def dimension(self):
         return self.row_count * self.column_count
 
+    # Methods
+
+    def transpose(self):
+        ...
+
 
 class SquareMatrix(Matrix):
     """
@@ -278,17 +286,28 @@ class SquareMatrix(Matrix):
         Check that ``__shape__`` contains the same values e.g (2, 2).
         """
         if (cls.__shape__[0] != cls.__shape__[1]):
-            raise AssertionError("The ``__shape__`` must contain the same values e.g (2, 2).")
+            raise AssertionError(
+                "The ``__shape__`` must contain the same values e.g (2, 2).")
 
         return super(SquareMatrix, cls).__new__(cls, *args, **kwargs)
 
     @classmethod
-    def uniform(self, values):
+    def indentity(cls):
+        return cls.uniform(1.0)
+
+    @classmethod
+    def diagonal(cls):
+        ...
+
+    @classmethod
+    def symmetric(cls):
+        ...
 
 
 class Matrix2(SquareMatrix):
     """
     Represents a square matrix 2 × 2 of float values.
+
     The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
     e.g `m_{12}` represents the element at first row and second column.
 
@@ -349,6 +368,7 @@ class Matrix2(SquareMatrix):
 class Matrix3(SquareMatrix):
     """
     Represents a square matrix 3 × 3 of float values.
+
     The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
     e.g `m_{12}` represents the element at first row and second column.
 
@@ -375,4 +395,3 @@ if __name__ == '__main__':
         __shape__ = (2, 2)
         # Try change to (1, 2) or (0, 1) or (0, 0).
     m = DiagonalMatrix(1, 2, 3, 4)
-
