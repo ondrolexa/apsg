@@ -2,6 +2,7 @@
 
 
 import operator as op
+import itertools as it
 
 
 """
@@ -40,9 +41,15 @@ class Matrix(object):
 
     def __getitem__(self, indexes):
         """
-        >>> m = Matrix(11, 12, 21, 22)
-        >>> m[0, 0], m[0, 1], m[1, 0], m[1, 1]
-        (11, 12, 21, 22)
+        Gets the element with a given indexes.
+
+        Examples:
+
+            >>> Matrix.__shape__ = (2, 2)
+
+            >>> m = Matrix(11, 12, 21, 22)
+            >>> m[0, 0], m[0, 1], m[1, 0], m[1, 1]
+            (11, 12, 21, 22)
 
         """
         if len(indexes) != len(self.__shape__):
@@ -50,6 +57,8 @@ class Matrix(object):
 
         i, j = indexes
         return self._elements[i * self.__shape__[1] + j]
+
+    # Factory methods
 
     @classmethod
     def from_rows(cls, row):
@@ -63,9 +72,13 @@ class Matrix(object):
     def from_columns(cls, columns):
         ...
 
+    # Properties
+
     @property
     def rows(self):
-        return [*self._elements]
+        # Use the ``itertools.grouper``?
+        group = lambda t, n: zip(*[t[i::n] for i in range(n)])
+        return list( group(self._elements, self.__shape__[1]) )
 
     @property
     def row_count(self): # () -> int
@@ -79,7 +92,7 @@ class Matrix(object):
         return NotImplemented
 
     def __repr__(self): # () -> str
-        return self.__class__.__name__ + "(" + str(self._elements) + ")"
+        return self.__class__.__name__ + "(" + str(self.rows) + ")"
 
     def __str__(self): # () -> str
         return repr(self)
@@ -96,7 +109,8 @@ class Matrix(object):
     def __matmul__(self, other): # (Matrix) -> Matrix
         row_count = self.row_count
         column_count = self.column_count
-        print(other)
+        return NotImplemented
+
 
     def __add__(self, other): # (Matrix) -> Matrix
         """
@@ -127,6 +141,47 @@ class Matrix2(Matrix):
     m_{11} | m_{12}
     m_{22} | m_{22}
 
+    Examples:
+        >>> m = Matrix2(11, 12, 21, 22)
+        >>> m[0, 0], m[0, 1], m[1, 0], m[1, 1]
+        (11, 12, 21, 22)
+
+        >>> m1 = Matrix2(1, 2, 3, 4)
+        >>> m2 = Matrix2(1, 2, 3, 4)
+
+        Operators
+
+        >>> m1 = Matrix2(1, 2, 3, 4)
+        >>> m1.rows
+        [(1, 2), (3, 4)]
+
+        >>> m2 = Matrix2(4, 3, 2, 1)
+        >>> m2.rows
+        [(4, 3), (2, 1)]
+
+
+        ``+`` Matrix addition
+
+        >>> m1 + m2
+        Matrix2([(5, 5), (5, 5)])
+
+        >>> m2 + m1
+        Matrix2([(5, 5), (5, 5)])
+
+
+        ``*`` Matrix, scalar multiplication
+
+        >>> m1 * 2
+        Matrix2([(2, 4), (6, 8)])
+
+        >>> 2 * m1
+        Matrix2([(2, 4), (6, 8)])
+
+
+        ``@`` Matrix, matrix multiplication
+        # >>> m1 @ m2
+        # Matrix2([(7, 10), (15, 14)])
+
     """
     __shape__ = (2, 2)
 
@@ -153,23 +208,7 @@ class Matrix3(Matrix):
 
 
 if __name__ == '__main__':
-
-    m1 = Matrix2(1, 2, 3, 4)
-    m2 = Matrix2(0, 1, 1, 0)
-
-    print(" __add__")
-    print(m1 + m2)
-    print(m2 + m1)
-
-    print("__mul__")
-    print(m1 * 2)
-    print(2 * m1)
-
-    print("__matmul__")
-    print(m1 @ m2)
-
-    print( m1[0, 0], m1[0, 1], m1[1, 0], m1[1, 1])
-
+    pass
     # v = Vector2(0, 1)
     # print(
     #     m.row_count,
