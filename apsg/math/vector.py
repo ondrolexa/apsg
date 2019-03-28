@@ -21,10 +21,10 @@ from apsg.math.matrix import Matrix
 
 class Vector(Matrix):
     """
-    Vector is represented as N x 1 matrix.s
+    A vector base class represented as N x 1 matrix.
     """
 
-    __size__ = (0, 1)
+    __slots__ = ("_elements",)
 
     def __init__(self, *elements):
         super(Vector, self).__init__(*elements)
@@ -49,6 +49,8 @@ class Vector2(Vector):
 
     __shape__ = (2, 1)
 
+    __slots__ = ("_elements",)
+
     def __init__(self, *elements):
         if len(elements) > 2:
             raise Exception("Wrong number of elements")
@@ -67,6 +69,8 @@ class Vector2(Vector):
 class Vector3(Vector):
 
     __shape__ = (2, 1)
+
+    __slots__ = ("_elements",)
 
     def __init__(self, *elements):
         if len(elements) > 3:

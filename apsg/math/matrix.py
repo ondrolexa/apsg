@@ -3,7 +3,6 @@
 
 import typing
 import operator
-import itertools
 
 from apsg.math.scalar import Scalar
 
@@ -67,7 +66,7 @@ class Matrix(object):
 
     __shape__ = (0, 0) # (uint, uint)
 
-    __slots__ = ("_elements")
+    __slots__ = ("_elements",)
 
     # Magic methods
 
@@ -277,7 +276,7 @@ class SquareMatrix(Matrix):
     Represents a square matrix M × N of float values.
     """
 
-    __slots__ = ("_elements") # Don't forget define this again in each subclass!
+    __slots__ = ("_elements",) # Don't forget define this again in each subclass!
 
     def __new__(cls, *args, **kwargs):
         """
@@ -359,7 +358,7 @@ class Matrix2(SquareMatrix):
 
     __shape__ = (2, 2)
 
-    __slots__ = ("_elements") # Don't forget define this again in each subclass!
+    __slots__ = ("_elements",) # Don't forget define this again in each subclass!
 
     def __init__(self, *elements):
         super(Matrix2, self).__init__(*elements)
@@ -380,7 +379,7 @@ class Matrix3(SquareMatrix):
 
     __shape__ = (3, 3)
 
-    __slots__ = ("_elements") # Don't forget define this again in each subclass!
+    __slots__ = ("_elements",) # Don't forget define this again in each subclass!
 
     def __init__(self, *elements):
         super(Matrix3, self).__init__(*elements)
