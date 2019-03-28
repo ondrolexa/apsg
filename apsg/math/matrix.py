@@ -8,7 +8,7 @@ import itertools as it
 """
 A matrix algebra types and functions.
 
-== Overview
+== Contains
 
 - ``Matrix``
 
@@ -32,25 +32,32 @@ class NonConformableMatrix(Exception):
 
 class Matrix(object):
     """
-    Represents a square matrix M×N of float values.
+    Represents a square matrix M × N of float values.
     The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
     e.g `m_{12}` represents the element at first row and second column.
 
-    How to derive from this class.
+    Examples:
 
-    >>> class Vector(Matrix):  __shape__ = (2, 1)
+        >>> from apsg.math.matrix import Matrix
 
-    >>> v = Vector(1, 2)
-    >>> len(v)
-    2
+        How to properly derive from this class? At least you have to define
+        the ``__shape__`` class attribute with non zero values e.g:
 
-    See the ``vector`` module for more details.
+        >>> class Matrix2(Matrix): __shape__ = (2, 2)
+
+        For more details see other classes in this or ``apsg.math.vector`` module.
+
+        >>> m = Matrix2(1, -2, 3, -4)
+        >>> -m
+        Matrix2([(-1, 2), (-3, 4)])
 
     """
 
     __shape__ = (0, 0) # (uint, uint)
 
     __slots__ = ("_elements") # Don't forget define this again in each subclass!
+
+    # Magic methods
 
     def __new__(cls, *args, **kwargs):
         """
@@ -113,28 +120,17 @@ class Matrix(object):
             >>> len(m)
             2
         """
-        return self.__class__.__shape__[0]
+        return self.__shape__[0] # * self.__shape__[1] # FIXME: Return dimension not number of rows
 
-    # Factory methods
-
-    @classmethod
-    def from_rows(cls, row):
-        """
-        [[1, 0], [0, 1]]
-          row1    row2
-        """
-        ...
-
-    @classmethod
-    def from_columns(cls, columns):
-        ...
-
-    # Magic methods
+    def __neg__(self):
+        return self.__class__(*map(op.neg, self._elements))
 
     def __array__(self):
         """
         Get the instance as ``numpy.array``.
         """
+        # return np.array([*self._elements], dtype=dtype) if dtype \
+        #     else np.array([*self._elements])
         return NotImplemented
 
     def __repr__(self):
@@ -147,15 +143,24 @@ class Matrix(object):
 
     def __eq__(self, other):
         # type: (Matrix) -> bool
+        """
+        Return `True` when the components are equal otherwise `False`.
+        """
+        # isinstance(other, self.__class__) # ???
         return self._elements == other # FIXME
 
     def __ne__(self, other):
         # type: (Matrix) -> bool
+        """
+        Return `True` when the components are not equal otherwise `False`.
+
+        This have to be implemented for Python 2 compatibility.
+        """
         return not (self == other)
 
     def __hash__(self):
         # type: () -> int
-        return hash((self._elements), self.__class__.__name___)
+        return hash((self._elements, self.__class__.__name___))
 
     # Operators
 
@@ -172,6 +177,13 @@ class Matrix(object):
         column_count = self.column_count
         return NotImplemented
 
+    def __mul__(self, scalar):
+        # type: (float) -> Matrix
+        """
+        Calculate left scalar-matrix multiplication.
+        """
+        return self.__class__(*map(lambda x: scalar * x, self._elements))
+
     def __add__(self, other):
         # type: (Matrix) -> Matrix
         """
@@ -184,17 +196,24 @@ class Matrix(object):
             raise NonConformableMatrix()
         return self.__class__( *[a + b for a, b in zip(self._elements, other._elements)] )
 
-    def __mul__(self, scalar):
-        # type: (float) -> Matrix
-        """
-        Calculate left scalar-matrix multiplication.
-        """
-        return self.__class__(*map(lambda x: scalar * x, self._elements))
-
     def __rmul__(self, scalar):
         # type: (float) -> Matrix
         """Calculate right scalar-matrix multiplication."""
         return self * scalar
+
+    # Factory methods
+
+    @classmethod
+    def from_rows(cls, row):
+        """
+        [[1, 0], [0, 1]]
+          row1    row2
+        """
+        ...
+
+    @classmethod
+    def from_columns(cls, columns):
+        ...
 
     # Properties
 
