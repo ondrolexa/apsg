@@ -56,12 +56,27 @@ class Vector3(Vector):
 
         super(Vector3, self).__init__(*elements)
 
-    def __mod__(self, other):
+    def __pow__(self, other): # (Vector3) -> Vector3
+        """
+        Calculate the vector product.
+
+        Returns:
+            The vector product of ``self`` and ``other`` vector.
+        """
         return self.__class__(
             self.y * other.z - self.z * other.y,
             self.z * other.x - self.x * other.z,
             self.x * other.y - self.y * other.x
         )
+
+    def cross(self, other): # (Vector3) -> Vector3
+        """
+         Calculate the vector product.
+
+        Returns:
+            The vector product of ``self`` and ``other`` vector.
+        """
+        return self ** other
 
     @property
     def x(self):

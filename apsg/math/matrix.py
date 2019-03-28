@@ -24,24 +24,55 @@ __all__ = ("Matrix2", "Matrix3")
 
 class NonConformableMatrix(Exception):
     """
-    Raises when matices are not conformable for a certain operation, see
-    `https://en.wikipedia.org/wiki/Conformable_matrix`.
+    Raises when matrices are not conformable for a certain operation.
+
+    For more information see `https://en.wikipedia.org/wiki/Conformable_matrix`.
     """
 
 
 class Matrix(object):
+    """
+    Represents a square matrix M×N of float values.
+    The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
+    e.g `m_{12}` represents the element at first row and second column.
+
+    How to derive from this class.
+
+    >>> class Vector(Matrix):  __shape__ = (2, 1)
+
+    >>> v = Vector(1, 2)
+    >>> len(v)
+    2
+
+    See the ``vector`` module for more details.
+
+    """
 
     __shape__ = (0, 0) # (uint, uint)
 
-    def __init__(self, *elements):
+    def __new__(cls, *args, **kwargs):
+        """
+        Create a new object.
+
+        Raises:
+            The ``AssertionError`` when some component of the ``__shape__``
+            class attribute has zero value.
+        """
+        try:
+            assert cls.__shape__[0] and cls.__shape__[1]
+        except:
+            raise AssertionError("Please define non zero `__shape__` values.")
+        return super(Matrix, cls).__new__(cls)
+
+    def __init__(self, *elements):  # (floats) -> Matrix
         """
         Take sequence of elements.
         """
         self._elements = elements
 
-    def __getitem__(self, indexes):
+    def __getitem__(self, indexes): # (tuple) -> float
         """
-        Gets the element with a given indexes.
+        Get the element with a given indexes.
 
         Examples:
 
@@ -58,6 +89,25 @@ class Matrix(object):
         i, j = indexes
         return self._elements[i * self.__shape__[1] + j]
 
+    def __len__(self): # () -> int
+        """
+        Get the number of rows.
+
+        Note:
+            For the ``Vector`` class it returns the number of items.
+            It is consistent with the idea that the column vector is represented as M × 1 matrix.
+
+        Returns:
+            The number of rows.
+
+        Examples:
+            >>> Matrix.__shape__ = (2, 2)
+            >>> m = Matrix(1, 2, 3, 4)
+            >>> len(m)
+            2
+        """
+        return self.__class__.__shape__[0]
+
     # Factory methods
 
     @classmethod
@@ -72,6 +122,73 @@ class Matrix(object):
     def from_columns(cls, columns):
         ...
 
+    # Magic methods
+
+    def __array__(self):
+        """
+        Get the instance as ``numpy.array``.
+        """
+        return NotImplemented
+
+    def __repr__(self):
+        # type: () -> str
+        return self.__class__.__name__ + "(" + str(self.rows) + ")"
+
+    def __str__(self):
+        # type: () -> str
+        return repr(self)
+
+    def __eq__(self, other):
+        # type: (Matrix) -> bool
+        return self._elements == other # FIXME
+
+    def __ne__(self, other):
+        # type: (Matrix) -> bool
+        return not (self == other)
+
+    def __hash__(self):
+        # type: () -> int
+        return hash((self._elements), self.__class__.__name___)
+
+    # Operators
+
+    def __matmul__(self, other):
+        # type: (Matrix) -> Matrix
+        """
+        Calculate matrix multiplication.
+
+        Raises:
+            An exception if ``other`` matrix is not conformable.
+        """
+
+        row_count = self.row_count
+        column_count = self.column_count
+        return NotImplemented
+
+    def __add__(self, other):
+        # type: (Matrix) -> Matrix
+        """
+        Calculate matrix addition.
+
+        Raises:
+            An exception if ``other`` matrix is not conformable.
+        """
+        if self.row_count != other.row_count or self.column_count != other.column_count:
+            raise NonConformableMatrix()
+        return self.__class__( *[a + b for a, b in zip(self._elements, other._elements)] )
+
+    def __mul__(self, scalar):
+        # type: (float) -> Matrix
+        """
+        Calculate left scalar-matrix multiplication.
+        """
+        return self.__class__(*map(lambda x: scalar * x, self._elements))
+
+    def __rmul__(self, scalar):
+        # type: (float) -> Matrix
+        """Calculate right scalar-matrix multiplication."""
+        return self * scalar
+
     # Properties
 
     @property
@@ -82,59 +199,16 @@ class Matrix(object):
 
     @property
     def row_count(self): # () -> int
-        return self.__class__.__shape__[0]
+        return len(self)
 
     @property
     def column_count(self): # () -> int
         return self.__class__.__shape__[1]
 
-    def __array__(self):
-        return NotImplemented
-
-    def __repr__(self): # () -> str
-        return self.__class__.__name__ + "(" + str(self.rows) + ")"
-
-    def __str__(self): # () -> str
-        return repr(self)
-
-    def __eq__(self, other): # (Matrix) -> bool
-        return self._elements == other # FIXME
-
-    def __ne__(self, other): # (Matrix) -> bool
-        return not (self == other)
-
-    def __hash__(self): # () -> int
-        return hash((self._elements), self.__class__.__name___)
-
-    def __matmul__(self, other): # (Matrix) -> Matrix
-        row_count = self.row_count
-        column_count = self.column_count
-        return NotImplemented
-
-
-    def __add__(self, other): # (Matrix) -> Matrix
-        """
-        Raises:
-            An exception if ``other`` matrix is not conformable.
-        """
-        if self.row_count != other.row_count or self.column_count != other.column_count:
-            raise NonConformableMatrix()
-        return self.__class__( *[a + b for a, b in zip(self._elements, other._elements)] )
-
-    def __mul__(self, scalar): # (float) -> Matrix
-        """
-        Calculate left scalar-matrix multiplication.
-        """
-        return self.__class__(*map(lambda x: scalar * x, self._elements))
-
-    def __rmul__(self, scalar):
-        """Calculate right scalar-matrix multiplication."""
-        return self * scalar
-
 
 class Matrix2(Matrix):
     """
-    Represents a square matrix 2×2 of float values.
+    Represents a square matrix 2 × 2 of float values.
     The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
     e.g `m_{12}` represents the element at first row and second column.
 
@@ -191,7 +265,7 @@ class Matrix2(Matrix):
 
 class Matrix3(Matrix):
     """
-    Represents a square matrix 3×3 of float values.
+    Represents a square matrix 3 × 3 of float values.
     The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
     e.g `m_{12}` represents the element at first row and second column.
 
@@ -208,10 +282,5 @@ class Matrix3(Matrix):
 
 
 if __name__ == '__main__':
-    pass
-    # v = Vector2(0, 1)
-    # print(
-    #     m.row_count,
-    #     m.column_count
-    # )
+    m = Matrix2(1, 2, 3, 4)
 

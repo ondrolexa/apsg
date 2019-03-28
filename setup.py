@@ -49,7 +49,8 @@ setup(
     install_requires=[
         "matplotlib",
         "numpy>=1.14",
-        "scipy>=1.0"
+        "scipy>=1.0",
+        "typing",
     ],
     extras_require={
         "testing": ["pytest"],
