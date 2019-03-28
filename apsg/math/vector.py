@@ -4,7 +4,7 @@
 """
 A vector algebra types and functions.
 
-== Overview
+== Contains
 
 - ``Vector``
 
@@ -15,12 +15,13 @@ A vector algebra types and functions.
 """
 
 
+from apsg.math.scalar import Scalar
 from apsg.math.matrix import Matrix
 
 
 class Vector(Matrix):
     """
-    Vector is represented as N x 1 matrix.
+    Vector is represented as N x 1 matrix.s
     """
 
     __size__ = (0, 1)
@@ -33,6 +34,19 @@ class Vector(Matrix):
 
 
 class Vector2(Vector):
+    """
+    Represents a two-dimensional vector.
+
+    Examples:
+        >>> u = Vector2(1, 0)
+        >>> v = Vector2(0, 1)
+        >>> u + v
+        Vector2([(1,), (1,)]) # FIXME We want this ``Vector2(1, 1)``!
+
+    """
+
+    __shape__ = (2, 1)
+
     def __init__(self, *elements):
         if len(elements) > 2:
             raise Exception("Wrong number of elements")
@@ -49,6 +63,8 @@ class Vector2(Vector):
 
 
 class Vector3(Vector):
+
+    __shape__ = (2, 1)
 
     def __init__(self, *elements):
         if len(elements) > 3:

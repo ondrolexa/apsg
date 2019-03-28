@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
 
-import operator as op
-import itertools as it
+import typing
+import operator
+import itertools
+
+from apsg.math.scalar import Scalar
 
 
 """
@@ -22,6 +25,7 @@ A matrix algebra types and functions.
 __all__ = ("Matrix2", "Matrix3")
 
 
+
 class NonConformableMatrix(Exception):
     """
     Raises when matrices are not conformable for a certain operation.
@@ -32,8 +36,15 @@ class NonConformableMatrix(Exception):
 
 class Matrix(object):
     """
-    Represents a square matrix M × N of float values.
-    The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
+    Represents a square matrix of dimension M × M.
+
+    This type is immutable -- it's elements can't be changed
+    after an initialization.
+
+    This type also has a structural equality -- the two instances are equal if and
+    only if their elements are equal.
+
+    The matrix elements has indexes `i` for row and `j` for column written as `m_{ij}`,
     e.g `m_{12}` represents the element at first row and second column.
 
     Examples:
@@ -45,7 +56,9 @@ class Matrix(object):
 
         >>> class Matrix2(Matrix): __shape__ = (2, 2)
 
-        For more details see other classes in this or ``apsg.math.vector`` module.
+        Also don't forget to define ``__slots__`` class attribute in each
+        subclass! For more details see other classes in this or
+        ``apsg.math.vector`` module.
 
         >>> m = Matrix2(1, -2, 3, -4)
         >>> -m
@@ -55,7 +68,7 @@ class Matrix(object):
 
     __shape__ = (0, 0) # (uint, uint)
 
-    __slots__ = ("_elements") # Don't forget define this again in each subclass!
+    __slots__ = ("_elements")
 
     # Magic methods
 
@@ -84,62 +97,11 @@ class Matrix(object):
                     class_name=self.__class__.__name__, dimension=self.__shape__[0] * self.__shape__[1]))
         self._elements = elements
 
-    def __getitem__(self, indexes): # (tuple) -> float
-        """
-        Get the element with a given indexes.
-
-        Examples:
-
-            >>> Matrix.__shape__ = (2, 2)
-
-            >>> m = Matrix(11, 12, 21, 22)
-            >>> m[0, 0], m[0, 1], m[1, 0], m[1, 1]
-            (11, 12, 21, 22)
-
-        """
-        if len(indexes) != len(self.__shape__):
-            raise Exception("Number of indexes must match the shape.")
-
-        i, j = indexes
-        return self._elements[i * self.__shape__[1] + j]
-
-    def __len__(self): # () -> int
-        """
-        Get the number of rows.
-
-        Note:
-            For the ``Vector`` class it returns the number of items.
-            It is consistent with the idea that the column vector is represented as M × 1 matrix.
-
-        Returns:
-            The number of rows.
-
-        Examples:
-            >>> Matrix.__shape__ = (2, 2)
-            >>> m = Matrix(1, 2, 3, 4)
-            >>> len(m)
-            2
-        """
-        return self.__shape__[0] # * self.__shape__[1] # FIXME: Return dimension not number of rows
-
-    def __neg__(self):
-        return self.__class__(*map(op.neg, self._elements))
-
-    def __array__(self):
-        """
-        Get the instance as ``numpy.array``.
-        """
-        # return np.array([*self._elements], dtype=dtype) if dtype \
-        #     else np.array([*self._elements])
-        return NotImplemented
-
     def __repr__(self):
         # type: () -> str
         return self.__class__.__name__ + "(" + str(self.rows) + ")"
 
-    def __str__(self):
-        # type: () -> str
-        return repr(self)
+    __str__ = __repr__
 
     def __eq__(self, other):
         # type: (Matrix) -> bool
@@ -162,27 +124,86 @@ class Matrix(object):
         # type: () -> int
         return hash((self._elements, self.__class__.__name___))
 
-    # Operators
-
-    def __matmul__(self, other):
-        # type: (Matrix) -> Matrix
+    def __len__(self):
+        # () -> int
         """
-        Calculate matrix multiplication.
+        Get the number of rows.
 
-        Raises:
-            An exception if ``other`` matrix is not conformable.
+        Note:
+            For the ``Vector`` class it returns the number of items.
+            It is consistent with the idea that the column vector is represented as M × 1 matrix.
+
+        Returns:
+            The number of rows.
+
+        Examples:
+            >>> Matrix.__shape__ = (2, 2)
+            >>> m = Matrix(1, 2, 3, 4)
+            >>> len(m)
+            2
         """
+        return self.__shape__[0] # * self.__shape__[1] # FIXME: Return dimension not number of rows
 
-        row_count = self.row_count
-        column_count = self.column_count
+    def __iter__(self):
+        """
+        Return the iterator.
+        """
+        return iter(self._elements)
+
+    def __getitem__(self, indexes): # (tuple) -> float
+        """
+        Get the element with a given indexes.
+
+        Examples:
+
+            >>> Matrix.__shape__ = (2, 2)
+
+            >>> m = Matrix(11, 12, 21, 22)
+            >>> m[0, 0], m[0, 1], m[1, 0], m[1, 1]
+            (11, 12, 21, 22)
+
+        """
+        # FIXME How to implement this for matrix and vector?
+        if len(indexes) != 2:
+            raise Exception("Number of indexes must be 2.")
+
+        i, j = indexes
+        return self._elements[i * self.__shape__[1] + j]
+
+    def __array__(self):
+        """
+        Get the instance as ``numpy.array``.
+        """
+        # return np.array([*self._elements], dtype=dtype) if dtype \
+        #     else np.array([*self._elements])
         return NotImplemented
 
-    def __mul__(self, scalar):
-        # type: (float) -> Matrix
+    # Operators
+
+    def __neg__(self):
+        # type: () -> Matrix
         """
-        Calculate left scalar-matrix multiplication.
+        Change the sign of each element.
         """
+        return self.__class__(*map(operator.neg, self._elements))
+
+    def __mul__(self, other):
+        # type: (Union[Scalar, Matrix]) -> Matrix
+        """
+        Calculate the scalar-matrix multiplication.
+
+        Args:
+            other - The scalar or matrix.
+        """
+        # FIXME if the other is vector (matrix) the result is scalar product.
         return self.__class__(*map(lambda x: scalar * x, self._elements))
+
+    def __rmul__(self, scalar):
+        # type: (Scalar) -> Matrix
+        """
+        Calculate the matrix-scalar multiplication.
+        """
+        return self * scalar
 
     def __add__(self, other):
         # type: (Matrix) -> Matrix
@@ -196,10 +217,18 @@ class Matrix(object):
             raise NonConformableMatrix()
         return self.__class__( *[a + b for a, b in zip(self._elements, other._elements)] )
 
-    def __rmul__(self, scalar):
-        # type: (float) -> Matrix
-        """Calculate right scalar-matrix multiplication."""
-        return self * scalar
+    def __matmul__(self, other):
+        # type: (Matrix) -> Matrix
+        """
+        Calculate the matrix-matrix multiplication.
+
+        Raises:
+            An exception if ``other`` matrix is not conformable.
+        """
+
+        row_count = self.row_count
+        column_count = self.column_count
+        return NotImplemented
 
     # Factory methods
 
@@ -252,6 +281,9 @@ class SquareMatrix(Matrix):
             raise AssertionError("The ``__shape__`` must contain the same values e.g (2, 2).")
 
         return super(SquareMatrix, cls).__new__(cls, *args, **kwargs)
+
+    @classmethod
+    def uniform(self, values):
 
 
 class Matrix2(SquareMatrix):

@@ -53,7 +53,11 @@ setup(
         "typing",
     ],
     extras_require={
-        "testing": ["pytest"],
+        "testing": [
+            # "black",
+            "pytest",
+            "radon",
+        ],
     },
     setup_requires=pytest_runner,
     entry_points={
