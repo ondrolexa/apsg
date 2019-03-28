@@ -1,0 +1,921 @@
+{
+    "files": {
+        "apsg\\core.py": {
+            "block_positions": [
+                {
+                    "end": 207,
+                    "methods": [
+                        {
+                            "end": 113,
+                            "name": "rand",
+                            "start": 108,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 118,
+                            "name": "type",
+                            "start": 114,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 123,
+                            "name": "upper",
+                            "start": 119,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 128,
+                            "name": "flip",
+                            "start": 124,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 133,
+                            "name": "uv",
+                            "start": 129,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 138,
+                            "name": "cross",
+                            "start": 134,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 146,
+                            "name": "angle",
+                            "start": 139,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 155,
+                            "name": "rotate",
+                            "start": 147,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 162,
+                            "name": "proj",
+                            "start": 156,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 168,
+                            "name": "H",
+                            "start": 163,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 177,
+                            "name": "transform",
+                            "start": 169,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 187,
+                            "name": "dd",
+                            "start": 178,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 192,
+                            "name": "aslin",
+                            "start": 188,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 197,
+                            "name": "asfol",
+                            "start": 193,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 202,
+                            "name": "asvec3",
+                            "start": 198,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 207,
+                            "name": "V",
+                            "start": 203,
+                            "type": "Function"
+                        }
+                    ],
+                    "name": "Vec3",
+                    "start": 58,
+                    "type": "Class"
+                },
+                {
+                    "end": 288,
+                    "methods": [
+                        {
+                            "end": 256,
+                            "name": "rand",
+                            "start": 252,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 260,
+                            "name": "dot",
+                            "start": 257,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 268,
+                            "name": "cross",
+                            "start": 261,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 277,
+                            "name": "angle",
+                            "start": 269,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 288,
+                            "name": "dd",
+                            "start": 278,
+                            "type": "Function"
+                        }
+                    ],
+                    "name": "Lin",
+                    "start": 208,
+                    "type": "Class"
+                },
+                {
+                    "end": 406,
+                    "methods": [
+                        {
+                            "end": 347,
+                            "name": "rand",
+                            "start": 343,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 354,
+                            "name": "angle",
+                            "start": 348,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 361,
+                            "name": "cross",
+                            "start": 355,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 366,
+                            "name": "dot",
+                            "start": 362,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 375,
+                            "name": "transform",
+                            "start": 367,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 387,
+                            "name": "dd",
+                            "start": 376,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 394,
+                            "name": "rhr",
+                            "start": 388,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 400,
+                            "name": "dv",
+                            "start": 395,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 406,
+                            "name": "rake",
+                            "start": 401,
+                            "type": "Function"
+                        }
+                    ],
+                    "name": "Fol",
+                    "start": 289,
+                    "type": "Class"
+                },
+                {
+                    "end": 497,
+                    "methods": [
+                        {
+                            "end": 448,
+                            "name": "rand",
+                            "start": 439,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 453,
+                            "name": "from_pair",
+                            "start": 449,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 461,
+                            "name": "rotate",
+                            "start": 454,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 465,
+                            "name": "type",
+                            "start": 462,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 470,
+                            "name": "fol",
+                            "start": 466,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 475,
+                            "name": "lin",
+                            "start": 471,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 479,
+                            "name": "rax",
+                            "start": 476,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 490,
+                            "name": "transform",
+                            "start": 480,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 497,
+                            "name": "H",
+                            "start": 491,
+                            "type": "Function"
+                        }
+                    ],
+                    "name": "Pair",
+                    "start": 407,
+                    "type": "Class"
+                },
+                {
+                    "end": 582,
+                    "methods": [
+                        {
+                            "end": 528,
+                            "name": "from_pair",
+                            "start": 523,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 536,
+                            "name": "from_vecs",
+                            "start": 529,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 544,
+                            "name": "rotate",
+                            "start": 537,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 552,
+                            "name": "sense",
+                            "start": 545,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 557,
+                            "name": "pvec",
+                            "start": 553,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 562,
+                            "name": "tvec",
+                            "start": 558,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 567,
+                            "name": "p",
+                            "start": 563,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 572,
+                            "name": "t",
+                            "start": 568,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 577,
+                            "name": "m",
+                            "start": 573,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 582,
+                            "name": "d",
+                            "start": 578,
+                            "type": "Function"
+                        }
+                    ],
+                    "name": "Fault",
+                    "start": 498,
+                    "type": "Class"
+                },
+                {
+                    "end": 1124,
+                    "methods": [
+                        {
+                            "end": 642,
+                            "name": "append",
+                            "start": 637,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 646,
+                            "name": "extend",
+                            "start": 643,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 650,
+                            "name": "copy",
+                            "start": 647,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 656,
+                            "name": "upper",
+                            "start": 651,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 661,
+                            "name": "flip",
+                            "start": 657,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 666,
+                            "name": "data",
+                            "start": 662,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 695,
+                            "name": "from_csv",
+                            "start": 667,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 711,
+                            "name": "to_csv",
+                            "start": 696,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 721,
+                            "name": "from_array",
+                            "start": 715,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 726,
+                            "name": "aslin",
+                            "start": 722,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 731,
+                            "name": "asfol",
+                            "start": 727,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 736,
+                            "name": "asvec3",
+                            "start": 732,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 741,
+                            "name": "V",
+                            "start": 737,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 764,
+                            "name": "R",
+                            "start": 742,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 769,
+                            "name": "var",
+                            "start": 765,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 774,
+                            "name": "totvar",
+                            "start": 770,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 786,
+                            "name": "fisher_stats",
+                            "start": 775,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 791,
+                            "name": "delta",
+                            "start": 787,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 796,
+                            "name": "rdegree",
+                            "start": 792,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 814,
+                            "name": "cross",
+                            "start": 797,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 819,
+                            "name": "rotate",
+                            "start": 815,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 825,
+                            "name": "centered",
+                            "start": 820,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 842,
+                            "name": "halfspace",
+                            "start": 826,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 846,
+                            "name": "uv",
+                            "start": 843,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 864,
+                            "name": "angle",
+                            "start": 847,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 868,
+                            "name": "proj",
+                            "start": 865,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 873,
+                            "name": "dot",
+                            "start": 869,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 880,
+                            "name": "ortensor",
+                            "start": 874,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 884,
+                            "name": "cluster",
+                            "start": 881,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 889,
+                            "name": "transform",
+                            "start": 885,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 894,
+                            "name": "dd",
+                            "start": 890,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 899,
+                            "name": "rhr",
+                            "start": 895,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 908,
+                            "name": "randn_lin",
+                            "start": 900,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 917,
+                            "name": "randn_fol",
+                            "start": 909,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 938,
+                            "name": "uniform_lin",
+                            "start": 918,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 947,
+                            "name": "uniform_fol",
+                            "start": 939,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 958,
+                            "name": "sfs_vec3",
+                            "start": 948,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 965,
+                            "name": "sfs_lin",
+                            "start": 959,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 972,
+                            "name": "sfs_fol",
+                            "start": 966,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 984,
+                            "name": "gss_vec3",
+                            "start": 973,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 991,
+                            "name": "gss_lin",
+                            "start": 985,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 998,
+                            "name": "gss_fol",
+                            "start": 992,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1010,
+                            "name": "fisher_lin",
+                            "start": 999,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1017,
+                            "name": "kent_lin",
+                            "start": 1011,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1026,
+                            "name": "to_file",
+                            "start": 1018,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1035,
+                            "name": "from_file",
+                            "start": 1027,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1043,
+                            "name": "bootstrap",
+                            "start": 1036,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1124,
+                            "name": "examples",
+                            "start": 1044,
+                            "type": "Function"
+                        }
+                    ],
+                    "name": "Group",
+                    "start": 583,
+                    "type": "Class"
+                },
+                {
+                    "end": 1247,
+                    "methods": [
+                        {
+                            "end": 1172,
+                            "name": "append",
+                            "start": 1167,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1177,
+                            "name": "extend",
+                            "start": 1173,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1180,
+                            "name": "data",
+                            "start": 1178,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1185,
+                            "name": "rotate",
+                            "start": 1181,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1198,
+                            "name": "from_csv",
+                            "start": 1186,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1209,
+                            "name": "to_csv",
+                            "start": 1199,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1217,
+                            "name": "from_array",
+                            "start": 1210,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1222,
+                            "name": "fol",
+                            "start": 1218,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1227,
+                            "name": "fvec",
+                            "start": 1223,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1232,
+                            "name": "lin",
+                            "start": 1228,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1237,
+                            "name": "lvec",
+                            "start": 1233,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1242,
+                            "name": "misfit",
+                            "start": 1238,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1247,
+                            "name": "rax",
+                            "start": 1243,
+                            "type": "Function"
+                        }
+                    ],
+                    "name": "PairSet",
+                    "start": 1125,
+                    "type": "Class"
+                },
+                {
+                    "end": 1422,
+                    "methods": [
+                        {
+                            "end": 1280,
+                            "name": "from_csv",
+                            "start": 1267,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1293,
+                            "name": "to_csv",
+                            "start": 1281,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1301,
+                            "name": "from_array",
+                            "start": 1294,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1306,
+                            "name": "sense",
+                            "start": 1302,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1311,
+                            "name": "p",
+                            "start": 1307,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1316,
+                            "name": "pvec",
+                            "start": 1312,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1321,
+                            "name": "tvec",
+                            "start": 1317,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1326,
+                            "name": "t",
+                            "start": 1322,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1331,
+                            "name": "m",
+                            "start": 1327,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1335,
+                            "name": "d",
+                            "start": 1332,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1362,
+                            "name": "angmech",
+                            "start": 1336,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1422,
+                            "name": "examples",
+                            "start": 1363,
+                            "type": "Function"
+                        }
+                    ],
+                    "name": "FaultSet",
+                    "start": 1248,
+                    "type": "Class"
+                },
+                {
+                    "end": 1553,
+                    "methods": [
+                        {
+                            "end": 1443,
+                            "name": "min",
+                            "start": 1440,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1447,
+                            "name": "max",
+                            "start": 1444,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1451,
+                            "name": "min_at",
+                            "start": 1448,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1454,
+                            "name": "max_at",
+                            "start": 1452,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1483,
+                            "name": "initgrid",
+                            "start": 1455,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1509,
+                            "name": "calculate_density",
+                            "start": 1484,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1514,
+                            "name": "apply_func",
+                            "start": 1510,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1527,
+                            "name": "contourf",
+                            "start": 1515,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1540,
+                            "name": "contour",
+                            "start": 1528,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1553,
+                            "name": "plotcountgrid",
+                            "start": 1541,
+                            "type": "Function"
+                        }
+                    ],
+                    "name": "StereoGrid",
+                    "start": 1423,
+                    "type": "Class"
+                },
+                {
+                    "end": 1649,
+                    "methods": [
+                        {
+                            "end": 1596,
+                            "name": "cluster",
+                            "start": 1583,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1603,
+                            "name": "linkage",
+                            "start": 1597,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1611,
+                            "name": "dendrogram",
+                            "start": 1604,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1641,
+                            "name": "elbow",
+                            "start": 1612,
+                            "type": "Function"
+                        },
+                        {
+                            "end": 1649,
+                            "name": "R",
+                            "start": 1642,
+                            "type": "Function"
+                        }
+                    ],
+                    "name": "Cluster",
+                    "start": 1554,
+                    "type": "Class"
+                },
+                {
+                    "end": 1655,
+                    "name": "G",
+                    "start": 1650,
+                    "type": "Function"
+                }
+            ],
+            "comments": 1016,
+            "language": "Python",
+            "mccabe": 202,
+            "ratio_comment_to_code": 0.86,
+            "sloc": 1180
+        }
+    }
+}

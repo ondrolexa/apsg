@@ -50,24 +50,31 @@ class Matrix(object):
 
     __shape__ = (0, 0) # (uint, uint)
 
+    __slots__ = ("_elements") # Don't forget define this again in each subclass!
+
     def __new__(cls, *args, **kwargs):
         """
-        Create a new object.
+        Create a new instance.
+
+        Check that ``__shape__`` contains the same values e.g (2, 2).
 
         Raises:
             The ``AssertionError`` when some component of the ``__shape__``
             class attribute has zero value.
         """
-        try:
-            assert cls.__shape__[0] and cls.__shape__[1]
-        except:
-            raise AssertionError("Please define non zero `__shape__` values.")
+        if (0 == cls.__shape__[0]) or (0 == cls.__shape__[1]):
+            raise AssertionError("Please define non zero `__shape__` values e.g (2, 1).")
+
         return super(Matrix, cls).__new__(cls)
 
     def __init__(self, *elements):  # (floats) -> Matrix
         """
         Take sequence of elements.
         """
+        if len(elements) != self.row_count * self.column_count:
+            raise AssertionError(
+                "The number of elements must be equal to ``{class_name}`` dimension, which is {dimension}".format(
+                    class_name=self.__class__.__name__, dimension=self.__shape__[0] * self.__shape__[1]))
         self._elements = elements
 
     def __getitem__(self, indexes): # (tuple) -> float
@@ -205,8 +212,30 @@ class Matrix(object):
     def column_count(self): # () -> int
         return self.__class__.__shape__[1]
 
+    def dimension(self):
+        return self.row_count * self.column_count
 
-class Matrix2(Matrix):
+
+class SquareMatrix(Matrix):
+    """
+    Represents a square matrix M × N of float values.
+    """
+
+    __slots__ = ("_elements") # Don't forget define this again in each subclass!
+
+    def __new__(cls, *args, **kwargs):
+        """
+        Create a new instance.
+
+        Check that ``__shape__`` contains the same values e.g (2, 2).
+        """
+        if (cls.__shape__[0] != cls.__shape__[1]):
+            raise AssertionError("The ``__shape__`` must contain the same values e.g (2, 2).")
+
+        return super(SquareMatrix, cls).__new__(cls, *args, **kwargs)
+
+
+class Matrix2(SquareMatrix):
     """
     Represents a square matrix 2 × 2 of float values.
     The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
@@ -257,13 +286,16 @@ class Matrix2(Matrix):
         # Matrix2([(7, 10), (15, 14)])
 
     """
+
     __shape__ = (2, 2)
+
+    __slots__ = ("_elements") # Don't forget define this again in each subclass!
 
     def __init__(self, *elements):
         super(Matrix2, self).__init__(*elements)
 
 
-class Matrix3(Matrix):
+class Matrix3(SquareMatrix):
     """
     Represents a square matrix 3 × 3 of float values.
     The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
@@ -277,10 +309,19 @@ class Matrix3(Matrix):
 
     __shape__ = (3, 3)
 
+    __slots__ = ("_elements") # Don't forget define this again in each subclass!
+
     def __init__(self, *elements):
         super(Matrix3, self).__init__(*elements)
 
 
 if __name__ == '__main__':
     m = Matrix2(1, 2, 3, 4)
+    m = Matrix3(1, 2, 3, 4, 5, 6, 7, 8, 9)
+    # Try wrong number of elements.
+
+    class DiagonalMatrix(SquareMatrix):
+        __shape__ = (2, 2)
+        # Try change to (1, 2) or (0, 1) or (0, 0).
+    m = DiagonalMatrix(1, 2, 3, 4)
 
