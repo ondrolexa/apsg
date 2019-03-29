@@ -17,8 +17,8 @@ from apsg.core import (
 )
 
 from apsg.db import SDB
-from apsg.tensors import DefGrad, VelGrad, Stress, Tensor, Ortensor, Ellipsoid
-from apsg.helpers import sind, cosd, tand, acosd, asind, atand, atan2d
+from apsg.math.tensor import DefGrad, VelGrad, Stress, Tensor, Ortensor, Ellipsoid
+from apsg.math.helpers import sind, cosd, tand, acosd, asind, atand, atan2d
 from apsg.plotting import StereoNet, VollmerPlot, RamsayPlot, FlinnPlot, HsuPlot
 
 

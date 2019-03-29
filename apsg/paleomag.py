@@ -2,14 +2,17 @@
 
 
 from __future__ import division, print_function
+
 import os
 import re
+from datetime import datetime
+
 import numpy as np
 import matplotlib.pyplot as plt
-from datetime import datetime
+
 from apsg.core import Vec3, Fol, Lin, Group, settings
 from apsg.plotting import StereoNet
-from apsg.helpers import sind, cosd, eformat
+from apsg.math.helpers import sind, cosd, eformat
 
 
 __all__ = ["Core"]

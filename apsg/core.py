@@ -14,7 +14,7 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-from apsg.helpers import (
+from apsg.math.helpers import (
     KentDistribution,
     sind,
     cosd,

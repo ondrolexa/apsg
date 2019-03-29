@@ -12,14 +12,6 @@ from apsg.math.scalar import Scalar
 
 """
 A matrix algebra types and functions.
-
-== Contains
-
-- ``Matrix``
-
-- ``Matrix2``
-
-- ``Matrix3``
 """
 
 
@@ -545,14 +537,3 @@ class Matrix4(SquareMatrix):
 
     def __init__(self, *elements):
         super(Matrix3, self).__init__(*elements)
-
-
-if __name__ == '__main__':
-    m = Matrix2(1, 2, 3, 4)
-    m = Matrix3(1, 2, 3, 4, 5, 6, 7, 8, 9)
-    # Try wrong number of elements.
-
-    class DiagonalMatrix(SquareMatrix):
-        __shape__ = (2, 2)
-        # Try change to (1, 2) or (0, 1) or (0, 0).
-    m = DiagonalMatrix(1, 2, 3, 4)

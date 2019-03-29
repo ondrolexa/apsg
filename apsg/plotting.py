@@ -27,8 +27,9 @@ from apsg.core import (
     StereoGrid,
     settings
 )
-from apsg.helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
-from apsg.tensors import DefGrad, Stress, Tensor, Ortensor, Ellipsoid
+
+from apsg.math.tensor import DefGrad, Stress, Tensor, Ortensor, Ellipsoid
+from apsg.math.helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 
 
 __all__ = ["StereoNet", "VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot", "rose"]

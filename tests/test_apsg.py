@@ -19,8 +19,10 @@ import pytest
 import numpy as np
 
 
-from apsg import Vec3, Fol, Lin, Fault, Pair, Group, FaultSet, settings
-from apsg import Ortensor, DefGrad, VelGrad, Stress, Tensor
+from apsg import (
+    Vec3, Fol, Lin, Fault, Pair, Group, FaultSet, settings,
+    Ortensor, DefGrad, VelGrad, Stress, Tensor
+    )
 
 
 # ############################################################################
