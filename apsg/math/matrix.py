@@ -3,6 +3,9 @@
 
 import typing
 import operator
+import itertools
+
+from collections.abc import Iterable
 
 from apsg.math.scalar import Scalar
 
@@ -17,11 +20,10 @@ A matrix algebra types and functions.
 - ``Matrix2``
 
 - ``Matrix3``
-
 """
 
 
-__all__ = ("Matrix2", "Matrix3")
+__all__ = ("Matrix2", "Matrix3", "Matrix4")
 
 
 class NonConformableMatrix(Exception):
@@ -45,6 +47,37 @@ class Matrix(object):
     The matrix elements has indexes `i` for row and `j` for column written as `m_{ij}`,
     e.g `m_{12}` represents the element at first row and second column.
 
+    Tests:
+
+        Matrix 2 × 2
+
+        >>> m = Matrix2(1, 0, 0, 1)
+        >>> m.dimension
+        4
+
+        Calculate a determinant.
+        >>> m.determinant()
+        1
+
+        Create 3 × 3 Matrix.
+        >>> m = Matrix3(1, 0, 0, 0, 1, 0, 0, 0, 1)
+
+        Check th
+        >>> m.dimension
+        9
+
+        Calculate a determinant.
+        >>> m.determinant()
+        1
+
+        >>> m = Matrix2(1, -2, 3, -4)
+        >>> -m
+        Matrix2([(-1, 2), (-3, 4)])
+
+        >>> m = Matrix2(1, 2, 3, 4)
+        >>> m.transpose()
+        Matrix2([(1, 3), (2, 4)])
+
     Examples:
 
         >>> from apsg.math.matrix import Matrix
@@ -52,16 +85,11 @@ class Matrix(object):
         How to properly derive from this class? At least you have to define
         the ``__shape__`` class attribute with non zero values e.g:
 
-        >>> class Matrix2(Matrix): __shape__ = (2, 2)
+        >>> class Mat(Matrix): __shape__ = (2, 2)
 
         Also don't forget to define ``__slots__`` class attribute in each
         subclass! For more details see other classes in this or
         ``apsg.math.vector`` module.
-
-        >>> m = Matrix2(1, -2, 3, -4)
-        >>> -m
-        Matrix2([(-1, 2), (-3, 4)])
-
     """
 
     __shape__ = (0, 0) # (uint, uint)
@@ -85,14 +113,20 @@ class Matrix(object):
 
         return super(Matrix, cls).__new__(cls)
 
-    def __init__(self, *elements):  # (floats) -> Matrix
+    def __init__(self, *elements):
+        # type: (Tuple[float]) -> Matrix
         """
         Take sequence of elements.
         """
-        if len(elements) != self.row_count * self.column_count:
+
+        # if 1 == len(elements) and isinstance(elements, Iterable):
+        #     elements = *elements
+
+        if len(elements) != self.__shape__[0] * self.__shape__[1]:
             raise AssertionError(
                 "The number of elements must be equal to ``{class_name}`` dimension, which is {dimension}".format(
                     class_name=self.__class__.__name__, dimension=self.__shape__[0] * self.__shape__[1]))
+
         self._elements = elements
 
     def __repr__(self):
@@ -148,7 +182,8 @@ class Matrix(object):
         """
         return iter(self._elements)
 
-    def __getitem__(self, indexes): # (tuple) -> float
+    def __getitem__(self, indexes):
+        # type: (Tuple[int]) -> float
         """
         Get the element with a given indexes.
 
@@ -176,7 +211,9 @@ class Matrix(object):
         #     else np.array([*self._elements])
         return NotImplemented
 
+    # #########################################################################
     # Operators
+    # #########################################################################
 
     def __neg__(self):
         # type: () -> Matrix
@@ -228,47 +265,107 @@ class Matrix(object):
         column_count = self.column_count
         return NotImplemented
 
-    # Factory methods
-
-    @classmethod
-    def from_rows(cls, row):
-        """
-        [[1, 0], [0, 1]]
-          row1    row2
-        """
-        ...
-
-    @classmethod
-    def from_columns(cls, columns):
-        ...
+    # #########################################################################
+    # Factories
+    # #########################################################################
 
     @classmethod
     def uniform(cls, value):
-        ...
+        # type: (Scalar) -> Matrix
+        """
+        Create a new instance filled with the same value.
+        """
+        return cls(value for _ in range(0, cls.__shape__[0] * cls.__shape__[1]))
 
+    # @classmethod
+    # def from_rows(cls, rows):
+    #     ...
+
+    # @classmethod
+    # def from_columns(cls, columns):
+    #     ...
+
+    # #########################################################################
     # Properties
+    # #########################################################################
+
+    @property
+    def min(self):
+        # type: () -> float
+        """
+        Get the element with minimal value.
+        """
+        return min(self._elements)
+
+    @property
+    def max(self):
+        # type: () -> float
+        """
+        Get the element with maximal value.
+        """
+        return max(self._elements)
 
     @property
     def rows(self):
-        # Use the ``itertools.grouper``?
+        # type: () -> List[List[float]]
+        """
+        Get the rows of matrix.
+        """
         group = lambda t, n: zip(*[t[i::n] for i in range(n)])
+        # Use the ``itertools.grouper`` instead of custom function?
         return list( group(self._elements, self.__shape__[1]) )
 
     @property
-    def row_count(self): # () -> int
-        return len(self)
+    def columns(self):
+        # type: () -> List[List[float]]
+        """
+        Get the columns of matrix.
+        """
+        return self.transpose().rows
 
     @property
-    def column_count(self): # () -> int
-        return self.__class__.__shape__[1]
+    def row_count(self):
+        # type: () -> int
+        """
+        Get the number of rows.
+        """
+        return len(self.rows)
 
+    @property
+    def column_count(self):
+        # type: () -> int
+        """
+        Get the number of columns.
+        """
+        return len(self.columns)
+
+    @property
     def dimension(self):
+        # type: () -> int
+        """
+        Get the dimension of matrix.
+
+        This is simply a calculated as number of rows × number of columns.
+        """
         return self.row_count * self.column_count
 
+    # #########################################################################
     # Methods
+    # #########################################################################
+
+    def row(self, index):
+        return self.rows[index]
+
+    def column(self, index):
+        return self.columns[index]
 
     def transpose(self):
-        ...
+        # type: () -> Matrix
+        """
+        Transpose the matrix.
+        """
+        return self.__class__(
+            *list(itertools.chain.from_iterable(zip(*self.rows))))
 
 
 class SquareMatrix(Matrix):
@@ -291,16 +388,59 @@ class SquareMatrix(Matrix):
         return super(SquareMatrix, cls).__new__(cls, *args, **kwargs)
 
     @classmethod
-    def indentity(cls):
-        return cls.uniform(1.0)
+    def diagonal(cls, value):
+        """
+        Create a diagonal matrix.
+        """
 
     @classmethod
-    def diagonal(cls):
-        ...
+    def identity(cls):
+        """
+        Create a identity (or unit) matrix.
+        """
+        return cls.diagonal(1.0)
+
+    # upper_triangular(cls)
+
+    # lower_triangular(cls)
 
     @classmethod
-    def symmetric(cls):
-        ...
+    def symmetric(cls, *values):
+        """
+        Create a symmetric matrix.
+
+        |1 | 2 | 3 |
+        |x | 4 | 5 |
+        |x | x | 6 |
+        """
+        return NotImplemented
+
+    def determinant(self):
+        """
+        Calculate a determinant of matrix.
+        """
+        if 1 == self.dimension:
+            return self[0]
+            # This is techniccaly an vector with 1 valeu => scalar.
+            # Should we allow it?
+
+        if 4 == self.dimension:
+            # 2 × 2 matrix
+            return self[0, 0] * self[1, 1] - self[0, 1] * self[1, 0]
+
+        if 9 == self.dimension:
+            # 3 × 3 matrix
+            return (self[0, 0] * self[1, 1] * self[2, 2]) \
+                 + (self[1, 0] * self[2, 1] * self[0, 2]) \
+                 + (self[2, 0] * self[0, 1] * self[1, 2]) \
+                 - (self[0, 2] * self[1, 1] * self[2, 0]) \
+                 - (self[1, 2] * self[2, 1] * self[0, 0]) \
+                 - (self[2, 2] * self[0, 1] * self[1, 0])
+
+        # FIXME: There should be some general method e.g  Leibniz eq., but it is very slow.
+        return NotImplemented
+
+    # inverted
 
 
 class Matrix2(SquareMatrix):
@@ -378,6 +518,28 @@ class Matrix3(SquareMatrix):
     """
 
     __shape__ = (3, 3)
+
+    __slots__ = ("_elements",) # Don't forget define this again in each subclass!
+
+    def __init__(self, *elements):
+        super(Matrix3, self).__init__(*elements)
+
+
+class Matrix4(SquareMatrix):
+    """
+    Represents a square matrix 4 × 4 of float values.
+
+    The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
+    e.g `m_{12}` represents the element at first row and second column.
+
+    m_{11} | m_{12} | m_{13} | m_{14}
+    m_{22} | m_{22} | m_{23} | m_{24}
+    m_{31} | m_{32} | m_{33} | m_{34}
+    m_{41} | m_{42} | m_{43} | m_{44}
+
+    """
+
+    __shape__ = (4, 4)
 
     __slots__ = ("_elements",) # Don't forget define this again in each subclass!
 
