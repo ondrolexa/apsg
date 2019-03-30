@@ -1,3 +1,7 @@
+# Virtual environment
+.env
+.venv
+
 *.py[cod]
 
 # C extensions
@@ -21,6 +25,7 @@ lib64
 
 # Installer logs
 pip-log.txt
+pip-wheel-metadata
 
 # Unit test / coverage reports
 .coverage
