@@ -108,8 +108,19 @@ class Matrix(object):
     def __init__(self, *elements):
         # type: (Tuple[float]) -> Matrix
         """
-        Take sequence of elements.
+        Creates an matrix with given elements.
+
+        Args:
+            elements - An elements in row order, e.g an identity matrix
+            I := [[1, 0] [0, 1]] is created as Matrix(1, 0, 0, 1).
+        Raises:
+            Exception if dimension of matrix does not match the number of items.
+
         """
+
+        # DEVELOPER NOTE: The elements are stored in one-dimensional tuple.
+        # An access of an element in `i`-th row and `j`-th column is implemented with
+        # formula:  `m[i, j] = number_of_columns * i + j`, see the ``__getitem__`` method.
 
         # if 1 == len(elements) and isinstance(elements, Iterable):
         #     elements = *elements
@@ -269,6 +280,14 @@ class Matrix(object):
         """
         return cls(value for _ in range(0, cls.__shape__[0] * cls.__shape__[1]))
 
+    @classmethod
+    def zeros(cls):  # todo
+        return cls.uniform(0.0)
+
+    @classmethod
+    def ones(cls):  # todo
+        return cls.uniform(1.0)
+
     # @classmethod
     # def from_rows(cls, rows):
     #     ...
@@ -276,6 +295,7 @@ class Matrix(object):
     # @classmethod
     # def from_columns(cls, columns):
     #     ...
+
 
     # #########################################################################
     # Properties
@@ -359,6 +379,13 @@ class Matrix(object):
         return self.__class__(
             *list(itertools.chain.from_iterable(zip(*self.rows))))
 
+    def is_square(self):
+        # type: () -> bool
+        """
+        Check if ``self`` is a square matrix.
+        """
+        return self.row_count == self.column_count
+
 
 class SquareMatrix(Matrix):
     """
@@ -432,7 +459,7 @@ class SquareMatrix(Matrix):
         # FIXME: There should be some general method e.g  Leibniz eq., but it is very slow.
         return NotImplemented
 
-    # inverted
+    # def inverted() # type: () -> SquareMatrix
 
 
 class Matrix2(SquareMatrix):
