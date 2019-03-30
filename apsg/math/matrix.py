@@ -28,7 +28,7 @@ class NonConformableMatrix(Exception):
 
 class Matrix(object):
     """
-    Represents a square matrix of dimension M × M.
+    Represents a matrix of dimension M × M.
 
     This type is immutable -- it's elements can't be changed
     after an initialization.
@@ -84,11 +84,12 @@ class Matrix(object):
         ``apsg.math.vector`` module.
     """
 
-    __shape__ = (0, 0)  # (uint, uint)
-
+    __shape__ = (0, 0)  # (number of rows: uint, number of columns: uint)
     __slots__ = ("_elements",)
 
+    # #########################################################################
     # Magic methods
+    # #########################################################################
 
     def __new__(cls, *args, **kwargs):
         """
@@ -117,10 +118,9 @@ class Matrix(object):
             I := [[1, 0] [0, 1]] is created as Matrix(1, 0, 0, 1).
         Raises:
             Exception if dimension of matrix does not match the number of items.
-
         """
 
-        # DEVELOPER NOTE: The elements are stored in one-dimensional tuple.
+        # NOTE: The elements are stored in one-dimensional tuple.
         # An access of an element in `i`-th row and `j`-th column is implemented with
         # formula:  `m[i, j] = number_of_columns * i + j`, see the ``__getitem__`` method.
 
@@ -146,7 +146,8 @@ class Matrix(object):
     def __eq__(self, other):
         # type: (Matrix) -> bool
         """
-        Return `True` when the components are equal otherwise `False`.
+        Returns:
+            bool: `True` when the components are equal otherwise `False`.
         """
         # isinstance(other, self.__class__) # ???
         return self._elements == other  # FIXME
@@ -154,9 +155,11 @@ class Matrix(object):
     def __ne__(self, other):
         # type: (Matrix) -> bool
         """
-        Return `True` when the components are not equal otherwise `False`.
+        Returns:
+            bool: `True` when the components are not equal otherwise `False`.
 
-        This have to be implemented for Python 2 compatibility.
+        Note:
+            This have to be implemented for Python 2 compatibility.
         """
         return not (self == other)
 
@@ -198,13 +201,11 @@ class Matrix(object):
         Get the element with a given indexes.
 
         Examples:
-
             >>> Matrix.__shape__ = (2, 2)
 
             >>> m = Matrix(11, 12, 21, 22)
             >>> m[0, 0], m[0, 1], m[1, 0], m[1, 1]
             (11, 12, 21, 22)
-
         """
         # FIXME How to implement this for matrix and vector?
         if len(indexes) != 2:
@@ -213,13 +214,11 @@ class Matrix(object):
         i, j = indexes
         return self._elements[i * self.__shape__[1] + j]
 
-    def __array__(self):
+    def __array__(self, dtype=None):
         """
-        Get the instance as ``numpy.array``.
+        Get the instance as `numpy.array`.
         """
-        # return np.array([*self._elements], dtype=dtype) if dtype \
-        #     else np.array([*self._elements])
-        return NotImplemented
+        return np.array(self.rows, dtype=dtype)
 
     # #########################################################################
     # Operators
@@ -232,21 +231,29 @@ class Matrix(object):
         """
         return self.__class__(*map(operator.neg, self._elements))
 
-    def __mul__(self, other):
-        # type: (Union[Scalar, Matrix]) -> Matrix
+    def __mul__(self, scalar):
+        # type: (Scalar) -> Matrix FIXME
         """
         Calculate the scalar-matrix multiplication.
 
-        Args:
-            other - The scalar or matrix.
+        Arguments:
+            scalar - A scalar value.
+
+        Returns:
+            Matrix: A new matrix.
         """
-        # FIXME if the other is vector (matrix) the result is scalar product.
-        return self.__class__(*map(lambda x: other * x, self._elements))
+        return self.__class__(*map(lambda x: scalar * x, self._elements))
 
     def __rmul__(self, scalar):
         # type: (Scalar) -> Matrix
         """
         Calculate the matrix-scalar multiplication.
+
+        Arguments:
+            scalar -- A scalar value.
+
+        Returns:
+            Matrix: A new matrix.
         """
         return self * scalar
 
@@ -255,11 +262,18 @@ class Matrix(object):
         """
         Calculate matrix addition.
 
+        Arguments:
+            Matrix: An other matrix.
+
+        Returns:
+            Matrix: A new matrix.
+
         Raises:
-            An exception if ``other`` matrix is not conformable.
+            NonConformableMatrix: Raises if other matrix is not conformable for addition.
         """
         if self.row_count != other.row_count or self.column_count != other.column_count:
             raise NonConformableMatrix()
+
         return self.__class__(*[a + b for a, b in zip(self._elements, other._elements)])
 
     def __matmul__(self, other):
@@ -267,8 +281,14 @@ class Matrix(object):
         """
         Calculate the matrix-matrix multiplication.
 
+        Arguments:
+            Matrix: An other matrix.
+
+        Returns:
+            Matrix: A new matrix.
+
         Raises:
-            An exception if ``other`` matrix is not conformable.
+            NonConformableMatrix: Raises if other matrix is not conformable for multiplication.
         """
 
         row_count = self.row_count
@@ -288,12 +308,20 @@ class Matrix(object):
         return cls(value for _ in range(0, cls.__shape__[0] * cls.__shape__[1]))
 
     @classmethod
-    def zeros(cls):  # todo
-        return cls.uniform(0.0)
+    def ones(cls):
+        # type: (Scalar) -> Matrix
+        """
+        Create a new instance filled with values 1.0.
+        """
+        return cls.uniform(1.0)
 
     @classmethod
-    def ones(cls):  # todo
-        return cls.uniform(1.0)
+    def zeros(cls):
+        # type: (Scalar) -> Matrix
+        """
+        Create a new instance filled with values 0.0.
+        """
+        return cls.uniform(0.0)
 
     # @classmethod
     # def from_rows(cls, rows):
@@ -327,7 +355,9 @@ class Matrix(object):
     def rows(self):
         # type: () -> List[List[float]]
         """
-        Get the rows of matrix.
+        Get the matrix rows.
+
+        Returns: The matrix rows.
         """
         group = lambda t, n: zip(*[t[i::n] for i in range(n)])
         # Use the ``itertools.grouper`` instead of custom function?
@@ -337,7 +367,9 @@ class Matrix(object):
     def columns(self):
         # type: () -> List[List[float]]
         """
-        Get the columns of matrix.
+        Get the matrix columns.
+
+        Returns: The matrix columns.
         """
         return self.transpose().rows
 
@@ -363,7 +395,7 @@ class Matrix(object):
         """
         Get the dimension of matrix.
 
-        This is simply a calculated as number of rows × number of columns.
+        This is calculated as number of rows × number of columns.
         """
         return self.row_count * self.column_count
 
@@ -372,9 +404,11 @@ class Matrix(object):
     # #########################################################################
 
     def row(self, index):
+        # type: (int) -> List[float]
         return self.rows[index]
 
     def column(self, index):
+        # type: (int) -> List[float]
         return self.columns[index]
 
     def transpose(self):
@@ -524,7 +558,6 @@ class Matrix2(SquareMatrix):
     """
 
     __shape__ = (2, 2)
-
     __slots__ = ("_elements",)  # Don't forget define this again in each subclass!
 
     def __init__(self, *elements):
@@ -545,7 +578,6 @@ class Matrix3(SquareMatrix):
     """
 
     __shape__ = (3, 3)
-
     __slots__ = ("_elements",)  # Don't forget define this again in each subclass!
 
     def __init__(self, *elements):
@@ -567,7 +599,6 @@ class Matrix4(SquareMatrix):
     """
 
     __shape__ = (4, 4)
-
     __slots__ = ("_elements",)  # Don't forget define this again in each subclass!
 
     def __init__(self, *elements):

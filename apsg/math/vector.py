@@ -18,7 +18,7 @@ class NonConformableVectors(Exception):
 
 class Vector(Matrix):
     """
-    A vector base class represented as N x 1 matrix.
+    A column vector base class represented as N x 1 matrix.
     """
 
     __slots__ = ("_elements",)
@@ -32,7 +32,7 @@ class Vector(Matrix):
 
 class Vector2(Vector):
     """
-    Represents a two-dimensional vector.
+    Represents a two-dimensional column vector.
 
     Examples:
         >>> u = Vector2(1, 0)
@@ -41,16 +41,18 @@ class Vector2(Vector):
         Vector2([(1,), (1,)])
 
         # FIXME We want this ``Vector2(1, 1)``!
-
     """
 
     __shape__ = (2, 1)
-
     __slots__ = ("_elements",)
 
     def __init__(self, *elements):
-        if len(elements) > 2:
-            raise Exception("Wrong number of elements")
+        expected_number_of_elements = self.__shape__[0] * self.__shape__[1]
+
+        if len(elements) > expected_number_of_elements:
+            raise WrongNumberOfElements(
+                "Wrong number of elements, expected {0}, got {1}".format(
+                    expected_number_of_elements, len(elements)))
 
         super(Vector2, self).__init__(*elements)
 
@@ -66,20 +68,26 @@ class Vector2(Vector):
     def unit_x(cls):
         return cls(1, 0)
 
-    @classmethos
+    @classmethod
     def unit_y(cls):
         return cls(0, 1)
 
 
 class Vector3(Vector):
+    """
+    Represents a three-dimensional column vector.
+    """
 
     __shape__ = (3, 1)
-
     __slots__ = ("_elements",)
 
     def __init__(self, *elements):
-        if len(elements) > 3:
-            raise Exception("Wrong number of elements")
+        expected_number_of_elements = self.__shape__[0] * self.__shape__[1]
+
+        if len(elements) > expected_number_of_elements:
+            raise WrongNumberOfElements(
+                "Wrong number of elements, expected {0}, got {1}".format(
+                    expected_number_of_elements, len(elements)))
 
         super(Vector3, self).__init__(*elements)
 
@@ -100,7 +108,7 @@ class Vector3(Vector):
     def unit_x(cls):  # e1
         return cls(1, 0, 0)
 
-    @classmethos
+    @classmethod
     def unit_y(cls):  # e2
         return cls(0, 1, 0)
 
@@ -131,16 +139,38 @@ class Vector3(Vector):
 
 
 class Vector4(Vector):
+    """
+    Represents a four-dimensional column vector.
+    """
 
     __shape__ = (4, 1)
-
     __slots__ = ("_elements",)
 
     def __init__(self, *elements):
-        if len(elements) > 3:
-            raise Exception("Wrong number of elements")
+        expected_number_of_elements = self.__shape__[0] * self.__shape__[1]
+
+        if len(elements) > expected_number_of_elements:
+            raise WrongNumberOfElements(
+                "Wrong number of elements, expected {0}, got {1}".format(
+                    expected_number_of_elements, len(elements)))
 
         super(Vector3, self).__init__(*elements)
+
+    @classmethod
+    def unit_x(cls):
+        return cls(1, 0, 0, 0)
+
+    @classmethod
+    def unit_y(cls):
+        return cls(0, 1, 0, 0)
+
+    @classmethod
+    def unit_z(cls):
+        return cls(0, 0, 1, 0)
+
+    @classmethod
+    def unit_w(cls):
+        return cls(0, 0, 0, 1)
 
     @property
     def x(self):
