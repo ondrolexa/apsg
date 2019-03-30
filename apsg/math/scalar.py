@@ -8,4 +8,4 @@ __all__ = ("Scalar",)
 
 
 # Simple type alias for better semantics.
-Scalar = typing.NewType('Scalar', float)
+Scalar = typing.NewType("Scalar", float)

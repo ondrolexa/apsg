@@ -83,7 +83,7 @@ class Vector3(Vector):
 
         super(Vector3, self).__init__(*elements)
 
-    def __pow__(self, other): # (Vector3) -> Vector3
+    def __pow__(self, other):  # (Vector3) -> Vector3
         """
         Calculate the vector product between ``self`` and ``other`` vector.
 
@@ -93,19 +93,19 @@ class Vector3(Vector):
         return self.__class__(
             self.y * other.z - self.z * other.y,
             self.z * other.x - self.x * other.z,
-            self.x * other.y - self.y * other.x
+            self.x * other.y - self.y * other.x,
         )
 
     @classmethod
-    def unit_x(cls): # e1
+    def unit_x(cls):  # e1
         return cls(1, 0, 0)
 
     @classmethos
-    def unit_y(cls): # e2
+    def unit_y(cls):  # e2
         return cls(0, 1, 0)
 
-     @classmethod
-    def unit_z(cls): # e3
+    @classmethod
+    def unit_z(cls):  # e3
         return cls(0, 0, 1)
 
     @property
@@ -120,7 +120,7 @@ class Vector3(Vector):
     def z(self):
         return self[2]
 
-    def cross(self, other): # (Vector3) -> Vector3
+    def cross(self, other):  # (Vector3) -> Vector3
         """
         Calculate the vector product between ``self`` and ``other`` vector.
 

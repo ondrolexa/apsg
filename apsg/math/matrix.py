@@ -84,7 +84,7 @@ class Matrix(object):
         ``apsg.math.vector`` module.
     """
 
-    __shape__ = (0, 0) # (uint, uint)
+    __shape__ = (0, 0)  # (uint, uint)
 
     __slots__ = ("_elements",)
 
@@ -101,7 +101,9 @@ class Matrix(object):
             class attribute has zero value.
         """
         if (0 == cls.__shape__[0]) or (0 == cls.__shape__[1]):
-            raise AssertionError("Please define non zero `__shape__` values e.g (2, 1).")
+            raise AssertionError(
+                "Please define non zero `__shape__` values e.g (2, 1)."
+            )
 
         return super(Matrix, cls).__new__(cls)
 
@@ -128,7 +130,10 @@ class Matrix(object):
         if len(elements) != self.__shape__[0] * self.__shape__[1]:
             raise AssertionError(
                 "The number of elements must be equal to ``{class_name}`` dimension, which is {dimension}".format(
-                    class_name=self.__class__.__name__, dimension=self.__shape__[0] * self.__shape__[1]))
+                    class_name=self.__class__.__name__,
+                    dimension=self.__shape__[0] * self.__shape__[1],
+                )
+            )
 
         self._elements = elements
 
@@ -144,7 +149,7 @@ class Matrix(object):
         Return `True` when the components are equal otherwise `False`.
         """
         # isinstance(other, self.__class__) # ???
-        return self._elements == other # FIXME
+        return self._elements == other  # FIXME
 
     def __ne__(self, other):
         # type: (Matrix) -> bool
@@ -177,7 +182,9 @@ class Matrix(object):
             >>> len(m)
             2
         """
-        return self.__shape__[0] # * self.__shape__[1] # FIXME: Return dimension not number of rows
+        return self.__shape__[
+            0
+        ]  # * self.__shape__[1] # FIXME: Return dimension not number of rows
 
     def __iter__(self):
         """
@@ -253,7 +260,7 @@ class Matrix(object):
         """
         if self.row_count != other.row_count or self.column_count != other.column_count:
             raise NonConformableMatrix()
-        return self.__class__( *[a + b for a, b in zip(self._elements, other._elements)] )
+        return self.__class__(*[a + b for a, b in zip(self._elements, other._elements)])
 
     def __matmul__(self, other):
         # type: (Matrix) -> Matrix
@@ -296,7 +303,6 @@ class Matrix(object):
     # def from_columns(cls, columns):
     #     ...
 
-
     # #########################################################################
     # Properties
     # #########################################################################
@@ -325,7 +331,7 @@ class Matrix(object):
         """
         group = lambda t, n: zip(*[t[i::n] for i in range(n)])
         # Use the ``itertools.grouper`` instead of custom function?
-        return list( group(self._elements, self.__shape__[1]) )
+        return list(group(self._elements, self.__shape__[1]))
 
     @property
     def columns(self):
@@ -376,8 +382,7 @@ class Matrix(object):
         """
         Transpose the matrix.
         """
-        return self.__class__(
-            *list(itertools.chain.from_iterable(zip(*self.rows))))
+        return self.__class__(*list(itertools.chain.from_iterable(zip(*self.rows))))
 
     def is_square(self):
         # type: () -> bool
@@ -392,7 +397,7 @@ class SquareMatrix(Matrix):
     Represents a square matrix M × N of float values.
     """
 
-    __slots__ = ("_elements",) # Don't forget define this again in each subclass!
+    __slots__ = ("_elements",)  # Don't forget define this again in each subclass!
 
     def __new__(cls, *args, **kwargs):
         """
@@ -400,9 +405,10 @@ class SquareMatrix(Matrix):
 
         Check that ``__shape__`` contains the same values e.g (2, 2).
         """
-        if (cls.__shape__[0] != cls.__shape__[1]):
+        if cls.__shape__[0] != cls.__shape__[1]:
             raise AssertionError(
-                "The ``__shape__`` must contain the same values e.g (2, 2).")
+                "The ``__shape__`` must contain the same values e.g (2, 2)."
+            )
 
         return super(SquareMatrix, cls).__new__(cls, *args, **kwargs)
 
@@ -449,12 +455,14 @@ class SquareMatrix(Matrix):
 
         if 9 == self.dimension:
             # 3 × 3 matrix
-            return (self[0, 0] * self[1, 1] * self[2, 2]) \
-                 + (self[1, 0] * self[2, 1] * self[0, 2]) \
-                 + (self[2, 0] * self[0, 1] * self[1, 2]) \
-                 - (self[0, 2] * self[1, 1] * self[2, 0]) \
-                 - (self[1, 2] * self[2, 1] * self[0, 0]) \
-                 - (self[2, 2] * self[0, 1] * self[1, 0])
+            return (
+                (self[0, 0] * self[1, 1] * self[2, 2])
+                + (self[1, 0] * self[2, 1] * self[0, 2])
+                + (self[2, 0] * self[0, 1] * self[1, 2])
+                - (self[0, 2] * self[1, 1] * self[2, 0])
+                - (self[1, 2] * self[2, 1] * self[0, 0])
+                - (self[2, 2] * self[0, 1] * self[1, 0])
+            )
 
         # FIXME: There should be some general method e.g  Leibniz eq., but it is very slow.
         return NotImplemented
@@ -517,7 +525,7 @@ class Matrix2(SquareMatrix):
 
     __shape__ = (2, 2)
 
-    __slots__ = ("_elements",) # Don't forget define this again in each subclass!
+    __slots__ = ("_elements",)  # Don't forget define this again in each subclass!
 
     def __init__(self, *elements):
         super(Matrix2, self).__init__(*elements)
@@ -538,7 +546,7 @@ class Matrix3(SquareMatrix):
 
     __shape__ = (3, 3)
 
-    __slots__ = ("_elements",) # Don't forget define this again in each subclass!
+    __slots__ = ("_elements",)  # Don't forget define this again in each subclass!
 
     def __init__(self, *elements):
         super(Matrix3, self).__init__(*elements)
@@ -560,7 +568,7 @@ class Matrix4(SquareMatrix):
 
     __shape__ = (4, 4)
 
-    __slots__ = ("_elements",) # Don't forget define this again in each subclass!
+    __slots__ = ("_elements",)  # Don't forget define this again in each subclass!
 
     def __init__(self, *elements):
         super(Matrix3, self).__init__(*elements)
