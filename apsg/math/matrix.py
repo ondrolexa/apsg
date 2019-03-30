@@ -42,16 +42,125 @@ class Matrix(object):
     Tests:
 
         Matrix 2 × 2
+        ------------
 
-        >>> m = Matrix2(1, 0, 0, 1)
-        >>> m.dimension
+        Create the matrix.
+        >>> A = Matrix2(1, 0, 0, 1)       # Implicit conversion to float!
+        >>> B = Matrix2(0.0, 1.0, 1.0, 0.0)
+
+
+        Add two matrices.
+        >>> A + B
+        Matrix2([(1.0, 1.0), (1.0, 1.0)])
+
+        >>> (A + B) == (B + A)
+        True
+
+
+        Subtract two matrices.
+        >>> A - B
+        Matrix2([(1.0, -1.0), (-1.0, 1.0)])
+
+        >>> (A - B) != (B - A)
+        True
+
+
+        Multiply matrix by scalar
+        >>> 3 * A
+        Matrix2([(3.0, 0.0), (0.0, 3.0)])
+        >>> A * 3
+        Matrix2([(3.0, 0.0), (0.0, 3.0)])
+
+
+        Negate matrix
+        >>> -A
+        Matrix2([(-1.0, 0.0), (0.0, -1.0)])
+
+
+        Check hashes.
+        >>> C1 = Matrix2.ones()
+        >>> C2 = Matrix2.ones()
+        >>> (C1 == C2) and (hash(C1) == hash(C2))
+        True
+
+
+        Get a rows.
+        >>> A.rows
+        [(1.0, 0.0), (0.0, 1.0)]
+
+
+        Get number of rows
+        >>> A.row_count
+        2
+
+
+        Get a columns.
+        >>> A.columns
+        [(1.0, 0.0), (0.0, 1.0)]
+
+
+        Get number of columns
+        >>> A.column_count
+        2
+
+
+        Get element at [i,j] position.
+        >>> A[0,0], A[0,1], A[1,0], A[1,1]
+        (1.0, 0.0, 0.0, 1.0)
+
+        __iter__ works!
+        >>> [i for i in A]
+        [1.0, 0.0, 0.0, 1.0]
+
+        __array__ works!
+        >>> import numpy
+        >>> numpy.array(A)
+        array([[1., 0.],
+               [0., 1.]])
+
+        NumPy shows floats `0.0` as `0.`!
+
+
+        Get a dimension.
+        >>> A.dimension
         4
 
-        Calculate a determinant.
-        >>> m.determinant()
-        1
 
-        Create 3 × 3 Matrix.
+        Get minimum value.
+        >>> A.min
+        0.0
+
+        Get maximum value.
+        >>> A.max
+        1.0
+
+
+        Calculate a determinant.
+        >>> A.determinant()
+        1.0
+
+
+        Check if it is a square matrix.
+        >>> A.is_square
+        True
+
+
+        # Matrix 2 × 3
+        # ------------
+        # >>> Matrix.__shape__ = (2, 3)
+        # >>> R = Matrix(1,1,1, 2,2,2)
+        # >>> R.rows
+        # [(1.0, 1.0, 1.0), (2.0, 2.0, 2.0)]
+        # >>> R.columns
+        # [(1.0, 2.0), (1.0, 2.0), (1.0, 2.0)]
+
+        # >>> R.is_square FIXME
+        # False
+
+
+        Matrix 3 × 3
+        ------------
+
         >>> m = Matrix3(1, 0, 0, 0, 1, 0, 0, 0, 1)
 
         Check th
@@ -60,15 +169,15 @@ class Matrix(object):
 
         Calculate a determinant.
         >>> m.determinant()
-        1
+        1.0
 
         >>> m = Matrix2(1, -2, 3, -4)
         >>> -m
-        Matrix2([(-1, 2), (-3, 4)])
+        Matrix2([(-1.0, 2.0), (-3.0, 4.0)])
 
         >>> m = Matrix2(1, 2, 3, 4)
         >>> m.transpose()
-        Matrix2([(1, 3), (2, 4)])
+        Matrix2([(1.0, 3.0), (2.0, 4.0)])
 
     Examples:
 
@@ -109,13 +218,15 @@ class Matrix(object):
         return super(Matrix, cls).__new__(cls)
 
     def __init__(self, *elements):
-        # type: (Tuple[float]) -> Matrix
+        # type: (Tuple[Scalar]) -> Matrix
         """
         Creates an matrix with given elements.
 
         Args:
             elements - An elements in row order, e.g an identity matrix
             I := [[1, 0] [0, 1]] is created as Matrix(1, 0, 0, 1).
+
+            dtype - The type of elements.
         Raises:
             Exception if dimension of matrix does not match the number of items.
         """
@@ -127,15 +238,21 @@ class Matrix(object):
         # if 1 == len(elements) and isinstance(elements, Iterable):
         #     elements = *elements
 
-        if len(elements) != self.__shape__[0] * self.__shape__[1]:
+        number_of_expected_elements = self.__shape__[0] * self.__shape__[1]
+        if len(elements) != number_of_expected_elements:
             raise AssertionError(
-                "The number of elements must be equal to ``{class_name}`` dimension, which is {dimension}".format(
+                "The number of elements must be equal to ``{class_name}`` dimension, expected {expected}, got {got}".format(
                     class_name=self.__class__.__name__,
-                    dimension=self.__shape__[0] * self.__shape__[1],
+                    expected=number_of_expected_elements,
+                    got=len(elements)
                 )
             )
 
-        self._elements = elements
+        self._elements = tuple([
+            # Convert -0.0 to 0.0, see https://en.wikipedia.org/wiki/Signed_zero
+            # This is especially important for `__neg__` method!
+            float(max(0, e)) if (e == 0) else \
+                float(e) for e in elements]) # Should we implicitly convert to float?
 
     def __repr__(self):
         # type: () -> str
@@ -165,7 +282,7 @@ class Matrix(object):
 
     def __hash__(self):
         # type: () -> int
-        return hash((self._elements, self.__class__.__name___))
+        return hash((self._elements, self.__class__.__name__))
 
     def __len__(self):
         # () -> int
@@ -199,15 +316,8 @@ class Matrix(object):
         # type: (Tuple[int]) -> float
         """
         Get the element with a given indexes.
-
-        Examples:
-            >>> Matrix.__shape__ = (2, 2)
-
-            >>> m = Matrix(11, 12, 21, 22)
-            >>> m[0, 0], m[0, 1], m[1, 0], m[1, 1]
-            (11, 12, 21, 22)
         """
-        # FIXME How to implement this for matrix and vector?
+        # FIXME How to implement this for matrix and vector together?
         if len(indexes) != 2:
             raise Exception("Number of indexes must be 2.")
 
@@ -218,7 +328,8 @@ class Matrix(object):
         """
         Get the instance as `numpy.array`.
         """
-        return np.array(self.rows, dtype=dtype)
+        import numpy
+        return numpy.array(self.rows, dtype=dtype)
 
     # #########################################################################
     # Operators
@@ -276,6 +387,22 @@ class Matrix(object):
 
         return self.__class__(*[a + b for a, b in zip(self._elements, other._elements)])
 
+    def __sub__(self, other):
+        # type: (Matrix) -> Matrix
+        """
+        Calculate matrix subtratcion.
+
+        Arguments:
+            Matrix: An other matrix.
+
+        Returns:
+            Matrix: A new matrix.
+
+        Raises:
+            NonConformableMatrix: Raises if other matrix is not conformable for addition.
+        """
+        return self + (-other)
+
     def __matmul__(self, other):
         # type: (Matrix) -> Matrix
         """
@@ -305,7 +432,7 @@ class Matrix(object):
         """
         Create a new instance filled with the same value.
         """
-        return cls(value for _ in range(0, cls.__shape__[0] * cls.__shape__[1]))
+        return cls(*[value for _ in range(0, cls.__shape__[0] * cls.__shape__[1])])
 
     @classmethod
     def ones(cls):
@@ -321,7 +448,7 @@ class Matrix(object):
         """
         Create a new instance filled with values 0.0.
         """
-        return cls.uniform(0.0)
+        return cls.uniform(0.0) # NOTE Always use float?
 
     # @classmethod
     # def from_rows(cls, rows):
@@ -399,6 +526,14 @@ class Matrix(object):
         """
         return self.row_count * self.column_count
 
+    @property
+    def is_square(self):
+        # type: () -> bool
+        """
+        Check if ``self`` is a square matrix.
+        """
+        return self.row_count == self.column_count
+
     # #########################################################################
     # Methods
     # #########################################################################
@@ -416,14 +551,10 @@ class Matrix(object):
         """
         Transpose the matrix.
         """
-        return self.__class__(*list(itertools.chain.from_iterable(zip(*self.rows))))
-
-    def is_square(self):
-        # type: () -> bool
-        """
-        Check if ``self`` is a square matrix.
-        """
-        return self.row_count == self.column_count
+        # Flatten the zipped rows before passing to constructor.
+        # xs = [y for x in zip(self.rows) for y in x]
+        return self.__class__(
+            *list(itertools.chain.from_iterable(zip(*self.rows))))
 
 
 class SquareMatrix(Matrix):
@@ -511,50 +642,8 @@ class Matrix2(SquareMatrix):
     The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
     e.g `m_{12}` represents the element at first row and second column.
 
-    m_{11} | m_{12}
-    m_{22} | m_{22}
-
-    Examples:
-        >>> m = Matrix2(11, 12, 21, 22)
-        >>> m[0, 0], m[0, 1], m[1, 0], m[1, 1]
-        (11, 12, 21, 22)
-
-        >>> m1 = Matrix2(1, 2, 3, 4)
-        >>> m2 = Matrix2(1, 2, 3, 4)
-
-        Operators
-
-        >>> m1 = Matrix2(1, 2, 3, 4)
-        >>> m1.rows
-        [(1, 2), (3, 4)]
-
-        >>> m2 = Matrix2(4, 3, 2, 1)
-        >>> m2.rows
-        [(4, 3), (2, 1)]
-
-
-        ``+`` Matrix addition
-
-        >>> m1 + m2
-        Matrix2([(5, 5), (5, 5)])
-
-        >>> m2 + m1
-        Matrix2([(5, 5), (5, 5)])
-
-
-        ``*`` Matrix, scalar multiplication
-
-        >>> m1 * 2
-        Matrix2([(2, 4), (6, 8)])
-
-        >>> 2 * m1
-        Matrix2([(2, 4), (6, 8)])
-
-
-        ``@`` Matrix, matrix multiplication
-        # >>> m1 @ m2
-        # Matrix2([(7, 10), (15, 14)])
-
+    | m_{11} | m_{12} |
+    | m_{22} | m_{22} |
     """
 
     __shape__ = (2, 2)
@@ -571,10 +660,9 @@ class Matrix3(SquareMatrix):
     The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
     e.g `m_{12}` represents the element at first row and second column.
 
-    m_{11} | m_{12} | m_{13}
-    m_{22} | m_{22} | m_{23}
-    m_{31} | m_{32} | m_{33}
-
+    | m_{11} | m_{12} | m_{13} |
+    | m_{22} | m_{22} | m_{23} |
+    | m_{31} | m_{32} | m_{33} |
     """
 
     __shape__ = (3, 3)
@@ -591,11 +679,10 @@ class Matrix4(SquareMatrix):
     The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
     e.g `m_{12}` represents the element at first row and second column.
 
-    m_{11} | m_{12} | m_{13} | m_{14}
-    m_{22} | m_{22} | m_{23} | m_{24}
-    m_{31} | m_{32} | m_{33} | m_{34}
-    m_{41} | m_{42} | m_{43} | m_{44}
-
+    | m_{11} | m_{12} | m_{13} | m_{14} |
+    | m_{22} | m_{22} | m_{23} | m_{24} |
+    | m_{31} | m_{32} | m_{33} | m_{34} |
+    | m_{41} | m_{42} | m_{43} | m_{44} |
     """
 
     __shape__ = (4, 4)
