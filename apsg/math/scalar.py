@@ -7,5 +7,5 @@ import typing
 __all__ = ("Scalar",)
 
 
-# Simple type alias for better semantics.
 Scalar = typing.NewType("Scalar", float)
+"""Simple type alias for better semantics."""

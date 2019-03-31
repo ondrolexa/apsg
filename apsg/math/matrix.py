@@ -4,6 +4,7 @@
 import typing
 import operator
 import itertools
+import functools
 
 from collections.abc import Iterable
 
@@ -31,13 +32,18 @@ class Matrix(object):
     Represents a matrix of dimension M × M.
 
     This type is immutable -- it's elements can't be changed
-    after an initialization.
+    after an initialization. This also means that in-place operators as `+=, -=` etc.
+    are not implemented.
 
     This type also has a structural equality -- the two instances are equal if and
     only if their elements are equal.
 
     The matrix elements has indexes `i` for row and `j` for column written as `m_{ij}`,
     e.g `m_{12}` represents the element at first row and second column.
+
+    Todo:
+        - Matrix can be created with any 2D sequence as `numpy.array` or neted lists eg
+          Matrix2( [1, 2], [3, 4] ), Matrix2([ [1, 2], [3, 4] ]), Matrix2( ( (1, 2), (3, 4) )
 
     Tests:
 
@@ -156,6 +162,12 @@ class Matrix(object):
 
         # >>> R.is_square FIXME
         # False
+
+
+        Create diagonal matrix.
+        >>> m = Matrix2.diagonal()
+        >>> m.rows
+        [(1, 0), (0, 1)]
 
 
         Matrix 3 × 3
@@ -517,6 +529,11 @@ class Matrix(object):
         return len(self.columns)
 
     @property
+    def shape(self):
+        # type: () -> Tuple[int, int]
+        return tuple(self.__shape__)
+
+    @property
     def dimension(self):
         # type: () -> int
         """
@@ -562,13 +579,14 @@ class SquareMatrix(Matrix):
     Represents a square matrix M × N of float values.
     """
 
-    __slots__ = ("_elements",)  # Don't forget define this again in each subclass!
+    __slots__ = ("_elements",)  # Don't forget define this in subclass!
 
     def __new__(cls, *args, **kwargs):
         """
         Create a new instance.
 
-        Check that ``__shape__`` contains the same values e.g (2, 2).
+        Raises:
+            AssertionError - If the ``__shape__`` doesn't contain the same values e.g (1, 2).
         """
         if cls.__shape__[0] != cls.__shape__[1]:
             raise AssertionError(
@@ -578,30 +596,48 @@ class SquareMatrix(Matrix):
         return super(SquareMatrix, cls).__new__(cls, *args, **kwargs)
 
     @classmethod
-    def diagonal(cls, value):
+    def diagonal(cls, *values):
         """
         Create a diagonal matrix.
         """
+        # TODO Check the length of values.
+        # Put the value on each diagonal element otherwise 0.0.
+        # [print(i, cls.__shape__ - 1) for i in range(functools.reduce((lambda x, y: x * y), cls.__shape__))])
+        # print([0.0 if (i % cls.__shape__[1]) else values[0] for i in range(functools.reduce((lambda x, y: x * y), cls.__shape__))])
+
+        # return cls(*[0 if (i % skip_index) else values[i] for i in \
+        #     range(functools.reduce((lambda x, y: x * y), cls.__shape__))])
 
     @classmethod
     def identity(cls):
         """
         Create a identity (or unit) matrix.
+
+        | 1 | 0 | 0 |
+        | 0 | 1 | 0 |
+        | 0 | 0 | 1 |
         """
-        return cls.diagonal(1.0)
+        return cls.diagonal(*[1.0 for _ in \
+            range(functools.reduce((lambda x, y: x * y), cls.__shape__))])
 
-    # upper_triangular(cls)
+    @classmethod
+    def upper_triangular(cls):
+        # type: () -> SquareMatrix
+        return NotImplemented
 
-    # lower_triangular(cls)
+    @classmethod
+    def lower_triangular(cls):
+        # type: () -> SquareMatrix
+        return NotImplemented
 
     @classmethod
     def symmetric(cls, *values):
         """
         Create a symmetric matrix.
 
-        |1 | 2 | 3 |
-        |x | 4 | 5 |
-        |x | x | 6 |
+        | 1 | 2 | 3 |
+        | x | 4 | 5 |
+        | x | x | 6 |
         """
         return NotImplemented
 
@@ -630,9 +666,12 @@ class SquareMatrix(Matrix):
             )
 
         # FIXME: There should be some general method e.g  Leibniz eq., but it is very slow.
-        return NotImplemented
+        return NotImplementedError
 
-    # def inverted() # type: () -> SquareMatrix
+    @classmethod
+    def inverted():
+        # type: () -> SquareMatrix
+        return NotImplemented
 
 
 class Matrix2(SquareMatrix):
@@ -647,10 +686,7 @@ class Matrix2(SquareMatrix):
     """
 
     __shape__ = (2, 2)
-    __slots__ = ("_elements",)  # Don't forget define this again in each subclass!
-
-    def __init__(self, *elements):
-        super(Matrix2, self).__init__(*elements)
+    __slots__ = ("_elements",)  # Don't forget define this in subclass!
 
 
 class Matrix3(SquareMatrix):
@@ -666,10 +702,7 @@ class Matrix3(SquareMatrix):
     """
 
     __shape__ = (3, 3)
-    __slots__ = ("_elements",)  # Don't forget define this again in each subclass!
-
-    def __init__(self, *elements):
-        super(Matrix3, self).__init__(*elements)
+    __slots__ = ("_elements",)  # Don't forget define this in subclass!
 
 
 class Matrix4(SquareMatrix):
@@ -686,7 +719,4 @@ class Matrix4(SquareMatrix):
     """
 
     __shape__ = (4, 4)
-    __slots__ = ("_elements",)  # Don't forget define this again in each subclass!
-
-    def __init__(self, *elements):
-        super(Matrix3, self).__init__(*elements)
+    __slots__ = ("_elements",)  # Don't forget define this in subclass!

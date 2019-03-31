@@ -25,14 +25,13 @@ from apsg.core import (
     PairSet,
     FaultSet,
     StereoGrid,
-    settings
 )
+from apsg.setting import settings
+from apsg.tensor import DefGrad, Stress, Tensor, Ortensor, Ellipsoid
+from apsg.math.helper import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 
-from apsg.math.tensor import DefGrad, Stress, Tensor, Ortensor, Ellipsoid
-from apsg.math.helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 
-
-__all__ = ["StereoNet", "VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot", "rose"]
+__all__ = ("StereoNet", "VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot", "rose")
 
 
 # ignore matplotlib deprecation warnings
@@ -40,7 +39,6 @@ warnings.filterwarnings("ignore", category=mcb.mplDeprecation)
 
 
 class StereoNet(object):
-
     """
     ``StereoNet`` class for Schmidt net plotting.
 
@@ -633,7 +631,6 @@ class StereoNet(object):
 
 
 class _FabricPlot(object):
-
     """
     Metaclas for Fabric plots
     """
@@ -687,7 +684,6 @@ class _FabricPlot(object):
 
 
 class VollmerPlot(_FabricPlot):
-
     """
     Represents the triangular fabric plot (Vollmer, 1989).
     """
@@ -844,7 +840,6 @@ class VollmerPlot(_FabricPlot):
 
 
 class RamsayPlot(_FabricPlot):
-
     """
     Represents the Ramsay deformation plot.
     """
@@ -938,7 +933,6 @@ class RamsayPlot(_FabricPlot):
 
 
 class FlinnPlot(_FabricPlot):
-
     """
     Represents the Ramsay deformation plot.
     """
@@ -1032,7 +1026,6 @@ class FlinnPlot(_FabricPlot):
 
 
 class HsuPlot(_FabricPlot):
-
     """
     Represents the Hsu fabric plot.
     """
@@ -1117,7 +1110,6 @@ class HsuPlot(_FabricPlot):
 
 
 class StereoNetJK(object):
-
     """
     API to Joe Kington mplstereonet.
     """
@@ -1254,7 +1246,6 @@ def rose(a, bins=13, **kwargs):
     """
     Plot the rose diagram.
     """
-
     if isinstance(a, Group):
         a, _ = a.dd
 

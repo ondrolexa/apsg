@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 
 
+"""
+Easily manage, analyze and visualize orientational structural geology data.
+"""
+
+
+from apsg.db import SDB
 from apsg.core import (
     Vec3,
     Fol,
@@ -13,12 +19,10 @@ from apsg.core import (
     Cluster,
     StereoGrid,
     G,
-    settings,
 )
-
-from apsg.db import SDB
-from apsg.math.tensor import DefGrad, VelGrad, Stress, Tensor, Ortensor, Ellipsoid
-from apsg.math.helpers import sind, cosd, tand, acosd, asind, atand, atan2d
+from apsg.setting import settings
+from apsg.tensor import DefGrad, VelGrad, Stress, Tensor, Ortensor, Ellipsoid
+from apsg.math.helper import sind, cosd, tand, acosd, asind, atand, atan2d
 from apsg.plotting import StereoNet, VollmerPlot, RamsayPlot, FlinnPlot, HsuPlot
 
 
@@ -55,6 +59,7 @@ __all__ = (
     "FlinnPlot",
     "HsuPlot"
 )
+
 
 __version__ = "0.6.1"
 __author__ = "Ondrej Lexa"

@@ -10,16 +10,17 @@ from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
-from apsg.core import Vec3, Fol, Lin, Group, settings
+from apsg.core import Vec3, Fol, Lin, Group
+from apsg.setting import settings
 from apsg.plotting import StereoNet
-from apsg.math.helpers import sind, cosd, eformat
+from apsg.math.helper import sind, cosd, eformat
 
 
-__all__ = ["Core"]
+__all__ = ("Core",)
 
 
 class Core(object):
-    """``Core`` store palemomagnetic analysis data
+    """``Core`` store paleomagnetic analysis data
 
     Keyword Args:
       info:

@@ -62,7 +62,7 @@ setup(
     setup_requires=pytest_runner,
     entry_points={
         "console_scripts": [
-            "iapsg = apsg.__main__:main"
+            "apsg = apsg.__main__:main"
         ]
     },
     license="MIT",
@@ -70,11 +70,12 @@ setup(
     keywords="apsg",
     classifiers=[
         "Development Status :: 4 - Beta",
+        'Intended Audience :: Education',
+        'Intended Audience :: Developers',
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",

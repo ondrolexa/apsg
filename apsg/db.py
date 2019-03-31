@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
-"""
-API to read data from PySDB database
 
 """
+Repository class to read data from PySDB database.
+"""
+
 
 import sqlite3
 import os.path
+
 from apsg.core import Fol, Lin, Group
 
 
@@ -14,7 +16,10 @@ __all__ = ("SDB",)
 
 
 class SDB(object):
-    """PySDB database access class"""
+    """
+    PySDB database access class.
+    """
+
     _SELECT = """SELECT sites.name as name, sites.x_coord as x,
     sites.y_coord as y, units.name as unit, structdata.azimuth as azimuth,
     structdata.inclination as inclination, structype.structure as structure,

@@ -14,7 +14,8 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-from apsg.math.helpers import (
+from apsg.setting import settings
+from apsg.math.helper import (
     KentDistribution,
     sind,
     cosd,
@@ -32,6 +33,10 @@ from apsg.math.helpers import (
     _exponential_kamb,
 )
 
+# FIXME These modules has cyclic dependencies.
+# We have to do import in each method which uses this classes -- this is not optimal.
+# from apsg.tensor import DefGrad, Ortensor
+
 
 __all__ = (
     "Vec3",
@@ -45,16 +50,7 @@ __all__ = (
     "Cluster",
     "StereoGrid",
     "G",
-    "settings",
 )
-
-
-# Default module settings (singleton).
-
-settings = dict(notation="dd",          # Default notation for Fol dd or rhr
-                vec2dd=False,           # Show Vec3 as plunge direction and plunge
-                precision=1e-12,        # Numerical precision for comparism
-                figsize=(8, 6))         # Default figure size
 
 
 class Vec3(np.ndarray):
@@ -314,7 +310,7 @@ class Vec3(np.ndarray):
             True
 
         """
-        from apsg.tensors import DefGrad
+        from apsg.tensor import DefGrad # FIXME see note [1] at the top of the file.
 
         return DefGrad.from_axis(self ** other, self.V.angle(other))
 
@@ -906,7 +902,7 @@ class Pair(object):
             True
 
         """
-        from apsg.tensors import DefGrad
+        from apsg.tensor import DefGrad
 
         return DefGrad(DefGrad.from_pair(other) * DefGrad.from_pair(self).I)
 
@@ -1435,7 +1431,7 @@ class Group(list):
     @property
     def ortensor(self):
         """Return orientation tensor ``Ortensor`` of ``Group``."""
-        from apsg.tensors import Ortensor
+        from apsg.tensor import Ortensor
 
         return Ortensor.from_group(self)
 
