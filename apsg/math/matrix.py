@@ -13,39 +13,79 @@ from apsg.math.scalar import Scalar
 
 """
 A matrix algebra types and functions.
+
+== Glossary:
+
+- Matrix Dimension: The number of rows and columns that a matrix has is
+  called its dimension or its order. By convention, rows are listed first;
+  and columns, second.
+
 """
 
 
 __all__ = ("Matrix2", "Matrix3", "Matrix4")
 
 
+
 class NonConformableMatrix(Exception):
     """
     Raises when matrices are not conformable for a certain operation.
 
-    For more information see `https://en.wikipedia.org/wiki/Conformable_matrix`.
+    In mathematics, a matrix is conformable if its dimensions are suitable
+    for defining some operation, otherwise it is non conformable.
     """
+
+
+class NonConformableMatrixForAddition(NonConformableMatrix):
+     """
+     Raises when matrices are not conformable for addition.
+     """
+
+
+class NonConformableMatrixForMultiplication(NonConformableMatrix):
+     """
+     Raises when matrices are not conformable for multiplication.
+     """
+
+
+class Slots(type):
+    """Append predefined attribute to subclass `__slots__`."""
+
+    def __new__(mcs, name, bases, dic):
+        dic['__slots__'] += ('_elements',)
+        return type.__new__(mcs, name, bases, dic)
 
 
 class Matrix(object):
     """
-    Represents a matrix of dimension M × M.
+    Represents a (real) matrix of dimension M × N
 
-    This type is immutable -- it's elements can't be changed
-    after an initialization. This also means that in-place operators as `+=, -=` etc.
-    are not implemented.
+    "unit":     1.0
+    "zero":     0.0
+    "inverse": -1.0
 
-    This type also has a structural equality -- the two instances are equal if and
+    The matrix elements has row index `i` and column index `j` (`m_{ij}`).
+
+    In mathematics one writes `m_{11}` to access the element at first row and
+    first column, but implementation is **zero-based**, i.e. the upper
+    left-hand corner of a matrix is element (0,0), not element (1,1).
+
+
+    `Matrix` is immutable -- it's elements can't be changed after the initialization.
+    This means that in-place operators as `+=, -=` etc. are not implemented.
+
+    `Matrix` has a structural equality -- the two instances are equal if and
     only if their elements are equal.
 
-    The matrix elements has indexes `i` for row and `j` for column written as `m_{ij}`,
-    e.g `m_{12}` represents the element at first row and second column.
+    `Matrix` has no memory-saving optimization for sparse matrices.
 
     Todo:
         - Matrix can be created with any 2D sequence as `numpy.array` or neted lists eg
           Matrix2( [1, 2], [3, 4] ), Matrix2([ [1, 2], [3, 4] ]), Matrix2( ( (1, 2), (3, 4) )
 
-    Tests:
+    Examples:
+
+        This only for faster development -- proper unit tests will be added soon.
 
         Matrix 2 × 2
         ------------
@@ -76,6 +116,10 @@ class Matrix(object):
         Matrix2([(3.0, 0.0), (0.0, 3.0)])
         >>> A * 3
         Matrix2([(3.0, 0.0), (0.0, 3.0)])
+
+        Multiply matrix by matrix:
+        >>> A @ B
+        None
 
 
         Negate matrix
@@ -124,7 +168,7 @@ class Matrix(object):
         array([[1., 0.],
                [0., 1.]])
 
-        NumPy shows floats `0.0` as `0.`!
+        Note: NumPy shows floats `0.0` as `0.`!
 
 
         Get a dimension.
@@ -164,10 +208,10 @@ class Matrix(object):
         # False
 
 
-        Create diagonal matrix.
-        >>> m = Matrix2.diagonal()
-        >>> m.rows
-        [(1, 0), (0, 1)]
+        # Create diagonal matrix.
+        # >>> m = Matrix2.diagonal()
+        # >>> m.rows
+        # [(1, 0), (0, 1)]
 
 
         Matrix 3 × 3
@@ -191,8 +235,6 @@ class Matrix(object):
         >>> m.transpose()
         Matrix2([(1.0, 3.0), (2.0, 4.0)])
 
-    Examples:
-
         >>> from apsg.math.matrix import Matrix
 
         How to properly derive from this class? At least you have to define
@@ -205,8 +247,11 @@ class Matrix(object):
         ``apsg.math.vector`` module.
     """
 
-    __shape__ = (0, 0)  # (number of rows: uint, number of columns: uint)
-    __slots__ = ("_elements",)
+    __shape__ = (0, 0)
+    # (number of rows: uint, number of columns: uint)
+
+    __metaclass__ = Slots
+    # For Python 3 use `Matrix(metaclass=MatrixSlot)`
 
     # #########################################################################
     # Magic methods
@@ -429,10 +474,10 @@ class Matrix(object):
         Raises:
             NonConformableMatrix: Raises if other matrix is not conformable for multiplication.
         """
+        if self.column_count != other.row_count:
+            raise NonConformableMatrix("FIXME: Reasonable message here!")
 
-        row_count = self.row_count
-        column_count = self.column_count
-        return NotImplemented
+        return self.__class__(*(self.rows @ other.rows))
 
     # #########################################################################
     # Factories
@@ -576,10 +621,8 @@ class Matrix(object):
 
 class SquareMatrix(Matrix):
     """
-    Represents a square matrix M × N of float values.
+    Represents a square matrix M × N.
     """
-
-    __slots__ = ("_elements",)  # Don't forget define this in subclass!
 
     def __new__(cls, *args, **kwargs):
         """
@@ -594,6 +637,10 @@ class SquareMatrix(Matrix):
             )
 
         return super(SquareMatrix, cls).__new__(cls, *args, **kwargs)
+
+    # #########################################################################
+    # Factories
+    # #########################################################################
 
     @classmethod
     def diagonal(cls, *values):
@@ -641,6 +688,16 @@ class SquareMatrix(Matrix):
         """
         return NotImplemented
 
+    # #########################################################################
+    # Methods
+    # #########################################################################
+
+    def trace(self):
+        """
+        Calculate the matrix trace.
+        """
+        return NotImplemented
+
     def determinant(self):
         """
         Calculate a determinant of matrix.
@@ -668,7 +725,6 @@ class SquareMatrix(Matrix):
         # FIXME: There should be some general method e.g  Leibniz eq., but it is very slow.
         return NotImplementedError
 
-    @classmethod
     def inverted():
         # type: () -> SquareMatrix
         return NotImplemented
@@ -676,25 +732,18 @@ class SquareMatrix(Matrix):
 
 class Matrix2(SquareMatrix):
     """
-    Represents a square matrix 2 × 2 of float values.
-
-    The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
-    e.g `m_{12}` represents the element at first row and second column.
+    Represents a square matrix of dimension 2 × 2.
 
     | m_{11} | m_{12} |
     | m_{22} | m_{22} |
     """
 
     __shape__ = (2, 2)
-    __slots__ = ("_elements",)  # Don't forget define this in subclass!
 
 
 class Matrix3(SquareMatrix):
     """
-    Represents a square matrix 3 × 3 of float values.
-
-    The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
-    e.g `m_{12}` represents the element at first row and second column.
+    Represents a square matrix of dimension 3 × 3.
 
     | m_{11} | m_{12} | m_{13} |
     | m_{22} | m_{22} | m_{23} |
@@ -702,15 +751,11 @@ class Matrix3(SquareMatrix):
     """
 
     __shape__ = (3, 3)
-    __slots__ = ("_elements",)  # Don't forget define this in subclass!
 
 
 class Matrix4(SquareMatrix):
     """
-    Represents a square matrix 4 × 4 of float values.
-
-    The matrix elements has indexes `i` for row and `j` for column writen as `m_{ij}`,
-    e.g `m_{12}` represents the element at first row and second column.
+    Represents a square matrix of dimension 4 × 4.
 
     | m_{11} | m_{12} | m_{13} | m_{14} |
     | m_{22} | m_{22} | m_{23} | m_{24} |
@@ -719,4 +764,3 @@ class Matrix4(SquareMatrix):
     """
 
     __shape__ = (4, 4)
-    __slots__ = ("_elements",)  # Don't forget define this in subclass!

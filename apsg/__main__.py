@@ -31,9 +31,12 @@ def run_console_mode():
     version = pkg_resources.require("apsg")[0].version
 
     banner =  "+------------------------------------------------------------------------------+\n"
-    banner += "|                                  APSG " + version + (34 * " ") +            "|\n"
+    banner += "|                           APSG Toolbox | " + version + (31 * " ") +         "|\n"
     banner += "|                                                                              |\n"
     banner += "|                       http://ondrolexa.github.io/apsg                        |\n"
+    banner += "|                                                                              |\n"
+    banner += "|------------------------------------------------------------------------------|\n"
+    banner += "| You can abort process using CTRL-Z + ENTER                                   |\n"
     banner += "+------------------------------------------------------------------------------+"
 
     vars = globals().copy()
