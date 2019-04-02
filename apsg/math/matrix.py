@@ -20,6 +20,17 @@ A matrix algebra types and functions.
   called its dimension or its order. By convention, rows are listed first;
   and columns, second.
 
+- Square Matrix: Matrix of dimension n × n.
+
+- Identity Matrix: ...
+
+- Diagonal Matrix: ...
+
+- Row Vector: Matrix of dimension 1 × n.
+
+- Column Vector: Matrix of dimension n × 1
+
+
 """
 
 
@@ -118,8 +129,8 @@ class Matrix(object):
         Matrix2([(3.0, 0.0), (0.0, 3.0)])
 
         Multiply matrix by matrix:
-        >>> A @ B
-        None
+        >>> A @ A
+        Matrix2([(1.0, 0.0), (0.0, 1.0)])
 
 
         Negate matrix
@@ -173,7 +184,7 @@ class Matrix(object):
 
         Get a dimension.
         >>> A.dimension
-        4
+        (2, 2)
 
 
         Get minimum value.
@@ -221,7 +232,7 @@ class Matrix(object):
 
         Check th
         >>> m.dimension
-        9
+        (3, 3)
 
         Calculate a determinant.
         >>> m.determinant()
@@ -357,11 +368,9 @@ class Matrix(object):
             >>> Matrix.__shape__ = (2, 2)
             >>> m = Matrix(1, 2, 3, 4)
             >>> len(m)
-            2
+            4
         """
-        return self.__shape__[
-            0
-        ]  # * self.__shape__[1] # FIXME: Return dimension not number of rows
+        return len(self._elements)
 
     def __iter__(self):
         """
@@ -476,8 +485,11 @@ class Matrix(object):
         """
         if self.column_count != other.row_count:
             raise NonConformableMatrix("FIXME: Reasonable message here!")
+        import numpy
+        rows = (numpy.array(self.rows)  @ numpy.array(other.rows)).flatten()
+        return self.__class__(*rows)
 
-        return self.__class__(*(self.rows @ other.rows))
+    # __rmatmul__(self, other): ...
 
     # #########################################################################
     # Factories
@@ -508,12 +520,10 @@ class Matrix(object):
         return cls.uniform(0.0) # NOTE Always use float?
 
     # @classmethod
-    # def from_rows(cls, rows):
-    #     ...
+    # def from_rows(cls, rows): ...
 
     # @classmethod
-    # def from_columns(cls, columns):
-    #     ...
+    # def from_columns(cls, columns): ...
 
     # #########################################################################
     # Properties
@@ -583,10 +593,8 @@ class Matrix(object):
         # type: () -> int
         """
         Get the dimension of matrix.
-
-        This is calculated as number of rows × number of columns.
         """
-        return self.row_count * self.column_count
+        return self.__shape__
 
     @property
     def is_square(self):
@@ -702,16 +710,18 @@ class SquareMatrix(Matrix):
         """
         Calculate a determinant of matrix.
         """
-        if 1 == self.dimension:
+        if 1 == self.row_count:
+            # FIXME What a row vector?
+            # NumPy distinguishes row and column vector.
             return self[0]
-            # This is techniccaly an vector with 1 valeu => scalar.
+            # This is techniccaly an vector with 1 value => scalar.
             # Should we allow it?
 
-        if 4 == self.dimension:
+        if 2 == self.row_count:
             # 2 × 2 matrix
             return self[0, 0] * self[1, 1] - self[0, 1] * self[1, 0]
 
-        if 9 == self.dimension:
+        if 3 == self.row_count:
             # 3 × 3 matrix
             return (
                 (self[0, 0] * self[1, 1] * self[2, 2])
@@ -728,6 +738,9 @@ class SquareMatrix(Matrix):
     def inverted():
         # type: () -> SquareMatrix
         return NotImplemented
+
+
+# #############################################################################
 
 
 class Matrix2(SquareMatrix):
@@ -756,6 +769,9 @@ class Matrix3(SquareMatrix):
 class Matrix4(SquareMatrix):
     """
     Represents a square matrix of dimension 4 × 4.
+
+    Useful if you want to combine translations and rotations
+    or apply perspective projection.
 
     | m_{11} | m_{12} | m_{13} | m_{14} |
     | m_{22} | m_{22} | m_{23} | m_{24} |
