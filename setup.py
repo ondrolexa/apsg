@@ -58,6 +58,9 @@ setup(
             "pytest",
             "radon",
         ],
+        "ipython": [
+            "jupyter",
+        ]
     },
     setup_requires=pytest_runner,
     entry_points={
