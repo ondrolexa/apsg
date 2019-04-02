@@ -71,22 +71,23 @@ class Matrix(object):
     """
     Represents a (real) matrix of dimension M × N
 
-    "unit":     1.0
-    "zero":     0.0
-    "inverse": -1.0
-
     The matrix elements has row index `i` and column index `j` (`m_{ij}`).
 
     In mathematics one writes `m_{11}` to access the element at first row and
     first column, but implementation is **zero-based**, i.e. the upper
     left-hand corner of a matrix is element (0,0), not element (1,1).
 
-
     `Matrix` is immutable -- it's elements can't be changed after the initialization.
     This means that in-place operators as `+=, -=` etc. are not implemented.
 
     `Matrix` has a structural equality -- the two instances are equal if and
-    only if their elements are equal.
+    only if their dimensions and elements are equal.
+
+    For real matrix following `float` values represents:
+
+    - unit element: 1.0
+    - zero element: 0.0
+    - inverse element: -1.0
 
     `Matrix` has no memory-saving optimization for sparse matrices.
 

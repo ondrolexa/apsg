@@ -10,7 +10,7 @@ from apsg.math.scalar import Scalar
 from apsg.math.matrix import Matrix
 
 
-class NonConformableVectors(Exception):
+class NonConformableVectors(Exception): # Derive from matrix exception?
     """
     Raises when vectors are not conformable for a certain operation.
     """
@@ -20,8 +20,6 @@ class Vector(Matrix):
     """
     A column vector base class represented as N x 1 matrix.
     """
-
-    __slots__ = ("_elements",)
 
     def __init__(self, *elements):
         super(Vector, self).__init__(*elements)
@@ -44,7 +42,6 @@ class Vector2(Vector):
     """
 
     __shape__ = (2, 1)
-    __slots__ = ("_elements",)
 
     def __init__(self, *elements):
         expected_number_of_elements = self.__shape__[0] * self.__shape__[1]
@@ -79,7 +76,6 @@ class Vector3(Vector):
     """
 
     __shape__ = (3, 1)
-    __slots__ = ("_elements",)
 
     def __init__(self, *elements):
         expected_number_of_elements = self.__shape__[0] * self.__shape__[1]
@@ -144,7 +140,6 @@ class Vector4(Vector):
     """
 
     __shape__ = (4, 1)
-    __slots__ = ("_elements",)
 
     def __init__(self, *elements):
         expected_number_of_elements = self.__shape__[0] * self.__shape__[1]

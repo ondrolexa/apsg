@@ -47,6 +47,14 @@ def getfdd(x, y):
 
 
 def l2v(azi, inc):
+    """
+    Arguments:
+        azi: azimuth
+        inc: inclination
+
+    Returns:
+        ...
+    """
     return np.array(
         [
             np.atleast_1d(cosd(azi) * cosd(inc)),
