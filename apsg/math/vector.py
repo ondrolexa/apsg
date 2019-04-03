@@ -11,7 +11,7 @@ from apsg.math.scalar import Scalar
 from apsg.math.matrix import Matrix
 
 
-__all__ = ("Vector2", "Vector3", "Vector4")
+__all__ = ("Vector2", "Vector3", "Vector4", "VectorError")
 
 
 # #############################################################################
@@ -19,7 +19,13 @@ __all__ = ("Vector2", "Vector3", "Vector4")
 # #############################################################################
 
 
-class NonConformableVectors(Exception): # Derive from matrix exception?
+class VectorError(Exception):
+    """
+    Raises when there is any problem with vector.
+    """
+
+
+class NonConformableVectors(VectorError): # Derive from matrix exception?
     """
     Raises when vectors are not conformable for a certain operation.
     """

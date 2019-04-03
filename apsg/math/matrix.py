@@ -51,7 +51,13 @@ class _SlotsInjectorMeta(type):
         return type.__new__(mcs, name, bases, dic)
 
 
-class NonConformableMatrix(Exception):
+class MatrixError(Exception):
+    """
+    Raises when there is any problem with matrix.
+    """
+
+
+class NonConformableMatrix(MatrixError):
     """
     Raises when matrices are not conformable for a certain operation.
 
@@ -797,9 +803,3 @@ class Matrix4(SquareMatrix):
     """
 
     __shape__ = (4, 4)
-
-
-class MatrixError(NonConformableMatrix):
-    """
-    Raises when there is any problem with matrix.
-    """
