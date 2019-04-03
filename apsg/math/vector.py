@@ -27,6 +27,12 @@ class Vector(Matrix):
     def __getitem__(self, index):
         return self._elements[index]
 
+    def __abs__(self):
+        # type: () -> Scalar
+
+    def dot(self, other):
+        # type: (Vector) -> Scalar
+
 
 class Vector2(Vector):
     """
@@ -36,7 +42,7 @@ class Vector2(Vector):
         >>> u = Vector2(1, 0)
         >>> v = Vector2(0, 1)
         >>> u + v
-        Vector2([(1,), (1,)])
+        Vector2([(1.0,), (1.0,)])
 
         # FIXME We want this ``Vector2(1, 1)``!
     """

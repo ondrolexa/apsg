@@ -30,12 +30,25 @@ A matrix algebra types and functions.
 
 - Column Vector: Matrix of dimension n × 1
 
+- Idempotent Matrix: ...
 
 """
 
 
-__all__ = ("Matrix2", "Matrix3", "Matrix4")
+__all__ = ("Matrix2", "Matrix3", "Matrix4", "NonConformableMatrix")
 
+
+# #############################################################################
+#   Low Level API -- This is intended for developers.
+# #############################################################################
+
+
+class _slots_injector(type):
+    """Inject predefined attribute to subclass `__slots__`."""
+
+    def __new__(mcs, name, bases, dic):
+        dic['__slots__'] += ('_elements',)
+        return type.__new__(mcs, name, bases, dic)
 
 
 class NonConformableMatrix(Exception):
@@ -57,14 +70,6 @@ class NonConformableMatrixForMultiplication(NonConformableMatrix):
      """
      Raises when matrices are not conformable for multiplication.
      """
-
-
-class Slots(type):
-    """Append predefined attribute to subclass `__slots__`."""
-
-    def __new__(mcs, name, bases, dic):
-        dic['__slots__'] += ('_elements',)
-        return type.__new__(mcs, name, bases, dic)
 
 
 class Matrix(object):
@@ -262,12 +267,16 @@ class Matrix(object):
     __shape__ = (0, 0)
     # (number of rows: uint, number of columns: uint)
 
-    __metaclass__ = Slots
-    # For Python 3 use `Matrix(metaclass=MatrixSlot)`
+    __metaclass__ = _slots_injector
+    # For Python 3 use `Matrix(metaclass=__slots_injector)`
 
     # #########################################################################
-    # Magic methods
+    # Public Methods & Properties
     # #########################################################################
+
+    # =========================================================================
+    # Magic Methods
+    # =========================================================================
 
     def __new__(cls, *args, **kwargs):
         """
@@ -328,6 +337,7 @@ class Matrix(object):
         return self.__class__.__name__ + "(" + str(self.rows) + ")"
 
     __str__ = __repr__
+    # TODO: `__str__` should be more end-user centric then `__repr__`.
 
     def __eq__(self, other):
         # type: (Matrix) -> bool
@@ -398,9 +408,9 @@ class Matrix(object):
         import numpy
         return numpy.array(self.rows, dtype=dtype)
 
-    # #########################################################################
-    # Operators
-    # #########################################################################
+    # -------------------------------------------------------------------------
+    # Arithmetic Operators
+    # -------------------------------------------------------------------------
 
     def __neg__(self):
         # type: () -> Matrix
@@ -492,9 +502,12 @@ class Matrix(object):
 
     # __rmatmul__(self, other): ...
 
-    # #########################################################################
+    # =========================================================================
+    # Static & Class Methods
+    # =========================================================================
+
     # Factories
-    # #########################################################################
+    # -------------------------------------------------------------------------
 
     @classmethod
     def uniform(cls, value):
@@ -526,9 +539,9 @@ class Matrix(object):
     # @classmethod
     # def from_columns(cls, columns): ...
 
-    # #########################################################################
+    # =========================================================================
     # Properties
-    # #########################################################################
+    # =========================================================================
 
     @property
     def min(self):
@@ -661,8 +674,8 @@ class SquareMatrix(Matrix):
         # [print(i, cls.__shape__ - 1) for i in range(functools.reduce((lambda x, y: x * y), cls.__shape__))])
         # print([0.0 if (i % cls.__shape__[1]) else values[0] for i in range(functools.reduce((lambda x, y: x * y), cls.__shape__))])
 
-        # return cls(*[0 if (i % skip_index) else values[i] for i in \
-        #     range(functools.reduce((lambda x, y: x * y), cls.__shape__))])
+        return cls(*[0 if (i % skip_index) else values[i] for i in \
+            range(functools.reduce((lambda x, y: x * y), cls.__shape__))])
 
     @classmethod
     def identity(cls):
@@ -742,14 +755,12 @@ class SquareMatrix(Matrix):
 
 
 # #############################################################################
-
+#   High Level API -- This is intended for end-users.
+# #############################################################################
 
 class Matrix2(SquareMatrix):
     """
     Represents a square matrix of dimension 2 × 2.
-
-    | m_{11} | m_{12} |
-    | m_{22} | m_{22} |
     """
 
     __shape__ = (2, 2)
@@ -758,10 +769,6 @@ class Matrix2(SquareMatrix):
 class Matrix3(SquareMatrix):
     """
     Represents a square matrix of dimension 3 × 3.
-
-    | m_{11} | m_{12} | m_{13} |
-    | m_{22} | m_{22} | m_{23} |
-    | m_{31} | m_{32} | m_{33} |
     """
 
     __shape__ = (3, 3)
@@ -773,11 +780,12 @@ class Matrix4(SquareMatrix):
 
     Useful if you want to combine translations and rotations
     or apply perspective projection.
-
-    | m_{11} | m_{12} | m_{13} | m_{14} |
-    | m_{22} | m_{22} | m_{23} | m_{24} |
-    | m_{31} | m_{32} | m_{33} | m_{34} |
-    | m_{41} | m_{42} | m_{43} | m_{44} |
     """
 
     __shape__ = (4, 4)
+
+
+class MatrixError(NonConformableMatrix):
+    """
+    Raises when there is any problem with matrix.
+    """
