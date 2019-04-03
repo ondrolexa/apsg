@@ -5,6 +5,7 @@
 A vector algebra types and functions.
 """
 
+
 import math
 
 from apsg.math.scalar import Scalar

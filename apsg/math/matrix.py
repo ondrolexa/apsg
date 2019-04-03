@@ -1,16 +1,6 @@
 # -*- coding: utf-8 -*-
 
 
-import typing
-import operator
-import itertools
-import functools
-
-from collections.abc import Iterable
-
-from apsg.math.scalar import Scalar
-
-
 """
 A matrix algebra types and functions.
 
@@ -33,6 +23,16 @@ A matrix algebra types and functions.
 - Idempotent Matrix: ...
 
 """
+
+
+import typing
+import operator
+import itertools
+import functools
+
+from collections.abc import Iterable
+
+from apsg.math.scalar import Scalar
 
 
 __all__ = ("Matrix2", "Matrix3", "Matrix4", "MatrixError")
