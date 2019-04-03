@@ -14,7 +14,7 @@ from apsg.math.scalar import Scalar
 """
 A matrix algebra types and functions.
 
-== Glossary:
+## Glossary
 
 - Matrix Dimension: The number of rows and columns that a matrix has is
   called its dimension or its order. By convention, rows are listed first;
@@ -35,15 +35,15 @@ A matrix algebra types and functions.
 """
 
 
-__all__ = ("Matrix2", "Matrix3", "Matrix4", "NonConformableMatrix")
+__all__ = ("Matrix2", "Matrix3", "Matrix4", "MatrixError")
 
 
 # #############################################################################
-#   Low Level API -- This is intended for developers.
+# Low Level API -- This is intended for developers.
 # #############################################################################
 
 
-class _slots_injector(type):
+class _SlotsInjectorMeta(type):
     """Inject predefined attribute to subclass `__slots__`."""
 
     def __new__(mcs, name, bases, dic):
@@ -267,7 +267,7 @@ class Matrix(object):
     __shape__ = (0, 0)
     # (number of rows: uint, number of columns: uint)
 
-    __metaclass__ = _slots_injector
+    __metaclass__ = _SlotsInjectorMeta
     # For Python 3 use `Matrix(metaclass=__slots_injector)`
 
     # #########################################################################
@@ -561,14 +561,24 @@ class Matrix(object):
 
     @property
     def rows(self):
-        # type: () -> List[List[float]]
+        # type: () -> List[Vector]
         """
         Get the matrix rows.
 
         Returns: The matrix rows.
         """
+        # Choose the vector class with equal number of rows.
+
+        # We keep the number of these "tricks" and circular module
+        # dependencies at the minimum but this is quite useful!
+
+        # This is some kind of *Composite Pattern* where superclass
+        # returns its subclass.
+
+        # Custom `group` lambda function.
+        # Use the `itertools.grouper` instead?
         group = lambda t, n: zip(*[t[i::n] for i in range(n)])
-        # Use the ``itertools.grouper`` instead of custom function?
+
         return list(group(self._elements, self.__shape__[1]))
 
     @property
@@ -623,7 +633,7 @@ class Matrix(object):
     # #########################################################################
 
     def row(self, index):
-        # type: (int) -> List[float]
+        # type: (int) -> Vector
         return self.rows[index]
 
     def column(self, index):
@@ -665,7 +675,7 @@ class SquareMatrix(Matrix):
     # #########################################################################
 
     @classmethod
-    def diagonal(cls, *values):
+    def diagonal(cls, *values): # FIXME
         """
         Create a diagonal matrix.
         """
@@ -678,7 +688,7 @@ class SquareMatrix(Matrix):
             range(functools.reduce((lambda x, y: x * y), cls.__shape__))])
 
     @classmethod
-    def identity(cls):
+    def identity(cls): # FIXME
         """
         Create a identity (or unit) matrix.
 
@@ -753,10 +763,14 @@ class SquareMatrix(Matrix):
         # type: () -> SquareMatrix
         return NotImplemented
 
+    # def is_regular(self): ...
+
+    # def is_symmetric(self): ...
 
 # #############################################################################
-#   High Level API -- This is intended for end-users.
+# High Level API -- This is intended for end-users.
 # #############################################################################
+
 
 class Matrix2(SquareMatrix):
     """

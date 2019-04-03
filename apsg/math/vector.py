@@ -5,9 +5,18 @@
 A vector algebra types and functions.
 """
 
+import math
 
 from apsg.math.scalar import Scalar
 from apsg.math.matrix import Matrix
+
+
+__all__ = ("Vector2", "Vector3", "Vector4")
+
+
+# #############################################################################
+# Low Level API -- This is intended for developers.
+# #############################################################################
 
 
 class NonConformableVectors(Exception): # Derive from matrix exception?
@@ -29,9 +38,16 @@ class Vector(Matrix):
 
     def __abs__(self):
         # type: () -> Scalar
+        return sum(self._elements)
 
     def dot(self, other):
         # type: (Vector) -> Scalar
+        ...
+
+
+# #############################################################################
+# High Level API -- This is intended for end-users.
+# #############################################################################
 
 
 class Vector2(Vector):
@@ -53,7 +69,7 @@ class Vector2(Vector):
         expected_number_of_elements = self.__shape__[0] * self.__shape__[1]
 
         if len(elements) > expected_number_of_elements:
-            raise WrongNumberOfElements(
+            raise Exception( # FIXME Use non generic exception!
                 "Wrong number of elements, expected {0}, got {1}".format(
                     expected_number_of_elements, len(elements)))
 
