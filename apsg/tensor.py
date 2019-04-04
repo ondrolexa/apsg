@@ -693,7 +693,7 @@ class Tensor(object):
 
     def __ne__(self, other):
         """
-        Return `True` if tensorss are not equal, otherwise `False`.
+        Return `True` if tensors are not equal, otherwise `False`.
 
         Overrides the default implementation (unnecessary in Python 3).
         """

@@ -22,4 +22,4 @@ __all__ = ("Tensor",)
 
 
 class Tensor(object):
-    ...
+    pass
