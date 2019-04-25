@@ -8,6 +8,9 @@ A vector algebra types and functions.
 
 import math
 
+import numpy as np
+
+from apsg.math.helper import acosd
 from apsg.math.scalar import Scalar
 from apsg.math.matrix import Matrix
 
@@ -16,7 +19,7 @@ __all__ = ("Vector2", "Vector3", "Vector4", "VectorError")
 
 
 # #############################################################################
-# Low Level API -- This is intended for developers.
+# Low Level API for developers.
 # #############################################################################
 
 
@@ -45,15 +48,54 @@ class Vector(Matrix):
 
     def __abs__(self):
         # type: () -> Scalar
-        return sum(self._elements)
+        return math.sqrt(sum(self._elements))
 
     def dot(self, other):
         # type: (Vector) -> Scalar
         ...
 
+    @property
+    def unit(self): # normalized
+        """
+        Normalize the vector to unit length.
+
+        Returns:
+          The unit vector of `self`.
+
+        Example:
+          >>> v = Vector(1, 1, 1)
+          >>> v.unit
+          V(0.577, 0.577, 0.577)
+
+        """
+        # return self / abs(self)
+        return self.__class__(*[x / abs(self) for x in self._elements])
+
+    def angle(self, other):
+        # (Vector) -> float # AngleInDegrees
+        """
+        Calculate the angle between two vectors in degrees.
+
+        Args:
+            other: other ``Vector`` vector
+
+        Returns:
+            The angle between `self` and `other` in degrees.
+
+        Example:
+            >>> v = Vector(1, 0, 0)
+            >>> u = Vector(0, 0, 1)
+            >>> v.angle(u)
+            90.0
+        """
+        # if isinstance(other, Group):
+        #     return other.angle(self)
+        # else:
+        return acosd(np.clip(np.dot(self.unit, other.unit), -1, 1))
+
 
 # #############################################################################
-# High Level API -- This is intended for end-users.
+# High Level API for power users.
 # #############################################################################
 
 
@@ -161,6 +203,22 @@ class Vector3(Vector):
             The vector product of ``self`` and ``other`` vector.
         """
         return self ** other
+
+    @property
+    def is_upper(self):
+        # FIXME This is a coordinate system dependent. How to keep it independent?
+        # () -> bool
+        """
+        Return `True` if z-coordinate is negative, otherwise `False`.
+        """
+        return np.sign(self.z) < 0
+
+    @property
+    def flip(self): # flipped
+        """
+        Return a new vector with inverted `z` coordinate.
+        """
+        return self.__class__(self.x, self.y, -self.z)
 
 
 class Vector4(Vector):

@@ -68,24 +68,6 @@ class TestVector:
 
     # ``==`` operator
 
-    def test_that_equality_operator_is_reflexive(self):
-        u = Vec3([1, 2, 3])
-
-        assert u == u
-
-    def test_that_equality_operator_is_symetric(self):
-        u = Vec3([1, 2, 3])
-        v = Vec3([1, 2, 3])
-
-        assert u == v and v == u
-
-    def test_that_equality_operator_is_transitive(self):
-        u = Vec3([1, 2, 3])
-        v = Vec3([1, 2, 3])
-        w = Vec3([1, 2, 3])
-
-        assert u == v and v == w and u == w
-
     def test_that_equality_operator_precision_limits(self):
         """
         This is not the best method how to test a floating point precision limits,
@@ -95,75 +77,6 @@ class TestVector:
         rhs = Vec3([1.00000000000000009] * 3)
 
         assert lhs == rhs
-
-    def test_that_equality_operator_returns_false_for_none(self):
-        lhs = Vec3([1, 0, 0])
-        rhs = None
-
-        current = lhs == rhs
-        expects = False
-
-        assert current == expects
-
-    # ``!=`` operator
-
-    def test_inequality_operator(self):
-        lhs = Vec3([1, 2, 3])
-        rhs = Vec3([3, 2, 1])
-
-        assert lhs != rhs
-
-    # ``hash`` method
-
-    @pytest.mark.skip
-    def test_that_hash_is_same_for_identical_vectors(self):
-        lhs = Vec3([1, 2, 3])
-        rhs = Vec3([1, 2, 3])
-
-        assert hash(lhs) == hash(rhs)
-
-    @pytest.mark.skip
-    def test_that_hash_is_not_same_for_different_vectors(self):
-        lhs = Vec3([1, 2, 3])
-        rhs = Vec3([3, 2, 1])
-
-        assert not hash(lhs) == hash(rhs)
-
-    # ``upper`` property
-
-    def test_that_vector_is_upper(self):
-        vec = Vec3([0, 0, -1])
-
-        assert vec.upper
-
-    def test_that_vector_is_not_upper(self):
-        vec = Vec3([0, 0, 1])
-
-        assert not vec.upper
-
-    # ``flip`` property
-
-    def test_that_vector_is_flipped(self):
-        current = Vec3([0, 0, 1]).flip
-        expects = Vec3([0, 0, -1])
-
-        assert current == expects
-
-    # ``abs`` operator
-
-    def test_absolute_value(self):
-        current = abs(Vec3([1, 2, 3]))
-        expects = 3.7416573867739413
-
-        assert current == expects
-
-    # ``uv`` property
-
-    def test_that_vector_is_normalized(self):
-        current = Vec3([1, 2, 3]).uv
-        expects = Vec3([0.26726124191242442, 0.5345224838248488, 0.8017837257372732])
-
-        assert current == expects
 
     # ``dd`` property
 
@@ -192,34 +105,6 @@ class TestVector:
     def test_asvec_conversion(self):
         assert str(Lin(120, 10).asvec3) == str(Vec3(120, 10, 1))
 
-    # ``angle`` property
-
-    def test_that_angle_between_vectors_is_0_degrees_when_they_are_collinear(self):
-        lhs = Vec3([1, 0, 0])
-        rhs = Vec3([2, 0, 0])
-
-        current = lhs.angle(rhs)
-        expects = 0
-
-        assert current == expects
-
-    def test_that_angle_between_vectors_is_90_degrees_when_they_are_perpendicular(self):
-        lhs = Vec3([1, 0, 0])
-        rhs = Vec3([0, 1, 1])
-
-        current = lhs.angle(rhs)
-        expects = 90  # degrees
-
-        assert current == expects
-
-    def test_that_angle_between_vectors_is_180_degrees_when_they_are_opposite(self):
-        lhs = Vec3([1, 0, 0])
-        rhs = Vec3([-1, 0, 0])
-
-        current = lhs.angle(rhs)
-        expects = 180  # degrees
-
-        assert current == expects
 
     # ``cross`` method
 
@@ -312,45 +197,7 @@ class TestVector:
     # todo ``H``
     # todo ``transform``
 
-    def test_add_operator(self):
-        lhs = Vec3([1, 1, 1])
-        rhs = Vec3([1, 1, 1])
 
-        current = lhs + rhs
-        expects = Vec3([2, 2, 2])
-
-        assert current == expects
-
-    def test_sub_operator(self):
-        lhs = Vec3([1, 2, 3])
-        rhs = Vec3([3, 1, 2])
-
-        current = lhs - rhs
-        expects = Vec3([-2, 1, 1])
-
-        assert current == expects
-
-    # ``*`` operator aka dot product
-
-    def test_mull_operator(self):
-        lhs = Vec3([1, 1, 1])
-        rhs = Vec3([1, 1, 1])
-
-        current = lhs * rhs
-        expects = lhs.dot(rhs)
-
-        assert np.allclose(current, expects)
-
-    # ``**`` operator aka cross product
-
-    def test_pow_operator_with_vector(self):
-        lhs = Vec3([1, 0, 0])
-        rhs = Vec3([0, 1, 0])
-
-        current = lhs ** rhs
-        expects = lhs.cross(rhs)
-
-        assert current == expects
 
     def test_pow_operator_with_scalar(self):
         lhs = Vec3([1, 1, 1])
@@ -360,16 +207,6 @@ class TestVector:
         expects = np.dot(lhs, lhs)
 
         assert np.allclose(current, expects)
-
-    def test_length_method(self):
-        w = Vec3([1, 2, 3])
-
-        assert len(w) == 3
-
-    def test_getitem_operator(self):
-        v = Vec3([1, 2, 3])
-
-        assert all((v[0] == 1, v[1] == 2, v[2] == 3))
 
 
 # ############################################################################
