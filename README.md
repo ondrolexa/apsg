@@ -1,4 +1,4 @@
-# APSG - python package for structural geologists
+# APSG - Python package for structural geologists
 
 [![GitHub version](https://badge.fury.io/gh/ondrolexa%2Fapsg.svg)](https://badge.fury.io/gh/ondrolexa%2Fapsg)
 [![Build Status](https://travis-ci.org/ondrolexa/apsg.svg?branch=master)](https://travis-ci.org/ondrolexa/apsg)
@@ -13,27 +13,35 @@ visualize orientational structural geology data.
 ### PyPI
 
 To install APSG, just execute
-```
+
+```shell
 pip install apsg
 ```
+
 Alternatively, you download the package manually from the Python Package Index [https://pypi.org/project/apsg](https://pypi.org/project/apsg), unzip it, navigate into the package, and use the command:
-```
+
+```shell
 python setup.py install
 ```
+
 #### Upgrading via pip
 
 To upgrade an existing version of APSG from PyPI, execute
-```
+
+```shell
 pip install apsg --upgrade --no-deps
 ```
+
 Please note that the dependencies (Matplotlib, NumPy and SciPy) will also be upgraded if you omit the `--no-deps` flag; use the `--no-deps` ("no dependencies") flag if you don't want this.
 
 #### Installing APSG from the source distribution
 
 In rare cases, users reported problems on certain systems with the default pip installation command, which installs APSG from the binary distribution ("wheels") on PyPI. If you should encounter similar problems, you could try to install APSG from the source distribution instead via
-```
+
+```shell
 pip install --no-binary :all: apsg
 ```
+
 Also, I would appreciate it if you could report any issues that occur when using `pip install apsg` in hope that we can fix these in future releases.
 
 ### Conda
@@ -50,30 +58,41 @@ The APSG package is also available through `conda-forge`.
 
 Installing `apsg` from the `conda-forge` channel can be achieved by adding `conda-forge` to your channels with:
 
-```
+```shell
 conda config --add channels conda-forge
 ```
 
 Once the `conda-forge` channel has been enabled, `apsg` can be installed with:
 
-```
+```shell
 conda install apsg
 ```
 
 It is possible to list all of the versions of `apsg` available on your platform with:
 
-```
+```shell
 conda search apsg --channel conda-forge
+```
+
+### Development
+
+To be able to develop and run the tests, install the package in editable mode with testing packages:
+
+```shell
+pip install -e . ".[testing]"
 ```
 
 ### Master version
 
 The APSG version on PyPI may always one step behind; you can install the latest development version from the GitHub repository by executing
-```
+
+```shell
 pip install git+git://github.com/ondrolexa/apsg.git
 ```
+
 Or, you can fork the GitHub repository from [https://github.com/ondrolexa/apsg](https://github.com/ondrolexa/apsg) and install APSG from your local drive via
-```
+
+```shell
 python setup.py install
 ```
 

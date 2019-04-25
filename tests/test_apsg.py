@@ -26,31 +26,6 @@ from apsg import (
 
 
 # ############################################################################
-# Helpers
-# ############################################################################
-
-
-def is_hashable(obj):
-    try:
-        hash(obj)
-        return True
-    except TypeError:
-        return False
-
-
-def has_same_hash_when_value_objects_are_equals(lhs, rhs):
-    if lhs != rhs:
-        raise Exception("Objects have to be equal!")
-    return hash(lhs == rhs)
-
-
-def has_not_same_hash_when_value_objects_are_not_equals(lhs, rhs):
-    if lhs == rhs:
-        raise Exception("Objects have not to be equal!")
-    return hash(lhs != rhs)
-
-
-# ############################################################################
 # Vectors
 # ############################################################################
 
@@ -68,10 +43,6 @@ class TestVector:
     @pytest.fixture
     def z(self):
         return Vec3([0, 0, 1])
-
-    @pytest.mark.skip
-    def test_that_vector_is_hashable(self):
-        assert is_hashable(Vec3([1, 2, 3]))
 
     def test_that_vec3_string_gets_three_digits_when_vec2dd_settings_is_false(self):
         settings["vec2dd"] = False

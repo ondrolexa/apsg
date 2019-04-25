@@ -98,6 +98,10 @@ def l2xy(azi, inc):
 
 
 def rodrigues(k, v, theta):
+    """
+    Rodriguez rotation formula.
+    # TODO Move to math/transform.py
+    """
     return (
         v * cosd(theta)
         + np.cross(k.T, v.T).T * sind(theta)
