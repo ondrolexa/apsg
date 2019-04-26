@@ -3,7 +3,7 @@
 
 """
 
-The tests for vector types and functions:
+The tests for vector types:
 
 - `Vector2`
 - `Vector3`
@@ -13,15 +13,16 @@ The tests for vector types and functions:
 
 import math
 
-import pytest
 
+import pytest
+import numpy as np
 
 from apsg.math.vector import Vector3
 
 
-# ------------------------------------------------------------------------------
+# ==============================================================================
 # Operators and Magic Methods
-# ------------------------------------------------------------------------------
+# ==============================================================================
 
 # `==` operator
 
@@ -130,8 +131,6 @@ def test_pow_operator_with_vector():
     assert current == expects
 
 
-# `abs` operator
-
 def test_absolute_value():
     current = abs(Vector3(1, 1, 1))
     expects = math.sqrt(3)
@@ -139,23 +138,20 @@ def test_absolute_value():
     assert current == expects
 
 
-# `len` method
-
 def test_length_method():
     w = Vector3(1, 2, 3)
 
     assert len(w) == 3
 
-# `[]` operator
 
 def test_getitem_operator():
     v = Vector3(1, 2, 3)
 
     assert all((v[0] == 1, v[1] == 2, v[2] == 3))
 
-# ------------------------------------------------------------------------------
+# ==============================================================================
 # Properties
-# ------------------------------------------------------------------------------
+# ==============================================================================
 
 # `is_upper` property
 
@@ -181,7 +177,9 @@ def test_that_vector_is_flipped():
 
     assert current == expects
 
+
 # `unit` property
+
 
 def test_that_vector_is_normalized():
     current = Vector3(1, 0, 0).unit # normalized or as_unit or to_unit
@@ -191,9 +189,9 @@ def test_that_vector_is_normalized():
     assert current == expects
 
 
-# ------------------------------------------------------------------------------
+# ==============================================================================
 # Methods
-# ------------------------------------------------------------------------------
+# ==============================================================================
 
 
 # `angle` method
@@ -227,3 +225,19 @@ def test_that_vector_is_normalized():
 #     expects = 180  # degrees
 
 #     assert current == expects
+
+
+# ``dot`` method
+
+
+# def test_scalar_product_of_same_vectors():
+#     i = Vector3(1, 2, 3)
+
+#     assert np.allclose(i.dot(i), abs(i) ** 2)
+
+
+def test_scalar_product_of_orthonornal_vectors():
+    u = Vector3(1, 0, 0)
+    v = Vector3(0, 1, 0)
+
+    assert u.dot(v) == 0

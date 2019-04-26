@@ -12,7 +12,8 @@ import numpy as np
 
 from apsg.math.helper import acosd
 from apsg.math.scalar import Scalar
-from apsg.math.matrix import Matrix
+from apsg.math.matrix import Matrix, MajorOrder
+# TODO: Use `MajorOrder` in matrix and reuse in vector.
 
 
 __all__ = ("Vector2", "Vector3", "Vector4", "VectorError")
@@ -37,11 +38,19 @@ class NonConformableVectors(VectorError): # Derive from matrix exception?
 
 class Vector(Matrix):
     """
-    A column vector base class represented as N x 1 matrix.
+    A vector base class represented as M x 1 (row) or 1 x N (column) vector.
     """
 
-    def __init__(self, *elements):
+    def __init__(self, *elements, order):
+        """
+        Create a new vector.
+
+        Arguments:
+            elements (float) - The vector coordinate values.
+            type (enum) - The row or column orientation.
+        """
         super(Vector, self).__init__(*elements)
+        self._order = MajorOrder(order)
 
     def __getitem__(self, index):
         return self._elements[index]
@@ -52,7 +61,13 @@ class Vector(Matrix):
 
     def dot(self, other):
         # type: (Vector) -> Scalar
-        ...
+        # todo: Don't call protected attribute -- use operator `[]`?
+        # todo: Use @ operator?
+        return sum([i * j for (i, j) in zip(self._elements, other._elements)])
+
+    @property
+    def order(self):
+        return self._order
 
     @property
     def unit(self): # normalized
@@ -101,7 +116,7 @@ class Vector(Matrix):
 
 class Vector2(Vector):
     """
-    Represents a two-dimensional column vector.
+    Represents a two-dimensional row or column vector.
 
     Examples:
         >>> u = Vector2(1, 0)
@@ -114,7 +129,7 @@ class Vector2(Vector):
 
     __shape__ = (2, 1)
 
-    def __init__(self, *elements):
+    def __init__(self, *elements, order="column"):
         expected_number_of_elements = self.__shape__[0] * self.__shape__[1]
 
         if len(elements) > expected_number_of_elements:
@@ -122,7 +137,7 @@ class Vector2(Vector):
                 "Wrong number of elements, expected {0}, got {1}".format(
                     expected_number_of_elements, len(elements)))
 
-        super(Vector2, self).__init__(*elements)
+        super(Vector2, self).__init__(*elements, order=order)
 
     @property
     def x(self):
@@ -143,12 +158,12 @@ class Vector2(Vector):
 
 class Vector3(Vector):
     """
-    Represents a three-dimensional column vector.
+    Represents a three-dimensional row or column vector.
     """
 
     __shape__ = (3, 1)
 
-    def __init__(self, *elements):
+    def __init__(self, *elements, order="column"):
         expected_number_of_elements = self.__shape__[0] * self.__shape__[1]
 
         if len(elements) > expected_number_of_elements:
@@ -156,7 +171,7 @@ class Vector3(Vector):
                 "Wrong number of elements, expected {0}, got {1}".format(
                     expected_number_of_elements, len(elements)))
 
-        super(Vector3, self).__init__(*elements)
+        super(Vector3, self).__init__(*elements, order=order)
 
     def __pow__(self, other):  # (Vector3) -> Vector3
         """
@@ -223,12 +238,12 @@ class Vector3(Vector):
 
 class Vector4(Vector):
     """
-    Represents a four-dimensional column vector.
+    Represents a four-dimensional row or column vector.
     """
 
     __shape__ = (4, 1)
 
-    def __init__(self, *elements):
+    def __init__(self, *elements, order="column"):
         expected_number_of_elements = self.__shape__[0] * self.__shape__[1]
 
         if len(elements) > expected_number_of_elements:
@@ -236,7 +251,7 @@ class Vector4(Vector):
                 "Wrong number of elements, expected {0}, got {1}".format(
                     expected_number_of_elements, len(elements)))
 
-        super(Vector3, self).__init__(*elements)
+        super(Vector3, self).__init__(*elements, order=order)
 
     @classmethod
     def unit_x(cls):

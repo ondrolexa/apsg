@@ -74,6 +74,20 @@ It is possible to list all of the versions of `apsg` available on your platform 
 conda search apsg --channel conda-forge
 ```
 
+### Jupyter
+
+You can install Jupyter globally or locally to your current virtual environment.
+Installing Jupyter takes a time so installing it a globally may be time saver but local environment is more flexible.
+
+    ipython kernel install --user --name={KERNEL_NAME}
+    ipython kernel install --user --name=apsg
+
+### Google Colab
+
+The easiest way how to try a APSG is use Google Colab.
+
+...[TODO]
+
 ### Development
 
 To be able to develop and run the tests, install the package in editable mode with testing packages:

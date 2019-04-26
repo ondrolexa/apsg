@@ -46,6 +46,10 @@ def run_console_mode():
     shell.interact(banner=banner)
 
 
+def run_jupyter_mode():
+    pass
+
+
 def main(args=None):
     """
     Main entry point for your project.

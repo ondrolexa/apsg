@@ -105,7 +105,6 @@ class TestVector:
     def test_asvec_conversion(self):
         assert str(Lin(120, 10).asvec3) == str(Vec3(120, 10, 1))
 
-
     # ``cross`` method
 
     def test_that_vector_product_is_anticommutative(self):
@@ -148,19 +147,6 @@ class TestVector:
         expects = Vec3([0, 0, 1])
 
         assert current == expects
-
-    # ``dot`` method
-
-    def test_scalar_product_of_same_vectors(self):
-        i = Vec3([1, 2, 3])
-
-        assert np.allclose(i.dot(i), abs(i)**2)
-
-    def test_scalar_product_of_orthonornal_vectors(self):
-        i = Vec3([1, 0, 0])
-        j = Vec3([0, 1, 0])
-
-        assert i.dot(j) == 0
 
     # ``rotate`` method
 
@@ -398,6 +384,7 @@ def test_fault_rotation_sense():
     f = Fault(90, 30, 110, 28, -1)
     assert repr(f.rotate(Lin(220, 10), 60)) == 'F:343/37-301/29 +'
 
+
 def test_faultset_examples():
     exlist = FaultSet.examples()
     for ex in exlist:
@@ -410,13 +397,14 @@ def test_faultset_examples():
 
 # Note: Tensor type is value object => structural equality
 
+@pytest.mark.skip
 def test_that_tensors_are_equal_and_has_same_hash():
     lhs = Tensor([[1, 1, 1], [2, 2, 3], [3, 3, 3]])
     rhs = Tensor([[1, 1, 1], [2, 2, 3], [3, 3, 3]])
 
     assert has_same_hash_when_value_objects_are_equals(lhs, rhs)
 
-
+@pytest.mark.skip
 def test_that_tensors_are_not_equal_and_has_different_hash():
     lhs = Tensor([[1, 1, 1], [2, 2, 3], [3, 3, 3]])
     rhs = Tensor([[3, 3, 3], [2, 2, 3], [1, 1, 1]])
@@ -447,6 +435,7 @@ def test_orthogonality_rotation_matrix():
     a = np.random.randint(180)
     R = DefGrad.from_axis(lin, a)
     assert np.allclose(R * R.T, np.eye(3))
+
 
 def test_defgrad_derivation():
     F = DefGrad.from_comp(xx=2, zz=0.5)

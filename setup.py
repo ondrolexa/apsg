@@ -58,8 +58,9 @@ setup(
             "pytest",
             "radon",
         ],
-        "ipython": [
+        "jupyter": [
             "jupyter",
+            "jupyter_http_over_ws",
         ]
     },
     setup_requires=pytest_runner,

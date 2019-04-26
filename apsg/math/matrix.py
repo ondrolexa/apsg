@@ -25,10 +25,14 @@ A matrix algebra types and functions.
 """
 
 
+from __future__ import division
+
+import enum
 import typing
 import operator
 import itertools
 import functools
+
 
 from collections.abc import Iterable
 
@@ -39,7 +43,7 @@ __all__ = ("Matrix2", "Matrix3", "Matrix4", "MatrixError")
 
 
 # #############################################################################
-# Low Level API -- This is intended for developers.
+# Low Level API for developers.
 # #############################################################################
 
 
@@ -78,6 +82,19 @@ class NonConformableMatrixForMultiplication(NonConformableMatrix):
      """
 
 
+@enum.unique
+class MajorOrder(enum.Enum): #
+    """
+    The vector type; distinguish between row and column vector.
+
+    As an example see the numpy:
+    - `array( [ [1, 2, 3] ] )` -- shape (1, 3) => column vector
+    - `array( [ [1], [2], [3] ] )` -- shape (3, 1) => row vector.
+    """
+    ROW = "row"
+    COLUMN = "column"
+
+
 class Matrix(object):
     """
     Represents a (real) matrix of dimension M × N
@@ -106,168 +123,13 @@ class Matrix(object):
         - Matrix can be created with any 2D sequence as `numpy.array` or neted lists eg
           Matrix2( [1, 2], [3, 4] ), Matrix2([ [1, 2], [3, 4] ]), Matrix2( ( (1, 2), (3, 4) )
 
+    Also don't forget to define ``__slots__`` class attribute in each
+    subclass! For more details see other classes in this or
+    ``apsg.math.vector`` module.
+
     Examples:
 
-        This only for faster development -- proper unit tests will be added soon.
-
-        Matrix 2 × 2
-        ------------
-
-        Create the matrix.
-        >>> A = Matrix2(1, 0, 0, 1)       # Implicit conversion to float!
-        >>> B = Matrix2(0.0, 1.0, 1.0, 0.0)
-
-
-        Add two matrices.
-        >>> A + B
-        Matrix2([(1.0, 1.0), (1.0, 1.0)])
-
-        >>> (A + B) == (B + A)
-        True
-
-
-        Subtract two matrices.
-        >>> A - B
-        Matrix2([(1.0, -1.0), (-1.0, 1.0)])
-
-        >>> (A - B) != (B - A)
-        True
-
-
-        Multiply matrix by scalar
-        >>> 3 * A
-        Matrix2([(3.0, 0.0), (0.0, 3.0)])
-        >>> A * 3
-        Matrix2([(3.0, 0.0), (0.0, 3.0)])
-
-        Multiply matrix by matrix:
-        >>> A @ A
-        Matrix2([(1.0, 0.0), (0.0, 1.0)])
-
-
-        Negate matrix
-        >>> -A
-        Matrix2([(-1.0, 0.0), (0.0, -1.0)])
-
-
-        Check hashes.
-        >>> C1 = Matrix2.ones()
-        >>> C2 = Matrix2.ones()
-        >>> (C1 == C2) and (hash(C1) == hash(C2))
-        True
-
-
-        Get a rows.
-        >>> A.rows
-        [(1.0, 0.0), (0.0, 1.0)]
-
-
-        Get number of rows
-        >>> A.row_count
-        2
-
-
-        Get a columns.
-        >>> A.columns
-        [(1.0, 0.0), (0.0, 1.0)]
-
-
-        Get number of columns
-        >>> A.column_count
-        2
-
-
-        Get element at [i,j] position.
-        >>> A[0,0], A[0,1], A[1,0], A[1,1]
-        (1.0, 0.0, 0.0, 1.0)
-
-        __iter__ works!
-        >>> [i for i in A]
-        [1.0, 0.0, 0.0, 1.0]
-
-        __array__ works!
-        >>> import numpy
-        >>> numpy.array(A)
-        array([[1., 0.],
-               [0., 1.]])
-
-        Note: NumPy shows floats `0.0` as `0.`!
-
-
-        Get a dimension.
-        >>> A.dimension
-        (2, 2)
-
-
-        Get minimum value.
-        >>> A.min
-        0.0
-
-        Get maximum value.
-        >>> A.max
-        1.0
-
-
-        Calculate a determinant.
-        >>> A.determinant()
-        1.0
-
-
-        Check if it is a square matrix.
-        >>> A.is_square
-        True
-
-
-        # Matrix 2 × 3
-        # ------------
-        # >>> Matrix.__shape__ = (2, 3)
-        # >>> R = Matrix(1,1,1, 2,2,2)
-        # >>> R.rows
-        # [(1.0, 1.0, 1.0), (2.0, 2.0, 2.0)]
-        # >>> R.columns
-        # [(1.0, 2.0), (1.0, 2.0), (1.0, 2.0)]
-
-        # >>> R.is_square FIXME
-        # False
-
-
-        # Create diagonal matrix.
-        # >>> m = Matrix2.diagonal()
-        # >>> m.rows
-        # [(1, 0), (0, 1)]
-
-
-        Matrix 3 × 3
-        ------------
-
-        >>> m = Matrix3(1, 0, 0, 0, 1, 0, 0, 0, 1)
-
-        Check th
-        >>> m.dimension
-        (3, 3)
-
-        Calculate a determinant.
-        >>> m.determinant()
-        1.0
-
-        >>> m = Matrix2(1, -2, 3, -4)
-        >>> -m
-        Matrix2([(-1.0, 2.0), (-3.0, 4.0)])
-
-        >>> m = Matrix2(1, 2, 3, 4)
-        >>> m.transpose()
-        Matrix2([(1.0, 3.0), (2.0, 4.0)])
-
-        >>> from apsg.math.matrix import Matrix
-
-        How to properly derive from this class? At least you have to define
-        the ``__shape__`` class attribute with non zero values e.g:
-
-        >>> class Mat(Matrix): __shape__ = (2, 2)
-
-        Also don't forget to define ``__slots__`` class attribute in each
-        subclass! For more details see other classes in this or
-        ``apsg.math.vector`` module.
+        See the tutorial.
     """
 
     __shape__ = (0, 0)
@@ -301,10 +163,10 @@ class Matrix(object):
 
         return super(Matrix, cls).__new__(cls)
 
-    def __init__(self, *elements):
+    def __init__(self, *elements, **kwargs):
         # type: (Tuple[Scalar]) -> Matrix
         """
-        Creates an matrix with given elements.
+        Creates a matrix with given elements.
 
         Args:
             elements - An elements in row order, e.g an identity matrix
@@ -343,7 +205,6 @@ class Matrix(object):
         return self.__class__.__name__ + "(" + str(self.rows) + ")"
 
     __str__ = __repr__
-    # TODO: `__str__` should be more end-user centric then `__repr__`.
 
     def __eq__(self, other):
         # type: (Matrix) -> bool
@@ -415,7 +276,7 @@ class Matrix(object):
         return numpy.array(self.rows, dtype=dtype)
 
     # -------------------------------------------------------------------------
-    # Arithmetic Operators
+    # Arithmetic Operators: unary (-); binary (+), (-), (*), (/), (@)
     # -------------------------------------------------------------------------
 
     def __neg__(self):
@@ -436,7 +297,8 @@ class Matrix(object):
         Returns:
             Matrix: A new matrix.
         """
-        return self.__class__(*map(lambda x: scalar * x, self._elements))
+        # Note: The scalar value is always converted to float!
+        return self.__class__(*map(lambda x: float(scalar) * x, self._elements))
 
     def __rmul__(self, scalar):
         # type: (Scalar) -> Matrix
@@ -450,6 +312,25 @@ class Matrix(object):
             Matrix: A new matrix.
         """
         return self * scalar
+
+    def __truediv__(self, scalar):
+        # type: (Scalar) -> Matrix
+        """
+        Calculate the matrix-scalar division.
+
+        This is simply a multiplication with inverted scalar value (1/scalar).
+        """
+        # Note: The scalar value is always converted to float!
+        return (1.0 / float(scalar)) * self
+
+    def __rtruediv__(self, scalar):
+        # type: (Scalar) -> Matrix
+        """
+        Calculate the matrix-scalar division.
+
+        This is simply a multiplication with inverted scalar value (1/scalar).
+        """
+        return self / scalar
 
     def __add__(self, other):
         # type: (Matrix) -> Matrix
@@ -502,16 +383,21 @@ class Matrix(object):
         """
         if self.column_count != other.row_count:
             raise NonConformableMatrix("FIXME: Reasonable message here!")
+
         import numpy
         rows = (numpy.array(self.rows)  @ numpy.array(other.rows)).flatten()
+
         return self.__class__(*rows)
 
-    # __rmatmul__(self, other): ...
+    # __rmatmul__(self, other):
+    # If dimensions are (X, Y) and (X, Y) then swap one of the operand.
+    # This prevents the explicit conversion from row to column vector.
 
     # =========================================================================
     # Static & Class Methods
     # =========================================================================
 
+    # -------------------------------------------------------------------------
     # Factories
     # -------------------------------------------------------------------------
 
@@ -538,12 +424,6 @@ class Matrix(object):
         Create a new instance filled with values 0.0.
         """
         return cls.uniform(0.0) # NOTE Always use float?
-
-    # @classmethod
-    # def from_rows(cls, rows): ...
-
-    # @classmethod
-    # def from_columns(cls, columns): ...
 
     # =========================================================================
     # Properties
@@ -616,7 +496,7 @@ class Matrix(object):
     @property
     def shape(self):
         # type: () -> Tuple[int, int]
-        return tuple(self.__shape__)
+        return self.__shape__
 
     @property
     def dimension(self):
@@ -653,8 +533,15 @@ class Matrix(object):
         """
         # Flatten the zipped rows before passing to constructor.
         # xs = [y for x in zip(self.rows) for y in x]
-        return self.__class__(
+
+        # Create a new instance.
+        instance = self.__class__(
             *list(itertools.chain.from_iterable(zip(*self.rows))))
+
+        # Swap the shape rows and columns.
+        self.__shape__ = tuple(reversed(self.__shape__))
+
+        return instance
 
 
 class SquareMatrix(Matrix):
@@ -773,8 +660,9 @@ class SquareMatrix(Matrix):
 
     # def is_symmetric(self): ...
 
+
 # #############################################################################
-# High Level API -- This is intended for end-users.
+# High Level API for power users.
 # #############################################################################
 
 
