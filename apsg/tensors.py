@@ -5,7 +5,7 @@ from __future__ import division, print_function
 
 import numpy as np
 
-from apsg.core import Vec3, Group, Pair, Fault
+from apsg.core import Vec3, Group, Pair, Fault, Fol, Lin
 from apsg.helpers import sind, cosd, atand
 
 

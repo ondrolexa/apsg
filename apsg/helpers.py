@@ -362,21 +362,6 @@ class KentDistribution(object):
         Returns the pdf of the kent distribution for 3D vectors that
         are stored in xs which must be an array of N x 3 or N x M x 3
         N x M x P x 3 etc.
-
-        The code below shows how points in the pdf can be evaluated. An integral is
-        calculated using random points on the sphere to determine wether the pdf is
-        properly normalized.
-
-        >>> from numpy.random import seed
-        >>> from scipy.stats import norm as gauss
-        >>> seed(666)
-        >>> num_samples = 400000
-        >>> xs = gauss(0, 1).rvs((num_samples, 3))
-        >>> xs = divide(xs, reshape(norm(xs, 1), (num_samples, 1)))
-        >>> assert abs(4*pi*average(kent(1.0, 1.0, 1.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
-        >>> assert abs(4*pi*average(kent(1.0, 2.0, 3.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
-        >>> assert abs(4*pi*average(kent(1.0, 2.0, 3.0, 4.0,  8.0).pdf(xs)) - 1.0) < 0.01
-        >>> assert abs(4*pi*average(kent(1.0, 2.0, 3.0, 16.0, 8.0).pdf(xs)) - 1.0) < 0.01
         """
 
         return np.exp(self.log_pdf(xs, normalize))

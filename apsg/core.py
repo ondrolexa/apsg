@@ -1526,11 +1526,11 @@ class Group(list):
           (0.33543830426546456, 0.3322808478672677, 0.3322808478672676)
 
         """
-        n = 2 * np.ceil(np.sqrt(N) / 0.564)
+        n = int(2 * np.ceil(np.sqrt(N) / 0.564))
         azi = 0
         inc = 90
-        for rho in np.linspace(0, 1, np.round(n / 2 / np.pi))[:-1]:
-            theta = np.linspace(0, 360, np.round(n * rho + 1))[:-1]
+        for rho in np.linspace(0, 1, int(np.round(n / 2 / np.pi)))[:-1]:
+            theta = np.linspace(0, 360, int(np.round(n * rho + 1)))[:-1]
             x, y = rho * sind(theta), rho * cosd(theta)
             azi = np.hstack((azi, atan2d(x, y)))
             ii = asind(np.sqrt((x * x + y * y) / 2))
@@ -2254,8 +2254,8 @@ class StereoGrid(object):
             # calc grid
             self.xg = 0
             self.yg = 0
-            for rho in np.linspace(0, 1, np.round(ctn_points / 2 / np.pi)):
-                theta = np.linspace(0, 360, np.round(ctn_points * rho + 1))[:-1]
+            for rho in np.linspace(0, 1, int(np.round(ctn_points / 2 / np.pi))):
+                theta = np.linspace(0, 360, int(np.round(ctn_points * rho + 1)))[:-1]
                 self.xg = np.hstack((self.xg, rho * sind(theta)))
                 self.yg = np.hstack((self.yg, rho * cosd(theta)))
         elif grid == "ortho":

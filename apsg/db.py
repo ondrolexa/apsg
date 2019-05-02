@@ -212,9 +212,6 @@ class SDB(object):
           units: name or list of names of units to retrieve from
           tags:  tag or list of tags to retrieve
 
-        Example:
-          >>> g = db.group('L2', units=['HG', 'MG'], tags='bos')
-
         """
         dtsel = self._make_select(structs=struct, **kwargs)
         sel = self.execsql(dtsel)

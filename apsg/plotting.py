@@ -67,9 +67,6 @@ class StereoNet(object):
         Other keyword arguments are passed to matplotlib plot.
 
     Example:
-        # Immediate plot
-        >>> StereoNet(Fol(120, 30), Lin(36, 8))
-        # StereoNet API
         >>> s = StereoNet()
         >>> g = Group.randn_lin(mean=Lin(40, 20))
         >>> s.contourf(g, 8, legend=True, sigma=2)
@@ -327,7 +324,7 @@ class StereoNet(object):
             y = []
             for azi, inc in obj.dd.T:
                 xx, yy = self._cone(
-                    p2v(azi, inc), l2v(azi, inc), limit=89.9999, res=cosd(inc) * 179 + 2
+                    p2v(azi, inc), l2v(azi, inc), limit=89.9999, res=int(cosd(inc) * 179 + 2)
                 )
                 x = np.hstack((x, xx, np.nan))
                 y = np.hstack((y, yy, np.nan))
@@ -336,7 +333,7 @@ class StereoNet(object):
         else:
             azi, inc = obj.dd
             x, y = self._cone(
-                p2v(azi, inc), l2v(azi, inc), limit=89.9999, res=cosd(inc) * 179 + 2
+                p2v(azi, inc), l2v(azi, inc), limit=89.9999, res=int(cosd(inc) * 179 + 2)
             )
         h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
         if animate:
@@ -437,7 +434,7 @@ class StereoNet(object):
                     l2v(azi, inc),
                     l2v(azi, inc - alpha),
                     limit=180,
-                    res=sind(alpha) * 358 + 3,
+                    res=int(sind(alpha) * 358 + 3),
                     split=True,
                 )
                 x = np.hstack((x, xx, np.nan))
@@ -450,7 +447,7 @@ class StereoNet(object):
                 l2v(azi, inc),
                 l2v(azi, inc - alpha),
                 limit=180,
-                res=sind(alpha) * 358 + 3,
+                res=int(sind(alpha) * 358 + 3),
                 split=True,
             )
         h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)

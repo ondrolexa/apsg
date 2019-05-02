@@ -84,9 +84,6 @@ class Core(object):
         Args:
           filename: PMD file
 
-        Example:
-          >>> d = Core.from_pmd('K509A2-1.PMD')
-
         """
         with open(filename, encoding="latin1") as f:
             d = f.read().splitlines()
@@ -123,9 +120,6 @@ class Core(object):
 
         Args:
           filename: PMD file
-
-        Example:
-          >>> d.write_pmd(filename='K509A2-1.PMD')
 
         """
         if filename is None:
