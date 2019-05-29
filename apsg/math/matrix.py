@@ -22,6 +22,11 @@ A matrix algebra types and functions.
 
 - Idempotent Matrix: ...
 
+- Size - The *size* of a matrix is defined by the number of rows and columns that it contains.
+- Dimensions - A matrix with m rows and n columns is called an m × n matrix or m-by-n matrix, while m and n are called its dimensions.
+- Row Vector - Matrices with a single row are called row vectors
+- Empty Matrix - In some contexts, such as computer algebra programs, it is useful to consider a matrix with no rows or no columns, called an empty matrix.
+
 """
 
 
@@ -387,7 +392,17 @@ class Matrix(object):
         import numpy
         rows = (numpy.array(self.rows)  @ numpy.array(other.rows)).flatten()
 
-        return self.__class__(*rows)
+        result = self.__class__(*rows)
+
+        # If the result is matrix 1x1 then convert the result to scalar.
+        if result.shape[0] == self.shape[1] == 1:
+            return float(result.rows[0][0])
+
+        # If the result is matrix 1xN or Mx1 then convert to vector.
+        if result.shape[0] == 1 or result.shape[1]:
+            return result # TODO Vector
+
+        return result
 
     # __rmatmul__(self, other):
     # If dimensions are (X, Y) and (X, Y) then swap one of the operand.
@@ -659,6 +674,10 @@ class SquareMatrix(Matrix):
     # def is_regular(self): ...
 
     # def is_symmetric(self): ...
+
+    # eigenvalues()
+
+    # eigenvectors(
 
 
 # #############################################################################
