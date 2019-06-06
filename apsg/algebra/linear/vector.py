@@ -10,9 +10,9 @@ import math
 
 import numpy as np
 
-from apsg.math.helper import acosd
-from apsg.math.scalar import Scalar
-from apsg.math.matrix import Matrix, MajorOrder
+from apsg.algebra.linear.helper import acosd
+from apsg.algebra.linear.scalar import Scalar
+from apsg.algebra.linear.matrix import Matrix, MajorOrder
 # TODO: Use `MajorOrder` in matrix and reuse in vector.
 
 

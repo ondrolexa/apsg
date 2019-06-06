@@ -52,7 +52,7 @@ import functools
 
 from collections.abc import Iterable
 
-from apsg.math.scalar import Scalar
+from apsg.algebra.linear.scalar import Scalar
 
 
 __all__ = (
