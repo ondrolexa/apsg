@@ -2,25 +2,36 @@
 
 
 """
-A matrix algebra types and functions.
+Matrix algebra types and functions.
 
-## Glossary
+## Fact, Terms and Definitions
+
+> A *matrix* is rectangular array of items arranged in rows and columns.
+
+Our implementation is focused on real matrices, that is, matrix elements are
+real (complex) numbers represented `by float` type.
 
 - Matrix Dimension: The number of rows and columns that a matrix has is
   called its dimension or its order. By convention, rows are listed first;
   and columns, second.
 
-- Square Matrix: Matrix of dimension n × n.
-
 - Identity Matrix: ...
 
-- Diagonal Matrix: ...
+- A *square matrix* is a matrix with the same number of rows and columns (n × n).
+
+- A *square diagonal matrix* is a square matrix 
+
+- A *scalar matrix* is a square diagonal matrix with equal main diagonal entries.
 
 - Row Vector: Matrix of dimension 1 × n.
 
 - Column Vector: Matrix of dimension n × 1
 
 - Idempotent Matrix: ...
+
+- Rectangular Diagonal Matrix
+
+- Symmetric Diagonal Matrix
 
 - Size - The *size* of a matrix is defined by the number of rows and columns that it contains.
 - Dimensions - A matrix with m rows and n columns is called an m × n matrix or m-by-n matrix, while m and n are called its dimensions.
@@ -44,7 +55,12 @@ from collections.abc import Iterable
 from apsg.math.scalar import Scalar
 
 
-__all__ = ("Matrix2", "Matrix3", "Matrix4", "MatrixError")
+__all__ = (
+    # Low level API
+    " MajorOrder", "Matrix", "SquareMatrix", "MatrixError",
+    # High Level API
+    "Matrix2", "Matrix3", "Matrix4",
+    )
 
 
 # #############################################################################
@@ -102,7 +118,7 @@ class MajorOrder(enum.Enum): #
 
 class Matrix(object):
     """
-    Represents a (real) matrix of dimension M × N
+    A rectangular matrix with `M` rows and `N` columns.
 
     The matrix elements has row index `i` and column index `j` (`m_{ij}`).
 
@@ -420,7 +436,7 @@ class Matrix(object):
     def uniform(cls, value):
         # type: (Scalar) -> Matrix
         """
-        Create a new instance filled with the same value.
+        Create a new instance filled with the same values.
         """
         return cls(*[value for _ in range(0, cls.__shape__[0] * cls.__shape__[1])])
 
@@ -448,7 +464,7 @@ class Matrix(object):
     def min(self):
         # type: () -> float
         """
-        Get the element with minimal value.
+        Get the element with min value.
         """
         return min(self._elements)
 
@@ -456,7 +472,7 @@ class Matrix(object):
     def max(self):
         # type: () -> float
         """
-        Get the element with maximal value.
+        Get the element with max value.
         """
         return max(self._elements)
 
@@ -529,6 +545,8 @@ class Matrix(object):
         """
         return self.row_count == self.column_count
 
+    # is_
+
     # #########################################################################
     # Methods
     # #########################################################################
@@ -561,7 +579,7 @@ class Matrix(object):
 
 class SquareMatrix(Matrix):
     """
-    Represents a square matrix M × N.
+    A square matrix of real values.
     """
 
     def __new__(cls, *args, **kwargs):

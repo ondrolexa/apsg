@@ -9,6 +9,12 @@ The coordinate systems.
 import math
 
 
+class Coordinates:
+    """
+    A coordinates or coordinate system.
+    """
+
+
 def polar_to_cartesian(radius, angle):
     # (float, float) -> tuple
     """
