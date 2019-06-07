@@ -28,7 +28,7 @@ from apsg.core import (
 )
 from apsg.setting import settings
 from apsg.tensor import DefGrad, Stress, Tensor, Ortensor, Ellipsoid
-from apsg.algebra.helper import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
+from apsg.math.helper import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 
 
 __all__ = ("StereoNet", "VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot", "rose")

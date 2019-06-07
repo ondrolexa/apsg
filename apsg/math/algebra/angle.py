@@ -1,12 +1,17 @@
 """
 We define algebra for angle type as follow.
 
-a `+` b, where a, b are angles.
-s `*` a, where a is angle and s is scalar.
--a is opposite item to a 
+Operations:
+
+- The angles addition: `a + b = c`, where `a`, `b`, `c`, are angles.
+- The angles scaling: `s * a = b`, where `a`, `b` are angles and `s` is scalar.
+- The zero element.
+- The opposite element. 
 
 For conversion between radians and degrees use the standard library module 
 functions `math.degrees` and `math.radians`.
+
+Two angles are equal iff thez have the same size and units.
 
 """
 
@@ -16,7 +21,7 @@ import math
 
 class Angle:
     """
-    The angle is ...
+    An angle measures the amount of turn.
     """
 
     def __init__(self, value, units):
@@ -50,10 +55,19 @@ class Angle:
     def __abs__(self) -> float:
         return abs(self.value)
 
+    @property
+    def is_negative(self):
+        return self.value < 0
+
+    @property
+    def is_positive(self):
+        return not self.is_negative
+    
+
 
 class Turn(Angle):
     """
-    The angle in as the ration of full angle.
+    An angle in as the ratio of full angle.
 
     It is useful if you want to express rotation as:
     
@@ -79,7 +93,7 @@ class Turn(Angle):
 
 class Radian(Angle):
     """
-    The angle in radians.
+    An angle in radians.
     """
 
     def __init__(self, value):
@@ -96,7 +110,7 @@ class Radian(Angle):
 
 class Degree(Angle):
     """
-    The angle in degrees.
+    An angle in degrees.
     """
 
     def __init__(self, value):

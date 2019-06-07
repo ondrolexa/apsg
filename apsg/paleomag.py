@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from apsg.core import Vec3, Fol, Lin, Group
 from apsg.setting import settings
 from apsg.plotting import StereoNet
-from apsg.algebra.helper import sind, cosd, eformat
+from apsg.math.helper import sind, cosd, eformat
 
 
 __all__ = ("Core",)

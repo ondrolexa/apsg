@@ -17,7 +17,7 @@ import functools
 
 from collections.abc import Iterable
 
-from apsg.algebra.scalar import Scalar
+from apsg.math.algebra.scalar import Scalar
 
 
 __all__ = (
