@@ -1,6 +1,4 @@
 """
-The algebra of computer graphics.
-
 We define algebra for angle type as follow.
 
 a `+` b, where a, b are angles.
