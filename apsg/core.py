@@ -15,7 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from apsg.setting import settings
-from apsg.algebra.linear.helper import (
+from apsg.algebra.helper import (
     KentDistribution,
     sind,
     cosd,

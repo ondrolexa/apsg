@@ -17,7 +17,7 @@ import math
 import pytest
 import numpy as np
 
-from apsg.algebra.linear.vector import Vector3
+from apsg.algebra import Vector3
 
 
 # ==============================================================================

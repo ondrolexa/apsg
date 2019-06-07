@@ -22,7 +22,7 @@ from apsg.core import (
 )
 from apsg.setting import settings
 from apsg.tensor import DefGrad, VelGrad, Stress, Tensor, Ortensor, Ellipsoid
-from apsg.algebra.linear.helper import sind, cosd, tand, acosd, asind, atand, atan2d
+from apsg.algebra.helper import sind, cosd, tand, acosd, asind, atand, atan2d
 from apsg.plotting import StereoNet, VollmerPlot, RamsayPlot, FlinnPlot, HsuPlot
 
 
