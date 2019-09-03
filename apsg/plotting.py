@@ -83,14 +83,13 @@ class StereoNet(object):
         self.grid_style = kwargs.pop("grid_style", "k:")
         self.fol_plot = kwargs.pop("fol_plot", "plane")
         figsize = kwargs.pop("figsize", settings["figsize"])
-        title = kwargs.pop("title", "")
+        self._title_text = kwargs.pop("title", "")
         self._lgd = None
         self.active = 0
         self.artists = []
         self.fig, self.ax = plt.subplots(ncols=self.ncols, figsize=figsize)
         self.fig.canvas.set_window_title("StereoNet - schmidt projection")
         # self.fig.set_size_inches(8 * self.ncols, 6)
-        self._title = self.fig.suptitle(title)
         self._axtitle = self.ncols * [None]
         self.cla()
         # optionally immidiately plot passed objects
@@ -241,6 +240,7 @@ class StereoNet(object):
             ax.plot(
                 [-0.02, 0.02, np.nan, 0, 0], [0, 0, np.nan, -0.02, 0.02], "k", zorder=4
             )
+        self._title = self.fig.suptitle(self._title_text)
         self.draw()
 
     def getlin(self):
@@ -595,9 +595,14 @@ class StereoNet(object):
     #     # cb.set_ticklabels(lbl)
 
     def axtitle(self, title):
-        """Add axes title"""
+        """Add title to active axes"""
         self._axtitle[self.active] = self.fig.axes[self.active].set_title(title)
         self._axtitle[self.active].set_y(-0.09)
+
+    def title(self, title=''):
+        """Set figure title"""
+        self._title_text = title
+        self._title = self.fig.suptitle(self._title_text)
 
     def show(self):
         """Call matplotlib show"""
