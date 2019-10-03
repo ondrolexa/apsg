@@ -1292,29 +1292,20 @@ class Group(list):
 
         var = 1 - |R| / n
         """
-        return 1 - abs(self.R) / len(self)
-
-    @property
-    def totvar(self):
-        """Return total variance based on projections onto resultant
-
-        totvar = sum(|x - R|^2) / 2n
-
-        Note that difference between totvar and var is measure of difference
-        between sample and population mean
-        """
-        return 1 - np.mean(self.dot(self.R.uv))
+        return 1 - abs(self.uv.R) / len(self)
 
     @property
     def fisher_stats(self):
         """Fisher's statistics.
 
-        fisher_stats property returns dictionary with `k`, `csd` and
-        `a95` keywords.
+        fisher_stats property returns dictionary with
+        `k`    estimated precision parameter,
+        `csd`  estimated angular standard deviation
+        `a95`  confidence limit
         """
         stats = {"k": np.inf, "a95": 180.0, "csd": 0.0}
         N = len(self)
-        R = abs(self.R)
+        R = abs(self.uv.R)
         if N != R:
             stats["k"] = (N - 1) / (N - R)
             stats["csd"] = 81 / np.sqrt(stats["k"])
@@ -1323,8 +1314,12 @@ class Group(list):
 
     @property
     def delta(self):
-        """Cone angle containing ~63% of the data in degrees."""
-        return acosd(abs(self.R) / len(self))
+        """Cone angle containing ~63% of the data in degrees.
+
+        For enough large sample it approach angular standard deviation (csd)
+        of Fisher statistics
+        """
+        return acosd(abs(self.uv.R) / len(self))
 
     @property
     def rdegree(self):
@@ -1333,7 +1328,7 @@ class Group(list):
         D = 100 * (2 * |R| - n) / n
         """
         N = len(self)
-        return 100 * (2 * abs(self.R) - N) / N
+        return 100 * (2 * abs(self.uv.R) - N) / N
 
     def cross(self, other=None):
         """Return cross products of all data in ``Group`` object

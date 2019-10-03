@@ -88,7 +88,7 @@ class StereoNet(object):
         self.active = 0
         self.artists = []
         self.fig, self.ax = plt.subplots(ncols=self.ncols, figsize=figsize)
-        self.fig.canvas.set_window_title("StereoNet - schmidt projection")
+        self.fig.canvas.set_window_title("StereoNet - Schmidt projection")
         # self.fig.set_size_inches(8 * self.ncols, 6)
         self._axtitle = self.ncols * [None]
         self.cla()

@@ -6,8 +6,9 @@ import os
 import re
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 from datetime import datetime
-from apsg.core import Vec3, Fol, Lin, Group, settings
+from apsg.core import Vec3, Fol, Lin, Pair, Group, settings
 from apsg.plotting import StereoNet
 from apsg.helpers import sind, cosd, eformat
 
@@ -39,13 +40,12 @@ class Core(object):
     """
 
     def __init__(self, **kwargs):
-        self.info = kwargs.get("info", "Default")
+        self.site = kwargs.get("site", "Default")
         self.name = kwargs.get("name", "Default")
         self.filename = kwargs.get("filename", None)
-        self.alpha = kwargs.get("alpha", 0)
-        self.beta = kwargs.get("beta", 0)
-        self.strike = kwargs.get("strike", 90)
-        self.dip = kwargs.get("dip", 0)
+        self.sref = kwargs.get("sref", Pair(180, 0, 180, 0))
+        self.gref = kwargs.get("gref", Pair(180, 0, 180, 0))
+        self.bedding = kwargs.get("bedding", Fol(0, 0))
         self.volume = kwargs.get("volume", "Default")
         self.date = kwargs.get("date", datetime.now())
         self.steps = kwargs.get("steps", [])
@@ -65,10 +65,10 @@ class Core(object):
                 ix = self.steps.index(key)
                 return dict(
                     step=key,
-                    V=self._vectors[ix],
                     MAG=self.MAG[ix],
+                    V=self._vectors[ix],
                     geo=self.geo[ix],
-                    strata=self.strata[ix],
+                    tilt=self.tilt[ix],
                     a95=self.a95[ix],
                     comment=self.comments[ix],
                 )
@@ -141,39 +141,72 @@ class Core(object):
                 print(ln, file=pmdfile, end="\r\n")
             pmdfile.write(chr(26))
 
+    @classmethod
+    def from_rs3(cls, filename):
+        """Return ``Core`` instance generated from PMD file.
+
+        Args:
+          filename: PMD file
+
+        """
+        with open(filename, encoding="latin1") as f:
+            d = f.read().splitlines()
+
+        import io
+        head = pd.read_fwf(io.StringIO('\n'.join(d[:2])))
+        body = pd.read_fwf(io.StringIO('\n'.join(d[2:])))
+            
+        data = {}
+        vline = d[1]
+        data["site"] =  head['Site'][0]
+        data["filename"] = filename
+        data["name"] =  head['Name'][0]
+        data["sref"] = Pair(180, 0, 180, 0)
+        data["gref"] = Pair(float(head['SDec'][0]), float(head['SInc'][0]),
+                           float(head['SDec'][0]), float(head['SInc'][0]))
+        data["bedding"] = Fol(float(head['BDec'][0]), float(head['BInc'][0]))
+        data["volume"] = 1.0
+        data["date"] = datetime.now()
+        ix = body.iloc[:,0] == 'T'
+        data["steps"] = body[ix].iloc[:, 1].to_list()
+        data["comments"] = body[ix]['Note'].to_list()
+        data["a95"] = body[ix]['Prec'].to_list()
+        data["vectors"] = []
+        for n, r in body[ix].iterrows():
+            data["vectors"].append(r['M[A/m]'] * Vec3(r['Dsp'], r['Isp']))
+        return cls(**data)
+
     @property
     def datatable(self):
         tb = []
-        for step, V, MAG, geo, strata, a95, comments in zip(
+        for step, MAG, V, geo, tilt, a95, comments in zip(
             self.steps,
-            self._vectors,
             self.MAG,
+            self.V,
             self.geo,
-            self.strata,
+            self.tilt,
             self.a95,
             self.comments,
         ):
-            ln = "{:<4} {: 9.2E} {: 9.2E} {: 9.2E} {: 9.2E} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:4.1f} {}".format(
-                step, V[0], V[1], V[2], MAG, geo.dd[0], geo.dd[1], strata.dd[0], strata.dd[1], a95, comments
+            ln = "{:<4} {: 9.2E} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:4.1f} {}".format(
+                step, MAG, V.dd[0], V.dd[1], geo.dd[0], geo.dd[1], tilt.dd[0], tilt.dd[1], a95, comments
             )
             tb.append(ln)
         return tb
 
     def show(self):
-        ff = os.path.splitext(os.path.basename(self.filename))[0][:8]
-        dt = self.date.strftime("%m-%d-%Y %H:%M")
         print(
-            "{:<8}  α={:5.1f}   ß={:5.1f}   s={:5.1f}   d={:5.1f}   v=m3  {}".format(
-                ff,
-                self.alpha,
-                self.beta,
-                *self.bedding.rhr,
+            "site:{} name:{} file:{}\nbedding:{} volume:{}m3  {}".format(
+                self.site,
+                self.name,
+                os.path.basename(self.filename),
+                self.bedding,
                 eformat(self.volume, 2),
-                dt
+                self.date.strftime("%m-%d-%Y %H:%M")
             )
         )
         print(
-            "STEP  Xc [Am²]  Yc [Am²]  Zc [Am²]  MAG[A/m]   Dg    Ig    Ds    Is  a95 "
+            "STEP  MAG[A/m]   Dsp   Isp   Dge   Ige   Dtc   Itc  a95 "
         )
         print("\n".join(self.datatable))
 
@@ -183,6 +216,7 @@ class Core(object):
 
     @property
     def nsteps(self):
+        "Retruns steps as array of numbers"
         pp = [re.findall("\d+", s) for s in self.steps]
         return np.array([int(s[0]) if s else 0 for s in pp])
 
@@ -194,22 +228,18 @@ class Core(object):
     @property
     def geo(self):
         "Returns `Group` of vectors in in-situ coordinates system"
-        return self.V.rotate(Lin(0, 90), self.alpha).rotate(
-            Lin(self.alpha + 90, 0), self.beta
-        )
+        H = self.sref.H(self.gref)
+        return self.V.transform(H)
 
     @property
-    def strata(self):
+    def tilt(self):
         "Returns `Group` of vectors in tilt‐corrected coordinates system"
-        return self.geo.rotate(Lin(self.strike, 0), -self.dip)
+        return self.geo.rotate(Lin(self.bedding.dd[0] - 90, 0), -self.bedding.dd[1])
 
-    @property
-    def bedding(self):
-        return Fol(self.strike + 90, self.dip)
-
-    def zijderveld_plot(self):
-        N, E, Z = np.array(self.geo).T
-        N0, E0, Z0 = self.geo[0]
+    def zijderveld_plot(self, kind='geo'):
+        data = getattr(self, kind)
+        N, E, Z = np.array(data).T
+        N0, E0, Z0 = data[0]
         fig, ax = plt.subplots(facecolor="white", figsize=settings["figsize"])
         ax.plot(E0, N0, "b+", markersize=14)
         ax.plot(E, N, "bo-", label="Horizontal")
@@ -229,7 +259,7 @@ class Core(object):
         # ax.xaxis.set_ticks(t[t != 0])
         # t = ax.yaxis.get_ticklocs()
         # ax.yaxis.set_ticks(t[t != 0])
-        ax.set_title(self.name, loc="left")
+        ax.set_title('{} {}'.format(self.site, self.name), loc="left")
         plt.legend(title="Unit={:g}A/m".format(t[1] - t[0]))
         plt.tight_layout()
         plt.show()
@@ -239,16 +269,19 @@ class Core(object):
         ax.plot(self.nsteps[0], self.MAG[0] / self.MAG.max(), "k+", markersize=14)
         ax.plot(self.nsteps, self.MAG / self.MAG.max(), "ko-")
         ax.set_ylabel("M/Mmax")
-        ax.set_title("{} (Mmax = {:g})".format(self.name, self.MAG.max()))
+        ax.set_title("{} {} (Mmax = {:g})".format(self.site, self.name, self.MAG.max()))
         ax.set_ylim(0, 1.02)
         ax.yaxis.grid()
         plt.show()
 
-    def stereo_plot(self, **kwargs):
-        title = kwargs.pop("title", self.name)
-        s = StereoNet(title=title, **kwargs)
-        for f1, f2 in zip(self.geo[:-1], self.geo[1:]):
+    def stereo_plot(self, kind='geo', **kwargs):
+        data = getattr(self, kind)
+        tt = {'V':'Specimen coordinates',
+              'geo':'Geographic coordinates',
+              'tilt':'Tilted coordinates'}
+        s = StereoNet(title='{} {}\n{}'.format(self.site, self.name, tt[kind]), **kwargs)
+        for f1, f2 in zip(data[:-1], data[1:]):
             s.arc(f1, f2, "k:")
-        s.vector(self.geo[0], "k+", markersize=14)
-        s.vector(self.geo, "ko")
+        s.vector(data[0], "k+", markersize=14)
+        s.vector(data, "ko")
         s.show()
