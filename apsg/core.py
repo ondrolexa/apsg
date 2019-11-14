@@ -2296,12 +2296,12 @@ class StereoGrid(object):
 
     def apply_func(self, func, *args, **kwargs):
         """Calculate values using function passed as argument.
-        Function must accept vector (3 elements array) as argument
-        and return scalar value.
+        Function must accept Vec3-like (or 3 elements array)
+        as argument and return scalar value.
 
         """
         for i in range(self.n):
-            self.values[i] = func(self.dcgrid[i], *args, **kwargs)
+            self.values[i] = func(Vec3(self.dcgrid[i]), *args, **kwargs)
 
     def contourf(self, *args, **kwargs):
         """ Show filled contours of values."""
