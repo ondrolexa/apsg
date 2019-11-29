@@ -4,6 +4,7 @@
 from __future__ import division, print_function
 import os
 import re
+from copy import deepcopy
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -60,6 +61,23 @@ class Core(object):
         """Group fancy indexing"""
         if isinstance(key, int):
             key = self.steps[key]
+        if isinstance(key, slice):
+            res = deepcopy(self)
+            if key.start:
+                start_ok = key.start
+            else:
+                start_ok = self.nsteps[0]
+            if key.stop:
+                stop_ok = key.stop
+            else:
+                stop_ok = self.nsteps[-1]
+            ix = (self.nsteps>=start_ok) & (self.nsteps<=stop_ok)
+            res.steps = [val for (val, ok) in zip(self.steps, ix) if ok]
+            res.a95 = [val for (val, ok) in zip(self.a95, ix) if ok]
+            res.comments = [val for (val, ok) in zip(self.comments, ix) if ok]
+            res._vectors = [val for (val, ok) in zip(self._vectors, ix) if ok]
+            res.name = self.name + '({}-{})'.format(start_ok, stop_ok)
+            return res
         if isinstance(key, str):
             if key in self.steps:
                 ix = self.steps.index(key)
@@ -235,6 +253,19 @@ class Core(object):
     def tilt(self):
         "Returns `Group` of vectors in tilt‐corrected coordinates system"
         return self.geo.rotate(Lin(self.bedding.dd[0] - 90, 0), -self.bedding.dd[1])
+
+    def pca(self, kind='geo', origin=False):
+        data = getattr(self, kind)
+        if origin:
+            data.append(Vec3([0, 0, 0]))
+        r = data.R/len(data)
+        dv = Group([v-r for v in data])
+        ot = dv.ortensor
+        pca = ot.eigenvects[0]
+        if pca.angle(r) > 90:
+            pca = -pca
+        mad = np.degrees(np.arctan(np.sqrt((ot.E2 + ot.E3) / ot.E1)))
+        return pca, mad
 
     def zijderveld_plot(self, kind='geo'):
         data = getattr(self, kind)
