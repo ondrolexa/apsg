@@ -13,7 +13,6 @@ from apsg.core import Vec3, Fol, Lin, Pair, Group, settings
 from apsg.plotting import StereoNet
 from apsg.helpers import sind, cosd, eformat
 
-
 __all__ = ["Core"]
 
 
@@ -164,7 +163,7 @@ class Core(object):
         """Return ``Core`` instance generated from PMD file.
 
         Args:
-          filename: PMD file
+          filename: Remasoft rs3 file
 
         """
         with open(filename, encoding="latin1") as f:
@@ -173,7 +172,7 @@ class Core(object):
         import io
         head = pd.read_fwf(io.StringIO('\n'.join(d[:2])))
         body = pd.read_fwf(io.StringIO('\n'.join(d[2:])))
-            
+
         data = {}
         vline = d[1]
         data["site"] =  head['Site'][0]
@@ -207,7 +206,7 @@ class Core(object):
             self.comments,
         ):
             ln = "{:<4} {: 9.2E} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:4.1f} {}".format(
-                step, MAG, V.dd[0], V.dd[1], geo.dd[0], geo.dd[1], tilt.dd[0], tilt.dd[1], a95, comments
+                step, MAG, *V.dd, *geo.dd, *tilt.dd, a95, comments
             )
             tb.append(ln)
         return tb
@@ -272,10 +271,13 @@ class Core(object):
         N, E, Z = np.array(data).T
         N0, E0, Z0 = data[0]
         fig, ax = plt.subplots(facecolor="white", figsize=settings["figsize"])
+        ax.plot(E, N, "b-", label="Horizontal")
         ax.plot(E0, N0, "b+", markersize=14)
-        ax.plot(E, N, "bo-", label="Horizontal")
+        ax.plot(E, N, "bo", picker=5)
+        ax.plot(E, -Z, "g-", label="Vertical")
         ax.plot(E0, -Z0, "g+", markersize=14)
-        ax.plot(E, -Z, "go-", label="Vertical")
+        ax.plot(E, -Z, "go", picker=5)
+        fig.canvas.mpl_connect('pick_event', lambda event: self.onpick(event, fig))
         mx = np.max(np.abs(ax.axis()))
         ax.axis([-mx, mx, -mx, mx])
         ax.set_aspect(1)
@@ -316,3 +318,7 @@ class Core(object):
         s.vector(data[0], "k+", markersize=14)
         s.vector(data, "ko")
         s.show()
+
+    def onpick(self, event, fig):
+        fig.suptitle('{}'.format(self.steps[event.ind[0]]))
+        fig.canvas.draw()
