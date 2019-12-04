@@ -617,13 +617,9 @@ class StereoNet(object):
         """Save figure to file"""
         self.draw()
         if not self.closed:   # check if figure exists
-            if self._lgd is None:
-                self.fig.savefig(filename, **kwargs)
-            else:
-                bea = (self._lgd, self._title) + tuple(self._axtitle)
-                self.fig.savefig(
-                    filename, bbox_extra_artists=bea, bbox_inches="tight", **kwargs
-                )
+            bea_candidates = (self._lgd, self._title) + tuple(self._axtitle)
+            bea = [art for art in bea_candidates if art is not None]
+            self.fig.savefig(filename, bbox_extra_artists=bea, **kwargs)
 
     def format_coord(self, x, y):
         if np.hypot(x, y) > 1:
