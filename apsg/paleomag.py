@@ -206,7 +206,7 @@ class Core(object):
             self.comments,
         ):
             ln = "{:<4} {: 9.2E} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:4.1f} {}".format(
-                step, MAG, *V.dd, *geo.dd, *tilt.dd, a95, comments
+                step, MAG, V.dd[0], V.dd[1], geo.dd[0], geo.dd[1], tilt.dd[0], tilt.dd[1], a95, comments
             )
             tb.append(ln)
         return tb
