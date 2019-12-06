@@ -422,35 +422,30 @@ class StereoNet(object):
 
     def cone(self, obj, alpha, *args, **kwargs):
         """Draw small circle"""
-        assert obj.type is Lin, "Only Lin instance could be used as cone axis."
+        assert issubclass(
+            obj.type, Vec3
+        ), "Only Vec3-like instance could be used as cone axis."
         if "zorder" not in kwargs:
             kwargs["zorder"] = 5
         animate = kwargs.pop("animate", False)
+        upper_style = False
         if isinstance(obj, Group):
-            x = []
-            y = []
-            for azi, inc in obj.dd.T:
-                xx, yy = self._cone(
-                    l2v(azi, inc),
-                    l2v(azi, inc - alpha),
-                    limit=180,
-                    res=int(sind(alpha) * 358 + 3),
-                    split=True,
-                )
-                x = np.hstack((x, xx, np.nan))
-                y = np.hstack((y, yy, np.nan))
-            x = x[:-1]
-            y = y[:-1]
-        else:
-            azi, inc = obj.dd
-            x, y = self._cone(
-                l2v(azi, inc),
-                l2v(azi, inc - alpha),
-                limit=180,
-                res=int(sind(alpha) * 358 + 3),
-                split=True,
-            )
+            obj = obj.R
+        azi, inc = obj.dd
+        if obj.upper:
+            inc = -inc
+            upper_style = True
+        x, y = self._cone(
+            l2v(azi, inc),
+            l2v(azi, inc - alpha),
+            limit=180,
+            res=int(sind(alpha) * 358 + 3),
+            split=True,
+        )
         h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
+        if upper_style:
+            for hl in h:
+                hl.set_linestyle('--')
         if animate:
             self.artists.append(tuple(h))
         self.draw()
