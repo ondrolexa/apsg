@@ -1,6 +1,8 @@
 # Changes
 
-## Master version
+### 0.6.2 (6 Dec 2019)
+* few minor bugs fixed
+* Stereogrid apply_func passes Vec3 instead numpy array
 * Pair H method to get mutual rotation implemented
 * velgrad method of DefGrad accepts steps kwarg
   to generate list of DefGrad tensors
