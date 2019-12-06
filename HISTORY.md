@@ -1,6 +1,11 @@
 # Changes
 
+### 0.6.3 (6 Dec 2019)
+
+* Python 2/3 compatibility fix
+
 ### 0.6.2 (6 Dec 2019)
+
 * few minor bugs fixed
 * Stereogrid apply_func passes Vec3 instead numpy array
 * Pair H method to get mutual rotation implemented
