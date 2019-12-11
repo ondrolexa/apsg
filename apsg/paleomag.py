@@ -43,6 +43,8 @@ class Core(object):
         self.site = kwargs.get("site", "Default")
         self.name = kwargs.get("name", "Default")
         self.filename = kwargs.get("filename", None)
+        self.longitude = kwargs.get("longitude", None)
+        self.latitude = kwargs.get("latitude", None)
         self.sref = kwargs.get("sref", Pair(180, 0, 180, 0))
         self.gref = kwargs.get("gref", Pair(180, 0, 180, 0))
         self.bedding = kwargs.get("bedding", Fol(0, 0))
@@ -145,7 +147,7 @@ class Core(object):
         dt = self.date.strftime("%m-%d-%Y %H:%M")
         infoln = "{:<8}  a={:5.1f}   b={:5.1f}   s={:5.1f}   d={:5.1f}   v={}m3  {}"
         ln0 = infoln.format(
-            ff, self.alpha, self.beta, *self.bedding.rhr, eformat(self.volume, 2), dt
+            ff, self.alpha, self.beta, self.bedding.rhr[0], self.bedding.rhr[1], eformat(self.volume, 2), dt
         )
         headln = (
             "STEP  Xc [Am2]  Yc [Am2]  Zc [Am2]  MAG[A/m]   Dg    Ig    Ds    Is  a95 "
@@ -170,21 +172,26 @@ class Core(object):
             d = f.read().splitlines()
 
         import io
-        head = pd.read_fwf(io.StringIO('\n'.join(d[:2])))
-        body = pd.read_fwf(io.StringIO('\n'.join(d[2:])))
+        headspec = [[0, 9], [10, 19], [20, 29], [30, 40], [41, 50], [51, 65], [66, 70], [71, 73], [74, 79], [80, 85], [86, 91], [92, 97], [98, 103], [104, 109], [110, 112], [113, 115], [116, 118], [119, 121], [122, 126]]
+        bodyspec = [[0, 2], [3, 13], [14, 27], [28, 33], [34, 39], [40, 45], [46, 51], [52, 57], [58, 63], [64, 69], [70, 75], [76, 81], [82, 95], [96, 105], [106, 115], [116, 126]]
+
+        head = pd.read_fwf(io.StringIO('\n'.join(d[:2])), colspecs=headspec)
+        body = pd.read_fwf(io.StringIO('\n'.join(d[2:])), colspecs=bodyspec)
 
         data = {}
         vline = d[1]
         data["site"] =  head['Site'][0]
         data["filename"] = filename
         data["name"] =  head['Name'][0]
+        data["longitude"] =  float(head['Longitude'][0])
+        data["latitude"] =  float(head['Latitude'][0])
         data["sref"] = Pair(180, 0, 180, 0)
         data["gref"] = Pair(float(head['SDec'][0]), float(head['SInc'][0]),
                            float(head['SDec'][0]), float(head['SInc'][0]))
         data["bedding"] = Fol(float(head['BDec'][0]), float(head['BInc'][0]))
         data["volume"] = 1.0
         data["date"] = datetime.now()
-        ix = body.iloc[:,0] == 'T'
+        ix = (body.iloc[:,0] == 'T') | (body.iloc[:,0] == 'N')
         data["steps"] = body[ix].iloc[:, 1].to_list()
         data["comments"] = body[ix]['Note'].to_list()
         data["a95"] = body[ix]['Prec'].to_list()
