@@ -43,12 +43,17 @@ class Core(object):
         self.site = kwargs.get("site", "Default")
         self.name = kwargs.get("name", "Default")
         self.filename = kwargs.get("filename", None)
-        self.longitude = kwargs.get("longitude", None)
         self.latitude = kwargs.get("latitude", None)
+        self.longitude = kwargs.get("longitude", None)
+        self.height = kwargs.get("height", None)
+        self.rock = kwargs.get("rock", None)
+        self.age = kwargs.get("age", None)
+        self.formation = kwargs.get("formation", None)
         self.sref = kwargs.get("sref", Pair(180, 0, 180, 0))
         self.gref = kwargs.get("gref", Pair(180, 0, 180, 0))
         self.bedding = kwargs.get("bedding", Fol(0, 0))
-        self.volume = kwargs.get("volume", "Default")
+        self.foldaxis = kwargs.get("foldaxis", Lin(0, 0))
+        self.volume = kwargs.get("volume", 1.0)
         self.date = kwargs.get("date", datetime.now())
         self.steps = kwargs.get("steps", [])
         self.a95 = kwargs.get("a95", [])
@@ -180,16 +185,20 @@ class Core(object):
 
         data = {}
         vline = d[1]
-        data["site"] =  head['Site'][0]
+        data["site"] =  head['Site'][0] if not pd.isna(head['Site'][0]) else ''
         data["filename"] = filename
-        data["name"] =  head['Name'][0]
-        data["longitude"] =  float(head['Longitude'][0])
-        data["latitude"] =  float(head['Latitude'][0])
+        data["name"] =  head['Name'][0] if not pd.isna(head['Name'][0]) else ''
+        data["longitude"] =  float(head['Longitude'][0]) if not pd.isna(head['Longitude'][0]) else None
+        data["latitude"] =  float(head['Latitude'][0]) if not pd.isna(head['Latitude'][0]) else None
+        data["height"] =  float(head['Height'][0]) if not pd.isna(head['Height'][0]) else None
+        data["rock"] =  head['Rock'][0] if not pd.isna(head['Rock'][0]) else ''
+        data["age"] =  head['Age'][0] if not pd.isna(head['Age'][0]) else ''
+        data["formation"] =  head['Fm'][0] if not pd.isna(head['Fm'][0]) else ''
         data["sref"] = Pair(180, 0, 180, 0)
         data["gref"] = Pair(float(head['SDec'][0]), float(head['SInc'][0]),
                            float(head['SDec'][0]), float(head['SInc'][0]))
-        data["bedding"] = Fol(float(head['BDec'][0]), float(head['BInc'][0]))
-        data["volume"] = 1.0
+        data["bedding"] = Fol(float(head['BDec'][0]), float(head['BInc'][0])) if not pd.isna(head['BDec'][0]) and not pd.isna(head['BInc'][0]) else None
+        data["foldaxis"] = Lin(float(head['FDec'][0]), float(head['FInc'][0])) if not pd.isna(head['FDec'][0]) and not pd.isna(head['FInc'][0]) else None
         data["date"] = datetime.now()
         ix = (body.iloc[:,0] == 'T') | (body.iloc[:,0] == 'N')
         data["steps"] = body[ix].iloc[:, 1].to_list()
