@@ -50,3 +50,6 @@ docs/_build
 *~
 
 .pytest_cache/
+
+# virtual environment
+.venv
