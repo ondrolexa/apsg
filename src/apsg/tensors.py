@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 
+from typing import Tuple
+
+
 import numpy as np
 
 from apsg.core import Vec3, Group, Pair, Fault, Fol, Lin
@@ -27,19 +30,19 @@ class DefGrad(np.ndarray):
 
     def __new__(cls, array, name='F'):
         # casting to our class
-        assert np.shape(array) == (3, 3), "DefGrad must be 3x3 2D array"
+        assert np.shape(array) == (3, 3), 'DefGrad must be 3x3 2D array'
         obj = np.asarray(array).view(cls)
         obj.name = name
         return obj
 
     def __repr__(self):
-        return "DefGrad:\n" + str(self)
+        return 'DefGrad:\n' + str(self)
 
     def __mul__(self, other):
         assert np.shape(other) == (
             3,
             3,
-        ), "DefGrad could by multiplied with 3x3 2D array"
+        ), 'DefGrad could by multiplied with 3x3 2D array'
         return DefGrad(np.dot(self, other))
 
     def __pow__(self, n):
@@ -117,8 +120,8 @@ class DefGrad(np.ndarray):
 
         """
 
-        assert Rxy >= 1, "Rxy must be greater than or equal to 1."
-        assert Ryz >= 1, "Ryz must be greater than or equal to 1."
+        assert Rxy >= 1, 'Rxy must be greater than or equal to 1.'
+        assert Ryz >= 1, 'Ryz must be greater than or equal to 1.'
 
         y = (Ryz / Rxy) ** (1 / 3)
         return cls.from_comp(xx=y * Rxy, yy=y, zz=y / Ryz)
@@ -126,7 +129,7 @@ class DefGrad(np.ndarray):
     @classmethod
     def from_pair(cls, p):
 
-        assert issubclass(type(p), Pair), "Data must be of Pair type."
+        assert issubclass(type(p), Pair), 'Data must be of Pair type.'
 
         return cls(np.array([p.lvec, p.fvec ** p.lvec, p.fvec]).T)
 
@@ -257,7 +260,7 @@ class DefGrad(np.ndarray):
         w, W = np.linalg.eig(R.T)
         i = np.where(abs(np.real(w) - 1.0) < 1e-8)[0]
         if not len(i):
-            raise ValueError("no unit eigenvector corresponding to eigenvalue 1")
+            raise ValueError('no unit eigenvector corresponding to eigenvalue 1')
         axis = Vec3(np.real(W[:, i[-1]]).squeeze())
         # rotation angle depending on direction
         cosa = (np.trace(R) - 1.0) / 2.0
@@ -310,7 +313,7 @@ class VelGrad(np.ndarray):
 
     def __new__(cls, array, name='L'):
         # casting to our class
-        assert np.shape(array) == (3, 3), "VelGrad must be 3x3 2D array"
+        assert np.shape(array) == (3, 3), 'VelGrad must be 3x3 2D array'
         obj = np.asarray(array).view(cls)
         obj.name = name
         return obj
@@ -414,10 +417,10 @@ class Stress(np.ndarray):
     def __new__(cls, array, name='S'):
         # casting to our class
 
-        assert np.shape(array) == (3, 3), "Stress must be 3x3 2D array"
+        assert np.shape(array) == (3, 3), 'Stress must be 3x3 2D array'
         assert np.allclose(
             np.asarray(array), np.asarray(array).T
-        ), "Stress tensor must be symmetrical"
+        ), 'Stress tensor must be symmetrical'
 
         obj = np.asarray(array).view(cls)
         obj.name = name
@@ -429,7 +432,7 @@ class Stress(np.ndarray):
 
     def __repr__(self):
 
-        return "Stress:\n" + str(self)
+        return 'Stress:\n' + str(self)
 
     def __pow__(self, n):
         # matrix power
@@ -649,13 +652,10 @@ class Stress(np.ndarray):
 
 class Tensor(object):
     """
-    Tensor class.
-
-    See the following methods and properties for additional operations.
-
+    Tensor is a multidimensional array of scalars.
     """
 
-    def __init__(self, matrix, **kwargs):
+    def __init__(self, matrix, **kwargs) -> None:
 
         assert np.shape(matrix) == (3, 3), "Ellipsoid matrix must be 3x3 2D array"
 
@@ -669,39 +669,29 @@ class Tensor(object):
         self._evals = vc[ix]
         self._evects = vv.T[ix]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
-            "%s: %s Kind: %s\n" % (self.__class__.__name__, self.name, self.kind)
-            + "(E1:%.4g,E2:%.4g,E3:%.4g)\n" % (self.E1, self.E2, self.E3)
+            '{}: {} Kind: {}\n'.format(self.__class__.__name__, self.name, self.kind)
+            + '(E1:{:.4g},E2:{:.4g},E3:{:.4g})\n'.format(self.E1, self.E2, self.E3)
             + str(self._matrix)
         )
 
-    def __str__(self):
-        return repr(self)
+    __str__ = __repr__
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """
         Return `True` if tensors are equal, otherwise `False`.
         """
-
         if not isinstance(other, self.__class__):
             return False
 
         return tuple(map(tuple, self._matrix)) == tuple(map(tuple, other._matrix))
 
-    def __ne__(self, other):
-        """
-        Return `True` if tensorss are not equal, otherwise `False`.
-
-        Overrides the default implementation (unnecessary in Python 3).
-        """
-        return not (self == other)
-
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(tuple(map(tuple, self._matrix)))
 
     @classmethod
-    def from_comp(cls, xx=1, xy=0, xz=0, yy=1, yz=0, zz=1, **kwargs):
+    def from_comp(cls, xx=1, xy=0, xz=0, yy=1, yz=0, zz=1, **kwargs) -> 'Tensor':
         """
         Return tensor. Default is identity tensor.
 
@@ -711,29 +701,25 @@ class Tensor(object):
         return cls([[xx, xy, xz], [xy, yy, yz], [xz, yz, zz]], **kwargs)
 
     @classmethod
-    def from_axes(cls, x=1, y=1, z=1, **kwargs):
+    def from_axes(cls, x=1, y=1, z=1, **kwargs) -> 'Tensor':
         """
         Return diagonal tensor defined by principal axes.
-
         """
-
         return cls([[x * x, 0, 0], [0, y * y, 0], [0, 0, z * z]], **kwargs)
 
     @property
-    def eigenvals(self):
+    def eigenvals(self) -> Tuple[float]:
         """
-        Return tuple of eigenvalues sorted in descending order.
+        Return the eigenvalues sorted in descending order.
         """
-
         return tuple(self._evals)
 
     @property
-    def eigenvects(self):
+    def eigenvects(self) -> Group:
         """
-        Return group of eigenvectors. If scaled property is True their
+        Return the group of eigenvectors. If scaled property is `True` their
         length is scaled by eigenvalues, otherwise unit length.
         """
-
         if self.scaled:
             e1, e2, e3 = self.E1, self.E2, self.E3
         else:
@@ -747,39 +733,35 @@ class Tensor(object):
         )
 
     @property
-    def eigenlins(self):
+    def eigenlins(self) -> Group:
         """
-        Return group of eigenvectors as Lin objects
+        Return group of eigenvectors as Lin objects.
         """
-
         return self.eigenvects.aslin
 
     @property
-    def eigenfols(self):
+    def eigenfols(self) -> Group:
         """
-        Return group of eigenvectors as Fol objects
+        Return group of eigenvectors as Fol objects.
         """
-
         return self.eigenvects.asfol
 
     @property
-    def strength(self):
+    def strength(self) -> float:
         """
-        Woodcock strength
+        Return the Woodcock strength.
         """
-
         return self.e13
 
     @property
-    def shape(self):
+    def shape(self) -> float:
         """
-        Woodcock shape
+        return the Woodcock shape.
         """
-
         return self.K
 
     @property
-    def kind(self):
+    def kind(self) -> str:
         """
         Return descriptive type of ellipsoid
         """
@@ -799,135 +781,121 @@ class Tensor(object):
         return res
 
     @property
-    def E1(self):
+    def E1(self) -> float:
         """
-        Return square root of maximum eigenvalue.
+        Return the square root of maximum eigenvalue.
         """
-
         return np.sqrt(self._evals[0])
 
     @property
-    def E2(self):
+    def E2(self) -> float:
         """
-        Return square root of middle eigenvalue.
+        Return the square root of middle eigenvalue.
         """
-
         return np.sqrt(self._evals[1])
 
     @property
-    def E3(self):
+    def E3(self) -> float:
         """
-        Return square root of minimum eigenvalue.
+        Return the square root of minimum eigenvalue.
         """
-
         return np.sqrt(self._evals[2])
 
     @property
-    def e1(self):
+    def e1(self) -> float:
         """
-        Return maximum natural principal strain.
+        Return the maximum natural principal strain.
         """
-
         return np.log(self.E1)
 
     @property
-    def e2(self):
+    def e2(self) -> float:
         """
-        Return middle natural principal strain.
+        Return the middle natural principal strain.
         """
-
         return np.log(self.E2)
 
     @property
-    def e3(self):
+    def e3(self) -> float:
         """
-        Retrun minimum natural principal strain.
+        Return the minimum natural principal strain.
         """
-
         return np.log(self.E3)
 
     @property
-    def Rxy(self):
+    def Rxy(self) -> float:
         return self.E1 / self.E2
 
     @property
-    def Ryz(self):
+    def Ryz(self) -> float:
         return self.E2 / self.E3
 
     @property
-    def e12(self):
+    def e12(self) -> float:
         return self.e1 - self.e2
 
     @property
-    def e13(self):
+    def e13(self) -> float:
         return self.e1 - self.e3
 
     @property
-    def e23(self):
+    def e23(self) -> float:
         return self.e2 - self.e3
 
     @property
-    def k(self):
+    def k(self) -> float:
         """
-        Strain symmetry.
+        Return the strain symmetry.
         """
-
         return (self.Rxy - 1) / (self.Ryz - 1)
 
     @property
-    def d(self):
+    def d(self) -> float:
         """
-        Strain intensity.
+        Return the strain intensity.
         """
-
         return np.sqrt((self.Rxy - 1) ** 2 + (self.Ryz - 1) ** 2)
 
     @property
-    def K(self):
+    def K(self) -> float:
         """
-        Strain symmetry (Ramsay, 1983).
+        Return the strain symmetry (Ramsay, 1983).
         """
-
         return self.e12 / self.e23 if self.e23 > 0 else np.inf
 
     @property
-    def D(self):
+    def D(self) -> float:
         """
-        Strain intensity.
+        return the strain intensity.
         """
-
         return self.e12 ** 2 + self.e23 ** 2
 
     @property
-    def r(self):
+    def r(self) -> float:
         """
-        Strain intensity (Watterson, 1968).
+        Return the strain intensity (Watterson, 1968).
         """
-
         return self.Rxy + self.Ryz - 1
 
     @property
-    def goct(self):
+    def goct(self) -> float:
         """
-        Natural octahedral unit shear (Nadai, 1963).
+        Return the natural octahedral unit shear (Nadai, 1963).
         """
-
         return 2 * np.sqrt(self.e12 ** 2 + self.e23 ** 2 + self.e13 ** 2) / 3
 
     @property
-    def eoct(self):
+    def eoct(self) -> float:
         """
-        Natural octahedral unit strain (Nadai, 1963).
+        Return the natural octahedral unit strain (Nadai, 1963).
         """
-
         return np.sqrt(3) * self.goct / 2
 
     @property
-    def lode(self):
+    def lode(self) -> float:
         """
-        Lode parameter (Lode, 1926).
-        """
-
+        Return Lode parameter (Lode, 1926).
+         """
         return (
             (2 * self.e2 - self.e1 - self.e3) / (self.e1 - self.e3)
             if (self.e1 - self.e3) > 0
@@ -935,18 +903,17 @@ class Tensor(object):
         )
 
     @property
-    def I(self):
+    def I(self) -> 'Tensor':
         """
-        Return inverse tensor.
+        Return the inverse tensor.
         """
 
         return Tensor(np.linalg.inv(self._matrix), name=self.name)
 
-    def apply(self, x1, x2=None):
+    def apply(self, x1, x2=None) -> np.array:
         """
-        Apply Deftensor on vector(s).
+        Apply the deformation tensor on vector(s).
         """
-
         if x2 is None:
             return np.dot(x1, np.dot(self._matrix, x1))
         else:
@@ -984,7 +951,7 @@ class Ortensor(Tensor):
 
     """
 
-    def __init__(self, matrix, **kwargs):
+    def __init__(self, matrix, **kwargs) -> None:
         if isinstance(matrix, Group):
             if not 'name' in kwargs:
                 kwargs['name'] = matrix.name
@@ -992,7 +959,7 @@ class Ortensor(Tensor):
         super(Ortensor, self).__init__(matrix, **kwargs)
 
     @classmethod
-    def from_group(cls, g, **kwargs):
+    def from_group(cls, g, **kwargs) -> 'Ortensor':
         """
         Return ``Ortensor`` of data in ``Group``
 
@@ -1018,7 +985,7 @@ class Ortensor(Tensor):
         return cls(np.dot(np.array(g).T, np.array(g)) / len(g), **kwargs)
 
     @property
-    def E1(self):
+    def E1(self) -> float:
         """
         Return maximum eigenvalue.
         """
@@ -1026,7 +993,7 @@ class Ortensor(Tensor):
         return self._evals[0]
 
     @property
-    def E2(self):
+    def E2(self) -> float:
         """
         Return middle eigenvalue.
         """
@@ -1034,7 +1001,7 @@ class Ortensor(Tensor):
         return self._evals[1]
 
     @property
-    def E3(self):
+    def E3(self) -> float:
         """
         Return minimum eigenvalue.
         """
@@ -1042,7 +1009,7 @@ class Ortensor(Tensor):
         return self._evals[2]
 
     @property
-    def P(self):
+    def P(self) -> float:
         """
         Point index (Vollmer, 1990).
         """
@@ -1050,7 +1017,7 @@ class Ortensor(Tensor):
         return self.E1 - self.E2
 
     @property
-    def G(self):
+    def G(self) -> float:
         """
         Girdle index (Vollmer, 1990).
         """
@@ -1058,7 +1025,7 @@ class Ortensor(Tensor):
         return 2 * (self.E2 - self.E3)
 
     @property
-    def R(self):
+    def R(self) -> float:
         """
         Random index (Vollmer, 1990).
         """
@@ -1066,7 +1033,7 @@ class Ortensor(Tensor):
         return 3 * self.E3
 
     @property
-    def B(self):
+    def B(self) -> float:
         """
         Cylindricity index (Vollmer, 1990).
         """
@@ -1074,7 +1041,7 @@ class Ortensor(Tensor):
         return self.P + self.G
 
     @property
-    def Intensity(self):
+    def Intensity(self) -> float:
         """
         Intensity index (Lisle, 1985).
         """
@@ -1082,7 +1049,7 @@ class Ortensor(Tensor):
         return 7.5 * np.sum((self._evals - 1 / 3) ** 2)
 
     @property
-    def MADp(self):
+    def MADp(self) -> float:
         """
         Return approximate angular deviation from the major axis along E1.
         """
@@ -1090,7 +1057,7 @@ class Ortensor(Tensor):
         return atand(np.sqrt((1 - self.E1) / self.E1))
 
     @property
-    def MADo(self):
+    def MADo(self) -> float:
         """
         Return approximate deviation from the plane normal to E3.
         """
@@ -1098,7 +1065,7 @@ class Ortensor(Tensor):
         return atand(np.sqrt(self.E3 / (1 - self.E3)))
 
     @property
-    def MAD(self):
+    def MAD(self) -> float:
         """
         Return approximate deviation according to shape
         """
@@ -1134,7 +1101,7 @@ class Ellipsoid(Tensor):
     """
 
     @classmethod
-    def from_defgrad(cls, F, **kwargs):
+    def from_defgrad(cls, F, **kwargs) -> 'Ellipsoid':
         """
         Return ``Ellipsoid`` from ``Defgrad``.
 
@@ -1144,7 +1111,7 @@ class Ellipsoid(Tensor):
 
         return cls(np.dot(F, np.transpose(F)), **kwargs)
 
-    def transform(self, F):
+    def transform(self, F) -> 'Ellipsoid':
         """
         Return ``Ellipsoid`` representing result of deformation F
         """
