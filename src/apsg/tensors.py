@@ -912,7 +912,7 @@ class Tensor(object):
 
         return Tensor(np.linalg.inv(self._matrix), name=self.name)
 
-    def apply(self, x1, x2=None) -> "np.array ???":
+    def apply(self, x1, x2=None) -> np.array:
         """
         Apply the deformation tensor on vector(s).
         """
