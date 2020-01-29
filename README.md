@@ -1,4 +1,4 @@
-# APSG - python package for structural geologists
+<img src="https://ondrolexa.github.io/apsg/apsg_banner.svg" alt="APSG logo" width="480px"/>
 
 [![GitHub version](https://badge.fury.io/gh/ondrolexa%2Fapsg.svg)](https://badge.fury.io/gh/ondrolexa%2Fapsg)
 [![Build Status](https://travis-ci.org/ondrolexa/apsg.svg?branch=master)](https://travis-ci.org/ondrolexa/apsg)
