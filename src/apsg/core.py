@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
 
-
 """
-Module to manipulate, analyze and visualize structural geology data.
+A module to manipulate, analyze and visualize structural geology data.
 """
 
-
-from __future__ import division, print_function
-from copy import deepcopy
-import warnings
 import pickle
+import warnings
+from copy import deepcopy
 
 import numpy as np
 import matplotlib.pyplot as plt

@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 
-
-from __future__ import division, print_function
+import warnings
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-import warnings
 import matplotlib.cbook as mcb
 import matplotlib.animation as animation
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 try:
     import mplstereonet
@@ -34,7 +32,7 @@ from apsg.tensors import DefGrad, Stress, Tensor, Ortensor, Ellipsoid
 __all__ = ["StereoNet", "VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot", "rose"]
 
 
-# ignore matplotlib deprecation warnings
+# Ignore `matplotlib`s deprecation warnings.
 warnings.filterwarnings("ignore", category=mcb.mplDeprecation)
 
 

@@ -3,7 +3,7 @@
 
 
 """
-Runs the interactive shell.
+Run the interactive shell.
 """
 
 

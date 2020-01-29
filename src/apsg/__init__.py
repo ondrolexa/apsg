@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-from .core import (
+from apsg.core import (
     Vec3,
     Fol,
     Lin,
@@ -16,10 +16,10 @@ from .core import (
     settings,
 )
 
-from .db import SDB
-from .tensors import DefGrad, VelGrad, Stress, Tensor, Ortensor, Ellipsoid
-from .helpers import sind, cosd, tand, acosd, asind, atand, atan2d
-from .plotting import StereoNet, VollmerPlot, RamsayPlot, FlinnPlot, HsuPlot
+from apsg.db import SDB
+from apsg.tensors import DefGrad, VelGrad, Stress, Tensor, Ortensor, Ellipsoid
+from apsg.helpers import sind, cosd, tand, acosd, asind, atand, atan2d
+from apsg.plotting import StereoNet, VollmerPlot, RamsayPlot, FlinnPlot, HsuPlot
 
 
 __all__ = (

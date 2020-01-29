@@ -2,7 +2,6 @@
 
 """
 API to read data from PySDB database
-
 """
 
 import sqlite3

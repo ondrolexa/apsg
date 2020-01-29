@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 
-
-from __future__ import division, print_function
 import os
 import re
 from copy import deepcopy
+from datetime import datetime
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from datetime import datetime
+
 from apsg.core import Vec3, Fol, Lin, Pair, Group, settings
 from apsg.plotting import StereoNet
 from apsg.helpers import sind, cosd, eformat
 
-__all__ = ["Core"]
+__all__ = ("Core",)
 
 
 class Core(object):
