@@ -1,0 +1,8 @@
+title: APSG
+description: Structural geology module for Python
+google_analytics: UA-57284324-1
+show_downloads: true
+theme: jekyll-theme-slate
+
+gems:
+  - jekyll-mentions
