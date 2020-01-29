@@ -18,6 +18,7 @@ except ImportError:
 from pylab import *  # NOQA
 from apsg import *  # NOQA
 
+
 def main():
     banner = "+----------------------------------------------------------+\n"
     banner += "    APSG toolbox "
@@ -28,6 +29,7 @@ def main():
     vars.update(locals())
     shell = code.InteractiveConsole(vars)
     shell.interact(banner=banner)
+
 
 if __name__ == "__main__":
     main()

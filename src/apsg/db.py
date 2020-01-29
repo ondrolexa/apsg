@@ -15,6 +15,7 @@ __all__ = ("SDB",)
 
 class SDB(object):
     """PySDB database access class"""
+
     _SELECT = """SELECT sites.name as name, sites.x_coord as x,
     sites.y_coord as y, units.name as unit, structdata.azimuth as azimuth,
     structdata.inclination as inclination, structype.structure as structure,
@@ -55,21 +56,31 @@ class SDB(object):
                 raise
         elif val is None:
             if name == "crs":  # keep compatible with old sdb files
-                val = self.conn.execute("SELECT value FROM meta WHERE name='crs'").fetchall()
+                val = self.conn.execute(
+                    "SELECT value FROM meta WHERE name='crs'"
+                ).fetchall()
                 if not val:
                     name = "proj4"
-            res = self.conn.execute("SELECT value FROM meta WHERE name=?", (name,)).fetchall()
+            res = self.conn.execute(
+                "SELECT value FROM meta WHERE name=?", (name,)
+            ).fetchall()
             if res:
                 return res[0][0]
             else:
                 raise ValueError("SDB: Metadata '{}' does not exists".format(name))
         else:
             try:
-                exval = self.conn.execute("SELECT value FROM meta WHERE name=?", (name,)).fetchall()
+                exval = self.conn.execute(
+                    "SELECT value FROM meta WHERE name=?", (name,)
+                ).fetchall()
                 if not exval:
-                    self.conn.execute("INSERT INTO meta (name,value) VALUES (?,?)", (name, val))
+                    self.conn.execute(
+                        "INSERT INTO meta (name,value) VALUES (?,?)", (name, val)
+                    )
                 else:
-                    self.conn.execute("UPDATE meta SET value = ? WHERE name = ?", (val, name))
+                    self.conn.execute(
+                        "UPDATE meta SET value = ? WHERE name = ?", (val, name)
+                    )
                 self.conn.commit()
             except sqlite3.OperationalError:
                 self.conn.rollback()
@@ -218,13 +229,11 @@ class SDB(object):
         if sel:
             if self.is_planar(struct):
                 res = Group(
-                    [Fol(el["azimuth"], el["inclination"]) for el in sel],
-                    name=struct,
+                    [Fol(el["azimuth"], el["inclination"]) for el in sel], name=struct,
                 )
             else:
                 res = Group(
-                    [Lin(el["azimuth"], el["inclination"]) for el in sel],
-                    name=struct,
+                    [Lin(el["azimuth"], el["inclination"]) for el in sel], name=struct,
                 )
             return res
         else:

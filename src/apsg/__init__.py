@@ -53,7 +53,7 @@ __all__ = (
     "VollmerPlot",
     "RamsayPlot",
     "FlinnPlot",
-    "HsuPlot"
+    "HsuPlot",
 )
 
 __version__ = "0.6.3"
