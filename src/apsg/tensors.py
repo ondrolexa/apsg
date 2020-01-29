@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 
-from __future__ import division, print_function
-
 import numpy as np
 
 from apsg.core import Vec3, Group, Pair, Fault, Fol, Lin
@@ -119,11 +117,11 @@ class DefGrad(np.ndarray):
 
         """
 
-        assert Rxy>=1, "Rxy must be greater than or equal to 1."
-        assert Ryz>=1, "Ryz must be greater than or equal to 1."
+        assert Rxy >= 1, "Rxy must be greater than or equal to 1."
+        assert Ryz >= 1, "Ryz must be greater than or equal to 1."
 
-        y = (Ryz / Rxy)**(1/3)
-        return cls.from_comp(xx=y*Rxy, yy=y, zz=y/Ryz)
+        y = (Ryz / Rxy) ** (1 / 3)
+        return cls.from_comp(xx=y * Rxy, yy=y, zz=y / Ryz)
 
     @classmethod
     def from_pair(cls, p):
@@ -546,7 +544,7 @@ class Stress(np.ndarray):
         Second invariant
         """
 
-        return (self.I1**2 - np.trace(self**2)) / 2
+        return (self.I1 ** 2 - np.trace(self ** 2)) / 2
 
     @property
     def I3(self):
@@ -570,9 +568,9 @@ class Stress(np.ndarray):
         """
         Returns Group of three eigenvectors represented as ``Vec3``
         """
-        return Group([Vec3(self.vects.T[0]),
-                      Vec3(self.vects.T[1]),
-                      Vec3(self.vects.T[2])])
+        return Group(
+            [Vec3(self.vects.T[0]), Vec3(self.vects.T[1]), Vec3(self.vects.T[2])]
+        )
 
     @property
     def eigenlins(self):
@@ -646,7 +644,7 @@ class Stress(np.ndarray):
         by normal vector.
         """
 
-        return np.sqrt(self.cauchy(n)**2 - self.normal_stress(n)**2)
+        return np.sqrt(self.cauchy(n) ** 2 - self.normal_stress(n) ** 2)
 
 
 class Tensor(object):
@@ -673,9 +671,9 @@ class Tensor(object):
 
     def __repr__(self):
         return (
-            "%s: %s Kind: %s\n" % (self.__class__.__name__, self.name, self.kind) +
-            "(E1:%.4g,E2:%.4g,E3:%.4g)\n" % (self.E1, self.E2, self.E3) +
-            str(self._matrix)
+            "%s: %s Kind: %s\n" % (self.__class__.__name__, self.name, self.kind)
+            + "(E1:%.4g,E2:%.4g,E3:%.4g)\n" % (self.E1, self.E2, self.E3)
+            + str(self._matrix)
         )
 
     def __str__(self):
@@ -700,7 +698,7 @@ class Tensor(object):
         return not (self == other)
 
     def __hash__(self):
-        return hash(tuple(map(tuple, self._matrix)) )
+        return hash(tuple(map(tuple, self._matrix)))
 
     @classmethod
     def from_comp(cls, xx=1, xy=0, xz=0, yy=1, yz=0, zz=1, **kwargs):
@@ -719,7 +717,7 @@ class Tensor(object):
 
         """
 
-        return cls([[x*x, 0, 0], [0, y*y, 0], [0, 0, z*z]], **kwargs)
+        return cls([[x * x, 0, 0], [0, y * y, 0], [0, 0, z * z]], **kwargs)
 
     @property
     def eigenvals(self):
@@ -882,7 +880,7 @@ class Tensor(object):
         Strain intensity.
         """
 
-        return np.sqrt((self.Rxy - 1)**2 + (self.Ryz - 1)**2)
+        return np.sqrt((self.Rxy - 1) ** 2 + (self.Ryz - 1) ** 2)
 
     @property
     def K(self):
@@ -890,7 +888,7 @@ class Tensor(object):
         Strain symmetry (Ramsay, 1983).
         """
 
-        return self.e12 / self.e23 if self.e23>0 else np.inf
+        return self.e12 / self.e23 if self.e23 > 0 else np.inf
 
     @property
     def D(self):
@@ -898,7 +896,7 @@ class Tensor(object):
         Strain intensity.
         """
 
-        return self.e12**2 + self.e23**2
+        return self.e12 ** 2 + self.e23 ** 2
 
     @property
     def r(self):
@@ -914,7 +912,7 @@ class Tensor(object):
         Natural octahedral unit shear (Nadai, 1963).
         """
 
-        return 2 * np.sqrt(self.e12**2 + self.e23**2 + self.e13**2) / 3
+        return 2 * np.sqrt(self.e12 ** 2 + self.e23 ** 2 + self.e13 ** 2) / 3
 
     @property
     def eoct(self):
@@ -930,7 +928,11 @@ class Tensor(object):
         Lode parameter (Lode, 1926).
         """
 
-        return (2*self.e2 - self.e1 -self.e3) / (self.e1 - self.e3) if (self.e1 - self.e3)>0 else 0
+        return (
+            (2 * self.e2 - self.e1 - self.e3) / (self.e1 - self.e3)
+            if (self.e1 - self.e3) > 0
+            else 0
+        )
 
     @property
     def I(self):
@@ -988,7 +990,6 @@ class Ortensor(Tensor):
                 kwargs['name'] = matrix.name
             matrix = np.dot(np.array(matrix).T, np.array(matrix)) / len(matrix)
         super(Ortensor, self).__init__(matrix, **kwargs)
-
 
     @classmethod
     def from_group(cls, g, **kwargs):

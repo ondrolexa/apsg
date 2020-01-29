@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 
-
-from __future__ import division, print_function
 import os
 import re
 from copy import deepcopy
+from datetime import datetime
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from datetime import datetime
+
 from apsg.core import Vec3, Fol, Lin, Pair, Group, settings
 from apsg.plotting import StereoNet
 from apsg.helpers import sind, cosd, eformat
 
-__all__ = ["Core"]
+__all__ = ("Core",)
 
 
 class Core(object):
@@ -77,7 +77,7 @@ class Core(object):
                 stop_ok = key.stop
             else:
                 stop_ok = self.nsteps[-1]
-            ix = (self.nsteps>=start_ok) & (self.nsteps<=stop_ok)
+            ix = (self.nsteps >= start_ok) & (self.nsteps <= stop_ok)
             res.steps = [val for (val, ok) in zip(self.steps, ix) if ok]
             res.a95 = [val for (val, ok) in zip(self.a95, ix) if ok]
             res.comments = [val for (val, ok) in zip(self.comments, ix) if ok]
@@ -152,7 +152,13 @@ class Core(object):
         dt = self.date.strftime("%m-%d-%Y %H:%M")
         infoln = "{:<8}  a={:5.1f}   b={:5.1f}   s={:5.1f}   d={:5.1f}   v={}m3  {}"
         ln0 = infoln.format(
-            ff, self.alpha, self.beta, self.bedding.rhr[0], self.bedding.rhr[1], eformat(self.volume, 2), dt
+            ff,
+            self.alpha,
+            self.beta,
+            self.bedding.rhr[0],
+            self.bedding.rhr[1],
+            eformat(self.volume, 2),
+            dt,
         )
         headln = (
             "STEP  Xc [Am2]  Yc [Am2]  Zc [Am2]  MAG[A/m]   Dg    Ig    Ds    Is  a95 "
@@ -177,30 +183,86 @@ class Core(object):
             d = f.read().splitlines()
 
         import io
-        headspec = [[0, 9], [10, 19], [20, 29], [30, 40], [41, 50], [51, 65], [66, 70], [71, 73], [74, 79], [80, 85], [86, 91], [92, 97], [98, 103], [104, 109], [110, 112], [113, 115], [116, 118], [119, 121], [122, 126]]
-        bodyspec = [[0, 2], [3, 13], [14, 27], [28, 33], [34, 39], [40, 45], [46, 51], [52, 57], [58, 63], [64, 69], [70, 75], [76, 81], [82, 95], [96, 105], [106, 115], [116, 126]]
+
+        headspec = [
+            [0, 9],
+            [10, 19],
+            [20, 29],
+            [30, 40],
+            [41, 50],
+            [51, 65],
+            [66, 70],
+            [71, 73],
+            [74, 79],
+            [80, 85],
+            [86, 91],
+            [92, 97],
+            [98, 103],
+            [104, 109],
+            [110, 112],
+            [113, 115],
+            [116, 118],
+            [119, 121],
+            [122, 126],
+        ]
+        bodyspec = [
+            [0, 2],
+            [3, 13],
+            [14, 27],
+            [28, 33],
+            [34, 39],
+            [40, 45],
+            [46, 51],
+            [52, 57],
+            [58, 63],
+            [64, 69],
+            [70, 75],
+            [76, 81],
+            [82, 95],
+            [96, 105],
+            [106, 115],
+            [116, 126],
+        ]
 
         head = pd.read_fwf(io.StringIO('\n'.join(d[:2])), colspecs=headspec)
         body = pd.read_fwf(io.StringIO('\n'.join(d[2:])), colspecs=bodyspec)
 
         data = {}
         vline = d[1]
-        data["site"] =  head['Site'][0] if not pd.isna(head['Site'][0]) else ''
+        data["site"] = head['Site'][0] if not pd.isna(head['Site'][0]) else ''
         data["filename"] = filename
-        data["name"] =  head['Name'][0] if not pd.isna(head['Name'][0]) else ''
-        data["longitude"] =  float(head['Longitude'][0]) if not pd.isna(head['Longitude'][0]) else None
-        data["latitude"] =  float(head['Latitude'][0]) if not pd.isna(head['Latitude'][0]) else None
-        data["height"] =  float(head['Height'][0]) if not pd.isna(head['Height'][0]) else None
-        data["rock"] =  head['Rock'][0] if not pd.isna(head['Rock'][0]) else ''
-        data["age"] =  head['Age'][0] if not pd.isna(head['Age'][0]) else ''
-        data["formation"] =  head['Fm'][0] if not pd.isna(head['Fm'][0]) else ''
+        data["name"] = head['Name'][0] if not pd.isna(head['Name'][0]) else ''
+        data["longitude"] = (
+            float(head['Longitude'][0]) if not pd.isna(head['Longitude'][0]) else None
+        )
+        data["latitude"] = (
+            float(head['Latitude'][0]) if not pd.isna(head['Latitude'][0]) else None
+        )
+        data["height"] = (
+            float(head['Height'][0]) if not pd.isna(head['Height'][0]) else None
+        )
+        data["rock"] = head['Rock'][0] if not pd.isna(head['Rock'][0]) else ''
+        data["age"] = head['Age'][0] if not pd.isna(head['Age'][0]) else ''
+        data["formation"] = head['Fm'][0] if not pd.isna(head['Fm'][0]) else ''
         data["sref"] = Pair(180, 0, 180, 0)
-        data["gref"] = Pair(float(head['SDec'][0]), float(head['SInc'][0]),
-                           float(head['SDec'][0]), float(head['SInc'][0]))
-        data["bedding"] = Fol(float(head['BDec'][0]), float(head['BInc'][0])) if not pd.isna(head['BDec'][0]) and not pd.isna(head['BInc'][0]) else None
-        data["foldaxis"] = Lin(float(head['FDec'][0]), float(head['FInc'][0])) if not pd.isna(head['FDec'][0]) and not pd.isna(head['FInc'][0]) else None
+        data["gref"] = Pair(
+            float(head['SDec'][0]),
+            float(head['SInc'][0]),
+            float(head['SDec'][0]),
+            float(head['SInc'][0]),
+        )
+        data["bedding"] = (
+            Fol(float(head['BDec'][0]), float(head['BInc'][0]))
+            if not pd.isna(head['BDec'][0]) and not pd.isna(head['BInc'][0])
+            else None
+        )
+        data["foldaxis"] = (
+            Lin(float(head['FDec'][0]), float(head['FInc'][0]))
+            if not pd.isna(head['FDec'][0]) and not pd.isna(head['FInc'][0])
+            else None
+        )
         data["date"] = datetime.now()
-        ix = (body.iloc[:,0] == 'T') | (body.iloc[:,0] == 'N')
+        ix = (body.iloc[:, 0] == 'T') | (body.iloc[:, 0] == 'N')
         data["steps"] = body[ix].iloc[:, 1].to_list()
         data["comments"] = body[ix]['Note'].to_list()
         data["a95"] = body[ix]['Prec'].to_list()
@@ -213,16 +275,19 @@ class Core(object):
     def datatable(self):
         tb = []
         for step, MAG, V, geo, tilt, a95, comments in zip(
-            self.steps,
-            self.MAG,
-            self.V,
-            self.geo,
-            self.tilt,
-            self.a95,
-            self.comments,
+            self.steps, self.MAG, self.V, self.geo, self.tilt, self.a95, self.comments,
         ):
             ln = "{:<4} {: 9.2E} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:4.1f} {}".format(
-                step, MAG, V.dd[0], V.dd[1], geo.dd[0], geo.dd[1], tilt.dd[0], tilt.dd[1], a95, comments
+                step,
+                MAG,
+                V.dd[0],
+                V.dd[1],
+                geo.dd[0],
+                geo.dd[1],
+                tilt.dd[0],
+                tilt.dd[1],
+                a95,
+                comments,
             )
             tb.append(ln)
         return tb
@@ -235,12 +300,10 @@ class Core(object):
                 os.path.basename(self.filename),
                 self.bedding,
                 eformat(self.volume, 2),
-                self.date.strftime("%m-%d-%Y %H:%M")
+                self.date.strftime("%m-%d-%Y %H:%M"),
             )
         )
-        print(
-            "STEP  MAG[A/m]   Dsp   Isp   Dge   Ige   Dtc   Itc  a95 "
-        )
+        print("STEP  MAG[A/m]   Dsp   Isp   Dge   Ige   Dtc   Itc  a95 ")
         print("\n".join(self.datatable))
 
     @property
@@ -273,8 +336,8 @@ class Core(object):
         data = getattr(self, kind)
         if origin:
             data.append(Vec3([0, 0, 0]))
-        r = data.R/len(data)
-        dv = Group([v-r for v in data])
+        r = data.R / len(data)
+        dv = Group([v - r for v in data])
         ot = dv.ortensor
         pca = ot.eigenvects[0]
         if pca.angle(r) > 90:
@@ -325,10 +388,14 @@ class Core(object):
 
     def stereo_plot(self, kind='geo', **kwargs):
         data = getattr(self, kind)
-        tt = {'V':'Specimen coordinates',
-              'geo':'Geographic coordinates',
-              'tilt':'Tilted coordinates'}
-        s = StereoNet(title='{} {}\n{}'.format(self.site, self.name, tt[kind]), **kwargs)
+        tt = {
+            'V': 'Specimen coordinates',
+            'geo': 'Geographic coordinates',
+            'tilt': 'Tilted coordinates',
+        }
+        s = StereoNet(
+            title='{} {}\n{}'.format(self.site, self.name, tt[kind]), **kwargs
+        )
         for f1, f2 in zip(data[:-1], data[1:]):
             s.arc(f1, f2, "k:")
         s.vector(data[0], "k+", markersize=14)

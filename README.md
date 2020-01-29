@@ -5,18 +5,26 @@
 [![Documentation Status](https://readthedocs.org/projects/apsg/badge/?version=stable)](https://apsg.readthedocs.io/en/stable/?badge=stable)
 [![DOI](https://zenodo.org/badge/24879346.svg)](https://zenodo.org/badge/latestdoi/24879346)
 
-APSG defines several new python classes to easily manage, analyze and
+## What is APSG?
+
+APSG is package for structural geologists. It defines several new python classes to easily manage, analyze and
 visualize orientational structural geology data.
 
-## Installation
+## Requirements
 
-### PyPI
+You need Python 3.6 or later to run apsg. The package requires [NumPy](https://numpy.org/) and [SciPy](https://www.scipy.org/), and the plotting routines require [Matplotlib](https://matplotlib.org/).
 
-To install APSG, just execute
+## Quick start
+
+APSG can be installed using pip:
 ```
 pip install apsg
 ```
-Alternatively, you download the package manually from the Python Package Index [https://pypi.org/project/apsg](https://pypi.org/project/apsg), unzip it, navigate into the package, and use the command:
+If you want tu run the latest version of code, you can install it from git:
+```
+pip install git+git://github.com/ondrolexa/apsg.git
+```
+Alternatively, you can download the package manually from the GitHub repository [https://github.com/ondrolexa/apsg](https://github.com/ondrolexa/apsg), unzip it, navigate into the package, and use the command:
 ```
 python setup.py install
 ```
@@ -64,17 +72,6 @@ It is possible to list all of the versions of `apsg` available on your platform 
 
 ```
 conda search apsg --channel conda-forge
-```
-
-### Master version
-
-The APSG version on PyPI may always one step behind; you can install the latest development version from the GitHub repository by executing
-```
-pip install git+git://github.com/ondrolexa/apsg.git
-```
-Or, you can fork the GitHub repository from [https://github.com/ondrolexa/apsg](https://github.com/ondrolexa/apsg) and install APSG from your local drive via
-```
-python setup.py install
 ```
 
 ## Getting started
