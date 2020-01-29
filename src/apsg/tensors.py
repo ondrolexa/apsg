@@ -857,7 +857,7 @@ class Tensor(object):
         return np.sqrt((self.Rxy - 1) ** 2 + (self.Ryz - 1) ** 2)
 
     @property
-    def K(self) -> -> float:
+    def K(self) -> float:
         """
         Return teh strain symmetry (Ramsay, 1983).
         """
