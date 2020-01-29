@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/ondrolexa/apsg/gh-pages/apsg_banner.svg" alt="apsg logo" width="320px"/>
+
 [![PyPI version](https://badge.fury.io/py/apsg.png)](http://badge.fury.io/py/apsg)
 [![GitHub version](https://badge.fury.io/gh/ondrolexa%2Fapsg.svg)](https://badge.fury.io/gh/ondrolexa%2Fapsg)
 [![Build Status](https://travis-ci.org/ondrolexa/apsg.svg?branch=master)](https://travis-ci.org/ondrolexa/apsg)
