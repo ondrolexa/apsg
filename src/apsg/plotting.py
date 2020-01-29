@@ -25,7 +25,7 @@ from apsg.core import (
     PairSet,
     FaultSet,
     StereoGrid,
-    settings,
+    settings
 )
 from apsg.helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrigues
 from apsg.tensors import DefGrad, Stress, Tensor, Ortensor, Ellipsoid
@@ -324,10 +324,7 @@ class StereoNet(object):
             y = []
             for azi, inc in obj.dd.T:
                 xx, yy = self._cone(
-                    p2v(azi, inc),
-                    l2v(azi, inc),
-                    limit=89.9999,
-                    res=int(cosd(inc) * 179 + 2),
+                    p2v(azi, inc), l2v(azi, inc), limit=89.9999, res=int(cosd(inc) * 179 + 2)
                 )
                 x = np.hstack((x, xx, np.nan))
                 y = np.hstack((y, yy, np.nan))
@@ -336,10 +333,7 @@ class StereoNet(object):
         else:
             azi, inc = obj.dd
             x, y = self._cone(
-                p2v(azi, inc),
-                l2v(azi, inc),
-                limit=89.9999,
-                res=int(cosd(inc) * 179 + 2),
+                p2v(azi, inc), l2v(azi, inc), limit=89.9999, res=int(cosd(inc) * 179 + 2)
             )
         h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
         if animate:
@@ -451,7 +445,7 @@ class StereoNet(object):
         h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
         if upper_style:
             for hl in h:
-                hl.set_linestyle("--")
+                hl.set_linestyle('--')
         if animate:
             self.artists.append(tuple(h))
         self.draw()
@@ -534,32 +528,18 @@ class StereoNet(object):
                 args = (levels,)
         cs = self.fig.axes[self.active].tricontourf(d.triang, d.values, *args, **kwargs)
         if clines:
-            kwargs["cmap"] = None
-            kwargs["colors"] = "k"
+            kwargs['cmap'] = None
+            kwargs['colors'] = "k"
             self.fig.axes[self.active].tricontour(d.triang, d.values, *args, **kwargs)
         if legend:
             if self.ncols > 1:
                 ab = self.fig.axes[self.active].get_position().bounds
-                cbaxes = self.fig.add_axes(
-                    [
-                        ab[0] + self.cbpad * ab[2],
-                        0.1,
-                        (1 - 2 * self.cbpad) * ab[2],
-                        0.03,
-                    ]
-                )
-                self.fig.colorbar(cs, cax=cbaxes, orientation="horizontal")
+                cbaxes = self.fig.add_axes([ab[0] + self.cbpad * ab[2], 0.1, (1 - 2 * self.cbpad) * ab[2], 0.03])
+                self.fig.colorbar(cs, cax=cbaxes, orientation='horizontal')
                 # add horizontal, calculate positions (divide bars and spaces)
             else:
                 ab = self.fig.axes[self.active].get_position().bounds
-                cbaxes = self.fig.add_axes(
-                    [
-                        0.1,
-                        ab[1] + self.cbpad * ab[3],
-                        0.03,
-                        (1 - 2 * self.cbpad) * ab[3],
-                    ]
-                )
+                cbaxes = self.fig.add_axes([0.1, ab[1] + self.cbpad * ab[3], 0.03, (1 - 2 * self.cbpad) * ab[3]])
                 self.fig.colorbar(cs, cax=cbaxes)
         self.draw()
 
@@ -590,26 +570,12 @@ class StereoNet(object):
         if legend:
             if self.ncols > 1:
                 ab = self.fig.axes[self.active].get_position().bounds
-                cbaxes = self.fig.add_axes(
-                    [
-                        ab[0] + self.cbpad * ab[2],
-                        0.1,
-                        (1 - 2 * self.cbpad) * ab[2],
-                        0.03,
-                    ]
-                )
-                self.fig.colorbar(cs, cax=cbaxes, orientation="horizontal")
+                cbaxes = self.fig.add_axes([ab[0] + self.cbpad * ab[2], 0.1, (1 - 2 * self.cbpad) * ab[2], 0.03])
+                self.fig.colorbar(cs, cax=cbaxes, orientation='horizontal')
                 # add horizontal, calculate positions (divide bars and spaces)
             else:
                 ab = self.fig.axes[self.active].get_position().bounds
-                cbaxes = self.fig.add_axes(
-                    [
-                        0.1,
-                        ab[1] + self.cbpad * ab[3],
-                        0.03,
-                        (1 - 2 * self.cbpad) * ab[3],
-                    ]
-                )
+                cbaxes = self.fig.add_axes([0.1, ab[1] + self.cbpad * ab[3], 0.03, (1 - 2 * self.cbpad) * ab[3]])
                 self.fig.colorbar(cs, cax=cbaxes)
         self.draw()
 
@@ -628,7 +594,7 @@ class StereoNet(object):
         self._axtitle[self.active] = self.fig.axes[self.active].set_title(title)
         self._axtitle[self.active].set_y(-0.09)
 
-    def title(self, title=""):
+    def title(self, title=''):
         """Set figure title"""
         self._title_text = title
         self._title = self.fig.suptitle(self._title_text)
@@ -645,7 +611,7 @@ class StereoNet(object):
     def savefig(self, filename="apsg_stereonet.pdf", **kwargs):
         """Save figure to file"""
         self.draw()
-        if not self.closed:  # check if figure exists
+        if not self.closed:   # check if figure exists
             bea_candidates = (self._lgd, self._title) + tuple(self._axtitle)
             bea = [art for art in bea_candidates if art is not None]
             self.fig.savefig(filename, bbox_extra_artists=bea, **kwargs)
@@ -685,7 +651,7 @@ class _FabricPlot(object):
                     lbls,
                     prop={"size": 11},
                     borderaxespad=0,
-                    loc="center left",
+                    loc='center left',
                     bbox_to_anchor=(1.1, 0.5),
                     scatterpoints=1,
                     numpoints=1,
@@ -897,12 +863,12 @@ class RamsayPlot(_FabricPlot):
         self.fig.clear()
         self.ax = self.fig.add_subplot(111)
         self.ax.format_coord = self.format_coord
-        self.ax.set_aspect("equal")
+        self.ax.set_aspect('equal')
         self.ax.set_autoscale_on(True)
-        self.ax.spines["top"].set_color("none")
-        self.ax.spines["right"].set_color("none")
-        self.ax.set_xlabel(r"$\varepsilon_2-\varepsilon_3$")
-        self.ax.set_ylabel(r"$\varepsilon_1-\varepsilon_2$")
+        self.ax.spines['top'].set_color('none')
+        self.ax.spines['right'].set_color('none')
+        self.ax.set_xlabel(r'$\varepsilon_2-\varepsilon_3$')
+        self.ax.set_ylabel(r'$\varepsilon_1-\varepsilon_2$')
         self.ax.grid(self.grid)
 
         self.ax.set_title("Ramsay plot")
@@ -938,7 +904,7 @@ class RamsayPlot(_FabricPlot):
         if not args:
             if "marker" not in kwargs:
                 kwargs["marker"] = "."
-        # if "label" not in kwargs:
+        #if "label" not in kwargs:
         #    kwargs["label"] = obj.name
 
         e23 = [obj.e23 for obj in objs]
@@ -958,8 +924,8 @@ class RamsayPlot(_FabricPlot):
         plt.show()
 
     def format_coord(self, x, y):
-        k = y / x if x > 0 else 0
-        d = x ** 2 + y ** 2
+        k = y/x if x>0 else 0
+        d = x**2 + y**2
         return "k:{:0.2f} d:{:0.2f}".format(k, d)
 
 
@@ -991,12 +957,12 @@ class FlinnPlot(_FabricPlot):
         self.fig.clear()
         self.ax = self.fig.add_subplot(111)
         self.ax.format_coord = self.format_coord
-        self.ax.set_aspect("equal")
+        self.ax.set_aspect('equal')
         self.ax.set_autoscale_on(True)
-        self.ax.spines["top"].set_color("none")
-        self.ax.spines["right"].set_color("none")
-        self.ax.set_xlabel(r"$R_{YZ}$")
-        self.ax.set_ylabel(r"$R_{XY}$")
+        self.ax.spines['top'].set_color('none')
+        self.ax.spines['right'].set_color('none')
+        self.ax.set_xlabel(r'$R_{YZ}$')
+        self.ax.set_ylabel(r'$R_{XY}$')
         self.ax.grid(self.grid)
 
         self.ax.set_title("Flinn's plot")
@@ -1032,7 +998,7 @@ class FlinnPlot(_FabricPlot):
         if not args:
             if "marker" not in kwargs:
                 kwargs["marker"] = "."
-        # if "label" not in kwargs:
+        #if "label" not in kwargs:
         #    kwargs["label"] = obj.name
 
         Ryz = [obj.Ryz for obj in objs]
@@ -1052,8 +1018,8 @@ class FlinnPlot(_FabricPlot):
         plt.show()
 
     def format_coord(self, x, y):
-        K = (y - 1) / (x - 1) if x > 1 else 0
-        D = np.sqrt((x - 1) ** 2 + (y - 1) ** 2)
+        K = (y - 1)/(x - 1) if x>1 else 0
+        D = np.sqrt((x - 1)**2 + (y - 1)**2)
         return "K:{:0.2f} D:{:0.2f}".format(K, D)
 
 
@@ -1084,15 +1050,15 @@ class HsuPlot(_FabricPlot):
 
         self.fig.clear()
         self.ax = self.fig.add_subplot(111, polar=True)
-        # self.ax.format_coord = self.format_coord
-        self.ax.set_theta_zero_location("N")
+        #self.ax.format_coord = self.format_coord
+        self.ax.set_theta_zero_location('N')
         self.ax.set_theta_direction(-1)
         self.ax.set_thetamin(-30)
         self.ax.set_thetamax(30)
-        self.ax.set_xticks([-np.pi / 6, -np.pi / 12, 0, np.pi / 12, np.pi / 6])
+        self.ax.set_xticks([-np.pi/6, -np.pi/12, 0, np.pi/12, np.pi/6])
         self.ax.set_xticklabels([-1, -0.5, 0, 0.5, 1])
-        self.ax.set_title(r"$\nu$")
-        self.ax.set_ylabel(r"$\bar{\varepsilon}_s$")
+        self.ax.set_title(r'$\nu$')
+        self.ax.set_ylabel(r'$\bar{\varepsilon}_s$')
         self.ax.grid(self.grid)
 
         self.draw()
@@ -1114,7 +1080,7 @@ class HsuPlot(_FabricPlot):
         if "label" not in kwargs:
             kwargs["label"] = obj.name
 
-        self.ax.plot(obj.lode * np.pi / 6, obj.eoct, *args, **kwargs)
+        self.ax.plot(obj.lode*np.pi/6, obj.eoct, *args, **kwargs)
 
         self.draw()
 
@@ -1126,10 +1092,10 @@ class HsuPlot(_FabricPlot):
         if not args:
             if "marker" not in kwargs:
                 kwargs["marker"] = "."
-        # if "label" not in kwargs:
+        #if "label" not in kwargs:
         #    kwargs["label"] = obj.name
 
-        lode = [obj.lode * np.pi / 6 for obj in objs]
+        lode = [obj.lode*np.pi/6 for obj in objs]
         eoct = [obj.eoct for obj in objs]
 
         self.ax.plot(lode, eoct, *args, **kwargs)
@@ -1137,8 +1103,8 @@ class HsuPlot(_FabricPlot):
         self.draw()
 
     def format_coord(self, x, y):
-        K = (y - 1) / (x - 1) if x > 1 else 0
-        D = np.sqrt((x - 1) ** 2 + (y - 1) ** 2)
+        K = (y - 1)/(x - 1) if x>1 else 0
+        D = np.sqrt((x - 1)**2 + (y - 1)**2)
         return "K:{:0.2f} D:{:0.2f}".format(K, D)
 
 
@@ -1162,7 +1128,7 @@ class StereoNetJK(object):
                 lbls,
                 bbox_to_anchor=(1.12, 1),
                 loc=2,
-                borderaxespad=0.0,
+                borderaxespad=0.,
                 numpoints=1,
                 scatterpoints=1,
             )

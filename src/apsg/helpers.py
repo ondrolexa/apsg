@@ -191,7 +191,7 @@ class KentDistribution(object):
     https://github.com/edfraenkel/kent_distribution
     """
 
-    minimum_value_for_kappa = 1e-6
+    minimum_value_for_kappa = 1E-6
 
     @staticmethod
     def create_matrix_H(theta, phi):
@@ -317,7 +317,7 @@ class KentDistribution(object):
                     result += a
 
                     j += 1
-                    if abs(a) < abs(result) * 1e-12 and j > 5:
+                    if abs(a) < abs(result) * 1E-12 and j > 5:
                         break
 
             cache[k, b] = 2 * np.pi * result
@@ -465,8 +465,8 @@ class KentDistribution(object):
 
                     j += 1
                     if (
-                        abs(dk) < abs(dcdk) * 1e-12
-                        and abs(db) < abs(dcdb) * 1e-12
+                        abs(dk) < abs(dcdk) * 1E-12
+                        and abs(db) < abs(dcdb) * 1E-12
                         and j > 5
                     ):
                         break
