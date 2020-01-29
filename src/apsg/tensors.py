@@ -887,17 +887,15 @@ class Tensor(object):
     @property
     def eoct(self) -> float:
         """
-        return teh natural octahedral unit strain (Nadai, 1963).
+        Return the natural octahedral unit strain (Nadai, 1963).
         """
-
         return np.sqrt(3) * self.goct / 2
 
     @property
     def lode(self) -> float:
         """
-        Lode parameter (Lode, 1926).
-        """
-
+        Return Lode parameter (Lode, 1926).
+         """
         return (
             (2 * self.e2 - self.e1 - self.e3) / (self.e1 - self.e3)
             if (self.e1 - self.e3) > 0
