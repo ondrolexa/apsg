@@ -1,4 +1,4 @@
-![APSG logo](apsg_banner.svg)
+<img src="https://ondrolexa.github.io/apsg/apsg_banner.svg" alt="APSG logo" width="640px"/>
 
 [![PyPI version](https://badge.fury.io/py/apsg.png)](http://badge.fury.io/py/apsg)
 [![GitHub version](https://badge.fury.io/gh/ondrolexa%2Fapsg.svg)](https://badge.fury.io/gh/ondrolexa%2Fapsg)
