@@ -1,5 +1,7 @@
 # Changes
 
+## 0.7.0 (XX YYY 2020)
+
 * Python 2 support dropped
 
 ### 0.6.3 (6 Dec 2019)

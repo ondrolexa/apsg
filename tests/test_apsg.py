@@ -310,8 +310,22 @@ class TestVector:
 
         assert current == expects
 
-    # todo ``H``
-    # todo ``transform``
+    # ``H`` method
+
+    def test_mutual_rotation(self, x, y, z):
+        current = x.H(y)
+        expects = DefGrad.from_axis(z, 90)
+
+        assert current == expects
+
+    # ``transform`` method
+
+    def test_transform_method(self, x, y, z):
+        F = DefGrad.from_axis(z, 90)
+        current = x.transform(F)
+        expects = y
+
+        assert current == expects
 
     def test_add_operator(self):
         lhs = Vec3([1, 1, 1])
@@ -453,6 +467,10 @@ class TestLineation:
         lin = Lin(120, 30)
         assert Lin(*lin.dd) == lin
 
+    def test_lin_vector_dd(self):
+        lin = Lin(120, 30)
+
+        assert Lin(*lin.V.dd) == lin
 
 # ############################################################################
 # Foliation
@@ -460,6 +478,53 @@ class TestLineation:
 
 
 class TestFoliation:
+    """
+    The foliation is represented as axial (pseudo) vector.
+    """
+
+    @pytest.fixture
+    def x(self):
+        return Fol(0, 0)
+
+    @pytest.mark.skip
+    def test_repr(self, x):
+        assert repr(x) == "Lin(1.0,0,0)"
+
+    def test_str(self, x):
+        assert str(x) == "S:0/0"
+
+    def test_equality_for_oposite_dir(self):
+        fol = Fol.rand()
+        assert fol == -fol
+
+    def test_that_azimuth_0_is_same_as_360(self):
+        assert Fol(0, 20) == Fol(360, 20)
+
+    def test_scalar_product(self):
+        fol = Fol.rand()
+        assert np.allclose(fol * fol, 1)
+
+    def test_cross_product(self):
+        f1, f2 = Fol.rand(), Fol.rand()
+        p = f1**f2
+
+        assert np.allclose([p.angle(f1), p.angle(f2)], [90, 90])
+
+    def test_foliation_product(self):
+        f1, f2 = Fol.rand(), Fol.rand()
+        p = f1.cross(f2)
+
+        assert np.allclose([p.angle(f1), p.angle(f2)], [90, 90])
+
+    def test_foliation_product_operator(self):
+        f1, f2 = Fol.rand(), Fol.rand()
+
+        assert f1.cross(f2) == f1 ** f2
+
+    def test_mutual_rotation(self):
+        f1, f2 = Fol.rand(), Fol.rand()
+
+        assert f1.transform(f1.H(f2)) == f2
 
     def test_angle_under_rotation(self):
         f1, f2 = Fol.rand(), Fol.rand()
@@ -467,6 +532,31 @@ class TestFoliation:
 
         assert np.allclose(f1.angle(f2), f1.transform(D).angle(f2.transform(D)))
 
+    def test_add_operator__simple(self):
+        f1, f2 = Fol.rand(), Fol.rand()
+
+        assert f1 + f2 == f1 + (-f2)
+
+        # Anyway, axial add is commutative.
+        assert f1 + f2 == f2 + f1
+
+    def test_sub_operator__simple(self):
+        f1, f2 = Fol.rand(), Fol.rand()
+
+        assert f1 - f2 == f1 - (-f2)
+
+        # Anyway, axial sub is commutative.
+        assert f1 - f2 == f2 - f1
+
+    def test_dd_property(self):
+        fol = Fol(120, 30)
+
+        assert Fol(*fol.dd) == fol
+
+    def test_fol_vector_dd(self):
+        fol = Fol(120, 30)
+
+        assert Lin(*fol.V.dd).asfol == fol
 
 # ############################################################################
 # Group
@@ -510,61 +600,43 @@ class TestGroup:
 # Pair
 # ############################################################################
 
+class TestPair:
 
-def test_pair_misfit():
-    p = Pair.rand()
-    assert np.allclose(p.misfit, 0)
+    def test_pair_misfit(self):
+        p = Pair.rand()
+        assert np.allclose(p.misfit, 0)
 
+    def test_pair_rotate(self):
+        p = Pair.rand()
+        pr = p.rotate(Lin(45, 45), 120)
+        assert np.allclose([p.fvec.angle(p.lvec), pr.fvec.angle(pr.lvec)], [90, 90])
 
-def test_pair_rotate():
-    p = Pair.rand()
-    pr = p.rotate(Lin(45, 45), 120)
-    assert np.allclose([p.fvec.angle(p.lvec), pr.fvec.angle(pr.lvec)], [90, 90])
-
-
-def test_pair_equal():
-    n, lin = Lin.rand(), Lin.rand()
-    fol = n ** lin
-    p = Pair.from_pair(fol, lin)
-    assert p == Pair.from_pair(fol, lin)
-    assert p == Pair.from_pair(fol, -lin)
-    assert p == Pair.from_pair(-fol, lin)
-    assert p == Pair.from_pair(-fol, -lin)
-
-
-# ############################################################################
-# Axial->Vector->DD
-# ############################################################################
-
-
-def test_lin_vector_dd():
-    lin = Lin(120, 30)
-    assert Lin(*lin.V.dd) == lin
-
-
-def test_fol_vector_dd():
-    fol = Fol(120, 30)
-    assert Lin(*fol.V.dd).asfol == fol
+    def test_pair_equal(self):
+        n, lin = Lin.rand(), Lin.rand()
+        fol = n ** lin
+        p = Pair.from_pair(fol, lin)
+        assert p == Pair.from_pair(fol, lin)
+        assert p == Pair.from_pair(fol, -lin)
+        assert p == Pair.from_pair(-fol, lin)
+        assert p == Pair.from_pair(-fol, -lin)
 
 
 # ############################################################################
 # Fault
 # ############################################################################
 
+class TestFault:
 
-def test_fault_flip():
-    f = Fault(90, 30, 110, 28, -1)
-    fr = f.rotate(f.rax, 180)
-    assert (f.p == fr.p) and (f.t == fr.t)
+    def test_fault_flip(self):
+        f = Fault(90, 30, 110, 28, -1)
+        fr = f.rotate(f.rax, 180)
+        assert (f.p == fr.p) and (f.t == fr.t)
 
+    def test_fault_rotation_sense(self):
+        f = Fault(90, 30, 110, 28, -1)
+        assert repr(f.rotate(Lin(220, 10), 60)) == 'F:343/37-301/29 +'
 
-def test_fault_rotation_sense():
-    f = Fault(90, 30, 110, 28, -1)
-    assert repr(f.rotate(Lin(220, 10), 60)) == 'F:343/37-301/29 +'
-
-
-def test_faultset_examples():
-    exlist = FaultSet.examples()
-    for ex in exlist:
-        g = FaultSet.examples(ex)
-
+    def test_faultset_examples(self):
+        exlist = FaultSet.examples()
+        for ex in exlist:
+            g = FaultSet.examples(ex)

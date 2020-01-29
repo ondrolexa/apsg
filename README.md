@@ -12,7 +12,7 @@ visualize orientational structural geology data.
 
 ## Requirements
 
-You need Python 3.6 or later to run apsg. The package requires [NumPy](https://numpy.org/) and [SciPy](https://www.scipy.org/), and the plotting routines require [Matplotlib](https://matplotlib.org/).
+You need Python 3.6 or later to run APSG. The package requires [NumPy](https://numpy.org/) and [SciPy](https://www.scipy.org/), and the plotting routines require [Matplotlib](https://matplotlib.org/).
 
 ## Quick start
 
