@@ -1,5 +1,7 @@
 # Changes
 
+* Python 2 support dropped
+
 ### 0.6.3 (6 Dec 2019)
 
 * Python 2/3 compatibility fix
