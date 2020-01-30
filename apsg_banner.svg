@@ -27,9 +27,9 @@
      inkscape:window-height="1016"
      id="namedview55"
      showgrid="false"
-     inkscape:zoom="5.4107955"
-     inkscape:cx="110"
-     inkscape:cy="35"
+     inkscape:zoom="4.5230869"
+     inkscape:cx="96.319275"
+     inkscape:cy="20.413009"
      inkscape:window-x="60"
      inkscape:window-y="27"
      inkscape:window-maximized="1"
@@ -265,31 +265,26 @@
        style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:'Fira Sans';-inkscape-font-specification:'Fira Sans Medium';stroke-width:0.82790732;stroke-linecap:butt;stroke-linejoin:round"
        x="60.334393"
        y="21.341698">APSG</tspan></text>
-  <g
-     style="stroke-linecap:butt;stroke-linejoin:round"
-     transform="translate(0.2618247,-10.373529)"
-     id="g874">
-    <text
-       id="text1493"
-       y="44.688385"
-       x="57.865421"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:11.24814415px;line-height:6em;font-family:Carlito;-inkscape-font-specification:Carlito;text-align:start;letter-spacing:0px;word-spacing:0px;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.84361088;stroke-linecap:butt;stroke-linejoin:round"
-       xml:space="preserve"><tspan
-         id="tspan1824"
-         y="44.688385"
-         x="57.865421"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Fira Sans Compressed';-inkscape-font-specification:'Fira Sans Compressed';text-align:start;text-anchor:start;stroke-width:0.84361088;stroke-linecap:butt;stroke-linejoin:round">A Python package for</tspan></text>
-    <text
-       y="56.583797"
-       x="57.842926"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:11.24814415px;line-height:1em;font-family:Carlito;-inkscape-font-specification:Carlito;text-align:start;letter-spacing:0px;word-spacing:0px;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.84361088;stroke-linecap:butt;stroke-linejoin:round"
-       xml:space="preserve"
-       id="text866"><tspan
-         y="56.583797"
-         x="57.842926"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:1em;font-family:'Fira Sans Compressed';-inkscape-font-specification:'Fira Sans Compressed';text-align:start;text-anchor:start;stroke-width:0.84361088;stroke-linecap:butt;stroke-linejoin:round"
-         id="tspan868">structural geologists</tspan></text>
-  </g>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:11.24814415px;line-height:6em;font-family:Carlito;-inkscape-font-specification:Carlito;text-align:start;letter-spacing:0px;word-spacing:0px;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.84361088;stroke-linecap:butt;stroke-linejoin:round"
+     x="58.127247"
+     y="35.641396"
+     id="text1493"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Fira Sans Compressed';-inkscape-font-specification:'Fira Sans Compressed';text-align:start;text-anchor:start;stroke-width:0.84361088;stroke-linecap:butt;stroke-linejoin:round"
+       x="58.127247"
+       y="35.641396"
+       id="tspan1824">A Python package for</tspan></text>
+  <text
+     id="text866"
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:11.24814415px;line-height:1em;font-family:Carlito;-inkscape-font-specification:Carlito;text-align:start;letter-spacing:0px;word-spacing:0px;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.84361088;stroke-linecap:butt;stroke-linejoin:round"
+     x="58.104752"
+     y="47.039356"><tspan
+       id="tspan868"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:1em;font-family:'Fira Sans Compressed';-inkscape-font-specification:'Fira Sans Compressed';text-align:start;text-anchor:start;stroke-width:0.84361088;stroke-linecap:butt;stroke-linejoin:round"
+       x="58.104752"
+       y="47.039356">structural geologists</tspan></text>
   <path
      style="fill:none;stroke:#999999;stroke-width:0.375;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
      d="M 58.268734,25.041855 H 161.41673"
