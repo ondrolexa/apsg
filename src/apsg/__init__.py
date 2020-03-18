@@ -56,6 +56,6 @@ __all__ = (
     "HsuPlot",
 )
 
-__version__ = "0.6.3"
+__version__ = "0.6.4"
 __author__ = "Ondrej Lexa"
 __email__ = "lexa.ondrej@gmail.com"
