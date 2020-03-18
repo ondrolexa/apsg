@@ -153,12 +153,12 @@ class StereoNet(object):
             # plt.pause(0.001)
 
     def new(self):
-        """Re-initialize existing StereoNet figure"""
+        """Re-initialize existing StereoNet."""
         if self.closed:
             self.__init__()
 
     def cla(self):
-        """Clear axes and draw empty projection"""
+        """Clear axes and draw empty projection."""
 
         def lat(a, phi):
             return self._cone(l2v(a, 0), l2v(a, phi), limit=89.9999, res=91)
@@ -242,22 +242,22 @@ class StereoNet(object):
         self.draw()
 
     def getlin(self):
-        """get Lin by mouse click"""
+        """Get Lin instance by mouse click."""
         x, y = plt.ginput(1)[0]
         return Lin(*getldd(x, y))
 
     def getfol(self):
-        """get Fol by mouse click"""
+        """Get Fol instance by mouse click."""
         x, y = plt.ginput(1)[0]
         return Fol(*getfdd(x, y))
 
     def getlins(self):
-        """get Group of Lin by mouse"""
+        """Get Group of Lin by mouse clicks."""
         pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
         return Group([Lin(*getldd(x, y)) for x, y in pts])
 
     def getfols(self):
-        """get Group of Fol by mouse"""
+        """Get Group of Fol by mouse clicks."""
         pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
         return Group([Fol(*getfdd(x, y)) for x, y in pts])
 
@@ -283,7 +283,7 @@ class StereoNet(object):
         return x, y, u, v
 
     def arrow(self, pos_lin, dir_lin=None, sense=1, **kwargs):
-        """Draw arrow at given position in given direction"""
+        """Draw arrow at given position in given direction."""
         animate = kwargs.pop("animate", False)
         x, y, u, v = self._arrow(pos_lin, dir_lin, sense=sense)
         a = self.fig.axes[self.active].quiver(
@@ -295,7 +295,7 @@ class StereoNet(object):
         self.draw()
 
     def arc(self, f1, f2, *args, **kwargs):
-        """Draw great circle segment between two points"""
+        """Draw great circle segment between two points."""
         assert issubclass(type(f1), Vec3) and issubclass(
             type(f2), Vec3
         ), "Arguments mustr be subclass of Vec3"
@@ -312,8 +312,8 @@ class StereoNet(object):
         self.draw()
 
     def plane(self, obj, *args, **kwargs):
-        """Draw Fol as great circle"""
-        assert obj.type is Fol, "Only Fol instance could be plotted as plane."
+        """Draw Fol as great circle."""
+        assert obj.type is Fol, "Only Fol type instance could be plotted as plane."
         if "zorder" not in kwargs:
             kwargs["zorder"] = 5
         animate = kwargs.pop("animate", False)
@@ -345,8 +345,8 @@ class StereoNet(object):
         self.draw()
 
     def line(self, obj, *args, **kwargs):
-        """Draw Lin as point"""
-        assert obj.type is Lin, "Only Lin instance could be plotted as line."
+        """Draw Lin as point."""
+        assert obj.type is Lin, "Only Lin type instance could be plotted as line."
         if "zorder" not in kwargs:
             kwargs["zorder"] = 5
         animate = kwargs.pop("animate", False)
@@ -362,9 +362,30 @@ class StereoNet(object):
             self.artists.append(tuple(h))
         self.draw()
 
+    def scatter(self, obj, *args, **kwargs):
+        """Draw Lin as point with varying marker size and/or color."""
+        assert obj.type is Lin, "Only Lin type instance could be plotted with scatter."
+        if "zorder" not in kwargs:
+            kwargs["zorder"] = 5
+        if "legend" in kwargs:
+            legend = kwargs.pop("legend")
+        else:
+            legend = False
+        animate = kwargs.pop("animate", False)
+        if not args:
+            if "marker" not in kwargs:
+                kwargs["marker"] = "o"
+        x, y = l2xy(*obj.dd)
+        h = self.fig.axes[self.active].scatter(x, y, *args, **kwargs)
+        if legend:
+            self.fig.colorbar(h)
+        if animate:
+            self.artists.append(tuple(h))
+        self.draw()
+
     def vector(self, obj, *args, **kwargs):
         """ This mimics plotting on lower and upper hemisphere using
-        full and hollow symbols"""
+        full and hollow symbols."""
         assert issubclass(
             obj.type, Vec3
         ), "Only Vec3-like instance could be plotted as line."
@@ -407,8 +428,8 @@ class StereoNet(object):
         self.draw()
 
     def pole(self, obj, *args, **kwargs):
-        """Draw Fol as pole"""
-        assert obj.type is Fol, "Only Fol instance could be plotted as poles."
+        """Draw Fol as pole."""
+        assert obj.type is Fol, "Only Fol type instance could be plotted as poles."
         if "zorder" not in kwargs:
             kwargs["zorder"] = 5
         animate = kwargs.pop("animate", False)
@@ -425,7 +446,7 @@ class StereoNet(object):
         self.draw()
 
     def cone(self, obj, alpha, *args, **kwargs):
-        """Draw small circle"""
+        """Draw small circle."""
         assert issubclass(
             obj.type, Vec3
         ), "Only Vec3-like instance could be used as cone axis."
@@ -455,8 +476,8 @@ class StereoNet(object):
         self.draw()
 
     def pair(self, obj, *arg, **kwargs):
-        """Draw  Pair as great circle with small point"""
-        assert obj.type is Pair, "Only Pair instance could be used."
+        """Draw  Pair as great circle with small point."""
+        assert obj.type is Pair, "Only Pair type instance could be used."
         animate = kwargs.pop("animate", False)
         h1 = self.plane(obj.fol, *arg, **kwargs)
         x, y = l2xy(*obj.lin.dd)
@@ -467,7 +488,7 @@ class StereoNet(object):
 
     def fault(self, obj, *arg, **kwargs):
         """Draw a fault-and-striae as in Angelier plot"""
-        assert obj.type is Fault, "Only Fault instance could be used."
+        assert obj.type is Fault, "Only Fault type instance could be used."
         animate = kwargs.get("animate", False)
         self.plane(obj.fol, *arg, **kwargs)
         x, y, u, v = self._arrow(obj.lin, sense=obj.sense)
@@ -480,8 +501,8 @@ class StereoNet(object):
         self.draw()
 
     def hoeppner(self, obj, *arg, **kwargs):
-        """Draw a fault-and-striae as in tangent lineation plot - Hoeppner plot"""
-        assert obj.type is Fault, "Only Fault instance could be used."
+        """Draw a fault-and-striae as in tangent lineation plot - Hoeppner plot."""
+        assert obj.type is Fault, "Only Fault type instance could be used."
         animate = kwargs.get("animate", False)
         self.pole(obj.fol, *arg, **kwargs)
         x, y, u, v = self._arrow(obj.fvec.aslin, dir_lin=obj.lin, sense=obj.sense)
@@ -494,7 +515,7 @@ class StereoNet(object):
         self.draw()
 
     def tensor(self, obj, *arg, **kwargs):
-        """Draw tensor pricipal planes as great circles"""
+        """Draw tensor pricipal planes as great circles."""
         eigenfols = kwargs.pop("eigenfols", True)
         eigenlins = kwargs.pop("eigenlins", False)
         if eigenfols:
@@ -507,7 +528,7 @@ class StereoNet(object):
             self.line(obj.eigenlins[2], label=obj.name + "-E3", **kwargs)
 
     def contourf(self, obj, *args, **kwargs):
-        """Plot filled contours"""
+        """Plot filled contours."""
         clines = kwargs.pop("clines", True)
         legend = kwargs.pop("legend", False)
         if "cmap" not in kwargs and "colors" not in kwargs:
@@ -562,7 +583,7 @@ class StereoNet(object):
         self.draw()
 
     def contour(self, obj, *args, **kwargs):
-        """Plot contour lines"""
+        """Plot contour lines."""
         legend = kwargs.pop("legend", False)
         if "cmap" not in kwargs and "colors" not in kwargs:
             kwargs["cmap"] = "Greys"
@@ -622,26 +643,26 @@ class StereoNet(object):
     #     # cb.set_ticklabels(lbl)
 
     def axtitle(self, title):
-        """Add title to active axes"""
+        """Add title to active axes."""
         self._axtitle[self.active] = self.fig.axes[self.active].set_title(title)
         self._axtitle[self.active].set_y(-0.09)
 
     def title(self, title=''):
-        """Set figure title"""
+        """Set figure title."""
         self._title_text = title
         self._title = self.fig.suptitle(self._title_text)
 
     def show(self):
-        """Call matplotlib show"""
+        """Call matplotlib show."""
         plt.show()
 
     def animate(self, **kwargs):
-        """Return artist animation"""
+        """Return artist animation."""
         blit = kwargs.pop("blit", True)
         return animation.ArtistAnimation(self.fig, self.artists, blit=blit, **kwargs)
 
     def savefig(self, filename="apsg_stereonet.pdf", **kwargs):
-        """Save figure to file"""
+        """Save figure to file."""
         self.draw()
         if not self.closed:  # check if figure exists
             bea_candidates = (self._lgd, self._title) + tuple(self._axtitle)
@@ -735,9 +756,7 @@ class VollmerPlot(_FabricPlot):
             self.show()
 
     def cla(self):
-        """
-        Clear projection.
-        """
+        """Clear projection."""
 
         self.fig.clear()
         self.ax = self.fig.add_subplot(111)
@@ -888,9 +907,7 @@ class RamsayPlot(_FabricPlot):
             self.show()
 
     def cla(self):
-        """
-        Clear projection.
-        """
+        """Clear projection."""
 
         self.fig.clear()
         self.ax = self.fig.add_subplot(111)
@@ -982,9 +999,7 @@ class FlinnPlot(_FabricPlot):
             self.show()
 
     def cla(self):
-        """
-        Clear projection.
-        """
+        """Clear projection."""
 
         self.fig.clear()
         self.ax = self.fig.add_subplot(111)
@@ -1076,9 +1091,7 @@ class HsuPlot(_FabricPlot):
             self.show()
 
     def cla(self):
-        """
-        Clear projection.
-        """
+        """Clear projection."""
 
         self.fig.clear()
         self.ax = self.fig.add_subplot(111, polar=True)
@@ -1143,7 +1156,7 @@ class HsuPlot(_FabricPlot):
 class StereoNetJK(object):
 
     """
-    API to Joe Kington mplstereonet.
+    API to Joe Kington mplstereonet. Need maintanaince.
     """
 
     def __init__(self, *args, **kwargs):
@@ -1182,31 +1195,31 @@ class StereoNetJK(object):
         self.draw()
 
     def plane(self, obj, *args, **kwargs):
-        assert obj.type is Fol, "Only Fol instance could be plotted as plane."
+        assert obj.type is Fol, "Only Fol type instance could be plotted as plane."
         strike, dip = obj.rhr
         self._ax.plane(strike, dip, *args, **kwargs)
         self.draw()
 
     def pole(self, obj, *args, **kwargs):
-        assert obj.type is Fol, "Only Fol instance could be plotted as pole."
+        assert obj.type is Fol, "Only Fol type instance could be plotted as pole."
         strike, dip = obj.rhr
         self._ax.pole(strike, dip, *args, **kwargs)
         self.draw()
 
     def rake(self, obj, rake_angle, *args, **kwargs):
-        assert obj.type is Fol, "Only Fol instance could be used with rake."
+        assert obj.type is Fol, "Only Fol type instance could be used with rake."
         strike, dip = obj.rhr
         self._ax.rake(strike, dip, rake_angle, *args, **kwargs)
         self.draw()
 
     def line(self, obj, *args, **kwargs):
-        assert obj.type is Lin, "Only Lin instance could be plotted as line."
+        assert obj.type is Lin, "Only Lin type instance could be plotted as line."
         bearing, plunge = obj.dd
         self._ax.line(plunge, bearing, *args, **kwargs)
         self.draw()
 
     def arrow(self, obj, sense, *args, **kwargs):
-        assert obj.type is Lin, "Only Lin instance could be plotted as quiver."
+        assert obj.type is Lin, "Only Lin type instance could be plotted as quiver."
         bearing, plunge = obj.dd
         xx, yy = mplstereonet.line(plunge, bearing)
         xx1, yy1 = mplstereonet.line(plunge - 5, bearing)
@@ -1215,7 +1228,7 @@ class StereoNetJK(object):
         self.draw()
 
     def cone(self, obj, angle, segments=100, bidirectional=True, **kwargs):
-        assert obj.type is Lin, "Only Lin instance could be used as cone axis."
+        assert obj.type is Lin, "Only Lin type instance could be used as cone axis."
         bearing, plunge = obj.dd
         self._ax.cone(
             plunge,
@@ -1228,7 +1241,7 @@ class StereoNetJK(object):
         self.draw()
 
     def density_contour(self, group, *args, **kwargs):
-        assert type(group) is Group, "Only group could be used for contouring."
+        assert type(group) is Group, "Only Group could be used for contouring."
         if group.type is Lin:
             bearings, plunges = group.dd
             kwargs["measurement"] = "lines"
@@ -1240,10 +1253,10 @@ class StereoNetJK(object):
             self._cax = self._ax.density_contour(strikes, dips, *args, **kwargs)
             plt.draw()
         else:
-            raise "Only Fol or Lin group is allowed."
+            raise "Only Fol or Lin type Group is allowed."
 
     def density_contourf(self, group, *args, **kwargs):
-        assert type(group) is Group, "Only group could be used for contouring."
+        assert type(group) is Group, "Only Group could be used for contouring."
         if group.type is Lin:
             bearings, plunges = group.dd
             kwargs["measurement"] = "lines"
@@ -1255,7 +1268,7 @@ class StereoNetJK(object):
             self._cax = self._ax.density_contourf(strikes, dips, *args, **kwargs)
             plt.draw()
         else:
-            raise "Only Fol or Lin group is allowed."
+            raise "Only Fol or Lin type Group is allowed."
 
     def colorbar(self):
         if self._cax is not None:
