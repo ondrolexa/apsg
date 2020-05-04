@@ -18,7 +18,7 @@ from apsg.core import (
 
 from apsg.tensors import DefGrad, VelGrad, Stress, Tensor, Ortensor, Ellipsoid
 from apsg.helpers import sind, cosd, tand, acosd, asind, atand, atan2d
-from apsg.plotting import StereoNet, VollmerPlot, RamsayPlot, FlinnPlot, HsuPlot
+from apsg.plotting import StereoNet, VollmerPlot, RamsayPlot, FlinnPlot, HsuPlot, RosePlot
 from apsg.database import SDB
 
 
@@ -54,8 +54,9 @@ __all__ = (
     "RamsayPlot",
     "FlinnPlot",
     "HsuPlot",
+    "RosePlot"
 )
 
-__version__ = "0.6.4"
+__version__ = "0.7.0"
 __author__ = "Ondrej Lexa"
 __email__ = "lexa.ondrej@gmail.com"

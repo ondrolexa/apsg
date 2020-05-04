@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cbook as mcb
 import matplotlib.animation as animation
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy.stats import vonmises
 
 try:
     import mplstereonet
@@ -29,7 +30,7 @@ from apsg.helpers import cosd, sind, l2v, p2v, getldd, getfdd, l2xy, v2l, rodrig
 from apsg.tensors import DefGrad, Stress, Tensor, Ortensor, Ellipsoid
 
 
-__all__ = ["StereoNet", "VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot", "rose"]
+__all__ = ["StereoNet", "VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot", "RosePlot"]
 
 
 # Ignore `matplotlib`s deprecation warnings.
@@ -677,6 +678,135 @@ class StereoNet(object):
             return repr(v.asfol) + " " + repr(v.aslin)
 
 
+
+class RosePlot(object):
+
+    """
+    ``RosePlot`` class for rose histogram plotting.
+
+    Args:
+        any plottable APSG class (most of data classes and tensors)
+
+    Keyword Args:
+        title: figure title. Default ''
+        figsize: Figure size. Default from settings ()
+        axial: Directional data are axial. Defaut True
+        density: Use density instead of counts. Default False
+        pdf: Plot Von Mises density function instead histogram. Default False
+        kappa; Shape parameter of Von Mises pdf. Default 250
+        scaled: Bins scaled by area instead value. Default False
+        arrow: Bar arrowness. (0-1) Default 0.95
+        rwidth: Bar width (0-1). Default 1
+        ticks: show ticks. Default True
+        grid: show grid lines. Default False
+        grid_kw: Dict passed to Axes.grid. Default {}
+
+        Other keyword arguments are passed to matplotlib plot.
+
+    Examples:
+        >>> g = Group.randn_fol(mean=Fol(120, 0))
+        >>> direction, dip  = g.rhr
+        >>> RosePlot(direction)
+        >>> RosePlot(direction, density=True)
+        >>> RosePlot(direction, pdf=True)
+        >>> s = RosePlot()
+        >>> s.plot(direction, color='r')
+        >>> s.show()
+    """
+
+
+    def __init__(self, *args, **kwargs):
+        self.fig = plt.figure(figsize=kwargs.pop("figsize", settings["figsize"]))
+        self.fig.canvas.set_window_title("Rose plot")
+        self.bins = kwargs.get("bins", 36)
+        self.axial = kwargs.get("axial", True)
+        self.pdf = kwargs.get('pdf', False)
+        self.kappa = kwargs.get('kappa', 250)
+        self.density = kwargs.get('density', False)
+        self.arrow = kwargs.get('arrow', 0.95)
+        self.rwidth = kwargs.get('rwidth', 1)
+        self.scaled = kwargs.get('scaled', False)
+        self.title_text = kwargs.get("title", "")
+        self.grid = kwargs.get("grid", True)
+        self.grid_kw = kwargs.get("grid_kw", {})
+        self.fill_kw = kwargs.get("fill_kw", {})
+        self.cla()
+        # optionally immidiately plot passed objects
+        if args:
+            for arg in args:
+                self.plot(arg)
+            self.show()
+
+    def cla(self):
+        """Clear projection."""
+
+        self.fig.clear()
+        self.ax = self.fig.add_subplot(111, polar=True)
+        #self.ax.format_coord = self.format_coord
+        self.ax.set_theta_direction(-1)
+        self.ax.set_theta_zero_location("N")
+        self.ax.grid(self.grid, **self.grid_kw)
+        self.fig.suptitle(self.title_text)
+
+    def plot(self, obj, *args, **kwargs):
+        if type(obj) is Group:
+            ang, _ = obj.dd
+            weights = abs(obj)
+            self.title_text = obj.name
+        else:
+            ang = np.array(obj)
+            weights = None
+        if 'weights' in kwargs:
+                weights = kwargs.pop('weights')
+
+        if self.axial:
+            ang = np.concatenate((ang % 360, (ang + 180) % 360))
+            if weights is not None:
+                weights = np.concatenate((weights, weights))
+
+        if self.pdf:
+            theta = np.linspace(-np.pi, np.pi, 1801)
+            radii = np.zeros_like(theta)
+            for a in ang:
+                radii += vonmises.pdf(theta, self.kappa, loc=np.radians(a % 360))
+            radii /= len(ang)
+        else:
+            width = 360 / self.bins
+            if weights is not None:
+                num, bin_edges = np.histogram(ang,
+                                              bins=self.bins + 1,
+                                              range=(-width / 2, 360 + width / 2),
+                                              weights=weights,
+                                              density=self.density)
+            else:
+                num, bin_edges = np.histogram(ang,
+                                              bins=self.bins + 1,
+                                              range=(-width / 2, 360 + width / 2),
+                                              density=self.density)
+            num[0] += num[-1]
+            num = num[:-1]
+            theta, radii = [], []
+            for cc, val in zip(np.arange(0, 360, width), num):
+                theta.extend([cc - width / 2, cc - self.rwidth * width / 2, cc,
+                              cc + self.rwidth * width / 2, cc + width / 2, ])
+                radii.extend([0, val * self.arrow, val, val * self.arrow, 0])
+            theta = np.deg2rad(theta)
+        if self.scaled:
+            radii = np.sqrt(radii)
+        fill_kw = self.fill_kw.copy()
+        fill_kw.update(kwargs)
+        self.ax.fill(theta, radii, **fill_kw)
+
+    def close(self):
+        plt.close(self.fig)
+
+    def show(self):
+        plt.show()
+
+    def savefig(self, filename="apsg_roseplot.pdf", **kwargs):
+        self.ax.figure.savefig(filename, **kwargs)
+
+
 class _FabricPlot(object):
 
     """
@@ -1285,20 +1415,3 @@ class StereoNetJK(object):
 
     def show(self):
         plt.show()
-
-
-def rose(a, bins=13, **kwargs):
-    """
-    Plot the rose diagram.
-    """
-
-    if isinstance(a, Group):
-        a, _ = a.dd
-
-    fig = plt.figure(figsize=kwargs.pop("figsize", settings["figsize"]))
-    ax = fig.add_subplot(111, polar=True)
-    ax.set_theta_direction(-1)
-    ax.set_theta_zero_location("N")
-    arad = a * np.pi / 180
-    erad = np.linspace(0, 360, bins) * np.pi / 180
-    plt.hist(arad, bins=erad, **kwargs)
