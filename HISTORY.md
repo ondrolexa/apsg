@@ -4,6 +4,7 @@
 
 * Python 2 support dropped
 * RosePlot added
+* Ortensor has from_pairs method for Lisle tensor for orthogonal data
 
 ### 0.6.3 (6 Dec 2019)
 

@@ -2611,6 +2611,13 @@ class PairSet(list):
         """
         return Group([e.fvec ** e.lvec for e in self], name=self.name)
 
+    @property
+    def ortensor(self):
+        """Return Lisle (1989) orientation tensor ``Ortensor`` of ``Group``."""
+        from apsg.tensors import Ortensor
+
+        return Ortensor.from_pairs(self)
+
 
 class FaultSet(PairSet):
     """

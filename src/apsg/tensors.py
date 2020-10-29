@@ -6,7 +6,7 @@ from typing import Tuple
 
 import numpy as np
 
-from apsg.core import Vec3, Group, Pair, Fault, Fol, Lin
+from apsg.core import Vec3, Fol, Lin, Group, Pair, PairSet, Fault
 from apsg.helpers import sind, cosd, atand
 
 
@@ -983,6 +983,41 @@ class Ortensor(Tensor):
         if not 'name' in kwargs:
             kwargs['name'] = g.name
         return cls(np.dot(np.array(g).T, np.array(g)) / len(g), **kwargs)
+
+    @classmethod
+    def from_pairs(cls, p, **kwargs) -> 'Ortensor':
+        """
+        Return Lisle (19890``Ortensor`` of orthogonal data in ``PairSet``
+
+        Lisle, R. (1989). The Statistical Analysis of Orthogonal Orientation Data. The Journal of Geology, 97(3), 360-364.
+
+        Args:
+            p: ``PairSet``
+
+        Example:
+          >>> p = PairSet([Pair(109, 82, 21, 10),
+                           Pair(118, 76, 30, 11),
+                           Pair(97, 86, 7, 3),
+                           Pair(109, 75, 23, 14) ])
+          >>> ot = Ortensor.from_pairs(p)
+          >>> ot
+          Ortensor: Default Kind: LS
+          (E1:0.956,E2:0.00473,E3:-0.9608)
+          [[ 0.7307853   0.57519626  0.08621956]
+           [ 0.57519626 -0.72530456  0.22401935]
+           [ 0.08621956  0.22401935 -0.00548074]]
+          >>> ot.eigenfols[2]
+          S:108/79
+          >>> ot.eigenlins[0]
+          L:20/9
+
+        """
+        assert isinstance(p, PairSet), "Data must be of PairSet type."
+        if not 'name' in kwargs:
+            kwargs['name'] = p.name
+        Tx = np.dot(np.array(p.lin).T, np.array(p.lin)) / len(p)
+        Tz = np.dot(np.array(p.fol).T, np.array(p.fol)) / len(p)
+        return cls(Tx - Tz, **kwargs)
 
     @property
     def E1(self) -> float:
