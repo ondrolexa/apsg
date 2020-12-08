@@ -153,18 +153,18 @@ class Core(object):
         infoln = "{:<8}  a={:5.1f}   b={:5.1f}   s={:5.1f}   d={:5.1f}   v={}m3  {}"
         ln0 = infoln.format(
             ff,
-            self.alpha,
-            self.beta,
-            self.bedding.rhr[0],
-            self.bedding.rhr[1],
+            self.gref.lin.dd[0],
+            self.gref.lin.dd[1],
+            self.bedding.dd[0],
+            self.bedding.dd[1],
             eformat(self.volume, 2),
             dt,
         )
         headln = (
-            "STEP  Xc [Am2]  Yc [Am2]  Zc [Am2]  MAG[A/m]   Dg    Ig    Ds    Is  a95 "
+            "STEP  Xc [Am2]  Yc [Am2]  Zc [Am2]  MAG[A/m]   Dg    Ig    Ds    Is   a95 "
         )
         with open(filename, "w") as pmdfile:
-            print(self.info, file=pmdfile, end="\r\n")
+            print('/'.join([self.site, self.name]), file=pmdfile, end="\r\n")
             print(ln0, file=pmdfile, end="\r\n")
             print(headln, file=pmdfile, end="\r\n")
             for ln in self.datatable:
@@ -278,11 +278,12 @@ class Core(object):
         for step, MAG, V, geo, tilt, a95, comments in zip(
             self.steps, self.MAG, self.V, self.geo, self.tilt, self.a95, self.comments,
         ):
-            ln = "{:<4} {: 9.2E} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:4.1f} {}".format(
+            ln = "{:<4} {: 9.2E} {: 9.2E} {: 9.2E} {: 9.2E} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:4.1f} {}".format(
                 step,
+                V[0],
+                V[1],
+                V[2],
                 MAG,
-                V.dd[0],
-                V.dd[1],
                 geo.dd[0],
                 geo.dd[1],
                 tilt.dd[0],
@@ -304,7 +305,7 @@ class Core(object):
                 self.date.strftime("%m-%d-%Y %H:%M"),
             )
         )
-        print("STEP  MAG[A/m]   Dsp   Isp   Dge   Ige   Dtc   Itc  a95 ")
+        print("STEP  Xc [Am2]  Yc [Am2]  Zc [Am2]  MAG[A/m]  Dge   Ige   Dtc   Itc   a95 ")
         print("\n".join(self.datatable))
 
     @property
