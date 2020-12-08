@@ -262,7 +262,8 @@ class Core(object):
             else None
         )
         data["date"] = datetime.now()
-        ix = (body.iloc[:, 0] == 'T') | (body.iloc[:, 0] == 'N')
+        #ix = (body.iloc[:, 0] == 'T') | (body.iloc[:, 0] == 'N')
+        ix = body.iloc[:, 0] != 'C'
         data["steps"] = body[ix].iloc[:, 1].to_list()
         data["comments"] = body[ix]['Note'].to_list()
         data["a95"] = body[ix]['Prec'].to_list()
@@ -313,7 +314,7 @@ class Core(object):
     @property
     def nsteps(self):
         "Retruns steps as array of numbers"
-        pp = [re.findall("\d+", s) for s in self.steps]
+        pp = [re.findall("\d+", str(s)) for s in self.steps]
         return np.array([int(s[0]) if s else 0 for s in pp])
 
     @property
