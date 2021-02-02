@@ -1,10 +1,11 @@
 # Changes
 
-## 0.7.0 (XX YYY 2020)
+## 0.7.0 (XX YYY 2021)
 
 * Python 2 support dropped
 * RosePlot added
 * Ortensor has from_pairs method for Lisle tensor for orthogonal data
+* StereoNet scatter method has labels kwarg to show hover annotations
 
 ### 0.6.3 (6 Dec 2019)
 

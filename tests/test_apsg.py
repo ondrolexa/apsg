@@ -26,7 +26,6 @@ from apsg import Vec3, Fol, Lin, Fault, Pair, Group, FaultSet, settings, DefGrad
 # Vectors
 # ############################################################################
 
-
 class TestVector:
 
     @pytest.fixture
@@ -391,7 +390,6 @@ class TestVector:
 # Lineation
 # ############################################################################
 
-
 class TestLineation:
     """
     The lineation is represented as axial (pseudo) vector.
@@ -472,10 +470,10 @@ class TestLineation:
 
         assert Lin(*lin.V.dd) == lin
 
+
 # ############################################################################
 # Foliation
 # ############################################################################
-
 
 class TestFoliation:
     """
@@ -558,6 +556,7 @@ class TestFoliation:
 
         assert Lin(*fol.V.dd).asfol == fol
 
+
 # ############################################################################
 # Group
 # ############################################################################
@@ -595,6 +594,8 @@ class TestGroup:
         exlist = Group.examples()
         for ex in exlist:
             g = Group.examples(ex)
+            assert g.name == ex
+
 
 # ############################################################################
 # Pair
@@ -640,3 +641,4 @@ class TestFault:
         exlist = FaultSet.examples()
         for ex in exlist:
             g = FaultSet.examples(ex)
+            assert g.name == ex
