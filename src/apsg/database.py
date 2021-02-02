@@ -221,8 +221,10 @@ class SDB(object):
           sites: name or list of names of sites to retrieve from
           units: name or list of names of units to retrieve from
           tags:  tag or list of tags to retrieve
+          labels: if True return also list of sites. Default False
 
         """
+        labels = kwargs.pop('labels', False)
         dtsel = self._make_select(structs=struct, **kwargs)
         sel = self.execsql(dtsel)
         if sel:
@@ -234,6 +236,9 @@ class SDB(object):
                 res = Group(
                     [Lin(el["azimuth"], el["inclination"]) for el in sel], name=struct,
                 )
-            return res
+            if labels:
+                return res, [el["name"] for el in sel]
+            else:
+                return res
         else:
             raise ValueError("No structures found using provided criteria.")

@@ -11,7 +11,7 @@ import pandas as pd
 
 from apsg.core import Vec3, Fol, Lin, Pair, Group, settings
 from apsg.plotting import StereoNet
-from apsg.helpers import sind, cosd, eformat
+from apsg.helpers import eformat
 
 __all__ = ("Core",)
 
@@ -228,7 +228,6 @@ class Core(object):
         body = pd.read_fwf(io.StringIO('\n'.join(d[2:])), colspecs=bodyspec)
 
         data = {}
-        vline = d[1]
         data["site"] = head['Site'][0] if not pd.isna(head['Site'][0]) else ''
         data["filename"] = filename
         data["name"] = head['Name'][0] if not pd.isna(head['Name'][0]) else ''
@@ -262,7 +261,7 @@ class Core(object):
             else None
         )
         data["date"] = datetime.now()
-        #ix = (body.iloc[:, 0] == 'T') | (body.iloc[:, 0] == 'N')
+        # ix = (body.iloc[:, 0] == 'T') | (body.iloc[:, 0] == 'N')
         ix = body.iloc[:, 0] != 'C'
         data["steps"] = body[ix].iloc[:, 1].to_list()
         data["comments"] = body[ix]['Note'].to_list()

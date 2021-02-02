@@ -6,7 +6,7 @@ from typing import Tuple
 
 import numpy as np
 
-from apsg.core import Vec3, Fol, Lin, Group, Pair, PairSet, Fault
+from apsg.core import Vec3, Group, Pair, PairSet, Fault
 from apsg.helpers import sind, cosd, atand
 
 
@@ -953,7 +953,7 @@ class Ortensor(Tensor):
 
     def __init__(self, matrix, **kwargs) -> None:
         if isinstance(matrix, Group):
-            if not 'name' in kwargs:
+            if 'name' not in kwargs:
                 kwargs['name'] = matrix.name
             matrix = np.dot(np.array(matrix).T, np.array(matrix)) / len(matrix)
         super(Ortensor, self).__init__(matrix, **kwargs)
@@ -980,7 +980,7 @@ class Ortensor(Tensor):
 
         """
 
-        if not 'name' in kwargs:
+        if 'name' not in kwargs:
             kwargs['name'] = g.name
         return cls(np.dot(np.array(g).T, np.array(g)) / len(g), **kwargs)
 
@@ -1013,7 +1013,7 @@ class Ortensor(Tensor):
 
         """
         assert isinstance(p, PairSet), "Data must be of PairSet type."
-        if not 'name' in kwargs:
+        if 'name' not in kwargs:
             kwargs['name'] = p.name
         Tx = np.dot(np.array(p.lin).T, np.array(p.lin)) / len(p)
         Tz = np.dot(np.array(p.fol).T, np.array(p.fol)) / len(p)

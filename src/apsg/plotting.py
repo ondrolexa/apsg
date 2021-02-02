@@ -6,7 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cbook as mcb
 import matplotlib.animation as animation
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.stats import vonmises
 
 try:
@@ -90,6 +89,9 @@ class StereoNet(object):
         self.fig.canvas.set_window_title("StereoNet - Schmidt projection")
         # self.fig.set_size_inches(8 * self.ncols, 6)
         self._axtitle = self.ncols * [None]
+        self.artist_collection = []
+        self.artist_labels = []
+        self.cid = None
         self.cla()
         # optionally immidiately plot passed objects
         if args:
@@ -170,7 +172,7 @@ class StereoNet(object):
         # recreate default Axes
         self.fig.clear()
         self.ax = self.fig.subplots(ncols=self.ncols)
-
+        self.annot = []
         for ax in self.fig.axes:
             ax.cla()
             ax.format_coord = self.format_coord
@@ -239,6 +241,12 @@ class StereoNet(object):
             ax.plot(
                 [-0.02, 0.02, np.nan, 0, 0], [0, 0, np.nan, -0.02, 0.02], "k", zorder=4
             )
+            annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
+                                arrowprops=dict(arrowstyle="->"), zorder=10,
+                                bbox=dict(boxstyle="round", fc="w")
+                                )
+            annot.set_visible(False)
+            self.annot.append(annot)
         self._title = self.fig.suptitle(self._title_text)
         self.draw()
 
@@ -365,7 +373,7 @@ class StereoNet(object):
 
     def scatter(self, obj, *args, **kwargs):
         """Draw Lin as point with varying marker size and/or color."""
-        assert obj.type is Lin, "Only Lin type instance could be plotted with scatter."
+        assert obj.type in [Lin, Fol, Vec3], "Only Vec3, Lin or Fol type instance could be plotted with scatter."
         if "zorder" not in kwargs:
             kwargs["zorder"] = 5
         if "legend" in kwargs:
@@ -373,11 +381,18 @@ class StereoNet(object):
         else:
             legend = False
         animate = kwargs.pop("animate", False)
+        labels = kwargs.pop("labels", False)
         if not args:
             if "marker" not in kwargs:
                 kwargs["marker"] = "o"
-        x, y = l2xy(*obj.dd)
+        x, y = l2xy(*obj.aslin.dd)
         h = self.fig.axes[self.active].scatter(x, y, *args, **kwargs)
+        if labels:
+            assert len(h.get_offsets()) == len(labels), "Number of labels is not the same as the number of data."
+            self.artist_collection.append(h)
+            self.artist_labels.append(labels)
+            if self.cid is None:
+                self.cid = self.fig.canvas.mpl_connect("motion_notify_event", self.hover)
         if legend:
             self.fig.colorbar(h)
         if animate:
@@ -677,6 +692,21 @@ class StereoNet(object):
             v = Vec3(*getldd(x, y))
             return repr(v.asfol) + " " + repr(v.aslin)
 
+    def hover(self, event):
+        vis = self.annot[self.active].get_visible()
+        if event.inaxes == self.fig.axes[self.active]:
+            for collection, labels in zip(self.artist_collection, self.artist_labels):
+                cont, ind = collection.contains(event)
+                if cont:
+                    self.annot[self.active].xy = collection.get_offsets()[ind["ind"][0]]
+                    text = ' '.join([labels[n] for n in ind["ind"]])
+                    self.annot[self.active].set_text(text)
+                    self.annot[self.active].set_visible(True)
+                    self.fig.canvas.draw_idle()
+                else:
+                    if vis:
+                        self.annot[self.active].set_visible(False)
+                        self.fig.canvas.draw_idle()
 
 
 class RosePlot(object):
@@ -714,7 +744,6 @@ class RosePlot(object):
         >>> s.show()
     """
 
-
     def __init__(self, *args, **kwargs):
         self.fig = plt.figure(figsize=kwargs.pop("figsize", settings["figsize"]))
         self.fig.canvas.set_window_title("Rose plot")
@@ -742,7 +771,7 @@ class RosePlot(object):
 
         self.fig.clear()
         self.ax = self.fig.add_subplot(111, polar=True)
-        #self.ax.format_coord = self.format_coord
+        # self.ax.format_coord = self.format_coord
         self.ax.set_theta_direction(-1)
         self.ax.set_theta_zero_location("N")
         self.ax.grid(self.grid, **self.grid_kw)
@@ -757,7 +786,7 @@ class RosePlot(object):
             ang = np.array(obj)
             weights = None
         if 'weights' in kwargs:
-                weights = kwargs.pop('weights')
+            weights = kwargs.pop('weights')
 
         if self.axial:
             ang = np.concatenate((ang % 360, (ang + 180) % 360))
