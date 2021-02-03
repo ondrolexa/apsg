@@ -496,7 +496,7 @@ class KentDistribution(object):
         """
 
         retval = self.log_pdf(xs)
-        return np.sum(retval, len(shape(retval)) - 1)
+        return np.sum(retval, len(np.shape(retval)) - 1)
 
     def log_likelihood_prime(self, xs):
         """
@@ -505,10 +505,10 @@ class KentDistribution(object):
         """
 
         retval = self.log_pdf_prime(xs)
-        if len(shape(retval)) == 1:
+        if len(np.shape(retval)) == 1:
             return retval
         else:
-            return np.sum(retval, len(shape(retval)) - 1)
+            return np.sum(retval, len(np.shape(retval)) - 1)
 
     def _rvs_helper(self):
         num_samples = 10000

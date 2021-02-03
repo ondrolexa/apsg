@@ -1,6 +1,6 @@
 # Changes
 
-## 0.7.0 (XX YYY 2021)
+## 0.7.0 (3 Feb 2021)
 
 * Python 2 support dropped
 * RosePlot added
