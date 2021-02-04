@@ -206,16 +206,27 @@ class SDB(object):
             dtsel = "SELECT name FROM tags ORDER BY pos"
             return [el['name'] for el in self.execsql(dtsel)]
 
-    def is_planar(self, struct):
-        tpsel = "SELECT planar FROM structype WHERE structure='{}'".format(struct)
-        res = self.execsql(tpsel)
-        return res[0][0] == 1
+    def is_planar(self, structs):
+        if isinstance(structs, str):
+            tpsel = "SELECT planar FROM structype WHERE structure='{}'".format(structs)
+            res = self.execsql(tpsel)
+            return res[0][0] == 1
+        elif isinstance(structs, (list, tuple)):
+            res = [self.is_planar(s) for s in structs]
+            if all(res):
+                return True
+            elif not any(res):
+                return False
+            else:
+                raise ValueError("All structures must be either planar or linear.")
+        else:
+            raise ValueError("Keyword structs must be list or string.")
 
-    def group(self, struct, **kwargs):
+    def group(self, structs, **kwargs):
         """Method to retrieve data from SDB database to apsg.Group
 
         Args:
-          struct:  name of structure to retrieve
+          structs:  structure or list of structures to retrieve
 
         Keyword Args:
           sites: name or list of names of sites to retrieve from
@@ -225,16 +236,20 @@ class SDB(object):
 
         """
         labels = kwargs.pop('labels', False)
-        dtsel = self._make_select(structs=struct, **kwargs)
+        dtsel = self._make_select(structs=structs, **kwargs)
         sel = self.execsql(dtsel)
         if sel:
-            if self.is_planar(struct):
+            if isinstance(structs, str):
+                name = structs
+            else:
+                name = ' '.join(structs)
+            if self.is_planar(structs):
                 res = Group(
-                    [Fol(el["azimuth"], el["inclination"]) for el in sel], name=struct,
+                    [Fol(el["azimuth"], el["inclination"]) for el in sel], name=name,
                 )
             else:
                 res = Group(
-                    [Lin(el["azimuth"], el["inclination"]) for el in sel], name=struct,
+                    [Lin(el["azimuth"], el["inclination"]) for el in sel], name=name,
                 )
             if labels:
                 return res, [el["name"] for el in sel]
