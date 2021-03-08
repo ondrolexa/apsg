@@ -179,7 +179,7 @@ class Core(object):
           filename: Remasoft rs3 file
 
         """
-        with open(filename, encoding="latin1") as f:
+        with open(filename, encoding='windows-1250') as f:
             d = f.read().splitlines()
 
         import io
@@ -271,10 +271,41 @@ class Core(object):
             data["vectors"].append(r['M[A/m]'] * Vec3(r['Dsp'], r['Isp']))
         return cls(**data)
 
+    def write_rs3(self, filename=None):
+        """Save ``Core`` instance to RS3 file.
+
+        Args:
+          filename: RS3 file
+
+        """
+        if filename is None:
+            filename = self.filename
+        
+        head = 'Name      Site      Latitude  Longitude  Height    Rock           Age  Fm SDec  SInc  BDec  BInc  FDec  FInc  P1 P2 P3 P4 Note'
+        subhead = 'ID Step[]           M[A/m]   Dsp   Isp   Dge   Ige   Dtc   Itc   Dfc   Ifc   Prec    K[e-06 SI] Limit1    Limit2    Note      '
+        latitude = self.latitude if self.latitude is not None else ''
+        longitude = self.longitude if self.longitude is not None else ''
+        height = self.height if self.height is not None else ''
+        sdec, sinc = (round(self.gref.fol.dd[0]), round(self.gref.fol.dd[1]))
+        bdec, binc = (round(self.bedding.dd[0]), round(self.bedding.dd[1])) if self.bedding is not None else ('', '')
+        fdec, finc = (round(self.foldaxis.dd[0]), round(self.foldaxis.dd[1])) if self.foldaxis is not None else ('', '')
+        hline = f'{self.name:9} {self.site:9} {latitude:<9} {longitude:<10} {height:<9} {self.rock:14} {self.age:<7} {sdec:<5} {sinc:<5} {bdec:<5} {binc:<5} {fdec:<5} {finc:<5} 12 0  12 90     '
+
+        with open(filename, 'w', encoding='windows-1250') as res3file:
+            print(head, file=res3file, end="\r\n")
+            print(hline, file=res3file, end="\r\n")
+            print(subhead, file=res3file, end="\r\n")
+            ids = ['N'] + (len(self.steps) - 1)*['M']
+            for id, step, MAG, V, geo, tilt, a95, comment in zip(
+                ids, self.steps, self.MAG, self.V, self.geo, self.tilt, self.a95, self.comments
+            ):
+                ln = f'{id:2} {step:<15} {MAG:>8g} {V.dd[0]:>5.1f} {V.dd[1]:> 5.1f} {geo.dd[0]:>5.1f} {geo.dd[1]:> 5.1f} {tilt.dd[0]:>5.1f} {tilt.dd[1]:> 5.1f}             {a95:>5.1f}                                   {comment:10}'
+                print(ln, file=res3file, end="\r\n")
+
     @property
     def datatable(self):
         tb = []
-        for step, MAG, V, geo, tilt, a95, comments in zip(
+        for step, MAG, V, geo, tilt, a95, comment in zip(
             self.steps, self.MAG, self.V, self.geo, self.tilt, self.a95, self.comments,
         ):
             ln = "{:<4} {: 9.2E} {: 9.2E} {: 9.2E} {: 9.2E} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:4.1f} {}".format(
@@ -288,7 +319,7 @@ class Core(object):
                 tilt.dd[0],
                 tilt.dd[1],
                 a95,
-                comments,
+                comment,
             )
             tb.append(ln)
         return tb
