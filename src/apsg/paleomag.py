@@ -21,7 +21,7 @@ class Core(object):
 
     Keyword Args:
       info:
-      name:
+      specimen:
       filename:
       alpha:
       beta:
@@ -41,7 +41,7 @@ class Core(object):
 
     def __init__(self, **kwargs):
         self.site = kwargs.get("site", "Default")
-        self.name = kwargs.get("name", "Default")
+        self.specimen = kwargs.get("specimen", "Default")
         self.filename = kwargs.get("filename", None)
         self.latitude = kwargs.get("latitude", None)
         self.longitude = kwargs.get("longitude", None)
@@ -61,7 +61,7 @@ class Core(object):
         self._vectors = kwargs.get("vectors", [])
 
     def __repr__(self):
-        return "Core:" + str(self.name)
+        return f'Core {self.site} {self.specimen}'
 
     def __getitem__(self, key):
         """Group fancy indexing"""
@@ -82,7 +82,7 @@ class Core(object):
             res.a95 = [val for (val, ok) in zip(self.a95, ix) if ok]
             res.comments = [val for (val, ok) in zip(self.comments, ix) if ok]
             res._vectors = [val for (val, ok) in zip(self._vectors, ix) if ok]
-            res.name = self.name + '({}-{})'.format(start_ok, stop_ok)
+            res.name = self.specimen + '({}-{})'.format(start_ok, stop_ok)
             return res
         if isinstance(key, str):
             if key in self.steps:
@@ -121,7 +121,7 @@ class Core(object):
         data["info"] = d[0].strip()
         vline = d[1].strip()
         data["filename"] = filename
-        data["name"] = vline[:10].strip()
+        data["specimen"] = vline[:10].strip()
         data["alpha"] = float(vline[10:20].strip().split("=")[1])
         data["beta"] = float(vline[20:30].strip().split("=")[1])
         data["strike"] = float(vline[30:40].strip().split("=")[1])
@@ -230,7 +230,7 @@ class Core(object):
         data = {}
         data["site"] = head['Site'][0] if not pd.isna(head['Site'][0]) else ''
         data["filename"] = filename
-        data["name"] = head['Name'][0] if not pd.isna(head['Name'][0]) else ''
+        data["specimen"] = head['Name'][0] if not pd.isna(head['Name'][0]) else ''
         data["longitude"] = (
             float(head['Longitude'][0]) if not pd.isna(head['Longitude'][0]) else None
         )
@@ -261,9 +261,8 @@ class Core(object):
             else None
         )
         data["date"] = datetime.now()
-        # ix = (body.iloc[:, 0] == 'T') | (body.iloc[:, 0] == 'N')
         ix = body.iloc[:, 0] != 'C'
-        data["steps"] = body[ix].iloc[:, 1].to_list()
+        data["steps"] = body[ix].iloc[:, 1].astype(int).to_list()
         data["comments"] = body[ix]['Note'].to_list()
         data["a95"] = body[ix]['Prec'].to_list()
         data["vectors"] = []
@@ -282,14 +281,14 @@ class Core(object):
             filename = self.filename
         
         head = 'Name      Site      Latitude  Longitude  Height    Rock           Age  Fm SDec  SInc  BDec  BInc  FDec  FInc  P1 P2 P3 P4 Note'
-        subhead = 'ID Step[]           M[A/m]   Dsp   Isp   Dge   Ige   Dtc   Itc   Dfc   Ifc   Prec    K[e-06 SI] Limit1    Limit2    Note      '
+        subhead = 'ID Step[°C]         M[A/m]   Dsp   Isp   Dge   Ige   Dtc   Itc   Dfc   Ifc   Prec    K[e-06 SI] Limit1    Limit2    Note      '
         latitude = self.latitude if self.latitude is not None else ''
         longitude = self.longitude if self.longitude is not None else ''
         height = self.height if self.height is not None else ''
         sdec, sinc = (round(self.gref.fol.dd[0]), round(self.gref.fol.dd[1]))
         bdec, binc = (round(self.bedding.dd[0]), round(self.bedding.dd[1])) if self.bedding is not None else ('', '')
         fdec, finc = (round(self.foldaxis.dd[0]), round(self.foldaxis.dd[1])) if self.foldaxis is not None else ('', '')
-        hline = f'{self.name:9} {self.site:9} {latitude:<9} {longitude:<10} {height:<9} {self.rock:14} {self.age:<7} {sdec:<5} {sinc:<5} {bdec:<5} {binc:<5} {fdec:<5} {finc:<5} 12 0  12 90     '
+        hline = f'{self.specimen:9} {self.site:9} {latitude:<9} {longitude:<10} {height:<9} {self.rock:14} {self.age:<7} {sdec:<5} {sinc:<5} {bdec:<5} {binc:<5} {fdec:<5} {finc:<5} 12 0  6  0      '
 
         with open(filename, 'w', encoding='windows-1250') as res3file:
             print(head, file=res3file, end="\r\n")
@@ -326,9 +325,9 @@ class Core(object):
 
     def show(self):
         print(
-            "site:{} name:{} file:{}\nbedding:{} volume:{}m3  {}".format(
+            "site:{} specimen:{} file:{}\nbedding:{} volume:{}m3  {}".format(
                 self.site,
-                self.name,
+                self.specimen,
                 os.path.basename(self.filename),
                 self.bedding,
                 eformat(self.volume, 2),
@@ -351,7 +350,7 @@ class Core(object):
     @property
     def V(self):
         "Returns `Group` of vectors in sample (or core) coordinates system"
-        return Group([v / self.volume for v in self._vectors], name=self.name)
+        return Group([v / self.volume for v in self._vectors], name=self.specimen)
 
     @property
     def geo(self):
@@ -403,7 +402,7 @@ class Core(object):
         # ax.xaxis.set_ticks(t[t != 0])
         # t = ax.yaxis.get_ticklocs()
         # ax.yaxis.set_ticks(t[t != 0])
-        ax.set_title('{} {}'.format(self.site, self.name), loc="left")
+        ax.set_title('{} {}'.format(self.site, self.specimen), loc="left")
         plt.legend(title="Unit={:g}A/m".format(t[1] - t[0]))
         plt.tight_layout()
         plt.show()
@@ -413,7 +412,7 @@ class Core(object):
         ax.plot(self.nsteps[0], self.MAG[0] / self.MAG.max(), "k+", markersize=14)
         ax.plot(self.nsteps, self.MAG / self.MAG.max(), "ko-")
         ax.set_ylabel("M/Mmax")
-        ax.set_title("{} {} (Mmax = {:g})".format(self.site, self.name, self.MAG.max()))
+        ax.set_title("{} {} (Mmax = {:g})".format(self.site, self.specimen, self.MAG.max()))
         ax.set_ylim(0, 1.02)
         ax.yaxis.grid()
         plt.show()
@@ -426,7 +425,7 @@ class Core(object):
             'tilt': 'Tilted coordinates',
         }
         s = StereoNet(
-            title='{} {}\n{}'.format(self.site, self.name, tt[kind]), **kwargs
+            title='{} {}\n{}'.format(self.site, self.specimen, tt[kind]), **kwargs
         )
         for f1, f2 in zip(data[:-1], data[1:]):
             s.arc(f1, f2, "k:")
