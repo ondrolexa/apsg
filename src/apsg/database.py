@@ -5,7 +5,7 @@ API to read data from PySDB database
 """
 
 import sqlite3
-import os.path
+from os.path import isfile
 from apsg.core import Fol, Lin, Group
 
 
@@ -33,9 +33,9 @@ class SDB(object):
     INNER JOIN units ON units.id = sites.id_units
     ORDER BY sites.name"""
 
-    def __new__(cls, db):
-        assert os.path.isfile(db), 'Database does not exists.'
-        cls.conn = sqlite3.connect(db)
+    def __new__(cls, sdb_file):
+        assert isfile(sdb_file), 'Database does not exists.'
+        cls.conn = sqlite3.connect(sdb_file)
         cls.conn.row_factory = sqlite3.Row
         cls.conn.execute("pragma encoding='UTF-8'")
         cls.conn.execute(SDB._SELECT + " LIMIT 1")
