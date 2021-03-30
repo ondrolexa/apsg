@@ -4,32 +4,72 @@ SqlAlchemy interface to PySDB database
 
 Create example:
 
-    from apsg.alchemy import AlchemySession
+    >>> from apsg.alchemy import AlchemySession
 
-    db = AlchemySession('database.sdb', create=True)
-
-    unit = db.unit(name='DMU', description='Deamonic Magmatic Unit')
-    site1 = db.site(unit=unit, name='LX001', x_coord=25487.54, y_coord=563788.2, description='granite sheet')
-    site2 = db.site(unit=unit, name='LX002', x_coord=25934.36, y_coord=564122.5, description='diorite dyke')
-
-    struct = db.structype(structure='S2', description='Solid-state foliation', planar=1)
-    db.add_structdata(site=site2, structype=struct, azimuth=150, inclination=36)
-
-    db.close()
+    >>> db = AlchemySession('database.sdb', create=True)
+    >>> unit = db.unit(name='DMU', description='Deamonic Magmatic Unit')
+    >>> site1 = db.site(unit=unit, name='LX001', x_coord=25487.54, y_coord=563788.2, description='granite sheet')
+    >>> site2 = db.site(unit=unit, name='LX002', x_coord=25934.36, y_coord=564122.5, description='diorite dyke')
+    >>> S2 = db.structype(structure='S2', description='Solid-state foliation', planar=1)
+    >>> L2 = db.structype(structure='L2', description='Solid-state lineation', planar=0)
+    >>> fol = db.add_structdata(site=site2, structype=S2, azimuth=150, inclination=36)
+    >>> db.close()
 
 Update example:
 
-    db = sdb_session('database.sdb')
-    unit = db.unit(name='DMU')
-    site3 = db.site(unit=unit, name='LX003', x_coord=25713.7, y_coord=563977.1, description='massive gabbro')
+    >>> db = AlchemySession('database.sdb')
+    >>> unit = db.unit(name='DMU')
+    >>> site3 = db.site(unit=unit, name='LX003', x_coord=25713.7, y_coord=563977.1, description='massive gabbro')
+    >>> db.close()
 
-    db.close()
+Tags example:
+
+    >>> db = AlchemySession('database.sdb')
+    >>> unit = db.unit(name='DMU')
+    >>> site1 = db.site(name='LX001')
+    >>> struct = db.structype(structure='S2')
+    >>> tag_plot = db.tag(name='plot')
+    >>> tag_ap = db.tag(name='AP')
+    >>> fol = db.add_structdata(site=site1, structype=struct, azimuth=324, inclination=78, tags=[tag_plot, tag_ap])
+    >>> db.close()
+
+Attach example:
+
+    >>> db = AlchemySession('database.sdb')
+    >>> unit = db.unit(name='DMU')
+    >>> site = db.site(name='LX001')
+    >>> S = db.structype(structure='S')
+    >>> L = db.structype(structure='L')
+    >>> fol = db.add_structdata(site=site, structype=S, azimuth=220, inclination=28)
+    >>> lin = db.add_structdata(site=site, structype=L, azimuth=212, inclination=26)
+    >>> pair = db.attach(fol, lin)
+    >>> db.close()
+
+APSG classes example:
+
+    >>> db = AlchemySession('database.sdb')
+    >>> unit = db.unit(name='DMU')
+    >>> site = db.site(name='LX003')
+
+    >>> S2 = db.structype(structure='S2')
+    >>> L2 = db.structype(structure='L2')
+
+    >>> f = Fol(196, 39)
+    >>> l = Lin(210, 37)
+    >>> db.add_fol(f, site=site, structype=S2)
+    >>> db.add_lin(l, site=site, structype=L2)
+
+    >>> p = Pair(258, 42, 220, 30)
+    >>> db.add_pair(p, S2, L2, site=site)
+    >>> db.close()
 
 """
 
 import os
 from datetime import datetime
 import contextlib
+
+from apsg.core import Fol, Lin, Pair
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
@@ -81,6 +121,9 @@ class Attached(Base):
     id_structdata_planar = Column(ForeignKey(u'structdata.id'), nullable=False, index=True)
     id_structdata_linear = Column(ForeignKey(u'structdata.id'), nullable=False, index=True)
 
+    def __repr__(self):
+        return '{} - {}'.format(self.planar, self.linear)
+
 
 class Structdata(Base):
     __tablename__ = 'structdata'
@@ -103,6 +146,7 @@ class Structdata(Base):
     def __repr__(self):
         return '{}:{:g}/{:g}'.format(self.structype.structure, self.azimuth, self.inclination)
 
+
 class Structype(Base):
     __tablename__ = 'structype'
 
@@ -119,6 +163,7 @@ class Structype(Base):
     def __repr__(self):
         return 'Type:{}'.format(self.structure)
 
+
 class Tag(Base):
     __tablename__ = 'tags'
 
@@ -131,6 +176,7 @@ class Tag(Base):
 
     def __repr__(self):
         return 'Tag:{}'.format(self.name)
+
 
 class Unit(Base):
     __tablename__ = 'units'
@@ -153,14 +199,17 @@ def initial_meta():
             Meta(name='updated', value=datetime.now().strftime("%d.%m.%Y %H:%M")),
             Meta(name='accessed', value=datetime.now().strftime("%d.%m.%Y %H:%M"))]
 
+
 def initial_values():
     return [Structype(pos=1, structure='S', description='Default planar feature', structcode=35, groupcode=13, planar=1),
             Structype(pos=2, structure='L', description='Default linear feature', structcode=78, groupcode=13, planar=0),
             Unit(pos=1, name='Default', description='Default unit')]
 
+
 def before_commit_meta_update(session):
     u = session.query(Meta).filter_by(name='updated').first()
     u.value = datetime.now().strftime("%d.%m.%Y %H:%M")
+
 
 def before_insert_pos_update(mapper, connection, target):
     if target.pos is None:
@@ -191,6 +240,7 @@ class AlchemySession():
         event.listen(self.session, 'before_commit', before_commit_meta_update)
         event.listen(Unit, 'before_insert', before_insert_pos_update)
         event.listen(Structype, 'before_insert', before_insert_pos_update)
+        event.listen(Tag, 'before_insert', before_insert_pos_update)
 
     def close(self):
         self.session.close()
@@ -241,6 +291,39 @@ class AlchemySession():
         data = Structdata(**kwargs)
         self.session.add(data)
         self.commit()
+        return data
+
+    def add_fol(self, fol, **kwargs):
+        assert isinstance(fol, Fol), 'fol argument must be instance of Fol class'
+        assert 'site' in kwargs, 'site must be provided for structdata'
+        assert 'structype' in kwargs, 'structype must be provided for structdata'
+        assert kwargs['structype'].planar, 'structype must be planar'
+        kwargs['azimuth'] = fol.dd[0]
+        kwargs['inclination'] = fol.dd[1]
+        return self.add_structdata(**kwargs)
+
+    def add_lin(self, lin, **kwargs):
+        assert isinstance(lin, Lin), 'lin argument must be instance of Lin class'
+        assert 'site' in kwargs, 'site must be provided for structdata'
+        assert 'structype' in kwargs, 'structype must be provided for structdata'
+        assert not kwargs['structype'].planar, 'structype must be linear'
+        kwargs['azimuth'] = lin.dd[0]
+        kwargs['inclination'] = lin.dd[1]
+        return self.add_structdata(**kwargs)
+
+    def attach(self, fol, lin):
+        pair = Attached(planar=fol, linear=lin)
+        self.session.add(pair)
+        self.commit()
+        return pair
+
+    def add_pair(self, pair, foltype, lintype, **kwargs):
+        assert isinstance(pair, Pair), 'pair argument must be instance of Pair class'
+        kwargs['structype'] = foltype
+        fol = self.add_fol(pair.fol, **kwargs)
+        kwargs['structype'] = lintype
+        lin = self.add_lin(pair.lin, **kwargs)
+        return self.attach(fol, lin)
 
     def sites(self, **kwargs):
         if kwargs:

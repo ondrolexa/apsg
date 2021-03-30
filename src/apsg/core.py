@@ -85,18 +85,18 @@ class Vec3(np.ndarray):
       ``Vec3`` object
 
     Example:
-      >>> v = Vec3([1, -2, 3])
-      >>> abs(v)
-      3.7416573867739413
+        >>> v = Vec3([1, -2, 3])
+        >>> abs(v)
+        3.7416573867739413
 
-      # The dip direction and dip angle of vector with magnitude of 1 and 3.
-      >>> v = Vec3(120, 60)
-      >>> abs(v)
-      1.0
+        # The dip direction and dip angle of vector with magnitude of 1 and 3.
+        >>> v = Vec3(120, 60)
+        >>> abs(v)
+        1.0
 
-      >>> v = Vec3(120, 60, 3)
-      >>> abs(v)
-      3.0
+        >>> v = Vec3(120, 60, 3)
+        >>> abs(v)
+        3.0
     """
 
     def __new__(cls, arr, inc=None, mag=1.0):
@@ -192,12 +192,12 @@ class Vec3(np.ndarray):
         Normalize the vector to unit length.
 
         Returns:
-          unit vector of ``self``
+            unit vector of ``self``
 
         Example:
-          >>> u = Vec3([1,1,1])
-          >>> u.uv
-          V(0.577, 0.577, 0.577)
+            >>> u = Vec3([1,1,1])
+            >>> u.uv
+            V(0.577, 0.577, 0.577)
 
         """
 
@@ -211,7 +211,7 @@ class Vec3(np.ndarray):
             other: other ``Vec3`` vector
 
         Returns:
-             The cross product of `self` and `other`.
+            The cross product of `self` and `other`.
 
         Example:
             >>> v = Vec3([1, 0, 0])
