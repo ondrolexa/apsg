@@ -59,6 +59,9 @@ class Core(object):
         self.a95 = kwargs.get("a95", [])
         self.comments = kwargs.get("comments", [])
         self._vectors = kwargs.get("vectors", [])
+        self.module_units = kwargs.get("module_units", 'A/m')
+        self.susceptibility_units = kwargs.get("susceptibility_units", 'e-06 SI')
+        self.demag_units =  kwargs.get("demag_units", '°C')
 
     def __repr__(self):
         return f'Core {self.site} {self.specimen}'
@@ -172,11 +175,14 @@ class Core(object):
             pmdfile.write(chr(26))
 
     @classmethod
-    def from_rs3(cls, filename):
+    def from_rs3(cls, filename, exclude=['C', 'G']):
         """Return ``Core`` instance generated from PMD file.
 
         Args:
           filename: Remasoft rs3 file
+
+        Kwargs:
+          exclude: Labels to be excluded. Default ['C', 'G']
 
         """
         with open(filename, encoding='windows-1250') as f:
@@ -261,13 +267,13 @@ class Core(object):
             else None
         )
         data["date"] = datetime.now()
-        ix = body.iloc[:, 0] != 'C'
+        ix = body.iloc[:, 0].apply(lambda x: x not in exclude)
         data["steps"] = body[ix].iloc[:, 1].astype(int).to_list()
         data["comments"] = body[ix]['Note'].to_list()
         data["a95"] = body[ix]['Prec'].to_list()
         data["vectors"] = []
         for n, r in body[ix].iterrows():
-            data["vectors"].append(r['M[A/m]'] * Vec3(r['Dsp'], r['Isp']))
+            data["vectors"].append(r[2] * Vec3(r['Dsp'], r['Isp']))
         return cls(**data)
 
     def write_rs3(self, filename=None):
@@ -281,7 +287,10 @@ class Core(object):
             filename = self.filename
         
         head = 'Name      Site      Latitude  Longitude  Height    Rock           Age  Fm SDec  SInc  BDec  BInc  FDec  FInc  P1 P2 P3 P4 Note'
-        subhead = 'ID Step[°C]         M[A/m]   Dsp   Isp   Dge   Ige   Dtc   Itc   Dfc   Ifc   Prec    K[e-06 SI] Limit1    Limit2    Note      '
+        step_lbl = f'Step[{self.demag_units}]'
+        module_lbl = f'M[{self.module_units}]'
+        susceptibility_lbl = f'K[{self.susceptibility_units}]'
+        subhead = f'ID {step_lbl:<10} {module_lbl:>12}   Dsp   Isp   Dge   Ige   Dtc   Itc   Dfc   Ifc   Prec {susceptibility_lbl:>13} Limit1    Limit2    Note      '
         latitude = self.latitude if self.latitude is not None else ''
         longitude = self.longitude if self.longitude is not None else ''
         height = self.height if self.height is not None else ''
@@ -289,16 +298,17 @@ class Core(object):
         bdec, binc = (round(self.bedding.dd[0]), round(self.bedding.dd[1])) if self.bedding is not None else ('', '')
         fdec, finc = (round(self.foldaxis.dd[0]), round(self.foldaxis.dd[1])) if self.foldaxis is not None else ('', '')
         hline = f'{self.specimen:9} {self.site:9} {latitude:<9} {longitude:<10} {height:<9} {self.rock:14} {self.age:<7} {sdec:<5} {sinc:<5} {bdec:<5} {binc:<5} {fdec:<5} {finc:<5} 12 0  6  0      '
-
+        prefix = 'T' if self.demag_units == '°C' else 'M'
         with open(filename, 'w', encoding='windows-1250') as res3file:
             print(head, file=res3file, end="\r\n")
             print(hline, file=res3file, end="\r\n")
             print(subhead, file=res3file, end="\r\n")
-            ids = ['N'] + (len(self.steps) - 1)*['M']
+
+            ids = ['N'] + (len(self.steps) - 1)*[prefix]
             for id, step, MAG, V, geo, tilt, a95, comment in zip(
                 ids, self.steps, self.MAG, self.V, self.geo, self.tilt, self.a95, self.comments
             ):
-                ln = f'{id:2} {step:<15} {MAG:>8g} {V.dd[0]:>5.1f} {V.dd[1]:> 5.1f} {geo.dd[0]:>5.1f} {geo.dd[1]:> 5.1f} {tilt.dd[0]:>5.1f} {tilt.dd[1]:> 5.1f}             {a95:>5.1f}                                   {comment:10}'
+                ln = f'{id:2} {step:<10} {MAG:>13g} {V.dd[0]:>5.1f} {V.dd[1]:> 5.1f} {geo.dd[0]:>5.1f} {geo.dd[1]:> 5.1f} {tilt.dd[0]:>5.1f} {tilt.dd[1]:> 5.1f}             {a95:>5.1f}                                   {comment:10}'
                 print(ln, file=res3file, end="\r\n")
 
     @property
