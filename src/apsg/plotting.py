@@ -303,19 +303,45 @@ class StereoNet(object):
             self.artists.append(tuple(a + p))
         self.draw()
 
-    def arc(self, f1, f2, *args, **kwargs):
+    def arc(self, l1, l2, *args, **kwargs):
         """Draw great circle segment between two points."""
-        assert issubclass(type(f1), Vec3) and issubclass(
-            type(f2), Vec3
-        ), "Arguments mustr be subclass of Vec3"
+        assert issubclass(type(l1), Vec3) and issubclass(
+            type(l2), Vec3
+        ), "Arguments must be subclass of Vec3"
         animate = kwargs.pop("animate", False)
-        p = f1 ** f2
-        a = f1.angle(f2)
-        st = np.linspace(0, a, 2 + int(2 * a))
-        rv = [f1.rotate(p, ang) for ang in st]
-        lh = [vv.flip if vv.upper else vv for vv in rv]
+        angstep = kwargs.pop("angstep", 1)
+        ax, phi = l1.H(l2).axisangle
+        steps = abs(int(phi / angstep))
+        angles = np.linspace(0, phi, steps)
+        rv = [l1.rotate(ax, angle) for angle in angles]
+        lh = [vv.flip if vv.upper else vv for vv in rv]  # what about Vec3?
         x, y = l2xy(*np.array([v.dd for v in lh]).T)
         h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
+        if animate:
+            self.artists.append(tuple(h))
+        self.draw()
+
+    def polygon(self, *args, **kwargs):
+        """Draw filled polygon defined by series of points or planes."""
+        assert len(args) > 2, "More than 2 arguments needed"
+        animate = kwargs.pop("animate", False)
+        angstep = kwargs.pop("angstep", 1)
+        coords = []
+        g = Group(list(args))
+        assert issubclass(
+            g.type, Vec3
+        ), "Only Vec3-like instances could be plotted as polygon."
+        if g.type is Fol:
+            g = Group([f1 ** f2 for f1, f2 in zip(g, g[1:] + g[:1])])
+        for l1, l2 in zip(g, g[1:] + g[:1]):
+            ax, phi = l1.H(l2).axisangle
+            steps = abs(int(phi / angstep))
+            angles = np.linspace(0, phi, steps)
+            rv = [l1.rotate(ax, angle) for angle in angles]
+            lh = [vv.flip if vv.upper else vv for vv in rv] # what about Vec3?
+            coords.extend(np.transpose(l2xy(*np.array([v.dd for v in lh]).T)))
+        bg = plt.Polygon(coords, **kwargs)
+        h = self.ax.add_patch(bg)
         if animate:
             self.artists.append(tuple(h))
         self.draw()

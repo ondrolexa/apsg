@@ -1,5 +1,11 @@
 # Changes
 
+## 0.7.1 (master)
+ * paleomag rs3 input/output improved
+ * Simple SQLAlchemy API to sdb database implemented
+ * StereoNet arc method fixed
+ * StereoNet polygon method added
+
 ## 0.7.0 (3 Feb 2021)
 
 * Python 2 support dropped

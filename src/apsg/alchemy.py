@@ -108,10 +108,10 @@ class Site(Base):
 
 
 tagged = Table(u'tagged', metadata,
-        Column(u'id', Integer, autoincrement=True),
-        Column(u'id_tags', Integer, ForeignKey(u'tags.id'), primary_key=True),
-        Column(u'id_structdata', Integer, ForeignKey(u'structdata.id'), primary_key=True)
-        )
+               Column(u'id', Integer, autoincrement=True),
+               Column(u'id_tags', Integer, ForeignKey(u'tags.id'), primary_key=True),
+               Column(u'id_structdata', Integer, ForeignKey(u'structdata.id'), primary_key=True)
+               )
 
 
 class Attached(Base):
@@ -139,9 +139,9 @@ class Structdata(Base):
     structype = relationship(u'Structype', back_populates='structdata')
 
     tags = relationship(u'Tag', secondary=tagged, back_populates='structdata')
-    
-    attach_planar = relationship(u'Attached', backref='planar', primaryjoin=id==Attached.id_structdata_planar)
-    attach_linear = relationship(u'Attached', backref='linear', primaryjoin=id==Attached.id_structdata_linear)
+
+    attach_planar = relationship(u'Attached', backref='planar', primaryjoin=id == Attached.id_structdata_planar)
+    attach_linear = relationship(u'Attached', backref='linear', primaryjoin=id == Attached.id_structdata_linear)
 
     def __repr__(self):
         return '{}:{:g}/{:g}'.format(self.structype.structure, self.azimuth, self.inclination)

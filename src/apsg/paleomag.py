@@ -61,7 +61,7 @@ class Core(object):
         self._vectors = kwargs.get("vectors", [])
         self.module_units = kwargs.get("module_units", 'A/m')
         self.susceptibility_units = kwargs.get("susceptibility_units", 'e-06 SI')
-        self.demag_units =  kwargs.get("demag_units", '°C')
+        self.demag_units = kwargs.get("demag_units", '°C')
 
     def __repr__(self):
         return f'Core {self.site} {self.specimen}'
@@ -285,7 +285,7 @@ class Core(object):
         """
         if filename is None:
             filename = self.filename
-        
+
         head = 'Name      Site      Latitude  Longitude  Height    Rock           Age  Fm SDec  SInc  BDec  BInc  FDec  FInc  P1 P2 P3 P4 Note'
         step_lbl = f'Step[{self.demag_units}]'
         module_lbl = f'M[{self.module_units}]'
@@ -304,7 +304,7 @@ class Core(object):
             print(hline, file=res3file, end="\r\n")
             print(subhead, file=res3file, end="\r\n")
 
-            ids = ['N'] + (len(self.steps) - 1)*[prefix]
+            ids = ['N'] + (len(self.steps) - 1) * [prefix]
             for id, step, MAG, V, geo, tilt, a95, comment in zip(
                 ids, self.steps, self.MAG, self.V, self.geo, self.tilt, self.a95, self.comments
             ):
