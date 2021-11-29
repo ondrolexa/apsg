@@ -392,7 +392,7 @@ class Core(object):
         data = getattr(self, kind)
         N, E, Z = np.array(data).T
         N0, E0, Z0 = data[0]
-        fig, ax = plt.subplots(facecolor="white", figsize=settings["figsize"])
+        fig, ax = plt.subplots(facecolor="white", figsize=apsg_conf["figsize"])
         ax.plot(E, N, "b-", label="Horizontal")
         ax.plot(E0, N0, "b+", markersize=14)
         ax.plot(E, N, "bo", picker=5)
@@ -420,7 +420,7 @@ class Core(object):
         plt.show()
 
     def demag_plot(self):
-        fig, ax = plt.subplots(figsize=settings["figsize"])
+        fig, ax = plt.subplots(figsize=apsg_conf["figsize"])
         ax.plot(self.nsteps[0], self.MAG[0] / self.MAG.max(), "k+", markersize=14)
         ax.plot(self.nsteps, self.MAG / self.MAG.max(), "ko-")
         ax.set_ylabel("M/Mmax")

@@ -1,3 +1,5 @@
+import numpy as np
+
 # ############################################################################
 # Following counting routines are from Joe Kington's mplstereonet
 # https://github.com/joferkington/mplstereonet

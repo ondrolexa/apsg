@@ -1,3 +1,11 @@
+import numpy as np
+from scipy import linalg as spla
+
+from apsg.config import apsg_conf
+from apsg.helpers import sind, cosd, tand, asind, acosd, atand, atan2d
+from apsg.math import Vector3, Tensor3, SymmetricTensor3
+
+
 class DefGrad3(Tensor3):
     """
     ``DefGrad3`` store deformation gradient tensor.

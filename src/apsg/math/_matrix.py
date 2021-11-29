@@ -141,8 +141,6 @@ class Matrix3(Matrix):
     def eigenvals(self):
         """Return sorted tuple of principal eigenvalues"""
         return tuple(self.__svd[1])
-        
-        self._V = Vector3(V[0]), Vector3(V[1]), Vector3(V[2])
 
     @property
     def eigenvects(self):

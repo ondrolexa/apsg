@@ -56,6 +56,7 @@ def ensure_two_args_same(method):
     def arg_check(self, *args):
         nargs = list(args)
         if len(nargs) == 2:
+            cls = type(self)
             if np.asarray(args[0]).shape == cls.__shape__ and np.asarray(args[1]).shape == cls.__shape__:
                 nargs[0] = type(self)(args[0])
                 nargs[1] = type(self)(args[1])

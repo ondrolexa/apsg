@@ -1,6 +1,5 @@
 import warnings
 import numpy as np
-from scipy import linalg as spla
 
 from apsg.config import apsg_conf
 from apsg.helpers import sind, cosd, tand, asind, acosd, atand, atan2d

@@ -74,7 +74,7 @@ class Vector3(Vector):
             return f'Vector3({round(self.x, n):g}, {round(self.y, n):g}, {round(self.z, n):g})'
 
     def __hash__(self):
-        return hash((type(f).__name__,) + self._coords)
+        return hash((type(self).__name__,) + self._coords)
 
     def __array__(self, dtype=None):
         return np.array(self._coords, dtype=dtype)
