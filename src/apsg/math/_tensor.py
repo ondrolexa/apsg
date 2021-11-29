@@ -6,14 +6,81 @@ from typing import Tuple
 
 import numpy as np
 
-from apsg.core import Vec3, Group, Pair, PairSet, Fault
-from apsg.helpers import sind, cosd, atand
+from apsg.base_classes import Vec3, Axial, Matrix3
+from apsg.geodata import Lin, Fol, Pair
+from apsg.containers import Group
 
 
 __all__ = ("DefGrad", "VelGrad", "Stress", "Ortensor", "Ellipsoid")
 
 
-class DefGrad(np.ndarray):
+class DefGrad(Matrix3):
+    """
+    ``DefGrad`` store deformation gradient tensor derived from numpy.ndarray.
+
+    Args:
+      a (3x3 array_like): Input data, that can be converted to
+          3x3 2D array. This includes lists, tuples and ndarrays.
+
+    Returns:
+      ``DefGrad`` object
+
+    Example:
+      >>> F = DefGrad(np.diag([2, 1, 0.5]))
+    """
+
+    @classmethod
+    def from_ratios(cls, Rxy=1, Ryz=1):
+        """Return isochoric ``DefGrad`` tensor with axial stretches defined by strain ratios.
+        Default is identity tensor.
+
+        Keyword Args:
+          Rxy, Ryz (float): strain ratios
+
+        Example:
+          >>> F = DefGrad.from_ratios(Rxy=2, Ryz=3)
+          >>> F
+          DefGrad:
+          [[2.28942849 0.         0.        ]
+           [0.         1.14471424 0.        ]
+           [0.         0.         0.38157141]]
+
+        """
+
+        assert Rxy >= 1, "Rxy must be greater than or equal to 1."
+        assert Ryz >= 1, "Ryz must be greater than or equal to 1."
+
+        y = (Ryz / Rxy) ** (1 / 3)
+        return cls.from_comp(xx=y * Rxy, yy=y, zz=y / Ryz)
+
+    @classmethod
+    def from_pair(cls, p):
+        assert issubclass(type(p), Pair), "Data must be of Pair type."
+        return cls(np.array([p.lvec, p.fvec.cross(p.lvec), p.fvec]).T)
+
+    def __repr__(self):
+        return "DefGrad:\n" + super().__repr__()
+
+    @property
+    def R(self):
+        """Return rotation part of ``DefGrad`` from polar decomposition."""
+        R, _ = spla.polar(self)
+        return DefGrad(R)
+
+    @property
+    def U(self):
+        """Return stretching part of ``DefGrad`` from right polar decomposition."""
+        _, U = spla.polar(self, "right")
+        return DefGrad(U)
+
+    @property
+    def V(self):
+        """Return stretching part of ``DefGrad`` from left polar decomposition."""
+        _, V = spla.polar(self, "left")
+        return DefGrad(V)
+
+
+class DefGradOld(np.ndarray):
     """
     ``DefGrad`` store deformation gradient tensor derived from numpy.ndarray.
 

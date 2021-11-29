@@ -1,13 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from apsg.config import apsg_conf
-from apsg.helpers import sind, cosd, tand, acosd, asind, atand, atan2d
-#from apsg.base_classes import Vec3, Axial, Matrix3
-#from apsg.geodata import Lin, Fol, Pair
-#from apsg.containers import Group
-#from apsg.tensors import DefGrad, VelGrad, Stress, Tensor, Ortensor, Ellipsoid
-#from apsg.plotting import StereoNet, VollmerPlot, RamsayPlot, FlinnPlot, HsuPlot, RosePlot
-#from apsg.database import SDB
+from apsg.math._vector import Vec3
+from apsg.math._matrix import Matrix3
 
 
 # __all__ = (
