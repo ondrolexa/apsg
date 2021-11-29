@@ -37,40 +37,30 @@ def ensure_first_arg(*datatypes):
 ################################################
 
 
-def ensure_one_arg_vector(method):
+def ensure_first_arg_same(method):
     def arg_check(self, *args):
         nargs = list(args)
-        if is_like_vec3(nargs[0]):
-            nargs[0] = type(self)(args[0])
+        cls = type(self)
+        if np.asarray(args[0]).shape == cls.__shape__:
+            nargs[0] = cls(args[0])
             return method(self, *nargs)
-        raise TypeError(f"unsupported argument for {method.__name__}")
+        raise TypeError(f'Unsupported argument for {method.__name__}. Expecting {cls.__name__}')
 
     return arg_check
-
-
-def ensure_one_arg_matrix(method):
-    def arg_check(self, *args):
-        nargs = list(args)
-        if is_like_matrix3(nargs[0]):
-            nargs[0] = type(self)(args[0])
-            return method(self, *nargs)
-        raise TypeError(f"unsupported argument for {method.__name__}")
-
-    return arg_check
-
 
 ################################################
+#  Following are not used....
+################################################
 
-
-def ensure_two_args_vector(method):
+def ensure_two_args_same(method):
     def arg_check(self, *args):
         nargs = list(args)
         if len(nargs) == 2:
-            if is_like_vec3(nargs[0]) and is_like_vec3(nargs[1]):
+            if np.asarray(args[0]).shape == cls.__shape__ and np.asarray(args[1]).shape == cls.__shape__:
                 nargs[0] = type(self)(args[0])
                 nargs[1] = type(self)(args[1])
                 return method(self, *nargs)
-        raise TypeError(f"unsupported arguments for {method.__name__}")
+        raise TypeError(f'Unsupported arguments for {method.__name__}.')
 
     return arg_check
 

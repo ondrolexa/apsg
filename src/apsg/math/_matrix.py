@@ -5,25 +5,40 @@ import numpy as np
 
 from apsg.config import apsg_conf
 from apsg.helpers import sind, cosd, tand, asind, acosd, atand, atan2d
-from apsg.helpers import is_like_vec3, is_like_matrix3
-from apsg.decorator import ensure_one_arg_matrix
+from apsg.decorator import ensure_first_arg_same
 from apsg.math import Vector3
 
 """
 TO BE ADDED
 """
-
-class Matrix3:
+class Matrix:
     __slots__ = ("_coefs")
+
+
+class Matrix2(Matrix):
+    __shape__ = (2, 2)
+
+    def __init__(self, *args):
+        if len(args) == 0:
+            coefs = ((1, 0), (0, 1))
+        elif len(args) == 1 and np.asarray(args[0]).shape == Matrix2.__shape__:
+            coefs = [[float(v) for v in row] for row in args[0]]
+        else:
+            raise TypeError('Not valid arguments for Matrix2')
+        self._coefs = tuple(coefs[0]), tuple(coefs[1])
+
+
+class Matrix3(Matrix):
+    __shape__ = (3, 3)
 
     def __init__(self, *args):
         if len(args) == 0:
             coefs = ((1, 0, 0), (0, 1, 0), (0, 0, 1))
-        elif len(args) == 1 and is_like_matrix3(args[0]):
+        elif len(args) == 1 and np.asarray(args[0]).shape == Matrix3.__shape__:
             coefs = [[float(v) for v in row] for row in args[0]]
         else:
-            raise TypeError("Not valid arguments for Matrix3")
-        self._coefs = (tuple(coefs[0]), tuple(coefs[1]), tuple(coefs[2]))
+            raise TypeError('Not valid arguments for Matrix3')
+        self._coefs = tuple(coefs[0]), tuple(coefs[1]), tuple(coefs[2])
 
     @classmethod
     def from_comp(cls, xx=1, xy=0, xz=0, yx=0, yy=1, yz=0, zx=0, zy=0, zz=1):
@@ -49,7 +64,7 @@ class Matrix3:
     copy = __copy__
 
     def __repr__(self):
-        n = apsg_conf["ndigits"]
+        n = apsg_conf['ndigits']
         m = [[round(e, n) for e in row] for row in self._coefs]
         return str(np.array(m))
 
@@ -76,7 +91,7 @@ class Matrix3:
     def __pow__(self, n):
         return type(self)(np.linalg.matrix_power(self, n))
 
-    @ensure_one_arg_matrix
+    @ensure_first_arg_same
     def __eq__(self, other):
         return bool(np.sum(abs(self - other)) < 1e-14)
 
@@ -88,14 +103,14 @@ class Matrix3:
 
     def __matmul__(self, other):
         r = np.dot(np.array(self), other)
-        if is_like_matrix3(r):
+        if np.asarray(r).shape == Matrix3.__shape__:
             return type(self)(r)
         else:
             return Vector3(r)
 
     def __rmatmul__(self, other):
         r = np.dot(other, np.array(self))
-        if is_like_matrix3(r):
+        if np.asarray(r).shape == Matrix3.__shape__:
             return type(self)(r)
         else:
             return Vector3(r)
@@ -123,7 +138,7 @@ class Matrix3:
     def __svd(self):
         return np.linalg.svd(self._coefs)
 
-    def eigenvals(self)
+    def eigenvals(self):
         """Return sorted tuple of principal eigenvalues"""
         return tuple(self.__svd[1])
         

@@ -1,49 +1,22 @@
 # -*- coding: utf-8 -*-
 
+from apsg.math import Vector3
 from apsg.config import apsg_conf
-from apsg.helpers import sind, cosd, tand, acosd, asind, atand, atan2d
-#from apsg.base_classes import Vector3, Axial, Matrix3
-#from apsg.geodata import Lin, Fol, Pair
-#from apsg.containers import Group
-#from apsg.tensors import DefGrad, VelGrad, Stress, Tensor, Ortensor, Ellipsoid
-#from apsg.plotting import StereoNet, VollmerPlot, RamsayPlot, FlinnPlot, HsuPlot, RosePlot
-#from apsg.database import SDB
+from apsg.feature import Lineation, Foliation, Pair, Vector3Set, LineationSet, FoliationSet, G
 
+def vec3(*args):
+    return Vector3(*args)
 
-# __all__ = (
-#     "Vector3",
-#     "Fol",
-#     "Lin",
-#     "Pair",
-#     "Fault",
-#     "Group",
-#     "PairSet",
-#     "FaultSet",
-#     "Cluster",
-#     "StereoGrid",
-#     "G",
-#     "settings",
-#     "SDB",
-#     "DefGrad",
-#     "VelGrad",
-#     "Stress",
-#     "Tensor",
-#     "Ortensor",
-#     "Ellipsoid",
-#     "sind",
-#     "cosd",
-#     "tand",
-#     "acosd",
-#     "asind",
-#     "atand",
-#     "atan2d",
-#     "StereoNet",
-#     "VollmerPlot",
-#     "RamsayPlot",
-#     "FlinnPlot",
-#     "HsuPlot",
-#     "RosePlot"
-# )
+def lin(*args):
+    return Lineation(*args)
+
+def fol(*args):
+    return Foliation(*args)
+
+def pair(*args):
+    return Pair(*args)
+
+__all__ = ('apsg_conf', 'vec3', 'lin', 'fol', 'pair', 'Vector3Set', 'LineationSet', 'FoliationSet', 'G')
 
 __version__ = "1.0.0"
 __author__ = "Ondrej Lexa"

@@ -54,8 +54,8 @@ APSG classes example:
     >>> S2 = db.structype(structure='S2')
     >>> L2 = db.structype(structure='L2')
 
-    >>> f = Fol(196, 39)
-    >>> l = Lin(210, 37)
+    >>> f = fol(196, 39)
+    >>> l = lin(210, 37)
     >>> db.add_fol(f, site=site, structype=S2)
     >>> db.add_lin(l, site=site, structype=L2)
 
@@ -69,7 +69,7 @@ import os
 from datetime import datetime
 import contextlib
 
-from apsg.core import Fol, Lin, Pair
+from apsg.feature import Foliation, Lineation, Pair
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
@@ -294,7 +294,7 @@ class AlchemySession():
         return data
 
     def add_fol(self, fol, **kwargs):
-        assert isinstance(fol, Fol), 'fol argument must be instance of Fol class'
+        assert isinstance(fol, Foliation), 'fol argument must be instance of Foliation class'
         assert 'site' in kwargs, 'site must be provided for structdata'
         assert 'structype' in kwargs, 'structype must be provided for structdata'
         assert kwargs['structype'].planar, 'structype must be planar'
@@ -303,7 +303,7 @@ class AlchemySession():
         return self.add_structdata(**kwargs)
 
     def add_lin(self, lin, **kwargs):
-        assert isinstance(lin, Lin), 'lin argument must be instance of Lin class'
+        assert isinstance(lin, Lineation), 'lin argument must be instance of Lineation class'
         assert 'site' in kwargs, 'site must be provided for structdata'
         assert 'structype' in kwargs, 'structype must be provided for structdata'
         assert not kwargs['structype'].planar, 'structype must be linear'

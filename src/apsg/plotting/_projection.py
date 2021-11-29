@@ -1,9 +1,8 @@
 import numpy as np
 
 from apsg.helpers import sind, cosd, tand, asind, acosd, atand, atan2d, sqrt2
-from apsg.math import Vector3, Axial3, Matrix3
-from apsg.geodata import Lin, Fol, Pair
-from apsg.tensors import DefGrad
+from apsg.math import Vector3  #, DefGrad3
+from apsg.feature import Foliation, Pair
 
 
 class Projection:
@@ -20,7 +19,7 @@ class Projection:
     def project_grid(self, x, y, z, clip_polehole=False):
         if clip_polehole:
             polehole = [
-                Lin(0, 0).angle(Vector3(xx, yy, zz)) < self.polehole
+                Vector3(0, 0).angle(Vector3(xx, yy, zz)) < self.polehole
                 for xx, yy, zz in zip(x, y, z)
             ]
         else:
@@ -54,16 +53,16 @@ class Projection:
         # lats
         lat_e, lat_w = {}, {}
         for dip in range(self.gridstep, 90, self.gridstep):
-            f = Fol(90, dip)
-            if f.transform(self.R).angle(Fol(0, 0)) > 1e-6:
+            f = Foliation(90, dip)
+            if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
                 fdv = f.transform(self.R).dipvec().transform(self.Ri)
                 X, Y = self.project_grid(
                     *np.array([fdv.rotate(f, a) for a in angles_gc]).T,
                     clip_polehole=True,
                 )
                 lat_e[dip] = dict(x=X.tolist(), y=Y.tolist())
-            f = Fol(270, dip)
-            if f.transform(self.R).angle(Fol(0, 0)) > 1e-6:
+            f = Foliation(270, dip)
+            if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
                 fdv = f.transform(self.R).dipvec().transform(self.Ri)
                 X, Y = self.project_grid(
                     *np.array([fdv.rotate(f, a) for a in angles_gc]).T,
@@ -75,53 +74,53 @@ class Projection:
         lon_n, lon_s = {}, {}
         for dip in range(self.gridstep, 90, self.gridstep):
             if dip >= self.polehole:
-                l = Lin(0, dip)
+                l = Vector3(0, dip)
                 X, Y = self.project_grid(
-                    *np.array([l.rotate(Lin(0, 0), a) for a in angles_sc]).T,
+                    *np.array([l.rotate(Lineation(0, 0), a) for a in angles_sc]).T,
                     clip_polehole=True,
                 )
                 lon_n[dip] = dict(x=X.tolist(), y=Y.tolist())
-                l = Lin(180, dip)
+                l = Vector3(180, dip)
                 X, Y = self.project_grid(
-                    *np.array([l.rotate(Lin(180, 0), a) for a in angles_sc]).T,
+                    *np.array([l.rotate(Lineation(180, 0), a) for a in angles_sc]).T,
                     clip_polehole=True,
                 )
                 lon_s[dip] = dict(x=X.tolist(), y=Y.tolist())
 
         # pole holes rims
         if self.polehole > 0:
-            l = Lin(0, self.polehole)
+            l = Vector3(0, self.polehole)
             X, Y = self.project_grid(
-                *np.array([l.rotate(Lin(0, 0), a) for a in angles_sc]).T
+                *np.array([l.rotate(Vector3(0, 0), a) for a in angles_sc]).T
             )
             polehole_n = dict(x=X.tolist(), y=Y.tolist())
-            l = Lin(180, self.polehole)
+            l = Vector3(180, self.polehole)
             X, Y = self.project_grid(
-                *np.array([l.rotate(Lin(180, 0), a) for a in angles_sc]).T
+                *np.array([l.rotate(Vector3(180, 0), a) for a in angles_sc]).T
             )
             polehole_s = dict(x=X.tolist(), y=Y.tolist())
         else:
             polehole_n, polehole_s = {}, {}
 
         # Principal cross N-S
-        f = Fol(90, 90)
-        if f.transform(self.R).angle(Fol(0, 0)) > 1e-6:
+        f = Foliation(90, 90)
+        if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
             fdv = f.transform(self.R).dipvec().transform(self.Ri)
             X, Y = self.project_grid(*np.array([fdv.rotate(f, a) for a in angles_gc]).T)
             main_ns = dict(x=X.tolist(), y=Y.tolist())
         else:
             main_ns = {}
         # Principal cross E-W
-        f = Fol(0, 90)
-        if f.transform(self.R).angle(Fol(0, 0)) > 1e-6:
+        f = Foliation(0, 90)
+        if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
             fdv = f.transform(self.R).dipvec().transform(self.Ri)
             X, Y = self.project_grid(*np.array([fdv.rotate(f, a) for a in angles_gc]).T)
             main_ew = dict(x=X.tolist(), y=Y.tolist())
         else:
             main_ew = {}
         # Principal horizontal
-        f = Fol(0, 0)
-        if f.transform(self.R).angle(Fol(0, 0)) > 1e-6:
+        f = Foliation(0, 0)
+        if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
             fdv = f.transform(self.R).dipvec().transform(self.Ri)
             X, Y = self.project_grid(*np.array([fdv.rotate(f, a) for a in angles_gc]).T)
             main_h = dict(x=X.tolist(), y=Y.tolist())

@@ -4,54 +4,40 @@ from scipy import linalg as spla
 
 from apsg.config import apsg_conf
 from apsg.helpers import sind, cosd, tand, asind, acosd, atand, atan2d
-from apsg.helpers import is_like_vec3
-from apsg.decorator import ensure_one_arg_matrix
+from apsg.helpers import geo2vec_linear, vec2geo_linear, geo2vec_planar, vec2geo_planar
+from apsg.decorator import ensure_first_arg_same
 from apsg.math import Vector3, Axial3
 
 
 """
-from apsg_classes import *
-
-u = Vector3(-2,1,1)
-v = Vector3(1,5,3)
-g = Group.from_list([u, v])
-h = Group()
-h.append(u)
-h.append(v)
-
-from scipy.spatial import transform as sct
-f = Fol(120,30)
-ang = math.pi/2 - 1e-6
-sl = sct.Slerp([0, 1], sct.Rotation.from_rotvec([-ang*f, ang*f]))
-[Lin(v) for v in sl(np.linspace(0, 1, 21)).apply(f.dipvec())]
-
-or
-
-[Lin(f.dipvec().rotate(f, a)) for a in np.linspace(-89.999999, 89.999999, 21)]
-
+to to
 """
 
-class Lin(Axial):
+class Lineation(Axial3):
+
     def __repr__(self):
         azi, inc = vec2geo_linear(self)
         return f"L:{azi:.0f}/{inc:.0f}"
 
     def cross(self, other):
-        return Fol(super().cross(other))
+        return Foliation(super().cross(other))
 
     __pow__ = cross
 
 
-class Fol(Axial):
+class Foliation(Axial3):
+
     def __init__(self, *args):
-        if len(args) == 1 and is_like_vec3(args[0]):
+        if len(args) == 0:
+            coords = (0, 0, 1)
+        elif len(args) == 1 and np.asarray(args[0]).shape == Foliation.__shape__:
             coords = [float(v) for v in args[0]]
         elif len(args) == 2:
-            coords = Geo2CoordsPlanar[apsg_conf["notation"]](*args)
+            coords = geo2vec_planar(*args)
         elif len(args) == 3:
             coords = [float(v) for v in args]
         else:
-            raise TypeError("Not valid arguments for Fol")
+            raise TypeError("Not valid arguments for Foliation")
         self._coords = tuple(coords)
 
     def __repr__(self):
@@ -59,7 +45,7 @@ class Fol(Axial):
         return f"S:{azi:.0f}/{inc:.0f}"
 
     def cross(self, other):
-        return Lin(super().cross(other))
+        return Lineation(super().cross(other))
 
     __pow__ = cross
 
@@ -69,7 +55,7 @@ class Fol(Axial):
     def rake(self, rake):
         return Vector3(self.dipvec().rotate(self, rake - 90))
 
-    @ensure_one_arg_matrix
+    @ensure_first_arg_same
     def transform(self, F, **kwargs):
         """
         Return affine transformation of vector `u` by matrix `F`.
@@ -120,13 +106,13 @@ class Pair:
     def __init__(self, *args):
         if len(args) == 0:
             fvec, lvec = Vector3(0, 0, 1), Vector3(1, 0, 0)
-        elif len(args) == 1 and is_like_vec3(args[0]):
-            f = Fol(args[0])
+        elif len(args) == 1:
+            f = Foliation(args[0])
             fvec, lvec = Vector3(f), f.dipvec()
         elif len(args) == 2:
             fvec, lvec = Vector3(args[0]), Vector3(args[1])
         else:
-            raise TypeError("Not valid arguments for Fol")
+            raise TypeError("Not valid arguments for Foliation")
 
         misfit = 90 - fvec.angle(lvec)
         if misfit > 20:
@@ -175,8 +161,8 @@ class Pair:
             phi (float): angle of rotation in degrees
 
         Example:
-            >>> p = Pair(Fol(140, 30), Lin(110, 26))
-            >>> p.rotate(Lin(40, 50), 120)
+            >>> p = Pair(fol(140, 30), lin(110, 26))
+            >>> p.rotate(lin(40, 50), 120)
             P:210/83-287/60
 
         """
@@ -189,21 +175,21 @@ class Pair:
     @property
     def fol(self):
         """
-        Return a planar feature of ``Pair`` as ``Fol``.
+        Return a planar feature of ``Pair`` as ``Foliation``.
         """
-        return Fol(self.fvec)
+        return Foliation(self.fvec)
 
     @property
     def lin(self):
         """
-        Return a linear feature of ``Pair`` as ``Lin``.
+        Return a linear feature of ``Pair`` as ``Lineation``.
         """
-        return Lin(self.lvec)
+        return Lineation(self.lvec)
 
     @property
     def rax(self):
         """
-        Return an oriented vector perpendicular to both ``Fol`` and ``Lin``.
+        Return an oriented vector perpendicular to both ``Foliation`` and ``Lineation``.
         """
         return self.fvec.cross(self.lvec)
 
@@ -255,66 +241,3 @@ class Pair:
         from apsg.tensors import DefGrad
 
         return DefGrad(DefGrad.from_pair(other) * DefGrad.from_pair(self).I)
-
-
-### NOTATION TRANSORMATIONS ###
-
-
-def fol2vec_dd(azi, inc):
-    return -cosd(azi) * sind(inc), -sind(azi) * sind(inc), cosd(inc)
-
-
-def fol2vec_rhr(strike, dip):
-    return fol2vec_dd(strike + 90, dip)
-
-
-def geo2vec_planar(*args):
-    return {"dd": fol2vec_dd,
-            "rhr": fol2vec_rhr
-            }[apsg_conf['notation']](*args)
-
-##############################
-
-def lin2vec_dd(azi, inc):
-    return cosd(azi) * cosd(inc), sind(azi) * cosd(inc), sind(inc)
-
-
-def geo2vec_linear(*args):
-    return {"dd": lin2vec_dd,
-            "rhr": lin2vec_dd
-            }[apsg_conf['notation']](*args)
-
-##############################
-
-def vec2fol_dd(v):
-    n = v.uv()
-    if n.z < 0:
-        n = -n
-    return (atan2d(n.y, n.x) + 180) % 360, 90 - asind(n.z)
-
-def vec2fol_rhr(v):
-    n = v.uv()
-    if n.z < 0:
-        n = -n
-    return (atan2d(n.y, n.x) + 90) % 360, 90 - asind(n.z)
-
-
-def vec2geo_planar(arg):
-    return {"dd": vec2fol_dd,
-            "rhr": vec2fol_rhr
-            }[apsg_conf['notation']](arg)
-
-##############################
-
-def vec2lin_dd(v):
-    n = v.uv()
-    if n.z < 0:
-        n = -n
-    return atan2d(n.y, n.x) % 360, asind(n.z)
-
-
-def vec2geo_linear(arg):
-    return {"dd": vec2lin_dd,
-            "rhr": vec2lin_dd
-            }[apsg_conf['notation']](arg)
-

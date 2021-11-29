@@ -4,8 +4,8 @@ import numpy as np
 
 from apsg.config import apsg_conf
 from apsg.helpers import sind, cosd, tand, asind, acosd, atand, atan2d
-from apsg.helpers import is_like_vec3, is_like_matrix3
-from apsg.decorator import ensure_one_arg_vector
+from apsg.helpers import geo2vec_linear, vec2geo_linear
+from apsg.decorator import ensure_first_arg_same
 
 """
 TO BE ADDED
@@ -15,27 +15,37 @@ class Vector:
     pass
 
 class Vector2(Vector):
+    __shape__ = (2,)
+
     def __init__(self, *args):
-        if len(args) == 1 and is_like_vec2(args[0]):
+        if len(args) == 1 and np.asarray(args[0]).shape == Vector2.__shape__:
             coords = args[0]
         elif len(args) == 2:
             coords = args
         else:
-            raise TypeError(f"Not valid arguments for {type(self).__name__}")
+            raise TypeError(f'Not valid arguments for {type(self).__name__}')
         self._coords = tuple(coords)
 
 
+    def __repr__(self):
+        n = apsg_conf['ndigits']
+        return f'Vector2({round(self.x, n):g}, {round(self.y, n):g})'
+
+
 class Vector3(Vector):
+    __shape__ = (3,)
 
     def __init__(self, *args):
-        if len(args) == 1 and is_like_vec3(args[0]):
+        if len(args) == 0:
+            coords = (0, 0, 1)
+        elif len(args) == 1 and np.asarray(args[0]).shape == Vector3.__shape__:
             coords = args[0]
         elif len(args) == 2:
-            coords = Geo2CoordsLinear[apsg_conf["notation"]](*args)
+            coords = geo2vec_linear(*args)
         elif len(args) == 3:
             coords = args
         else:
-            raise TypeError(f"Not valid arguments for {type(self).__name__}")
+            raise TypeError(f'Not valid arguments for {type(self).__name__}')
         self._coords = tuple(coords)
 
     @property
@@ -56,12 +66,12 @@ class Vector3(Vector):
     copy = __copy__
 
     def __repr__(self):
-        if apsg_conf["vec2geo"]:
-            azi, inc = Coords2GeoLinear[apsg_conf["notation"]](self)
-            return f"V:{azi:.0f}/{inc:.0f}"
+        if apsg_conf['vec2geo']:
+            azi, inc = vec2geo_linear(self)
+            return f'V:{azi:.0f}/{inc:.0f}'
         else:
-            n = apsg_conf["ndigits"]
-            return f"Vector3({round(self.x, n):g}, {round(self.y, n):g}, {round(self.z, n):g})"
+            n = apsg_conf['ndigits']
+            return f'Vector3({round(self.x, n):g}, {round(self.y, n):g}, {round(self.z, n):g})'
 
     def __hash__(self):
         return hash((type(f).__name__,) + self._coords)
@@ -73,7 +83,7 @@ class Vector3(Vector):
         return {'datatype': type(self).__name__,
                 'slots':{'_coords': self._coords}}
 
-    @ensure_one_arg_vector
+    @ensure_first_arg_same
     def __eq__(self, other):
         return all([math.isclose(u, v) for u, v in zip(self._coords, other._coords)])
 
@@ -147,25 +157,25 @@ class Vector3(Vector):
 
     uv = normalized
 
-    @ensure_one_arg_vector
+    @ensure_first_arg_same
     def dot(self, other):
         return self.x * other.x + self.y * other.y + self.z * other.z
 
     def __matmul__(self, other):
         r = np.dot(np.array(self), other)
-        if is_like_vec3(r):
+        if np.asarray(r).shape == Vector3.__shape__:
             return type(self)(r)
         else:
             return float(r)
 
     def __rmatmul__(self, other):
         r = np.dot(other, np.array(self))
-        if is_like_vec3(r):
+        if np.asarray(r).shape == Vector3.__shape__:
             return type(self)(r)
         else:
             return float(r)
 
-    @ensure_one_arg_vector
+    @ensure_first_arg_same
     def cross(self, other):
         return type(self)(
             self.y * other.z - self.z * other.y,
@@ -182,7 +192,7 @@ class Vector3(Vector):
         """
         return cls(np.random.randn(3)).normalized()
 
-    @ensure_one_arg_vector
+    @ensure_first_arg_same
     def rotate(self, axis, theta):
         """Return the vector rotated around axis through angle theta. Right hand rule applies"""
         v = Vector3(self)  # ensure vector
@@ -193,12 +203,12 @@ class Vector3(Vector):
             + (1 - cosd(theta)) * k * (k.dot(v))
         )
 
-    @ensure_one_arg_vector
+    @ensure_first_arg_same
     def angle(self, other):
         """Return the angle to the vector other"""
         return acosd(self.uv().dot(other.uv()))
 
-    @ensure_one_arg_vector
+    @ensure_first_arg_same
     def project(self, other):
         """Return one vector projected on the vector other"""
         n = other.uv()
@@ -235,7 +245,7 @@ class Vector3(Vector):
         return type(self)(r)
 
 
-class Axial(Vector3):
-    @ensure_one_arg_vector
+class Axial3(Vector3):
+    @ensure_first_arg_same
     def dot(self, other):
         return abs(self.x * other.x + self.y * other.y + self.z * other.z)

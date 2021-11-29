@@ -6,10 +6,7 @@ API to read data from PySDB database
 
 import sqlite3
 from os.path import isfile
-from apsg.core import Fol, Lin, Group
-
-
-__all__ = ("SDB",)
+from apsg.feature import Foliation, Lineation, Group
 
 
 class SDB(object):
@@ -245,11 +242,11 @@ class SDB(object):
                 name = ' '.join(structs)
             if self.is_planar(structs):
                 res = Group(
-                    [Fol(el["azimuth"], el["inclination"]) for el in sel], name=name,
+                    [Foliation(el["azimuth"], el["inclination"]) for el in sel], name=name,
                 )
             else:
                 res = Group(
-                    [Lin(el["azimuth"], el["inclination"]) for el in sel], name=name,
+                    [Lineation(el["azimuth"], el["inclination"]) for el in sel], name=name,
                 )
             if labels:
                 return res, [el["name"] for el in sel]

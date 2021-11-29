@@ -16,10 +16,9 @@ except ImportError:
 from apsg.config import apsg_conf
 from apsg.helpers import sind, cosd, tand, acosd, asind, atand, atan2d
 from apsg.math import Vector3, Axial3, Matrix3
-from apsg.geodata import Lin, Fol, Pair
-from apsg.containers import Group
-from apsg.tensors import DefGrad, VelGrad, Stress, Tensor, Ortensor, Ellipsoid
-from apsg.projections import EqualAreaProj, EqualAngleProj
+from apsg.feature import Lineation, Foliation, Pair, FeatureSet
+
+from apsg.plotting._projection import EqualAreaProj, EqualAngleProj
 
 
 __all__ = ["StereoNet", "VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot", "RosePlot"]
@@ -40,7 +39,8 @@ class StereoNet:
         else:
             raise TypeError("Only 'Equal-area' and 'Equal-angle' implemented")
 
-    def draw(self, fol=Fol(120, 40), lin=Lin(40, 20)):
+    # just for testing
+    def draw(self, fol=Foliation(120, 40), lin=Lineation(40, 20)):
         self.fig, self.ax = plt.subplots()
         self.ax.set_aspect(1)
         self.ax.set_axis_off()
@@ -93,12 +93,12 @@ class StereoNet:
         # small circle
         angle = 40
         lt = lin.transform(self.proj.R)
-        cl = lt.rotate(lt.cross(Fol(lt).dipvec()), angle).transform(self.proj.Ri)
+        cl = lt.rotate(lt.cross(Foliation(lt).dipvec()), angle).transform(self.proj.Ri)
         X, Y = self.proj.project_data(
             *np.array([cl.rotate(lin, a) for a in angles_sc]).T
         )
         self.ax.plot(X, Y, "g--", lw=2)
-        cl = -lt.rotate(lt.cross(Fol(lt).dipvec()), -angle).transform(self.proj.Ri)
+        cl = -lt.rotate(lt.cross(Foliation(lt).dipvec()), -angle).transform(self.proj.Ri)
         X, Y = self.proj.project_data(
             *np.array([cl.rotate(lin, a) for a in angles_sc]).T
         )
@@ -132,7 +132,7 @@ class RosePlot(object):
         Other keyword arguments are passed to matplotlib plot.
 
     Examples:
-        >>> g = Group.randn_fol(mean=Fol(120, 0))
+        >>> g = Group.randn_fol(mean=fol(120, 0))
         >>> direction, dip  = g.rhr
         >>> RosePlot(direction)
         >>> RosePlot(direction, density=True)
@@ -176,7 +176,7 @@ class RosePlot(object):
         self.fig.suptitle(self.title_text)
 
     def plot(self, obj, *args, **kwargs):
-        if type(obj) is Group:
+        if type(obj) is FeatureSet:
             ang, _ = obj.dd
             weights = abs(obj)
             self.title_text = obj.name
@@ -397,7 +397,7 @@ class VollmerPlot(_FabricPlot):
         self.draw()
 
     def plot(self, obj, *args, **kwargs):
-        if type(obj) is Group:
+        if type(obj) is FeatureSet:
             obj = obj.ortensor
 
         if not isinstance(obj, Tensor):
@@ -482,7 +482,7 @@ class RamsayPlot(_FabricPlot):
         self.draw()
 
     def plot(self, obj, *args, **kwargs):
-        if type(obj) is Group:
+        if type(obj) is FeatureSet:
             obj = obj.ortensor
 
         if not isinstance(obj, Tensor):
@@ -574,7 +574,7 @@ class FlinnPlot(_FabricPlot):
         self.draw()
 
     def plot(self, obj, *args, **kwargs):
-        if type(obj) is Group:
+        if type(obj) is FeatureSet:
             obj = obj.ortensor
 
         if not isinstance(obj, Tensor):
@@ -666,7 +666,7 @@ class HsuPlot(_FabricPlot):
         self.draw()
 
     def plot(self, obj, *args, **kwargs):
-        if type(obj) is Group:
+        if type(obj) is FeatureSet:
             obj = obj.ortensor
 
         if not isinstance(obj, Tensor):
@@ -743,7 +743,7 @@ class StereoNetOld(object):
 
     Example:
         >>> s = StereoNet()
-        >>> g = Group.randn_lin(mean=Lin(40, 20))
+        >>> g = Group.randn_lin(mean=lin(40, 20))
         >>> s.contourf(g, 8, legend=True, sigma=2)
         >>> s.line(g, 'g.', label='My data')
         >>> s.show()

@@ -11,7 +11,7 @@ import pandas as pd
 
 from apsg.config import apsg_conf
 from apsg.math import Vector3
-from apsg.feature import Fol, Lin, Pair, Group
+from apsg.feature import Foliation, Lineation, Pair, Vector3Set
 from apsg.plotting import StereoNet
 from apsg.helpers import eformat
 
@@ -53,8 +53,8 @@ class Core(object):
         self.formation = kwargs.get("formation", None)
         self.sref = kwargs.get("sref", Pair(180, 0, 180, 0))
         self.gref = kwargs.get("gref", Pair(180, 0, 180, 0))
-        self.bedding = kwargs.get("bedding", Fol(0, 0))
-        self.foldaxis = kwargs.get("foldaxis", Lin(0, 0))
+        self.bedding = kwargs.get("bedding", Foliation(0, 0))
+        self.foldaxis = kwargs.get("foldaxis", Lineation(0, 0))
         self.volume = kwargs.get("volume", 1.0)
         self.date = kwargs.get("date", datetime.now())
         self.steps = kwargs.get("steps", [])
@@ -259,12 +259,12 @@ class Core(object):
             float(head['SInc'][0]),
         )
         data["bedding"] = (
-            Fol(float(head['BDec'][0]), float(head['BInc'][0]))
+            Foliation(float(head['BDec'][0]), float(head['BInc'][0]))
             if not pd.isna(head['BDec'][0]) and not pd.isna(head['BInc'][0])
             else None
         )
         data["foldaxis"] = (
-            Lin(float(head['FDec'][0]), float(head['FInc'][0]))
+            Lineation(float(head['FDec'][0]), float(head['FInc'][0]))
             if not pd.isna(head['FDec'][0]) and not pd.isna(head['FInc'][0])
             else None
         )
@@ -361,26 +361,26 @@ class Core(object):
 
     @property
     def V(self):
-        "Returns `Group` of vectors in sample (or core) coordinates system"
-        return Group([v / self.volume for v in self._vectors], name=self.specimen)
+        "Returns `Vector3Set` of vectors in sample (or core) coordinates system"
+        return Vector3Set([v / self.volume for v in self._vectors], name=self.specimen)
 
     @property
     def geo(self):
-        "Returns `Group` of vectors in in-situ coordinates system"
+        "Returns `Vector3Set` of vectors in in-situ coordinates system"
         H = self.sref.H(self.gref)
         return self.V.transform(H)
 
     @property
     def tilt(self):
-        "Returns `Group` of vectors in tilt‐corrected coordinates system"
-        return self.geo.rotate(Lin(self.bedding.dd[0] - 90, 0), -self.bedding.dd[1])
+        "Returns `Vector3Set` of vectors in tilt‐corrected coordinates system"
+        return self.geo.rotate(Lineation(self.bedding.dd[0] - 90, 0), -self.bedding.dd[1])
 
     def pca(self, kind='geo', origin=False):
         data = getattr(self, kind)
         if origin:
             data.append(Vector3([0, 0, 0]))
         r = data.R / len(data)
-        dv = Group([v - r for v in data])
+        dv = Vector3Set([v - r for v in data])
         ot = dv.ortensor
         pca = ot.eigenvects[0]
         if pca.angle(r) > 90:
