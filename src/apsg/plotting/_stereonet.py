@@ -15,7 +15,7 @@ except ImportError:
 
 from apsg.config import apsg_conf
 from apsg.helpers import sind, cosd, tand, acosd, asind, atand, atan2d
-from apsg.base_classes import Vec3, Axial, Matrix3
+from apsg.math import Vector3, Axial3, Matrix3
 from apsg.geodata import Lin, Fol, Pair
 from apsg.containers import Group
 from apsg.tensors import DefGrad, VelGrad, Stress, Tensor, Ortensor, Ellipsoid
@@ -782,7 +782,7 @@ class StereoNetOld(object):
                     self.line(arg, **kwargs)
                 elif typ is Fol:
                     getattr(self, self.fol_plot)(arg, **kwargs)
-                elif typ is Vec3:
+                elif typ is Vector3:
                     self.vector(arg.aslin, **kwargs)
                 elif typ is Pair:
                     self.pair(arg, **kwargs)
@@ -982,16 +982,16 @@ class StereoNetOld(object):
 
     def arc(self, l1, l2, *args, **kwargs):
         """Draw great circle segment between two points."""
-        assert issubclass(type(l1), Vec3) and issubclass(
-            type(l2), Vec3
-        ), "Arguments must be subclass of Vec3"
+        assert issubclass(type(l1), Vector3) and issubclass(
+            type(l2), Vector3
+        ), "Arguments must be subclass of Vector3"
         animate = kwargs.pop("animate", False)
         angstep = kwargs.pop("angstep", 1)
         ax, phi = l1.H(l2).axisangle
         steps = abs(int(phi / angstep))
         angles = np.linspace(0, phi, steps)
         rv = [l1.rotate(ax, angle) for angle in angles]
-        lh = [vv.flip if vv.upper else vv for vv in rv]  # what about Vec3?
+        lh = [vv.flip if vv.upper else vv for vv in rv]  # what about Vector3?
         x, y = l2xy(*np.array([v.dd for v in lh]).T)
         h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
         if animate:
@@ -1006,8 +1006,8 @@ class StereoNetOld(object):
         coords = []
         g = Group(list(args))
         assert issubclass(
-            g.type, Vec3
-        ), "Only Vec3-like instances could be plotted as polygon."
+            g.type, Vector3
+        ), "Only Vector3-like instances could be plotted as polygon."
         if g.type is Fol:
             g = Group([f1 ** f2 for f1, f2 in zip(g, g[1:] + g[:1])])
         for l1, l2 in zip(g, g[1:] + g[:1]):
@@ -1015,7 +1015,7 @@ class StereoNetOld(object):
             steps = abs(int(phi / angstep))
             angles = np.linspace(0, phi, steps)
             rv = [l1.rotate(ax, angle) for angle in angles]
-            lh = [vv.flip if vv.upper else vv for vv in rv] # what about Vec3?
+            lh = [vv.flip if vv.upper else vv for vv in rv] # what about Vector3?
             coords.extend(np.transpose(l2xy(*np.array([v.dd for v in lh]).T)))
         bg = plt.Polygon(coords, **kwargs)
         h = self.ax.add_patch(bg)
@@ -1076,7 +1076,7 @@ class StereoNetOld(object):
 
     def scatter(self, obj, *args, **kwargs):
         """Draw Lin as point with varying marker size and/or color."""
-        assert obj.type in [Lin, Fol, Vec3], "Only Vec3, Lin or Fol type instance could be plotted with scatter."
+        assert obj.type in [Lin, Fol, Vector3], "Only Vector3, Lin or Fol type instance could be plotted with scatter."
         if "zorder" not in kwargs:
             kwargs["zorder"] = 5
         if "legend" in kwargs:
@@ -1106,8 +1106,8 @@ class StereoNetOld(object):
         """ This mimics plotting on lower and upper hemisphere using
         full and hollow symbols."""
         assert issubclass(
-            obj.type, Vec3
-        ), "Only Vec3-like instance could be plotted as line."
+            obj.type, Vector3
+        ), "Only Vector3-like instance could be plotted as line."
         if "zorder" not in kwargs:
             kwargs["zorder"] = 5
         animate = kwargs.pop("animate", False)
@@ -1167,8 +1167,8 @@ class StereoNetOld(object):
     def cone(self, obj, alpha, *args, **kwargs):
         """Draw small circle."""
         assert issubclass(
-            obj.type, Vec3
-        ), "Only Vec3-like instance could be used as cone axis."
+            obj.type, Vector3
+        ), "Only Vector3-like instance could be used as cone axis."
         if "zorder" not in kwargs:
             kwargs["zorder"] = 5
         animate = kwargs.pop("animate", False)
@@ -1392,7 +1392,7 @@ class StereoNetOld(object):
         if np.hypot(x, y) > 1:
             return ""
         else:
-            v = Vec3(*getldd(x, y))
+            v = Vector3(*getldd(x, y))
             return repr(v.asfol) + " " + repr(v.aslin)
 
     def hover(self, event):

@@ -1,6 +1,6 @@
 import numpy as np 
 
-from apsg.base_classes import Vec3, Axial, Matrix3
+from apsg.math import Vector3, Axial3, Matrix3
 from apsg.geodata import Lin, Fol, Pair
 
 
@@ -17,7 +17,7 @@ class Group:
         else:
             raise TypeError("Argument must be list-like value")
 
-    def __init__(self, dtype=Vec3, name="Default"):
+    def __init__(self, dtype=Vector3, name="Default"):
         self.data = []
         self.dtype = dtype
         self.name = name
@@ -85,8 +85,8 @@ class Group:
         return Group.from_list([Fol(e) for e in self], name=self.name)
 
     def to_vec3(self):
-        """Return ``Group`` object with all data converted to ``Vec3``."""
-        return Group.from_list([Vec3(e) for e in self], name=self.name)
+        """Return ``Group`` object with all data converted to ``Vector3``."""
+        return Group.from_list([Vector3(e) for e in self], name=self.name)
 
     def cross(self, other=None):
         """Return cross products of all data in ``Group`` object
@@ -100,7 +100,7 @@ class Group:
             res = [e.cross(f) for e, f in combinations(self.data, 2)]
         elif isinstance(other, Group):
             res = [e.cross(f) for e in self for f in other]
-        elif issubclass(type(other), Vec3):
+        elif issubclass(type(other), Vector3):
             res = [e.cross(other) for e, f in combinations(self.data, 2)]
         else:
             raise TypeError("Wrong argument type!")

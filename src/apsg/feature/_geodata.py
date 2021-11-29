@@ -6,14 +6,14 @@ from apsg.config import apsg_conf
 from apsg.helpers import sind, cosd, tand, asind, acosd, atand, atan2d
 from apsg.helpers import is_like_vec3
 from apsg.decorator import ensure_one_arg_matrix
-from apsg.math import Vec3, Axial
+from apsg.math import Vector3, Axial3
 
 
 """
 from apsg_classes import *
 
-u = Vec3(-2,1,1)
-v = Vec3(1,5,3)
+u = Vector3(-2,1,1)
+v = Vector3(1,5,3)
 g = Group.from_list([u, v])
 h = Group()
 h.append(u)
@@ -64,10 +64,10 @@ class Fol(Axial):
     __pow__ = cross
 
     def dipvec(self):
-        return Vec3(*vec2geo_planar(self))
+        return Vector3(*vec2geo_planar(self))
 
     def rake(self, rake):
-        return Vec3(self.dipvec().rotate(self, rake - 90))
+        return Vector3(self.dipvec().rotate(self, rake - 90))
 
     @ensure_one_arg_matrix
     def transform(self, F, **kwargs):
@@ -87,7 +87,7 @@ class Fol(Axial):
         Example:
             # Reflexion of `y` axis.
             >>> F = [[1, 0, 0], [0, -1, 0], [0, 0, 1]]
-            >>> u = Vec3([1, 1, 1])
+            >>> u = Vector3([1, 1, 1])
             >>> u.transform(F)
             V(1.000, -1.000, 1.000)
 
@@ -119,12 +119,12 @@ class Pair:
 
     def __init__(self, *args):
         if len(args) == 0:
-            fvec, lvec = Vec3(0, 0, 1), Vec3(1, 0, 0)
+            fvec, lvec = Vector3(0, 0, 1), Vector3(1, 0, 0)
         elif len(args) == 1 and is_like_vec3(args[0]):
             f = Fol(args[0])
-            fvec, lvec = Vec3(f), f.dipvec()
+            fvec, lvec = Vector3(f), f.dipvec()
         elif len(args) == 2:
-            fvec, lvec = Vec3(args[0]), Vec3(args[1])
+            fvec, lvec = Vector3(args[0]), Vector3(args[1])
         else:
             raise TypeError("Not valid arguments for Fol")
 
@@ -163,7 +163,7 @@ class Pair:
         Random Pair
         """
 
-        lin, p = Vec3.random(), Vec3.random()
+        lin, p = Vector3.random(), Vector3.random()
         fol = lin.cross(p)
         return cls(fol, lin)
 
@@ -171,7 +171,7 @@ class Pair:
         """Rotates ``Pair`` by angle `phi` about `axis`.
 
         Args:
-            axis (``Vec3``): axis of rotation
+            axis (``Vector3``): axis of rotation
             phi (float): angle of rotation in degrees
 
         Example:
@@ -227,8 +227,8 @@ class Pair:
           P:90/45-50/37
 
         """
-        lvec = Vec3(np.dot(F, self.lvec))
-        fvec = Vec3(np.dot(self.fvec, np.linalg.inv(F)))
+        lvec = Vector3(np.dot(F, self.lvec))
+        fvec = Vector3(np.dot(self.fvec, np.linalg.inv(F)))
         if kwargs.get("norm", False):
             lvec = lvec.normalized()
             fvec = fvec.normalized()

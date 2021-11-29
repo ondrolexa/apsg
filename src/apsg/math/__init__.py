@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from apsg.math._vector import Vec3
+from apsg.math._vector import Vector3, Axial3
 from apsg.math._matrix import Matrix3
 
 
 # __all__ = (
-#     "Vec3",
+#     "Vector3",
 #     "Fol",
 #     "Lin",
 #     "Pair",

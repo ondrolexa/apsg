@@ -10,9 +10,22 @@ from apsg.decorator import ensure_one_arg_vector
 """
 TO BE ADDED
 """
-
-class Vec3:
+class Vector:
     __slots__ = ("_coords",)
+    pass
+
+class Vector2(Vector):
+    def __init__(self, *args):
+        if len(args) == 1 and is_like_vec2(args[0]):
+            coords = args[0]
+        elif len(args) == 2:
+            coords = args
+        else:
+            raise TypeError(f"Not valid arguments for {type(self).__name__}")
+        self._coords = tuple(coords)
+
+
+class Vector3(Vector):
 
     def __init__(self, *args):
         if len(args) == 1 and is_like_vec3(args[0]):
@@ -48,7 +61,7 @@ class Vec3:
             return f"V:{azi:.0f}/{inc:.0f}"
         else:
             n = apsg_conf["ndigits"]
-            return f"Vec3({round(self.x, n):g}, {round(self.y, n):g}, {round(self.z, n):g})"
+            return f"Vector3({round(self.x, n):g}, {round(self.y, n):g}, {round(self.z, n):g})"
 
     def __hash__(self):
         return hash((type(f).__name__,) + self._coords)
@@ -172,7 +185,7 @@ class Vec3:
     @ensure_one_arg_vector
     def rotate(self, axis, theta):
         """Return the vector rotated around axis through angle theta. Right hand rule applies"""
-        v = Vec3(self)  # ensure vector
+        v = Vector3(self)  # ensure vector
         k = axis.uv()
         return type(self)(
             cosd(theta) * v
@@ -211,18 +224,18 @@ class Vec3:
         Example:
             # Reflexion of `y` axis.
             >>> F = [[1, 0, 0], [0, -1, 0], [0, 0, 1]]
-            >>> u = Vec3([1, 1, 1])
+            >>> u = Vector3([1, 1, 1])
             >>> u.transform(F)
             V(1.000, -1.000, 1.000)
 
         """
-        r = Vec3(np.dot(args[0], self))
+        r = Vector3(np.dot(args[0], self))
         if kwargs.get("norm", False):
             r = r.normalized()
         return type(self)(r)
 
 
-class Axial(Vec3):
+class Axial(Vector3):
     @ensure_one_arg_vector
     def dot(self, other):
         return abs(self.x * other.x + self.y * other.y + self.z * other.z)

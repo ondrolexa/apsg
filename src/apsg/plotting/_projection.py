@@ -1,7 +1,7 @@
 import numpy as np
 
 from apsg.helpers import sind, cosd, tand, asind, acosd, atand, atan2d, sqrt2
-from apsg.base_classes import Vec3, Axial, Matrix3
+from apsg.math import Vector3, Axial3, Matrix3
 from apsg.geodata import Lin, Fol, Pair
 from apsg.tensors import DefGrad
 
@@ -20,7 +20,7 @@ class Projection:
     def project_grid(self, x, y, z, clip_polehole=False):
         if clip_polehole:
             polehole = [
-                Lin(0, 0).angle(Vec3(xx, yy, zz)) < self.polehole
+                Lin(0, 0).angle(Vector3(xx, yy, zz)) < self.polehole
                 for xx, yy, zz in zip(x, y, z)
             ]
         else:

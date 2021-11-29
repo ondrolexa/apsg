@@ -9,7 +9,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from apsg.core import Vec3, Fol, Lin, Pair, Group, settings
+from apsg.config import apsg_conf
+from apsg.math import Vector3
+from apsg.feature import Fol, Lin, Pair, Group
 from apsg.plotting import StereoNet
 from apsg.helpers import eformat
 
@@ -139,7 +141,7 @@ class Core(object):
             x = float(ln[fields["Xc"]].strip())
             y = float(ln[fields["Yc"]].strip())
             z = float(ln[fields["Zc"]].strip())
-            data["vectors"].append(Vec3((x, y, z)))
+            data["vectors"].append(Vector3((x, y, z)))
         return cls(**data)
 
     def write_pmd(self, filename=None):
@@ -273,7 +275,7 @@ class Core(object):
         data["a95"] = body[ix]['Prec'].to_list()
         data["vectors"] = []
         for n, r in body[ix].iterrows():
-            data["vectors"].append(r[2] * Vec3(r['Dsp'], r['Isp']))
+            data["vectors"].append(r[2] * Vector3(r['Dsp'], r['Isp']))
         return cls(**data)
 
     def write_rs3(self, filename=None):
@@ -376,7 +378,7 @@ class Core(object):
     def pca(self, kind='geo', origin=False):
         data = getattr(self, kind)
         if origin:
-            data.append(Vec3([0, 0, 0]))
+            data.append(Vector3([0, 0, 0]))
         r = data.R / len(data)
         dv = Group([v - r for v in data])
         ot = dv.ortensor

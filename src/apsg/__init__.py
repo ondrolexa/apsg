@@ -2,7 +2,7 @@
 
 from apsg.config import apsg_conf
 from apsg.helpers import sind, cosd, tand, acosd, asind, atand, atan2d
-#from apsg.base_classes import Vec3, Axial, Matrix3
+#from apsg.base_classes import Vector3, Axial, Matrix3
 #from apsg.geodata import Lin, Fol, Pair
 #from apsg.containers import Group
 #from apsg.tensors import DefGrad, VelGrad, Stress, Tensor, Ortensor, Ellipsoid
@@ -11,7 +11,7 @@ from apsg.helpers import sind, cosd, tand, acosd, asind, atand, atan2d
 
 
 # __all__ = (
-#     "Vec3",
+#     "Vector3",
 #     "Fol",
 #     "Lin",
 #     "Pair",

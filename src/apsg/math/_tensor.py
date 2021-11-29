@@ -1,20 +1,22 @@
 # -*- coding: utf-8 -*-
-
-
-from typing import Tuple
-
-
 import numpy as np
 
-from apsg.base_classes import Vec3, Axial, Matrix3
-from apsg.geodata import Lin, Fol, Pair
-from apsg.containers import Group
+from apsg.math import Vector3, Matrix3
+from apsg.feature import Lin, Fol, Pair, Group
 
 
-__all__ = ("DefGrad", "VelGrad", "Stress", "Ortensor", "Ellipsoid")
+__all__ = ("DefGrad3", "VelGrad3", "Stress3", "Ortensor3", "Ellipsoid3")
 
 
-class DefGrad(Matrix3):
+class Tensor3(Matrix3):
+    pass
+
+
+class SymmetricTensor3(Tensor3):
+    pass
+
+
+class DefGrad(Tensor3):
     """
     ``DefGrad`` store deformation gradient tensor derived from numpy.ndarray.
 
@@ -129,7 +131,7 @@ class DefGradOld(np.ndarray):
         """Return ``DefGrad`` representing rotation around axis.
 
         Args:
-          vector: Rotation axis as ``Vec3`` like object
+          vector: Rotation axis as ``Vector3`` like object
           theta: Angle of rotation in degrees
 
         Example:
@@ -259,12 +261,12 @@ class DefGradOld(np.ndarray):
     @property
     def eigenvects(self):
         """
-        Return ```Group``` of principal eigenvectors as ``Vec3`` objects.
+        Return ```Group``` of principal eigenvectors as ``Vector3`` objects.
         """
 
         U, _, _ = np.linalg.svd(self)
 
-        return Group([Vec3(U.T[0]), Vec3(U.T[1]), Vec3(U.T[2])])
+        return Group([Vector3(U.T[0]), Vector3(U.T[1]), Vector3(U.T[2])])
 
     @property
     def eigenlins(self):
@@ -328,7 +330,7 @@ class DefGradOld(np.ndarray):
         i = np.where(abs(np.real(w) - 1.0) < 1e-8)[0]
         if not len(i):
             raise ValueError('no unit eigenvector corresponding to eigenvalue 1')
-        axis = Vec3(np.real(W[:, i[-1]]).squeeze())
+        axis = Vector3(np.real(W[:, i[-1]]).squeeze())
         # rotation angle depending on direction
         cosa = (np.trace(R) - 1.0) / 2.0
         if abs(axis[2]) > 1e-8:
@@ -363,7 +365,7 @@ class DefGradOld(np.ndarray):
         return Tensor(np.dot(self, self.T), name=self.name)
 
 
-class VelGrad(np.ndarray):
+class VelGrad(Tensor3):
     """
     ``VelGrad`` store velocity gradient tensor derived from numpy.ndarray.
 
@@ -466,7 +468,7 @@ class VelGrad(np.ndarray):
         return VelGrad((self - self.T) / 2)
 
 
-class Stress(np.ndarray):
+class Stress(SymmetricTensor3):
     """
     ``Stress`` store stress tensor derived from numpy.ndarray.
 
@@ -636,10 +638,10 @@ class Stress(np.ndarray):
     @property
     def eigenvects(self):
         """
-        Returns Group of three eigenvectors represented as ``Vec3``
+        Returns Group of three eigenvectors represented as ``Vector3``
         """
         return Group(
-            [Vec3(self.vects.T[0]), Vec3(self.vects.T[1]), Vec3(self.vects.T[2])]
+            [Vector3(self.vects.T[0]), Vector3(self.vects.T[1]), Vector3(self.vects.T[2])]
         )
 
     @property
@@ -663,7 +665,7 @@ class Stress(np.ndarray):
         Return stress vector associated with plane given by normal vector.
 
         Args:
-          n: normal given as ``Vec3`` or ``Fol`` object
+          n: normal given as ``Vector3`` or ``Fol`` object
 
         Example:
           >>> S = Stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
@@ -672,14 +674,14 @@ class Stress(np.ndarray):
 
         """
 
-        return Vec3(np.dot(self, n))
+        return Vector3(np.dot(self, n))
 
     def fault(self, n):
         """
         Return ``Fault`` object derived from given by normal vector.
 
         Args:
-          n: normal given as ``Vec3`` or ``Fol`` object
+          n: normal given as ``Vector3`` or ``Fol`` object
 
         Example:
           >>> S = Stress.from_comp(xx=-5, yy=-2, zz=10, xy=8)
@@ -692,7 +694,7 @@ class Stress(np.ndarray):
 
     def stress_comp(self, n):
         """
-        Return normal and shear stress ``Vec3`` components on plane given
+        Return normal and shear stress ``Vector3`` components on plane given
         by normal vector.
         """
 
@@ -717,6 +719,8 @@ class Stress(np.ndarray):
         return np.sqrt(self.cauchy(n) ** 2 - self.normal_stress(n) ** 2)
 
 
+
+### will be deleted and party used in SymmetricTensor3
 class Tensor(object):
     """
     Tensor is a multidimensional array of scalars.
@@ -793,9 +797,9 @@ class Tensor(object):
             e1 = e2 = e3 = 1.0
         return Group(
             [
-                e1 * Vec3(self._evects[0]),
-                e2 * Vec3(self._evects[1]),
-                e3 * Vec3(self._evects[2]),
+                e1 * Vector3(self._evects[0]),
+                e2 * Vector3(self._evects[1]),
+                e3 * Vector3(self._evects[2]),
             ]
         )
 
@@ -987,7 +991,7 @@ class Tensor(object):
             return np.dot(x1, np.dot(self._matrix, x2))
 
 
-class Ortensor(Tensor):
+class Ortensor(SymmetricTensor3):
     """
     Represents an orientation tensor, which characterize data distribution
     using eigenvalue method. See (Watson 1966, Scheidegger 1965).
@@ -1031,7 +1035,7 @@ class Ortensor(Tensor):
         Return ``Ortensor`` of data in ``Group``
 
         Args:
-            g: ``Group`` of ``Vec3``, ``Lin`` or ``Fol``
+            g: ``Group`` of ``Vector3``, ``Lin`` or ``Fol``
 
         Example:
           >>> g = Group.examples('B2')
@@ -1178,7 +1182,7 @@ class Ortensor(Tensor):
             return self.MADo
 
 
-class Ellipsoid(Tensor):
+class Ellipsoid(SymmetricTensor3):
     """
     Ellipsoid class
 
