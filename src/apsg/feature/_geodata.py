@@ -2,18 +2,23 @@ import warnings
 import numpy as np
 
 from apsg.config import apsg_conf
-from apsg.helpers import sind, cosd, tand, asind, acosd, atand, atan2d
-from apsg.helpers import geo2vec_linear, vec2geo_linear, geo2vec_planar, vec2geo_planar
-from apsg.decorator import ensure_first_arg_same
-from apsg.math import Vector3, Axial3
+from apsg.helpers._math import sind, cosd, tand, acosd, asind, atand, atan2d, sqrt2
+from apsg.helpers._notation import (
+    geo2vec_planar,
+    geo2vec_linear,
+    vec2geo_planar,
+    vec2geo_linear,
+)
+from apsg.decorator._decorator import ensure_first_arg_same
+from apsg.math._vector import Vector3, Axial3
 
 
 """
 to to
 """
 
-class Lineation(Axial3):
 
+class Lineation(Axial3):
     def __repr__(self):
         azi, inc = vec2geo_linear(self)
         return f"L:{azi:.0f}/{inc:.0f}"
@@ -23,9 +28,12 @@ class Lineation(Axial3):
 
     __pow__ = cross
 
+    def to_json(self):
+        azi, inc = vec2geo_linear(self)
+        return {"datatype": type(self).__name__, "arg": (azi, inc)}
+
 
 class Foliation(Axial3):
-
     def __init__(self, *args):
         if len(args) == 0:
             coords = (0, 0, 1)
@@ -47,6 +55,10 @@ class Foliation(Axial3):
         return Lineation(super().cross(other))
 
     __pow__ = cross
+
+    def to_json(self):
+        azi, inc = vec2geo_planar(self)
+        return {"datatype": type(self).__name__, "args": {"azi": azi, "inc": inc}}
 
     def dipvec(self):
         return Vector3(*vec2geo_planar(self))

@@ -1,14 +1,45 @@
+import math
 import numpy as np
 from scipy import linalg as spla
 
 from apsg.config import apsg_conf
-from apsg.helpers import sind, cosd, tand, asind, acosd, atand, atan2d
-from apsg.math import Vector3, Tensor3, SymmetricTensor3
+from apsg.helpers._math import sind, cosd, tand, acosd, asind, atand, atan2d, sqrt2
+from apsg.math._vector import Vector3
+from apsg.math._matrix import Matrix3
+from apsg.decorator._decorator import ensure_first_arg_same, ensure_first_arg
+from apsg.feature._container import (
+    FeatureSet,
+    Vector3Set,
+    LineationSet,
+    FoliationSet,
+    G,
+)
+
+
+class Tensor3(Matrix3):
+    def __repr__(self):
+        return f"{type(self).__name__}\n" + Matrix3.__repr__(self)
+
+    @property
+    def eigenlins(self):
+        """
+        Return ```LineationSet``` of eigenvectors as ``Lin`` objects.
+        """
+
+        return Vector3Set(self.eigenvectors()).to_lin()
+
+    @property
+    def eigenfols(self):
+        """
+        Return ```FoliationSet``` of eigenplanes as ``Foliation`` objects.
+        """
+
+        return Vector3Set(self.eigenvectors()).to_lin()
 
 
 class DefGrad3(Tensor3):
     """
-    ``DefGrad3`` store deformation gradient tensor.
+    ``DefGrad3`` store 3D deformation gradient tensor.
 
     Args:
       a (3x3 array_like): Input data, that can be converted to
@@ -50,85 +81,20 @@ class DefGrad3(Tensor3):
         assert issubclass(type(p), Pair), "Data must be of Pair type."
         return cls(np.array([p.lvec, p.fvec.cross(p.lvec), p.fvec]).T)
 
-    def __repr__(self):
-        return "DefGrad:\n" + super().__repr__()
-
-    @property
-    def R(self):
-        """Return rotation part of ``DefGrad`` from polar decomposition."""
-        R, _ = spla.polar(self)
-        return DefGrad(R)
-
-    @property
-    def U(self):
-        """Return stretching part of ``DefGrad`` from right polar decomposition."""
-        _, U = spla.polar(self, "right")
-        return DefGrad(U)
-
-    @property
-    def V(self):
-        """Return stretching part of ``DefGrad`` from left polar decomposition."""
-        _, V = spla.polar(self, "left")
-        return DefGrad(V)
-
-
-class DefGradOld(np.ndarray):
-    """
-    ``DefGrad`` store deformation gradient tensor derived from numpy.ndarray.
-
-    Args:
-      a (3x3 array_like): Input data, that can be converted to
-          3x3 2D array. This includes lists, tuples and ndarrays.
-
-    Returns:
-      ``DefGrad`` object
-
-    Example:
-      >>> F = DefGrad(np.diag([2, 1, 0.5]))
-    """
-
-    def __new__(cls, array, name='F'):
-        # casting to our class
-        assert np.shape(array) == (3, 3), 'DefGrad must be 3x3 2D array'
-        obj = np.asarray(array).view(cls)
-        obj.name = name
-        return obj
-
-    def __repr__(self):
-        return 'DefGrad:\n' + str(self)
-
-    def __mul__(self, other):
-        assert np.shape(other) == (
-            3,
-            3,
-        ), 'DefGrad could by multiplied with 3x3 2D array'
-        return DefGrad(np.dot(self, other))
-
-    def __pow__(self, n):
-        # matrix power
-        return DefGrad(np.linalg.matrix_power(self, n))
-
-    def __eq__(self, other):
-        # equal
-        return bool(np.sum(abs(self - other)) < 1e-14)
-
-    def __ne__(self, other):
-        # not equal
-        return not self == other
-
     @classmethod
+    @ensure_first_arg(Vector3)
     def from_axis(cls, vector, theta):
-        """Return ``DefGrad`` representing rotation around axis.
+        """Return ``DefGrad3`` representing rotation around axis.
 
         Args:
           vector: Rotation axis as ``Vector3`` like object
           theta: Angle of rotation in degrees
 
         Example:
-          >>> F = DefGrad.from_axis(lin(120, 30), 45)
+          >>> F = DefGrad3.from_axis(lin(120, 30), 45)
         """
 
-        x, y, z = vector.uv
+        x, y, z = vector.uv()
         c, s = cosd(theta), sind(theta)
         xs, ys, zs = x * s, y * s, z * s
         xc, yc, zc = x * (1 - c), y * (1 - c), z * (1 - c)
@@ -142,201 +108,29 @@ class DefGradOld(np.ndarray):
             ]
         )
 
-    @classmethod
-    def from_comp(cls, xx=1, xy=0, xz=0, yx=0, yy=1, yz=0, zx=0, zy=0, zz=1):
-        """Return ``DefGrad`` tensor defined by individual components. Default is identity tensor.
-
-        Keyword Args:
-          xx, xy, xz, yx, yy, yz, zx, zy, zz (float): tensor components
-
-        Example:
-          >>> F = DefGrad.from_comp(xy=1, zy=-0.5)
-          >>> F
-          DefGrad:
-          [[ 1.   1.   0. ]
-           [ 0.   1.   0. ]
-           [ 0.  -0.5  1. ]]
-
-        """
-
-        return cls([[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]])
-
-    @classmethod
-    def from_ratios(cls, Rxy=1, Ryz=1):
-        """Return isochoric ``DefGrad`` tensor with axial stretches defined by strain ratios.
-        Default is identity tensor.
-
-        Keyword Args:
-          Rxy, Ryz (float): strain ratios
-
-        Example:
-          >>> F = DefGrad.from_ratios(Rxy=2, Ryz=3)
-          >>> F
-          DefGrad:
-          [[2.28942849 0.         0.        ]
-           [0.         1.14471424 0.        ]
-           [0.         0.         0.38157141]]
-
-        """
-
-        assert Rxy >= 1, 'Rxy must be greater than or equal to 1.'
-        assert Ryz >= 1, 'Ryz must be greater than or equal to 1.'
-
-        y = (Ryz / Rxy) ** (1 / 3)
-        return cls.from_comp(xx=y * Rxy, yy=y, zz=y / Ryz)
-
-    @classmethod
-    def from_pair(cls, p):
-
-        assert issubclass(type(p), Pair), 'Data must be of Pair type.'
-
-        return cls(np.array([p.lvec, p.fvec ** p.lvec, p.fvec]).T)
-
-    @property
-    def I(self):
-        """
-        Returns the inverse tensor.
-        """
-
-        return DefGrad(np.linalg.inv(self))
-
-    def rotate(self, vector, theta=0):
-        """
-        Rotate tensor around axis by angle theta.
-
-        Using rotation matrix it returns ``F = R * F * R . T``.
-        """
-
-        if isinstance(vector, DefGrad):
-            R = vector
-        else:
-            R = DefGrad.from_axis(vector, theta)
-
-        return DefGrad(R * self * R.T)
-
-    @property
-    def eigenvals(self):
-        """
-        Return tuple of sorted eigenvalues.
-        """
-
-        _, vals, _ = np.linalg.svd(self)
-
-        return tuple(vals)
-
-    @property
-    def E1(self):
-        """
-        Max eigenvalue
-        """
-
-        return self.eigenvals[0]
-
-    @property
-    def E2(self):
-        """
-        Middle eigenvalue
-        """
-
-        return self.eigenvals[1]
-
-    @property
-    def E3(self):
-        """
-        Min eigenvalue
-        """
-
-        return self.eigenvals[2]
-
-    @property
-    def eigenvects(self):
-        """
-        Return ```Group``` of principal eigenvectors as ``Vector3`` objects.
-        """
-
-        U, _, _ = np.linalg.svd(self)
-
-        return Group([Vector3(U.T[0]), Vector3(U.T[1]), Vector3(U.T[2])])
-
-    @property
-    def eigenlins(self):
-        """
-        Return ```Group``` of principal eigenvectors as ``Lin`` objects.
-        """
-
-        return self.eigenvects.aslin
-
-    @property
-    def eigenfols(self):
-        """
-        Return ```Group``` of principal eigenvectors as ``Foliation`` objects.
-        """
-
-        return self.eigenvects.asfol
-
     @property
     def R(self):
-        """
-        Return rotation part of ``DefGrad`` from polar decomposition.
-        """
-
-        from scipy.linalg import polar
-
-        R, _ = polar(self)
-
-        return DefGrad(R)
+        """Return rotation part of ``DefGrad`` from polar decomposition."""
+        R, _ = spla.polar(self)
+        return type(self)(R)
 
     @property
     def U(self):
-        """
-        Return stretching part of ``DefGrad`` from right polar decomposition.
-        """
-
-        from scipy.linalg import polar
-
-        _, U = polar(self, "right")
-
-        return DefGrad(U)
+        """Return stretching part of ``DefGrad`` from right polar decomposition."""
+        _, U = spla.polar(self, "right")
+        return type(self)(U)
 
     @property
     def V(self):
-        """
-        Return stretching part of ``DefGrad`` from left polar decomposition.
-        """
-
-        from scipy.linalg import polar
-
-        _, V = polar(self, "left")
-
-        return DefGrad(V)
-
-    @property
-    def axisangle(self):
-        """Return rotation part of ``DefGrad`` axis, angle tuple."""
-        from scipy.linalg import polar
-
-        R, _ = polar(self)
-        w, W = np.linalg.eig(R.T)
-        i = np.where(abs(np.real(w) - 1.0) < 1e-8)[0]
-        if not len(i):
-            raise ValueError('no unit eigenvector corresponding to eigenvalue 1')
-        axis = Vector3(np.real(W[:, i[-1]]).squeeze())
-        # rotation angle depending on direction
-        cosa = (np.trace(R) - 1.0) / 2.0
-        if abs(axis[2]) > 1e-8:
-            sina = (R[1, 0] + (cosa - 1.0) * axis[0] * axis[1]) / axis[2]
-        elif abs(axis[1]) > 1e-8:
-            sina = (R[0, 2] + (cosa - 1.0) * axis[0] * axis[2]) / axis[1]
-        else:
-            sina = (R[2, 1] + (cosa - 1.0) * axis[1] * axis[2]) / axis[0]
-        angle = np.rad2deg(np.arctan2(sina, cosa))
-        return axis, angle
+        """Return stretching part of ``DefGrad`` from left polar decomposition."""
+        _, V = spla.polar(self, "left")
+        return type(self)(V)
 
     def velgrad(self, time=1):
         """Return ``VelGrad`` for given time"""
         from scipy.linalg import logm
 
-        return VelGrad(logm(self) / time)
+        return VelGrad3(logm(np.asarray(self)) / time)
 
     @property
     def C(self):
@@ -344,7 +138,7 @@ class DefGradOld(np.ndarray):
         Return right Cauchy–Green deformation tensor or Green's deformation tensor
         """
 
-        return Tensor(np.dot(self.T, self), name=self.name)
+        return Ellipsoid(np.dot(self.T, self))
 
     @property
     def B(self):
@@ -352,64 +146,23 @@ class DefGradOld(np.ndarray):
         Return left Cauchy–Green deformation tensor or Finger deformation tensor
         """
 
-        return Tensor(np.dot(self, self.T), name=self.name)
+        return Ellipsoid(np.dot(self, self.T))
 
 
-class VelGrad(Tensor3):
+class VelGrad3(Tensor3):
     """
-    ``VelGrad`` store velocity gradient tensor derived from numpy.ndarray.
+    ``VelGrad3`` represents 3D velocity gradient tensor.
 
     Args:
       a (3x3 array_like): Input data, that can be converted to
           3x3 2D array. This includes lists, tuples and ndarrays.
 
     Returns:
-      ``VelGrad`` object
+      ``VelGrad3`` object
 
     Example:
-      >>> L = VelGrad(np.diag([0.1, 0, -0.1]))
+      >>> L = VelGrad3(np.diag([0.1, 0, -0.1]))
     """
-
-    def __new__(cls, array, name='L'):
-        # casting to our class
-        assert np.shape(array) == (3, 3), 'VelGrad must be 3x3 2D array'
-        obj = np.asarray(array).view(cls)
-        obj.name = name
-        return obj
-
-    def __repr__(self):
-        return "VelGrad:\n" + str(self)
-
-    def __pow__(self, n):
-        # matrix power
-        return VelGrad(np.linalg.matrix_power(self, n))
-
-    def __eq__(self, other):
-        # equal
-        return bool(np.sum(abs(self - other)) < 1e-14)
-
-    def __ne__(self, other):
-        # not equal
-        return not self == other
-
-    @classmethod
-    def from_comp(cls, xx=0, xy=0, xz=0, yx=0, yy=0, yz=0, zx=0, zy=0, zz=0):
-        """
-        Return ``VelGrad`` tensor. Default is zero tensor.
-
-        Keyword Args:
-          xx, xy, xz, yx, yy, yz, zx, zy, zz (float): tensor components
-
-        Example:
-          >>> L = VelGrad.from_comp(xx=0.1, zz=-0.1)
-          >>> L
-          VelGrad:
-          [[ 0.1  0.   0. ]
-           [ 0.   0.   0. ]
-           [ 0.   0.  -0.1]]
-
-        """
-        return cls([[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]])
 
     def defgrad(self, time=1, steps=1):
         """
@@ -423,90 +176,41 @@ class VelGrad(Tensor3):
         from scipy.linalg import expm
 
         if steps > 1:
-            return [DefGrad(expm(self * t)) for t in np.linspace(0, time, steps)]
+            return [
+                DefGrad(expm(np.asarray(self) * t)) for t in np.linspace(0, time, steps)
+            ]
         else:
-            return DefGrad(expm(self * time))
+            return DefGrad3(expm(np.asarray(self) * time))
 
-    def rotate(self, vector, theta=0):
-        """
-        Rotate tensor around axis by angle theta.
-
-        Using rotation matrix it returns ``F = R * F * R . T``.
-        """
-
-        if isinstance(vector, DefGrad):
-            R = vector
-        else:
-            R = DefGrad.from_axis(vector, theta)
-
-        return VelGrad(R * self * R.T)
-
-    @property
     def rate(self):
         """
         Return rate of deformation tensor
         """
 
-        return VelGrad((self + self.T) / 2)
+        return type(self)((self + self.T) / 2)
 
-    @property
     def spin(self):
         """
         Return spin tensor
         """
 
-        return VelGrad((self - self.T) / 2)
+        return type(self)((self - self.T) / 2)
 
 
-class Stress(SymmetricTensor3):
+class Stress3(Tensor3):
     """
-    ``Stress`` store stress tensor derived from numpy.ndarray.
+    ``Stress3`` store 3D stress tensor.
 
     Args:
       a (3x3 array_like): Input data, that can be converted to
           3x3 2D array. This includes lists, tuples and ndarrays.
 
     Returns:
-      ``Stress`` object
+      ``Stress3`` object
 
     Example:
-      >>> S = Stress([[-8, 0, 0],[0, -5, 0],[0, 0, -1]])
+      >>> S = Stress3([[-8, 0, 0],[0, -5, 0],[0, 0, -1]])
     """
-
-    def __new__(cls, array, name='S'):
-        # casting to our class
-
-        assert np.shape(array) == (3, 3), 'Stress must be 3x3 2D array'
-        assert np.allclose(
-            np.asarray(array), np.asarray(array).T
-        ), 'Stress tensor must be symmetrical'
-
-        obj = np.asarray(array).view(cls)
-        obj.name = name
-        vals, U = np.linalg.eigh(obj)
-        ix = np.argsort(vals)[::-1]
-        obj.eigenvals = vals[ix]
-        obj.vects = U[:, ix]
-        return obj
-
-    def __repr__(self):
-
-        return 'Stress:\n' + str(self)
-
-    def __pow__(self, n):
-        # matrix power
-
-        return Stress(np.linalg.matrix_power(self, n))
-
-    def __eq__(self, other):
-        # equal
-
-        return bool(np.sum(abs(self - other)) < 1e-14)
-
-    def __ne__(self, other):
-        # not equal
-
-        return not self == other
 
     @classmethod
     def from_comp(cls, xx=0, xy=0, xz=0, yy=0, yz=0, zz=0):
@@ -519,7 +223,7 @@ class Stress(SymmetricTensor3):
           xx, xy, xz, yy, yz, zz (float): tensor components
 
         Example:
-          >>> S = Stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+          >>> S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
           >>> S
           Stress:
           [[-5  1  0]
@@ -529,20 +233,6 @@ class Stress(SymmetricTensor3):
         """
 
         return cls([[xx, xy, xz], [xy, yy, yz], [xz, yz, zz]])
-
-    def rotate(self, vector, theta=0):
-        """
-        Rotate tensor around axis by angle theta.
-
-        Using rotation matrix it returns ``S = R * S * R . T``
-        """
-
-        if isinstance(vector, DefGrad):
-            R = vector
-        else:
-            R = DefGrad.from_axis(vector, theta)
-
-        return Stress(R * self * R.T)
 
     @property
     def mean_stress(self):
@@ -558,7 +248,7 @@ class Stress(SymmetricTensor3):
         Mean hydrostatic stress tensor component
         """
 
-        return Stress(np.diag(self.mean_stress * np.ones(3)))
+        return type(self)(np.diag(self.mean_stress * np.ones(3)))
 
     @property
     def deviatoric(self):
@@ -566,31 +256,7 @@ class Stress(SymmetricTensor3):
         A stress deviator tensor component
         """
 
-        return Stress(self - self.hydrostatic)
-
-    @property
-    def E1(self):
-        """
-        Max eigenvalue
-        """
-
-        return self.eigenvals[0]
-
-    @property
-    def E2(self):
-        """
-        Middle eigenvalue
-        """
-
-        return self.eigenvals[1]
-
-    @property
-    def E3(self):
-        """
-        Min eigenvalue
-        """
-
-        return self.eigenvals[2]
+        return type(self)(self - self.hydrostatic)
 
     @property
     def I1(self):
@@ -598,7 +264,7 @@ class Stress(SymmetricTensor3):
         First invariant
         """
 
-        return np.trace(self)
+        return float(np.trace(self))
 
     @property
     def I2(self):
@@ -606,7 +272,7 @@ class Stress(SymmetricTensor3):
         Second invariant
         """
 
-        return (self.I1 ** 2 - np.trace(self ** 2)) / 2
+        return float((self.I1 ** 2 - np.trace(self ** 2)) / 2)
 
     @property
     def I3(self):
@@ -614,41 +280,16 @@ class Stress(SymmetricTensor3):
         Third invariant
         """
 
-        return np.linalg.det(self)
+        return self.det
 
     @property
     def diagonalized(self):
         """
-        Returns Stress tensor in a coordinate system with axes oriented to the principal directions and
-        orthogonal matrix R, which brings actual coordinate system to principal one.
+        Returns diagonalized Stress tensor and orthogonal matrix R, which transforms actual
+        coordinate system to the principal one.
 
         """
-        return Stress(np.diag(self.eigenvals)), DefGrad(self.vects.T)
-
-    @property
-    def eigenvects(self):
-        """
-        Returns Group of three eigenvectors represented as ``Vector3``
-        """
-        return Group(
-            [Vector3(self.vects.T[0]), Vector3(self.vects.T[1]), Vector3(self.vects.T[2])]
-        )
-
-    @property
-    def eigenlins(self):
-        """
-        Returns Group of three eigenvectors represented as ``Lin``
-        """
-
-        return self.eigenvects.aslin
-
-    @property
-    def eigenfols(self):
-        """
-        Returns Group of three eigenvectors represented as ``Foliation``
-        """
-
-        return self.eigenvects.asfol
+        return type(self)(np.diag(self.eigenvalues())), DefGrad3(self.eigenvectors())
 
     def cauchy(self, n):
         """
@@ -698,7 +339,7 @@ class Stress(SymmetricTensor3):
         Return normal stress component on plane given by normal vector.
         """
 
-        return np.dot(n, self.cauchy(n))
+        return float(np.dot(n, self.cauchy(n)))
 
     def shear_stress(self, n):
         """
@@ -706,106 +347,77 @@ class Stress(SymmetricTensor3):
         by normal vector.
         """
 
-        return np.sqrt(self.cauchy(n) ** 2 - self.normal_stress(n) ** 2)
+        return math.sqrt(self.cauchy(n) ** 2 - self.normal_stress(n) ** 2)
 
 
-
-### will be deleted and party used in SymmetricTensor3
-class Tensor(object):
+class Ellipsoid(Tensor3):
     """
-    Tensor is a multidimensional array of scalars.
+    Ellipsoid class
+
+    See following methods and properties for additional operations.
+
+    Args:
+      matrix (3x3 array_like): Input data, that can be converted to
+             3x3 2D matrix. This includes lists, tuples and ndarrays.
+
+    Returns:
+      ``Ellipsoid`` object
+
+    Example:
+      >>> E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
+      >>> E
+      Ellipsoid:  Kind: LLS
+      (E1:2.828,E2:1.414,E3:1)
+      [[8 0 0]
+       [0 2 0]
+       [0 0 1]]
+
     """
-
-    def __init__(self, matrix, **kwargs) -> None:
-
-        assert np.shape(matrix) == (3, 3), "Ellipsoid matrix must be 3x3 2D array"
-
-        self._matrix = np.asarray(matrix)
-        self.name = kwargs.get('name', '')
-        self.scaled = kwargs.get("scaled", False)
-
-        vc, vv = np.linalg.eigh(self._matrix)
-        ix = np.argsort(vc)[::-1]
-
-        self._evals = vc[ix]
-        self._evects = vv.T[ix]
 
     def __repr__(self) -> str:
         return (
-            '{}: {} Kind: {}\n'.format(self.__class__.__name__, self.name, self.kind)
-            + '(E1:{:.4g},E2:{:.4g},E3:{:.4g})\n'.format(self.E1, self.E2, self.E3)
-            + str(self._matrix)
+            f"{type(self).__name__} {self.kind}\n"
+            + f"(E1:{self.E1:.3g},E2:{self.E2:.3g},E3:{self.E3:.3g})\n"
+            + Matrix3.__repr__(self)
         )
 
-    __str__ = __repr__
-
-    def __eq__(self, other) -> bool:
+    @classmethod
+    def from_defgrad(cls, F, **kwargs) -> "Ellipsoid":
         """
-        Return `True` if tensors are equal, otherwise `False`.
+        Return ``Ellipsoid`` from ``Defgrad``.
+
+        It is ellipsoid resulting from deformation of sphere.
+
         """
-        if not isinstance(other, self.__class__):
-            return False
 
-        return tuple(map(tuple, self._matrix)) == tuple(map(tuple, other._matrix))
-
-    def __hash__(self) -> int:
-        return hash(tuple(map(tuple, self._matrix)))
+        return cls(np.dot(F, np.transpose(F)), **kwargs)
 
     @classmethod
-    def from_comp(cls, xx=1, xy=0, xz=0, yy=1, yz=0, zz=1, **kwargs) -> 'Tensor':
+    def from_axes(cls, x=1, y=1, z=1, **kwargs) -> "Ellipsoid":
         """
-        Return tensor. Default is identity tensor.
-
-        Note that tensor must be symmetrical.
-        """
-
-        return cls([[xx, xy, xz], [xy, yy, yz], [xz, yz, zz]], **kwargs)
-
-    @classmethod
-    def from_axes(cls, x=1, y=1, z=1, **kwargs) -> 'Tensor':
-        """
-        Return diagonal tensor defined by principal axes.
+        Return diagonal tensor defined by magnitudes of principal axes.
         """
         return cls([[x * x, 0, 0], [0, y * y, 0], [0, 0, z * z]], **kwargs)
 
     @property
-    def eigenvals(self) -> Tuple[float]:
+    def kind(self) -> str:
         """
-        Return the eigenvalues sorted in descending order.
+        Return descriptive type of ellipsoid
         """
-        return tuple(self._evals)
-
-    @property
-    def eigenvects(self) -> Group:
-        """
-        Return the group of eigenvectors. If scaled property is `True` their
-        length is scaled by eigenvalues, otherwise unit length.
-        """
-        if self.scaled:
-            e1, e2, e3 = self.E1, self.E2, self.E3
+        nu = self.lode
+        if np.allclose(self.eoct, 0):
+            res = "O"
+        elif nu < -0.75:
+            res = "L"
+        elif nu > 0.75:
+            res = "S"
+        elif nu < -0.15:
+            res = "LLS"
+        elif nu > 0.15:
+            res = "SSL"
         else:
-            e1 = e2 = e3 = 1.0
-        return Group(
-            [
-                e1 * Vector3(self._evects[0]),
-                e2 * Vector3(self._evects[1]),
-                e3 * Vector3(self._evects[2]),
-            ]
-        )
-
-    @property
-    def eigenlins(self) -> Group:
-        """
-        Return group of eigenvectors as Lin objects.
-        """
-        return self.eigenvects.aslin
-
-    @property
-    def eigenfols(self) -> Group:
-        """
-        Return group of eigenvectors as Foliation objects.
-        """
-        return self.eigenvects.asfol
+            res = "LS"
+        return res
 
     @property
     def strength(self) -> float:
@@ -822,74 +434,54 @@ class Tensor(object):
         return self.K
 
     @property
-    def kind(self) -> str:
-        """
-        Return descriptive type of ellipsoid
-        """
-        nu = self.lode
-        if np.allclose(self.eoct, 0):
-            res = 'O'
-        elif nu < -0.75:
-            res = 'L'
-        elif nu > 0.75:
-            res = 'S'
-        elif nu < -0.15:
-            res = 'LLS'
-        elif nu > 0.15:
-            res = 'SSL'
-        else:
-            res = 'LS'
-        return res
-
-    @property
-    def E1(self) -> float:
+    def lambda1(self) -> float:
         """
         Return the square root of maximum eigenvalue.
         """
-        return np.sqrt(self._evals[0])
+        return math.sqrt(self.E1)
 
     @property
-    def E2(self) -> float:
+    def lambda2(self) -> float:
         """
         Return the square root of middle eigenvalue.
         """
-        return np.sqrt(self._evals[1])
+        return math.sqrt(self.E2)
 
     @property
-    def E3(self) -> float:
+    def lambda3(self) -> float:
         """
         Return the square root of minimum eigenvalue.
         """
-        return np.sqrt(self._evals[2])
+        return math.sqrt(self.E3)
 
     @property
     def e1(self) -> float:
         """
         Return the maximum natural principal strain.
         """
-        return np.log(self.E1)
+        return math.log(self.lambda1)
 
     @property
     def e2(self) -> float:
         """
         Return the middle natural principal strain.
         """
-        return np.log(self.E2)
+        return math.log(self.lambda2)
 
     @property
     def e3(self) -> float:
         """
         Return the minimum natural principal strain.
         """
-        return np.log(self.E3)
+        return math.log(self.lambda3)
 
     @property
     def Rxy(self) -> float:
-        return self.E1 / self.E2
+        return self.lambda1 / self.lambda2
 
     @property
     def Ryz(self) -> float:
-        return self.E2 / self.E3
+        return self.lambda2 / self.lambda3
 
     @property
     def e12(self) -> float:
@@ -915,7 +507,7 @@ class Tensor(object):
         """
         Return the strain intensity.
         """
-        return np.sqrt((self.Rxy - 1) ** 2 + (self.Ryz - 1) ** 2)
+        return math.sqrt((self.Rxy - 1) ** 2 + (self.Ryz - 1) ** 2)
 
     @property
     def K(self) -> float:
@@ -943,14 +535,14 @@ class Tensor(object):
         """
         Return the natural octahedral unit shear (Nadai, 1963).
         """
-        return 2 * np.sqrt(self.e12 ** 2 + self.e23 ** 2 + self.e13 ** 2) / 3
+        return 2 * math.sqrt(self.e12 ** 2 + self.e23 ** 2 + self.e13 ** 2) / 3
 
     @property
     def eoct(self) -> float:
         """
         Return the natural octahedral unit strain (Nadai, 1963).
         """
-        return np.sqrt(3) * self.goct / 2
+        return math.sqrt(3) * self.goct / 2
 
     @property
     def lode(self) -> float:
@@ -963,25 +555,8 @@ class Tensor(object):
             else 0
         )
 
-    @property
-    def I(self) -> 'Tensor':
-        """
-        Return the inverse tensor.
-        """
 
-        return Tensor(np.linalg.inv(self._matrix), name=self.name)
-
-    def apply(self, x1, x2=None) -> np.array:
-        """
-        Apply the deformation tensor on vector(s).
-        """
-        if x2 is None:
-            return np.dot(x1, np.dot(self._matrix, x1))
-        else:
-            return np.dot(x1, np.dot(self._matrix, x2))
-
-
-class Ortensor(SymmetricTensor3):
+class Ortensor3(Ellipsoid):
     """
     Represents an orientation tensor, which characterize data distribution
     using eigenvalue method. See (Watson 1966, Scheidegger 1965).
@@ -993,16 +568,11 @@ class Ortensor(SymmetricTensor3):
              3x3 2D matrix. This includes lists, tuples and ndarrays.
              Array could be also ``Group`` (for backward compatibility)
 
-    Keyword Args:
-      name (str): name od tensor
-      scaled (bool): When True eigenvectors are scaled by eigenvalues.
-                     Otherwise unit length. Default False
-
     Returns:
-      ``Ortensor`` object
+      ``Ortensor3`` object
 
     Example:
-      >>> ot = Ortensor([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
+      >>> ot = Ortensor3([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
       >>> ot
       Ortensor:  Kind: LLS
       (E1:8,E2:2,E3:1)
@@ -1012,15 +582,11 @@ class Ortensor(SymmetricTensor3):
 
     """
 
-    def __init__(self, matrix, **kwargs) -> None:
-        if isinstance(matrix, Group):
-            if 'name' not in kwargs:
-                kwargs['name'] = matrix.name
-            matrix = np.dot(np.array(matrix).T, np.array(matrix)) / len(matrix)
-        super(Ortensor, self).__init__(matrix, **kwargs)
+    def __repr__(self) -> str:
+        return super().__repr__()
 
     @classmethod
-    def from_group(cls, g, **kwargs) -> 'Ortensor':
+    def from_features(cls, g) -> "Ortensor":
         """
         Return ``Ortensor`` of data in ``Group``
 
@@ -1041,12 +607,10 @@ class Ortensor(SymmetricTensor3):
 
         """
 
-        if 'name' not in kwargs:
-            kwargs['name'] = g.name
-        return cls(np.dot(np.array(g).T, np.array(g)) / len(g), **kwargs)
+        return cls(np.dot(np.array(g).T, np.array(g)) / len(g))
 
     @classmethod
-    def from_pairs(cls, p, **kwargs) -> 'Ortensor':
+    def from_pairs(cls, p) -> "Ortensor":
         """
         Return Lisle (19890``Ortensor`` of orthogonal data in ``PairSet``
 
@@ -1074,35 +638,9 @@ class Ortensor(SymmetricTensor3):
 
         """
         assert isinstance(p, PairSet), "Data must be of PairSet type."
-        if 'name' not in kwargs:
-            kwargs['name'] = p.name
         Tx = np.dot(np.array(p.lin).T, np.array(p.lin)) / len(p)
         Tz = np.dot(np.array(p.fol).T, np.array(p.fol)) / len(p)
-        return cls(Tx - Tz, **kwargs)
-
-    @property
-    def E1(self) -> float:
-        """
-        Return maximum eigenvalue.
-        """
-
-        return self._evals[0]
-
-    @property
-    def E2(self) -> float:
-        """
-        Return middle eigenvalue.
-        """
-
-        return self._evals[1]
-
-    @property
-    def E3(self) -> float:
-        """
-        Return minimum eigenvalue.
-        """
-
-        return self._evals[2]
+        return cls(Tx - Tz)
 
     @property
     def P(self) -> float:
@@ -1170,48 +708,3 @@ class Ortensor(SymmetricTensor3):
             return self.MADp
         else:
             return self.MADo
-
-
-class Ellipsoid(SymmetricTensor3):
-    """
-    Ellipsoid class
-
-    See following methods and properties for additional operations.
-
-    Args:
-      matrix (3x3 array_like): Input data, that can be converted to
-             3x3 2D matrix. This includes lists, tuples and ndarrays.
-
-    Returns:
-      ``Ellipsoid`` object
-
-    Example:
-      >>> E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
-      >>> E
-      Ellipsoid:  Kind: LLS
-      (E1:2.828,E2:1.414,E3:1)
-      [[8 0 0]
-       [0 2 0]
-       [0 0 1]]
-
-    """
-
-    @classmethod
-    def from_defgrad(cls, F, **kwargs) -> 'Ellipsoid':
-        """
-        Return ``Ellipsoid`` from ``Defgrad``.
-
-        It is ellipsoid resulting from deformation of sphere.
-
-        """
-
-        return cls(np.dot(F, np.transpose(F)), **kwargs)
-
-    def transform(self, F) -> 'Ellipsoid':
-        """
-        Return ``Ellipsoid`` representing result of deformation F
-        """
-
-        t_matrix = np.dot(F, np.dot(self._matrix, np.transpose(F)))
-        return Ellipsoid(t_matrix, name=self.name)
-

@@ -70,5 +70,3 @@ def _schmidt_count(cos_dist, sigma=None):
     # To offset the count.sum() - 0.5 required for the kamb methods...
     count = 0.5 / count.size + count
     return count, cos_dist.size * radius
-
-

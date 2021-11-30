@@ -2,14 +2,14 @@ import sys
 from itertools import combinations
 import numpy as np
 
-from apsg.math import Vector3
-from apsg.feature import Lineation, Foliation, Pair
+from apsg.math._vector import Vector3
+from apsg.feature._geodata import Lineation, Foliation, Pair
 
 
 class FeatureSet:
-    __slots__ = ["data", "name"]
+    __slots__ = ("data", "name")
 
-    def __init__(self, data, name='Default'):
+    def __init__(self, data, name="Default"):
         dtype_cls = getattr(sys.modules[__name__], type(self).__feature_type__)
         assert all([isinstance(obj, dtype_cls) for obj in data])
         self.data = tuple(data)
@@ -17,6 +17,13 @@ class FeatureSet:
 
     def __copy__(self):
         return type(self).from_list(self.data, name=self.name)
+
+    def to_json(self):
+        return {
+            "datatype": type(self).__name__,
+            "args": {"data": tuple(item.to_json() for item in self)},
+            "kwargs": {"name": self.name},
+        }
 
     copy = __copy__
 
@@ -83,27 +90,27 @@ class FeatureSet:
 
 
 class Vector3Set(FeatureSet):
-    __feature_type__ = 'Vector3'
+    __feature_type__ = "Vector3"
 
     def __repr__(self):
-        return f'V({len(self)}) {self.name}'
+        return f"V({len(self)}) {self.name}"
 
 
 class LineationSet(FeatureSet):
-    __feature_type__ = 'Lineation'
+    __feature_type__ = "Lineation"
 
     def __repr__(self):
-        return f'L({len(self)}) {self.name}'
+        return f"L({len(self)}) {self.name}"
 
 
 class FoliationSet(FeatureSet):
-    __feature_type__ = 'Foliation'
+    __feature_type__ = "Foliation"
 
     def __repr__(self):
-        return f'S({len(self)}) {self.name}'
+        return f"S({len(self)}) {self.name}"
 
 
-def G(lst, name='Default'):
+def G(lst, name="Default"):
     if hasattr(lst, "__len__"):
         dtype_cls = type(lst[0])
         assert all([isinstance(obj, dtype_cls) for obj in lst])
@@ -114,4 +121,4 @@ def G(lst, name='Default'):
         elif dtype_cls is Foliation:
             return FoliationSet(lst, name=name)
         else:
-            raise TypeError('Wrong datatype to create FeatureSet')
+            raise TypeError("Wrong datatype to create FeatureSet")

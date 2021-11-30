@@ -1186,7 +1186,7 @@ class Group(list):
                     reader = csv.DictReader(csvfile, dialect=dialect)
                     r = [(float(row[acol]), float(row[icol])) for row in reader]
                 else:
-                    raise ValueError('No header line in CSV file...')
+                    raise ValueError("No header line in CSV file...")
 
         azi, inc = zip(*r)
         print("Group loaded from file {}".format(basename(filename)))
@@ -1211,12 +1211,12 @@ class Group(list):
         else:
             data = self.dd.T
 
-        with open(filename, 'w', newline='') as csvfile:
-            fieldnames = ['azi', 'inc']
+        with open(filename, "w", newline="") as csvfile:
+            fieldnames = ["azi", "inc"]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             for azi, inc in data:
-                writer.writerow({'azi': azi, 'inc': inc})
+                writer.writerow({"azi": azi, "inc": inc})
         print("Group saved to file {}".format(basename(filename)))
 
     @classmethod
@@ -3379,7 +3379,7 @@ class StereoGrid(object):
         ax.set_aspect("equal")
         plt.tricontourf(self.triang, self.values, *args, **kwargs)
         plt.colorbar()
-        plt.axis('off')
+        plt.axis("off")
         plt.show()
 
     def contour(self, *args, **kwargs):
@@ -3392,7 +3392,7 @@ class StereoGrid(object):
         ax.set_aspect("equal")
         plt.tricontour(self.triang, self.values, *args, **kwargs)
         plt.colorbar()
-        plt.axis('off')
+        plt.axis("off")
         plt.show()
 
     def plotcountgrid(self):
@@ -3404,7 +3404,7 @@ class StereoGrid(object):
         ax.add_artist(plt.Circle((0, 0), 1, color="None", ec="k", zorder=3))
         ax.set_aspect("equal")
         plt.triplot(self.triang, "bo-")
-        plt.axis('off')
+        plt.axis("off")
         plt.show()
 
 

@@ -1,4 +1,3 @@
-
 """
 SqlAlchemy interface to PySDB database
 
@@ -82,7 +81,7 @@ metadata = Base.metadata
 
 
 class Meta(Base):
-    __tablename__ = 'meta'
+    __tablename__ = "meta"
 
     id = Column(Integer, primary_key=True)
     name = Column(String(16), nullable=False)
@@ -90,65 +89,77 @@ class Meta(Base):
 
 
 class Site(Base):
-    __tablename__ = 'sites'
+    __tablename__ = "sites"
 
     id = Column(Integer, primary_key=True)
-    id_units = Column(ForeignKey(u'units.id'), nullable=False, index=True)
+    id_units = Column(ForeignKey(u"units.id"), nullable=False, index=True)
     name = Column(String(16), nullable=False, server_default=text("''"))
     x_coord = Column(Float, server_default=text("NULL"))
     y_coord = Column(Float, server_default=text("NULL"))
     description = Column(Text)
 
-    unit = relationship(u'Unit', back_populates='sites')
+    unit = relationship(u"Unit", back_populates="sites")
 
-    structdata = relationship(u'Structdata', back_populates='site')
+    structdata = relationship(u"Structdata", back_populates="site")
 
     def __repr__(self):
-        return 'Site:{} ({})'.format(self.name, self.unit.name)
+        return "Site:{} ({})".format(self.name, self.unit.name)
 
 
-tagged = Table(u'tagged', metadata,
-               Column(u'id', Integer, autoincrement=True),
-               Column(u'id_tags', Integer, ForeignKey(u'tags.id'), primary_key=True),
-               Column(u'id_structdata', Integer, ForeignKey(u'structdata.id'), primary_key=True)
-               )
+tagged = Table(
+    u"tagged",
+    metadata,
+    Column(u"id", Integer, autoincrement=True),
+    Column(u"id_tags", Integer, ForeignKey(u"tags.id"), primary_key=True),
+    Column(u"id_structdata", Integer, ForeignKey(u"structdata.id"), primary_key=True),
+)
 
 
 class Attached(Base):
-    __tablename__ = 'attach'
+    __tablename__ = "attach"
 
     id = Column(Integer, primary_key=True)
-    id_structdata_planar = Column(ForeignKey(u'structdata.id'), nullable=False, index=True)
-    id_structdata_linear = Column(ForeignKey(u'structdata.id'), nullable=False, index=True)
+    id_structdata_planar = Column(
+        ForeignKey(u"structdata.id"), nullable=False, index=True
+    )
+    id_structdata_linear = Column(
+        ForeignKey(u"structdata.id"), nullable=False, index=True
+    )
 
     def __repr__(self):
-        return '{} - {}'.format(self.planar, self.linear)
+        return "{} - {}".format(self.planar, self.linear)
 
 
 class Structdata(Base):
-    __tablename__ = 'structdata'
+    __tablename__ = "structdata"
 
     id = Column(Integer, primary_key=True)
-    id_sites = Column(ForeignKey(u'sites.id'), nullable=False, index=True)
-    id_structype = Column(ForeignKey(u'structype.id'), nullable=False, index=True)
+    id_sites = Column(ForeignKey(u"sites.id"), nullable=False, index=True)
+    id_structype = Column(ForeignKey(u"structype.id"), nullable=False, index=True)
     azimuth = Column(Float, nullable=False, server_default=text("0"))
     inclination = Column(Float, nullable=False, server_default=text("0"))
     description = Column(Text)
 
-    site = relationship(u'Site', back_populates='structdata')
-    structype = relationship(u'Structype', back_populates='structdata')
+    site = relationship(u"Site", back_populates="structdata")
+    structype = relationship(u"Structype", back_populates="structdata")
 
-    tags = relationship(u'Tag', secondary=tagged, back_populates='structdata')
+    tags = relationship(u"Tag", secondary=tagged, back_populates="structdata")
 
-    attach_planar = relationship(u'Attached', backref='planar', primaryjoin=id == Attached.id_structdata_planar)
-    attach_linear = relationship(u'Attached', backref='linear', primaryjoin=id == Attached.id_structdata_linear)
+    attach_planar = relationship(
+        u"Attached", backref="planar", primaryjoin=id == Attached.id_structdata_planar
+    )
+    attach_linear = relationship(
+        u"Attached", backref="linear", primaryjoin=id == Attached.id_structdata_linear
+    )
 
     def __repr__(self):
-        return '{}:{:g}/{:g}'.format(self.structype.structure, self.azimuth, self.inclination)
+        return "{}:{:g}/{:g}".format(
+            self.structype.structure, self.azimuth, self.inclination
+        )
 
 
 class Structype(Base):
-    __tablename__ = 'structype'
+    __tablename__ = "structype"
 
     id = Column(Integer, primary_key=True)
     pos = Column(Integer, nullable=False, server_default=text("0"))
@@ -158,63 +169,81 @@ class Structype(Base):
     groupcode = Column(Integer, server_default=text("0"))
     planar = Column(Integer, server_default=text("1"))
 
-    structdata = relationship(u'Structdata', back_populates='structype')
+    structdata = relationship(u"Structdata", back_populates="structype")
 
     def __repr__(self):
-        return 'Type:{}'.format(self.structure)
+        return "Type:{}".format(self.structure)
 
 
 class Tag(Base):
-    __tablename__ = 'tags'
+    __tablename__ = "tags"
 
     id = Column(Integer, primary_key=True)
     pos = Column(Integer, nullable=False, server_default=text("0"))
     name = Column(String(16), nullable=False)
     description = Column(Text)
 
-    structdata = relationship(u'Structdata', secondary=tagged, back_populates='tags')
+    structdata = relationship(u"Structdata", secondary=tagged, back_populates="tags")
 
     def __repr__(self):
-        return 'Tag:{}'.format(self.name)
+        return "Tag:{}".format(self.name)
 
 
 class Unit(Base):
-    __tablename__ = 'units'
+    __tablename__ = "units"
 
     id = Column(Integer, primary_key=True)
     pos = Column(Integer, nullable=False, server_default=text("0"))
     name = Column(String(60), nullable=False)
     description = Column(Text)
 
-    sites = relationship(u'Site', back_populates='unit')
+    sites = relationship(u"Site", back_populates="unit")
 
     def __repr__(self):
-        return 'Unit:{}'.format(self.name)
+        return "Unit:{}".format(self.name)
 
 
 def initial_meta():
-    return [Meta(name='version', value='3.0.4'),
-            Meta(name='crs', value='EPSG:4326'),
-            Meta(name='created', value=datetime.now().strftime("%d.%m.%Y %H:%M")),
-            Meta(name='updated', value=datetime.now().strftime("%d.%m.%Y %H:%M")),
-            Meta(name='accessed', value=datetime.now().strftime("%d.%m.%Y %H:%M"))]
+    return [
+        Meta(name="version", value="3.0.4"),
+        Meta(name="crs", value="EPSG:4326"),
+        Meta(name="created", value=datetime.now().strftime("%d.%m.%Y %H:%M")),
+        Meta(name="updated", value=datetime.now().strftime("%d.%m.%Y %H:%M")),
+        Meta(name="accessed", value=datetime.now().strftime("%d.%m.%Y %H:%M")),
+    ]
 
 
 def initial_values():
-    return [Structype(pos=1, structure='S', description='Default planar feature', structcode=35, groupcode=13, planar=1),
-            Structype(pos=2, structure='L', description='Default linear feature', structcode=78, groupcode=13, planar=0),
-            Unit(pos=1, name='Default', description='Default unit')]
+    return [
+        Structype(
+            pos=1,
+            structure="S",
+            description="Default planar feature",
+            structcode=35,
+            groupcode=13,
+            planar=1,
+        ),
+        Structype(
+            pos=2,
+            structure="L",
+            description="Default linear feature",
+            structcode=78,
+            groupcode=13,
+            planar=0,
+        ),
+        Unit(pos=1, name="Default", description="Default unit"),
+    ]
 
 
 def before_commit_meta_update(session):
-    u = session.query(Meta).filter_by(name='updated').first()
+    u = session.query(Meta).filter_by(name="updated").first()
     u.value = datetime.now().strftime("%d.%m.%Y %H:%M")
 
 
 def before_insert_pos_update(mapper, connection, target):
     if target.pos is None:
         t = str(mapper.persist_selectable)
-        maxpos = connection.execute('SELECT max({}.pos) FROM {}'.format(t, t)).scalar()
+        maxpos = connection.execute("SELECT max({}.pos) FROM {}".format(t, t)).scalar()
         if maxpos is None:
             maxpos = 1
         else:
@@ -222,25 +251,25 @@ def before_insert_pos_update(mapper, connection, target):
         target.pos = maxpos
 
 
-class AlchemySession():
+class AlchemySession:
     def __init__(self, sdb_file, **kwargs):
-        if kwargs.get('create', False):
+        if kwargs.get("create", False):
             with contextlib.suppress(FileNotFoundError):
                 os.remove(sdb_file)
-        self.sdb_engine = create_engine('sqlite:///{}'.format(sdb_file))
-        if kwargs.get('create', False):
+        self.sdb_engine = create_engine("sqlite:///{}".format(sdb_file))
+        if kwargs.get("create", False):
             metadata.create_all(self.sdb_engine)
         sdb_Session = sessionmaker(bind=self.sdb_engine)
         self.session = sdb_Session()
-        if kwargs.get('create', False):
+        if kwargs.get("create", False):
             self.session.add_all(initial_values())
             self.session.add_all(initial_meta())
             self.session.commit()
         # add listeners
-        event.listen(self.session, 'before_commit', before_commit_meta_update)
-        event.listen(Unit, 'before_insert', before_insert_pos_update)
-        event.listen(Structype, 'before_insert', before_insert_pos_update)
-        event.listen(Tag, 'before_insert', before_insert_pos_update)
+        event.listen(self.session, "before_commit", before_commit_meta_update)
+        event.listen(Unit, "before_insert", before_insert_pos_update)
+        event.listen(Structype, "before_insert", before_insert_pos_update)
+        event.listen(Tag, "before_insert", before_insert_pos_update)
 
     def close(self):
         self.session.close()
@@ -249,18 +278,18 @@ class AlchemySession():
         self.session.commit()
 
     def site(self, **kwargs):
-        assert 'name' in kwargs, 'name must be provided for site'
-        site = self.session.query(Site).filter_by(name=kwargs['name']).first()
+        assert "name" in kwargs, "name must be provided for site"
+        site = self.session.query(Site).filter_by(name=kwargs["name"]).first()
         if site is None:
-            assert 'unit' in kwargs, 'unit must be provided to create site'
+            assert "unit" in kwargs, "unit must be provided to create site"
             site = Site(**kwargs)
             self.session.add(site)
             self.commit()
         return site
 
     def unit(self, **kwargs):
-        assert 'name' in kwargs, 'name must be provided for unit'
-        unit = self.session.query(Unit).filter_by(name=kwargs['name']).first()
+        assert "name" in kwargs, "name must be provided for unit"
+        unit = self.session.query(Unit).filter_by(name=kwargs["name"]).first()
         if unit is None:
             unit = Unit(**kwargs)
             self.session.add(unit)
@@ -268,8 +297,8 @@ class AlchemySession():
         return unit
 
     def tag(self, **kwargs):
-        assert 'name' in kwargs, 'name must be provided for tag'
-        tag = self.session.query(Tag).filter_by(name=kwargs['name']).first()
+        assert "name" in kwargs, "name must be provided for tag"
+        tag = self.session.query(Tag).filter_by(name=kwargs["name"]).first()
         if tag is None:
             tag = Tag(**kwargs)
             self.session.add(tag)
@@ -277,8 +306,12 @@ class AlchemySession():
         return tag
 
     def structype(self, **kwargs):
-        assert 'structure' in kwargs, 'structure must be provided for structype'
-        structype = self.session.query(Structype).filter_by(structure=kwargs['structure']).first()
+        assert "structure" in kwargs, "structure must be provided for structype"
+        structype = (
+            self.session.query(Structype)
+            .filter_by(structure=kwargs["structure"])
+            .first()
+        )
         if structype is None:
             structype = Structype(**kwargs)
             self.session.add(structype)
@@ -286,29 +319,33 @@ class AlchemySession():
         return structype
 
     def add_structdata(self, **kwargs):
-        assert 'site' in kwargs, 'site must be provided for structdata'
-        assert 'structype' in kwargs, 'structype must be provided for structdata'
+        assert "site" in kwargs, "site must be provided for structdata"
+        assert "structype" in kwargs, "structype must be provided for structdata"
         data = Structdata(**kwargs)
         self.session.add(data)
         self.commit()
         return data
 
     def add_fol(self, fol, **kwargs):
-        assert isinstance(fol, Foliation), 'fol argument must be instance of Foliation class'
-        assert 'site' in kwargs, 'site must be provided for structdata'
-        assert 'structype' in kwargs, 'structype must be provided for structdata'
-        assert kwargs['structype'].planar, 'structype must be planar'
-        kwargs['azimuth'] = fol.dd[0]
-        kwargs['inclination'] = fol.dd[1]
+        assert isinstance(
+            fol, Foliation
+        ), "fol argument must be instance of Foliation class"
+        assert "site" in kwargs, "site must be provided for structdata"
+        assert "structype" in kwargs, "structype must be provided for structdata"
+        assert kwargs["structype"].planar, "structype must be planar"
+        kwargs["azimuth"] = fol.dd[0]
+        kwargs["inclination"] = fol.dd[1]
         return self.add_structdata(**kwargs)
 
     def add_lin(self, lin, **kwargs):
-        assert isinstance(lin, Lineation), 'lin argument must be instance of Lineation class'
-        assert 'site' in kwargs, 'site must be provided for structdata'
-        assert 'structype' in kwargs, 'structype must be provided for structdata'
-        assert not kwargs['structype'].planar, 'structype must be linear'
-        kwargs['azimuth'] = lin.dd[0]
-        kwargs['inclination'] = lin.dd[1]
+        assert isinstance(
+            lin, Lineation
+        ), "lin argument must be instance of Lineation class"
+        assert "site" in kwargs, "site must be provided for structdata"
+        assert "structype" in kwargs, "structype must be provided for structdata"
+        assert not kwargs["structype"].planar, "structype must be linear"
+        kwargs["azimuth"] = lin.dd[0]
+        kwargs["inclination"] = lin.dd[1]
         return self.add_structdata(**kwargs)
 
     def attach(self, fol, lin):
@@ -318,10 +355,10 @@ class AlchemySession():
         return pair
 
     def add_pair(self, pair, foltype, lintype, **kwargs):
-        assert isinstance(pair, Pair), 'pair argument must be instance of Pair class'
-        kwargs['structype'] = foltype
+        assert isinstance(pair, Pair), "pair argument must be instance of Pair class"
+        kwargs["structype"] = foltype
         fol = self.add_fol(pair.fol, **kwargs)
-        kwargs['structype'] = lintype
+        kwargs["structype"] = lintype
         lin = self.add_lin(pair.lin, **kwargs)
         return self.attach(fol, lin)
 

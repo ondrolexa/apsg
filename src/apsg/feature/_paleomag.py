@@ -10,9 +10,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from apsg.config import apsg_conf
-from apsg.math import Vector3
-from apsg.feature import Foliation, Lineation, Pair, Vector3Set
-from apsg.plotting import StereoNet
+from apsg.helpers._helper import eformat
+from apsg.math._vector import Vector3
+from apsg.feature._geodata import Lineation, Foliation, Pair
+from apsg.feature._container import Vector3Set
+from apsg.plotting._stereonet import StereoNet
 from apsg.helpers import eformat
 
 __all__ = ("Core",)
@@ -61,12 +63,12 @@ class Core(object):
         self.a95 = kwargs.get("a95", [])
         self.comments = kwargs.get("comments", [])
         self._vectors = kwargs.get("vectors", [])
-        self.module_units = kwargs.get("module_units", 'A/m')
-        self.susceptibility_units = kwargs.get("susceptibility_units", 'e-06 SI')
-        self.demag_units = kwargs.get("demag_units", '°C')
+        self.module_units = kwargs.get("module_units", "A/m")
+        self.susceptibility_units = kwargs.get("susceptibility_units", "e-06 SI")
+        self.demag_units = kwargs.get("demag_units", "°C")
 
     def __repr__(self):
-        return f'Core {self.site} {self.specimen}'
+        return f"Core {self.site} {self.specimen}"
 
     def __getitem__(self, key):
         """Group fancy indexing"""
@@ -87,7 +89,7 @@ class Core(object):
             res.a95 = [val for (val, ok) in zip(self.a95, ix) if ok]
             res.comments = [val for (val, ok) in zip(self.comments, ix) if ok]
             res._vectors = [val for (val, ok) in zip(self._vectors, ix) if ok]
-            res.name = self.specimen + '({}-{})'.format(start_ok, stop_ok)
+            res.name = self.specimen + "({}-{})".format(start_ok, stop_ok)
             return res
         if isinstance(key, str):
             if key in self.steps:
@@ -169,7 +171,7 @@ class Core(object):
             "STEP  Xc [Am2]  Yc [Am2]  Zc [Am2]  MAG[A/m]   Dg    Ig    Ds    Is   a95 "
         )
         with open(filename, "w") as pmdfile:
-            print('/'.join([self.site, self.name]), file=pmdfile, end="\r\n")
+            print("/".join([self.site, self.name]), file=pmdfile, end="\r\n")
             print(ln0, file=pmdfile, end="\r\n")
             print(headln, file=pmdfile, end="\r\n")
             for ln in self.datatable:
@@ -177,7 +179,7 @@ class Core(object):
             pmdfile.write(chr(26))
 
     @classmethod
-    def from_rs3(cls, filename, exclude=['C', 'G']):
+    def from_rs3(cls, filename, exclude=["C", "G"]):
         """Return ``Core`` instance generated from PMD file.
 
         Args:
@@ -187,7 +189,7 @@ class Core(object):
           exclude: Labels to be excluded. Default ['C', 'G']
 
         """
-        with open(filename, encoding='windows-1250') as f:
+        with open(filename, encoding="windows-1250") as f:
             d = f.read().splitlines()
 
         import io
@@ -232,50 +234,50 @@ class Core(object):
             [116, 126],
         ]
 
-        head = pd.read_fwf(io.StringIO('\n'.join(d[:2])), colspecs=headspec)
-        body = pd.read_fwf(io.StringIO('\n'.join(d[2:])), colspecs=bodyspec)
+        head = pd.read_fwf(io.StringIO("\n".join(d[:2])), colspecs=headspec)
+        body = pd.read_fwf(io.StringIO("\n".join(d[2:])), colspecs=bodyspec)
 
         data = {}
-        data["site"] = head['Site'][0] if not pd.isna(head['Site'][0]) else ''
+        data["site"] = head["Site"][0] if not pd.isna(head["Site"][0]) else ""
         data["filename"] = filename
-        data["specimen"] = head['Name'][0] if not pd.isna(head['Name'][0]) else ''
+        data["specimen"] = head["Name"][0] if not pd.isna(head["Name"][0]) else ""
         data["longitude"] = (
-            float(head['Longitude'][0]) if not pd.isna(head['Longitude'][0]) else None
+            float(head["Longitude"][0]) if not pd.isna(head["Longitude"][0]) else None
         )
         data["latitude"] = (
-            float(head['Latitude'][0]) if not pd.isna(head['Latitude'][0]) else None
+            float(head["Latitude"][0]) if not pd.isna(head["Latitude"][0]) else None
         )
         data["height"] = (
-            float(head['Height'][0]) if not pd.isna(head['Height'][0]) else None
+            float(head["Height"][0]) if not pd.isna(head["Height"][0]) else None
         )
-        data["rock"] = head['Rock'][0] if not pd.isna(head['Rock'][0]) else ''
-        data["age"] = head['Age'][0] if not pd.isna(head['Age'][0]) else ''
-        data["formation"] = head['Fm'][0] if not pd.isna(head['Fm'][0]) else ''
+        data["rock"] = head["Rock"][0] if not pd.isna(head["Rock"][0]) else ""
+        data["age"] = head["Age"][0] if not pd.isna(head["Age"][0]) else ""
+        data["formation"] = head["Fm"][0] if not pd.isna(head["Fm"][0]) else ""
         data["sref"] = Pair(180, 0, 180, 0)
         data["gref"] = Pair(
-            float(head['SDec'][0]),
-            float(head['SInc'][0]),
-            float(head['SDec'][0]),
-            float(head['SInc'][0]),
+            float(head["SDec"][0]),
+            float(head["SInc"][0]),
+            float(head["SDec"][0]),
+            float(head["SInc"][0]),
         )
         data["bedding"] = (
-            Foliation(float(head['BDec'][0]), float(head['BInc'][0]))
-            if not pd.isna(head['BDec'][0]) and not pd.isna(head['BInc'][0])
+            Foliation(float(head["BDec"][0]), float(head["BInc"][0]))
+            if not pd.isna(head["BDec"][0]) and not pd.isna(head["BInc"][0])
             else None
         )
         data["foldaxis"] = (
-            Lineation(float(head['FDec'][0]), float(head['FInc'][0]))
-            if not pd.isna(head['FDec'][0]) and not pd.isna(head['FInc'][0])
+            Lineation(float(head["FDec"][0]), float(head["FInc"][0]))
+            if not pd.isna(head["FDec"][0]) and not pd.isna(head["FInc"][0])
             else None
         )
         data["date"] = datetime.now()
         ix = body.iloc[:, 0].apply(lambda x: x not in exclude)
         data["steps"] = body[ix].iloc[:, 1].astype(int).to_list()
-        data["comments"] = body[ix]['Note'].to_list()
-        data["a95"] = body[ix]['Prec'].to_list()
+        data["comments"] = body[ix]["Note"].to_list()
+        data["a95"] = body[ix]["Prec"].to_list()
         data["vectors"] = []
         for n, r in body[ix].iterrows():
-            data["vectors"].append(r[2] * Vector3(r['Dsp'], r['Isp']))
+            data["vectors"].append(r[2] * Vector3(r["Dsp"], r["Isp"]))
         return cls(**data)
 
     def write_rs3(self, filename=None):
@@ -288,29 +290,44 @@ class Core(object):
         if filename is None:
             filename = self.filename
 
-        head = 'Name      Site      Latitude  Longitude  Height    Rock           Age  Fm SDec  SInc  BDec  BInc  FDec  FInc  P1 P2 P3 P4 Note'
-        step_lbl = f'Step[{self.demag_units}]'
-        module_lbl = f'M[{self.module_units}]'
-        susceptibility_lbl = f'K[{self.susceptibility_units}]'
-        subhead = f'ID {step_lbl:<10} {module_lbl:>12}   Dsp   Isp   Dge   Ige   Dtc   Itc   Dfc   Ifc   Prec {susceptibility_lbl:>13} Limit1    Limit2    Note      '
-        latitude = self.latitude if self.latitude is not None else ''
-        longitude = self.longitude if self.longitude is not None else ''
-        height = self.height if self.height is not None else ''
+        head = "Name      Site      Latitude  Longitude  Height    Rock           Age  Fm SDec  SInc  BDec  BInc  FDec  FInc  P1 P2 P3 P4 Note"
+        step_lbl = f"Step[{self.demag_units}]"
+        module_lbl = f"M[{self.module_units}]"
+        susceptibility_lbl = f"K[{self.susceptibility_units}]"
+        subhead = f"ID {step_lbl:<10} {module_lbl:>12}   Dsp   Isp   Dge   Ige   Dtc   Itc   Dfc   Ifc   Prec {susceptibility_lbl:>13} Limit1    Limit2    Note      "
+        latitude = self.latitude if self.latitude is not None else ""
+        longitude = self.longitude if self.longitude is not None else ""
+        height = self.height if self.height is not None else ""
         sdec, sinc = (round(self.gref.fol.dd[0]), round(self.gref.fol.dd[1]))
-        bdec, binc = (round(self.bedding.dd[0]), round(self.bedding.dd[1])) if self.bedding is not None else ('', '')
-        fdec, finc = (round(self.foldaxis.dd[0]), round(self.foldaxis.dd[1])) if self.foldaxis is not None else ('', '')
-        hline = f'{self.specimen:9} {self.site:9} {latitude:<9} {longitude:<10} {height:<9} {self.rock:14} {self.age:<7} {sdec:<5} {sinc:<5} {bdec:<5} {binc:<5} {fdec:<5} {finc:<5} 12 0  6  0      '
-        prefix = 'T' if self.demag_units == '°C' else 'M'
-        with open(filename, 'w', encoding='windows-1250') as res3file:
+        bdec, binc = (
+            (round(self.bedding.dd[0]), round(self.bedding.dd[1]))
+            if self.bedding is not None
+            else ("", "")
+        )
+        fdec, finc = (
+            (round(self.foldaxis.dd[0]), round(self.foldaxis.dd[1]))
+            if self.foldaxis is not None
+            else ("", "")
+        )
+        hline = f"{self.specimen:9} {self.site:9} {latitude:<9} {longitude:<10} {height:<9} {self.rock:14} {self.age:<7} {sdec:<5} {sinc:<5} {bdec:<5} {binc:<5} {fdec:<5} {finc:<5} 12 0  6  0      "
+        prefix = "T" if self.demag_units == "°C" else "M"
+        with open(filename, "w", encoding="windows-1250") as res3file:
             print(head, file=res3file, end="\r\n")
             print(hline, file=res3file, end="\r\n")
             print(subhead, file=res3file, end="\r\n")
 
-            ids = ['N'] + (len(self.steps) - 1) * [prefix]
+            ids = ["N"] + (len(self.steps) - 1) * [prefix]
             for id, step, MAG, V, geo, tilt, a95, comment in zip(
-                ids, self.steps, self.MAG, self.V, self.geo, self.tilt, self.a95, self.comments
+                ids,
+                self.steps,
+                self.MAG,
+                self.V,
+                self.geo,
+                self.tilt,
+                self.a95,
+                self.comments,
             ):
-                ln = f'{id:2} {step:<10} {MAG:>13g} {V.dd[0]:>5.1f} {V.dd[1]:> 5.1f} {geo.dd[0]:>5.1f} {geo.dd[1]:> 5.1f} {tilt.dd[0]:>5.1f} {tilt.dd[1]:> 5.1f}             {a95:>5.1f}                                   {comment:10}'
+                ln = f"{id:2} {step:<10} {MAG:>13g} {V.dd[0]:>5.1f} {V.dd[1]:> 5.1f} {geo.dd[0]:>5.1f} {geo.dd[1]:> 5.1f} {tilt.dd[0]:>5.1f} {tilt.dd[1]:> 5.1f}             {a95:>5.1f}                                   {comment:10}"
                 print(ln, file=res3file, end="\r\n")
 
     @property
@@ -346,7 +363,9 @@ class Core(object):
                 self.date.strftime("%m-%d-%Y %H:%M"),
             )
         )
-        print("STEP  Xc [Am2]  Yc [Am2]  Zc [Am2]  MAG[A/m]  Dge   Ige   Dtc   Itc   a95 ")
+        print(
+            "STEP  Xc [Am2]  Yc [Am2]  Zc [Am2]  MAG[A/m]  Dge   Ige   Dtc   Itc   a95 "
+        )
         print("\n".join(self.datatable))
 
     @property
@@ -373,9 +392,11 @@ class Core(object):
     @property
     def tilt(self):
         "Returns `Vector3Set` of vectors in tilt‐corrected coordinates system"
-        return self.geo.rotate(Lineation(self.bedding.dd[0] - 90, 0), -self.bedding.dd[1])
+        return self.geo.rotate(
+            Lineation(self.bedding.dd[0] - 90, 0), -self.bedding.dd[1]
+        )
 
-    def pca(self, kind='geo', origin=False):
+    def pca(self, kind="geo", origin=False):
         data = getattr(self, kind)
         if origin:
             data.append(Vector3([0, 0, 0]))
@@ -388,7 +409,7 @@ class Core(object):
         mad = np.degrees(np.arctan(np.sqrt((ot.E2 + ot.E3) / ot.E1)))
         return pca, mad
 
-    def zijderveld_plot(self, kind='geo'):
+    def zijderveld_plot(self, kind="geo"):
         data = getattr(self, kind)
         N, E, Z = np.array(data).T
         N0, E0, Z0 = data[0]
@@ -399,7 +420,7 @@ class Core(object):
         ax.plot(E, -Z, "g-", label="Vertical")
         ax.plot(E0, -Z0, "g+", markersize=14)
         ax.plot(E, -Z, "go", picker=5)
-        fig.canvas.mpl_connect('pick_event', lambda event: self.onpick(event, fig))
+        fig.canvas.mpl_connect("pick_event", lambda event: self.onpick(event, fig))
         mx = np.max(np.abs(ax.axis()))
         ax.axis([-mx, mx, -mx, mx])
         ax.set_aspect(1)
@@ -414,7 +435,7 @@ class Core(object):
         # ax.xaxis.set_ticks(t[t != 0])
         # t = ax.yaxis.get_ticklocs()
         # ax.yaxis.set_ticks(t[t != 0])
-        ax.set_title('{} {}'.format(self.site, self.specimen), loc="left")
+        ax.set_title("{} {}".format(self.site, self.specimen), loc="left")
         plt.legend(title="Unit={:g}A/m".format(t[1] - t[0]))
         plt.tight_layout()
         plt.show()
@@ -424,20 +445,22 @@ class Core(object):
         ax.plot(self.nsteps[0], self.MAG[0] / self.MAG.max(), "k+", markersize=14)
         ax.plot(self.nsteps, self.MAG / self.MAG.max(), "ko-")
         ax.set_ylabel("M/Mmax")
-        ax.set_title("{} {} (Mmax = {:g})".format(self.site, self.specimen, self.MAG.max()))
+        ax.set_title(
+            "{} {} (Mmax = {:g})".format(self.site, self.specimen, self.MAG.max())
+        )
         ax.set_ylim(0, 1.02)
         ax.yaxis.grid()
         plt.show()
 
-    def stereo_plot(self, kind='geo', **kwargs):
+    def stereo_plot(self, kind="geo", **kwargs):
         data = getattr(self, kind)
         tt = {
-            'V': 'Specimen coordinates',
-            'geo': 'Geographic coordinates',
-            'tilt': 'Tilted coordinates',
+            "V": "Specimen coordinates",
+            "geo": "Geographic coordinates",
+            "tilt": "Tilted coordinates",
         }
         s = StereoNet(
-            title='{} {}\n{}'.format(self.site, self.specimen, tt[kind]), **kwargs
+            title="{} {}\n{}".format(self.site, self.specimen, tt[kind]), **kwargs
         )
         for f1, f2 in zip(data[:-1], data[1:]):
             s.arc(f1, f2, "k:")
@@ -446,5 +469,5 @@ class Core(object):
         s.show()
 
     def onpick(self, event, fig):
-        fig.suptitle('{}'.format(self.steps[event.ind[0]]))
+        fig.suptitle("{}".format(self.steps[event.ind[0]]))
         fig.canvas.draw()

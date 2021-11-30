@@ -1,7 +1,7 @@
 import numpy as np
 
 from apsg.helpers import sind, cosd, tand, asind, acosd, atand, atan2d, sqrt2
-from apsg.math import Vector3  #, DefGrad3
+from apsg.math import Vector3  # , DefGrad3
 from apsg.feature import Foliation, Pair
 
 

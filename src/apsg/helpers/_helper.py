@@ -1,5 +1,6 @@
 import math
 
+
 def is_like_vec3(arg):
     if hasattr(arg, "__len__"):
         if len(arg) == 3:

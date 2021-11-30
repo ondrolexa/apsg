@@ -31,7 +31,7 @@ class SDB(object):
     ORDER BY sites.name"""
 
     def __new__(cls, sdb_file):
-        assert isfile(sdb_file), 'Database does not exists.'
+        assert isfile(sdb_file), "Database does not exists."
         cls.conn = sqlite3.connect(sdb_file)
         cls.conn.row_factory = sqlite3.Row
         cls.conn.execute("pragma encoding='UTF-8'")
@@ -83,9 +83,9 @@ class SDB(object):
                 print("Metadata '{}' not updated.".format(name))
                 raise
 
-    def info(self, report='basic'):
+    def info(self, report="basic"):
         lines = []
-        if report == 'basic':
+        if report == "basic":
             lines.append("PySDB database version: {}".format(self.meta("version")))
             lines.append("PySDB database CRS: {}".format(self.meta("crs")))
             lines.append("PySDB database created: {}".format(self.meta("created")))
@@ -95,20 +95,20 @@ class SDB(object):
             lines.append("Number of structures: {}".format(len(self.structures())))
             r = self.execsql(self._make_select())
             lines.append("Number of measurements: {}".format(len(r)))
-        elif report == 'data':
+        elif report == "data":
             for s in self.structures():
                 r = self.execsql(self._make_select(structs=s))
                 if len(r) > 0:
                     lines.append("Number of {} measurements: {}".format(s, len(r)))
-        elif report == 'tags':
+        elif report == "tags":
             for s in self.structures():
                 r = self.execsql(self._make_select(tags=s))
                 if len(r) > 0:
                     lines.append("{} measurements tagged as {}.".format(len(r), s))
         else:
-            lines.append('No report.')
+            lines.append("No report.")
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def _make_select(self, structs=None, sites=None, units=None, tags=None):
         w = []
@@ -171,7 +171,7 @@ class SDB(object):
             return sorted(list(res))
         else:
             dtsel = "SELECT structure FROM structype ORDER BY pos"
-            return [el['structure'] for el in self.execsql(dtsel)]
+            return [el["structure"] for el in self.execsql(dtsel)]
 
     def sites(self, **kwargs):
         """Return list of sites in data. For kwargs see group method."""
@@ -181,7 +181,7 @@ class SDB(object):
             return sorted(list(res))
         else:
             dtsel = "SELECT name FROM sites ORDER BY id"
-            return [el['name'] for el in self.execsql(dtsel)]
+            return [el["name"] for el in self.execsql(dtsel)]
 
     def units(self, **kwargs):
         """Return list of units in data. For kwargs see group method."""
@@ -191,7 +191,7 @@ class SDB(object):
             return sorted(list(res))
         else:
             dtsel = "SELECT name FROM units ORDER BY pos"
-            return [el['name'] for el in self.execsql(dtsel)]
+            return [el["name"] for el in self.execsql(dtsel)]
 
     def tags(self, **kwargs):
         """Return list of tags in data. For kwargs see group method."""
@@ -201,7 +201,7 @@ class SDB(object):
             return sorted(list(set(",".join(tags).split(","))))
         else:
             dtsel = "SELECT name FROM tags ORDER BY pos"
-            return [el['name'] for el in self.execsql(dtsel)]
+            return [el["name"] for el in self.execsql(dtsel)]
 
     def is_planar(self, structs):
         if isinstance(structs, str):
@@ -232,21 +232,23 @@ class SDB(object):
           labels: if True return also list of sites. Default False
 
         """
-        labels = kwargs.pop('labels', False)
+        labels = kwargs.pop("labels", False)
         dtsel = self._make_select(structs=structs, **kwargs)
         sel = self.execsql(dtsel)
         if sel:
             if isinstance(structs, str):
                 name = structs
             else:
-                name = ' '.join(structs)
+                name = " ".join(structs)
             if self.is_planar(structs):
                 res = Group(
-                    [Foliation(el["azimuth"], el["inclination"]) for el in sel], name=name,
+                    [Foliation(el["azimuth"], el["inclination"]) for el in sel],
+                    name=name,
                 )
             else:
                 res = Group(
-                    [Lineation(el["azimuth"], el["inclination"]) for el in sel], name=name,
+                    [Lineation(el["azimuth"], el["inclination"]) for el in sel],
+                    name=name,
                 )
             if labels:
                 return res, [el["name"] for el in sel]
