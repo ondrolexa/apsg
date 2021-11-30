@@ -1,8 +1,9 @@
 import numpy as np
 
-from apsg.helpers import sind, cosd, tand, asind, acosd, atand, atan2d, sqrt2
-from apsg.math import Vector3  # , DefGrad3
-from apsg.feature import Foliation, Pair
+from apsg.helpers._math import sind, cosd, tand, acosd, asind, atand, atan2d, sqrt2
+from apsg.math._vector import Vector3
+from apsg.feature._geodata import Lineation, Foliation, Pair
+from apsg.feature._tensor import DefGrad3
 
 
 class Projection:
@@ -13,7 +14,7 @@ class Projection:
         self.hemisphere = kwargs.get("hemisphere", "lower")
         self.gridstep = kwargs.get("gridstep", 15)  # grid step
         self.resolution = kwargs.get("resolution", 361)  # number of grid lines points
-        self.R = np.array(DefGrad.from_pair(self.grid_position))
+        self.R = np.array(DefGrad3.from_pair(self.grid_position))
         self.Ri = np.linalg.inv(self.R)
 
     def project_grid(self, x, y, z, clip_polehole=False):

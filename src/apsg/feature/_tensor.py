@@ -6,7 +6,8 @@ from apsg.config import apsg_conf
 from apsg.helpers._math import sind, cosd, tand, acosd, asind, atand, atan2d, sqrt2
 from apsg.math._vector import Vector3
 from apsg.math._matrix import Matrix3
-from apsg.decorator._decorator import ensure_first_arg_same, ensure_first_arg
+from apsg.decorator._decorator import ensure_first_arg_same, ensure_arguments
+from apsg.feature._geodata import Pair
 from apsg.feature._container import (
     FeatureSet,
     Vector3Set,
@@ -77,13 +78,13 @@ class DefGrad3(Tensor3):
         return cls.from_comp(xx=y * Rxy, yy=y, zz=y / Ryz)
 
     @classmethod
+    @ensure_arguments(Pair)
     def from_pair(cls, p):
-        assert issubclass(type(p), Pair), "Data must be of Pair type."
         return cls(np.array([p.lvec, p.fvec.cross(p.lvec), p.fvec]).T)
 
     @classmethod
-    @ensure_first_arg(Vector3)
-    def from_axis(cls, vector, theta):
+    @ensure_arguments(Vector3)
+    def from_axisangle(cls, vector, theta):
         """Return ``DefGrad3`` representing rotation around axis.
 
         Args:
@@ -107,6 +108,47 @@ class DefGrad3(Tensor3):
                 [zxc - ys, yzc + xs, z * zc + c],
             ]
         )
+
+    @classmethod
+    @ensure_arguments(Vector3, Vector3)
+    def from_two_vectors(cls, v1, v2):
+        """Return ``DefGrad3`` representing rotation around axis perpendicular
+        to both vectors and rotate v1 to v2.
+
+        Args:
+          v1: ``Vector3`` like object
+          v2: ``Vector3`` like object
+
+        Example:
+          >>> F = DefGrad3.from_two_vectors(lin(120, 30), lin(210, 60))
+        """
+        return cls.from_axisangle(v1.cross(v2), v1.angle(v2))
+
+    @classmethod
+    def from_two_pairs(cls, p1, p2):
+        """
+        Return ``DefGrad3`` representing rotation of coordinates from system
+        defined by ``Pair`` p1 to system defined by ``Pair`` p2.
+
+        Lineation in pair define x axis and normal to foliation in pair define z axis
+
+        Args:
+            p1 (``Pair``): from
+            p2 (``Pair``): to
+
+        Returns:
+            ``Defgrad3`` rotational matrix
+
+        Example:
+            >>> p1 = pair(58, 36, 81, 34)
+            >>> p2 = pair(217,42, 162, 27)
+            >>> R = DefGrad3.from_two_pairs(p1, p2)
+            >>> p1.transform(R) == p2
+            True
+
+        """
+
+        return cls(cls.from_pair(p2) @ cls.from_pair(p1).I)
 
     @property
     def R(self):
@@ -175,9 +217,9 @@ class VelGrad3(Tensor3):
         """
         from scipy.linalg import expm
 
-        if steps > 1:
+        if steps > 1:  # FIX once container for matrix will be implemented
             return [
-                DefGrad(expm(np.asarray(self) * t)) for t in np.linspace(0, time, steps)
+                DefGrad3(expm(np.asarray(self) * t)) for t in np.linspace(0, time, steps)
             ]
         else:
             return DefGrad3(expm(np.asarray(self) * time))
@@ -393,9 +435,9 @@ class Ellipsoid(Tensor3):
         return cls(np.dot(F, np.transpose(F)), **kwargs)
 
     @classmethod
-    def from_axes(cls, x=1, y=1, z=1, **kwargs) -> "Ellipsoid":
+    def from_stretch(cls, x=1, y=1, z=1, **kwargs) -> "Ellipsoid":
         """
-        Return diagonal tensor defined by magnitudes of principal axes.
+        Return diagonal tensor defined by magnitudes of principal stretches.
         """
         return cls([[x * x, 0, 0], [0, y * y, 0], [0, 0, z * z]], **kwargs)
 
@@ -586,7 +628,7 @@ class Ortensor3(Ellipsoid):
         return super().__repr__()
 
     @classmethod
-    def from_features(cls, g) -> "Ortensor":
+    def from_features(cls, g) -> "Ortensor3":
         """
         Return ``Ortensor`` of data in ``Group``
 
@@ -610,7 +652,7 @@ class Ortensor3(Ellipsoid):
         return cls(np.dot(np.array(g).T, np.array(g)) / len(g))
 
     @classmethod
-    def from_pairs(cls, p) -> "Ortensor":
+    def from_pairs(cls, p) -> "Ortensor3":
         """
         Return Lisle (19890``Ortensor`` of orthogonal data in ``PairSet``
 

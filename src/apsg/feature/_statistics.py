@@ -1,5 +1,10 @@
 import numpy as np
 
+from scipy.special import gamma as gamma_fun
+from scipy.special import iv as modified_bessel_2ndkind
+from scipy.special import ivp as modified_bessel_2ndkind_derivative
+from scipy.stats import uniform
+from scipy.stats import norm as gauss 
 
 class KentDistribution(object):
     """

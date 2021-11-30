@@ -20,13 +20,17 @@ to to
 
 class Lineation(Axial3):
     def __repr__(self):
-        azi, inc = vec2geo_linear(self)
+        azi, inc = self.geo
         return f"L:{azi:.0f}/{inc:.0f}"
 
     def cross(self, other):
         return Foliation(super().cross(other))
 
     __pow__ = cross
+
+    @property
+    def geo(self):
+        return vec2geo_linear(self)
 
     def to_json(self):
         azi, inc = vec2geo_linear(self)
@@ -48,13 +52,17 @@ class Foliation(Axial3):
         self._coords = tuple(coords)
 
     def __repr__(self):
-        azi, inc = vec2geo_planar(self)
+        azi, inc = self.geo
         return f"S:{azi:.0f}/{inc:.0f}"
 
     def cross(self, other):
         return Lineation(super().cross(other))
 
     __pow__ = cross
+
+    @property
+    def geo(self):
+        return vec2geo_planar(self)
 
     def to_json(self):
         azi, inc = vec2geo_planar(self)
@@ -66,7 +74,6 @@ class Foliation(Axial3):
     def rake(self, rake):
         return Vector3(self.dipvec().rotate(self, rake - 90))
 
-    @ensure_first_arg_same
     def transform(self, F, **kwargs):
         """
         Return affine transformation of vector `u` by matrix `F`.
@@ -113,25 +120,38 @@ class Pair:
         >>> p = Pair(140, 30, 110, 26)
 
     """
+    __shape__ = (6,)
 
     def __init__(self, *args):
         if len(args) == 0:
             fvec, lvec = Vector3(0, 0, 1), Vector3(1, 0, 0)
-        elif len(args) == 1:
-            f = Foliation(args[0])
-            fvec, lvec = Vector3(f), f.dipvec()
+        elif len(args) == 1 and issubclass(type(args[0]), Pair):
+            fvec, lvec = args[0].fvec, args[0].lvec
+        elif len(args) == 1 and np.asarray(args[0]).shape == (4,):
+            fazi, finc, lazi, linc = (float(v) for v in args[0])
+            fvec, lvec = Foliation(fazi, finc), Lineation(lazi, linc)
+        elif len(args) == 1 and np.asarray(args[0]).shape == Pair.__shape__:
+            fvec, lvec = Vector3(args[0][:3]), Vector3(args[0][-3:])
         elif len(args) == 2:
-            fvec, lvec = Vector3(args[0]), Vector3(args[1])
+            if issubclass(type(args[0]), Vector3) and issubclass(type(args[1]), Vector3):
+                fvec, lvec = args
+            else:
+                fvec, lvec = Foliation(*args), Lineation(*args)
+        elif len(args) == 4:
+            fvec = Foliation(args[0], args[1])
+            lvec = Lineation(args[2], args[3])
         else:
             raise TypeError("Not valid arguments for Foliation")
 
+        fvec = Vector3(fvec)
+        lvec = Vector3(lvec)
         misfit = 90 - fvec.angle(lvec)
         if misfit > 20:
             warnings.warn(f"Warning: Misfit angle is {misfit:.1f} degrees.")
         ax = fvec.cross(lvec)
         ang = (lvec.angle(fvec) - 90) / 2
-        self.fvec = fvec.rotate(ax, ang)
-        self.lvec = lvec.rotate(ax, -ang)
+        self.fvec = Vector3(fvec.rotate(ax, ang))
+        self.lvec = Vector3(lvec.rotate(ax, -ang))
         self.misfit = misfit
 
     def __repr__(self):
@@ -139,13 +159,12 @@ class Pair:
         lazi, linc = vec2geo_linear(self.lvec)
         return f"P:{fazi:.0f}/{finc:.0f}-{lazi:.0f}/{linc:.0f}"
 
+    @ensure_first_arg_same
     def __eq__(self, other):
         """
         Return `True` if pairs are equal, otherwise `False`.
         """
-        if isinstance(other, self.__class__):
-            return False
-        return (self.fol == other.fol) and (self.lin == other.lin)
+        return (self.fvec == other.fvec) and (self.lvec == other.lvec)
 
     def __ne__(self, other):
         """
@@ -153,6 +172,14 @@ class Pair:
 
         """
         return not self == other
+
+    def __array__(self, dtype=None):
+        return np.hstack((np.asarray(self.fvec, dtype=dtype), np.asarray(self.lvec, dtype=dtype)))
+
+    def to_json(self):
+        fazi, finc = vec2geo_planar(self.fvec)
+        lazi, linc = vec2geo_linear(self.lvec)
+        return {"datatype": type(self).__name__, "args": {"fazi": fazi, "finc": finc, "lazi": lazi, "linc": linc}}
 
     @classmethod
     def random(cls):
@@ -178,10 +205,6 @@ class Pair:
 
         """
         return type(self)(self.fvec.rotate(axis, phi), self.lvec.rotate(axis, phi))
-
-    @property
-    def type(self):
-        return type(self)
 
     @property
     def fol(self):
@@ -224,31 +247,14 @@ class Pair:
           P:90/45-50/37
 
         """
-        lvec = Vector3(np.dot(F, self.lvec))
-        fvec = Vector3(np.dot(self.fvec, np.linalg.inv(F)))
+
+        fvec = self.fol.transform(F)
+        lvec = self.lin.transform(F)
         if kwargs.get("norm", False):
-            lvec = lvec.normalized()
             fvec = fvec.normalized()
+            lvec = lvec.normalized()
         return type(self)(fvec, lvec)
 
-    def H(self, other):
-        """
-        Return ``DefGrad`` rotational matrix H which rotate ``Pair``
-        to other ``Pair``.
 
-        Args:
-            other (``Pair``): other pair
-
-        Returns:
-            ``Defgrad`` rotational matrix
-
-        Example:
-            >>> p1 = Pair(58, 36, 81, 34)
-            >>> p2 = Pair(217,42, 162, 27)
-            >>> p1.transform(p1.H(p2)) == p2
-            True
-
-        """
-        from apsg.tensors import DefGrad
-
-        return DefGrad(DefGrad.from_pair(other) * DefGrad.from_pair(self).I)
+class Fault(Pair):
+    pass

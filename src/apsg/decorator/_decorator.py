@@ -10,19 +10,18 @@ from apsg.helpers._helper import is_like_vec3, is_like_matrix3
 ########## factory could be used #############
 
 
-def ensure_first_arg(*datatypes):
+def ensure_arguments(*datatypes):
     def decorator(method):
         def wrapper(self, *args, **kwargs):
             nargs = list(args)
-            ok = False
-            for cls in datatypes:
+            ok = []
+            for ix, cls in enumerate(datatypes):
                 try:
-                    nargs[0] = cls(nargs[0])
-                    ok = True
+                    nargs[ix] = cls(nargs[ix])
+                    ok.append(True)
                 except:
-                    pass
-            if ok:
-                print(nargs)
+                    ok.append(False)
+            if all(ok):
                 return method(self, *nargs, **kwargs)
             else:
                 raise TypeError(

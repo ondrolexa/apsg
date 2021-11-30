@@ -57,6 +57,9 @@ def vec2lin_dd(v):
         n = -n
     return atan2d(n.y, n.x) % 360, asind(n.z)
 
+def vec2geo_linear_signed(v):
+    n = v.uv()
+    return atan2d(n.y, n.x) % 360, asind(n.z)
 
 def vec2geo_linear(arg):
     return {"dd": vec2lin_dd, "rhr": vec2lin_dd}[apsg_conf["notation"]](arg)

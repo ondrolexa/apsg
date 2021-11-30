@@ -54,6 +54,17 @@ class FeatureSet:
         else:
             raise TypeError("Only {self.__name__} is allowed")
 
+    def rotate(self, axis, phi):
+        """Rotate ``FeatureSet`` object `phi` degress about `axis`."""
+        return type(self)([e.rotate(axis, phi) for e in self], name=self.name)
+
+
+class Vector3Set(FeatureSet):
+    __feature_type__ = "Vector3"
+
+    def __repr__(self):
+        return f"V({len(self)}) {self.name}"
+
     def to_lin(self):
         """Return ``LineationSet`` object with all data converted to ``Lineation``."""
         return LineationSet([Lineation(e) for e in self], name=self.name)
@@ -84,26 +95,16 @@ class FeatureSet:
             raise TypeError("Wrong argument type!")
         return G(res, name=self.name)
 
-    def rotate(self, axis, phi):
-        """Rotate ``FeatureSet`` object `phi` degress about `axis`."""
-        return type(self)([e.rotate(axis, phi) for e in self], name=self.name)
 
 
-class Vector3Set(FeatureSet):
-    __feature_type__ = "Vector3"
-
-    def __repr__(self):
-        return f"V({len(self)}) {self.name}"
-
-
-class LineationSet(FeatureSet):
+class LineationSet(Vector3Set):
     __feature_type__ = "Lineation"
 
     def __repr__(self):
         return f"L({len(self)}) {self.name}"
 
 
-class FoliationSet(FeatureSet):
+class FoliationSet(Vector3Set):
     __feature_type__ = "Foliation"
 
     def __repr__(self):
@@ -122,3 +123,18 @@ def G(lst, name="Default"):
             return FoliationSet(lst, name=name)
         else:
             raise TypeError("Wrong datatype to create FeatureSet")
+
+
+class PairSet(FeatureSet):
+    __feature_type__ = "Pair"
+
+
+    def __repr__(self):
+        return f"P({len(self)}) {self.name}"
+
+class FaultSet(PairSet):
+    __feature_type__ = "Fault"
+
+
+    def __repr__(self):
+        return f"F({len(self)}) {self.name}"

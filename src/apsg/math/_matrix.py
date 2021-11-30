@@ -4,7 +4,7 @@ import numpy as np
 
 from apsg.config import apsg_conf
 from apsg.helpers._math import sind, cosd, tand, acosd, asind, atand, atan2d, sqrt2
-from apsg.decorator._decorator import ensure_first_arg_same, ensure_first_arg
+from apsg.decorator._decorator import ensure_first_arg_same, ensure_arguments
 from apsg.math._vector import Vector3, Vector2
 
 """

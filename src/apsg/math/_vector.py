@@ -9,6 +9,7 @@ from apsg.helpers._notation import (
     geo2vec_linear,
     vec2geo_planar,
     vec2geo_linear,
+    vec2geo_linear_signed
 )
 from apsg.decorator._decorator import ensure_first_arg_same
 
@@ -251,7 +252,7 @@ class Vector3(Vector):
 
     def __repr__(self):
         if apsg_conf["vec2geo"]:
-            azi, inc = vec2geo_linear(self)
+            azi, inc = self.geo
             return f"V:{azi:.0f}/{inc:.0f}"
         else:
             n = apsg_conf["ndigits"]
@@ -301,6 +302,10 @@ class Vector3(Vector):
         )
 
     __pow__ = cross
+
+    @property
+    def geo(self):
+        return vec2geo_linear_signed(self)
 
     @classmethod
     def random(cls):
