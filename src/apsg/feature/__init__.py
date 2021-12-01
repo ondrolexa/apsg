@@ -17,6 +17,7 @@ __all__ = (
     "Lineation",
     "Foliation",
     "Pair",
+    "Fault",
     "FeatureSet",
     "Vector3Set",
     "LineationSet",

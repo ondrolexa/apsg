@@ -4,6 +4,7 @@ import numpy as np
 
 from apsg.math._vector import Vector3
 from apsg.feature._geodata import Lineation, Foliation, Pair
+from apsg.feature._tensor import Ortensor3
 
 
 class FeatureSet:
@@ -65,6 +66,10 @@ class Vector3Set(FeatureSet):
     def __repr__(self):
         return f"V({len(self)}) {self.name}"
 
+    def __abs__(self):
+        """Returns array of euclidean norms"""
+        return np.asarray([abs(e) for e in self])
+
     def to_lin(self):
         """Return ``LineationSet`` object with all data converted to ``Lineation``."""
         return LineationSet([Lineation(e) for e in self], name=self.name)
@@ -77,8 +82,20 @@ class Vector3Set(FeatureSet):
         """Return ``Vector3Set`` object with all data converted to ``Vector3``."""
         return Vector3Set([Vector3(e) for e in self], name=self.name)
 
+    def proj(self, vec):
+        """Return projections of all features in ``FeatureSet`` onto vector.
+
+        """
+        return type(self)([e.project() for e in self], name=self.name)
+
+    def dot(self, vec):
+        """Return array of dot products of all features in ``FeatureSet`` with vector.
+
+        """
+        return np.array([e.dot(vec) for e in self])
+
     def cross(self, other=None):
-        """Return cross products of all data in ``FeatureSet``
+        """Return cross products of all features in ``FeatureSet``
 
         Without arguments it returns cross product of all pairs in dataset.
         If argument is group of same length or single data object element-wise
@@ -95,6 +112,175 @@ class Vector3Set(FeatureSet):
             raise TypeError("Wrong argument type!")
         return G(res, name=self.name)
 
+    __pow__ = cross
+
+    def normalized(self):
+        """Return ``FeatureSet`` object with normalized (unit length) elements."""
+        return type(self)([e.normalized() for e in self], name=self.name)
+
+    uv = normalized
+
+    def transform(self, F, **kwargs):
+        """Return affine transformation of all features ``FeatureSet`` by matrix 'F'.
+
+        Args:
+          F: Transformation matrix. Should be array-like value e.g. ``DefGrad3``
+
+        Keyword Args:
+          norm: normalize transformed features. True or False. Default False
+
+        """
+        return type(self)([e.transform(F, **kwargs) for e in self], name=self.name)
+
+    def is_upper(self):
+        """
+        Return boolean array of z-coordinate negative test
+        """
+
+        return np.asarray([e.is_upper() for e in self])
+
+    def R(self):
+        """Return resultant of data in ``FeatureSet`` object.
+
+        Resultant is of same type as features in ``FeatureSet``. Note
+        that ``Foliation`` and ``Lineation`` are axial in nature so
+        resultant can give other result than expected. Anyway for axial
+        data orientation tensor analysis will give you right answer.
+
+        As axial summing is not commutative we use vectorial summing of
+        centered data for Fol and Lin
+        """
+        return sum(self)
+
+    def var(self):
+        """Spherical variance based on resultant length (Mardia 1972).
+
+        var = 1 - |R| / n
+        """
+        return 1 - abs(self.uv.R) / len(self)
+
+    def ortensor(self):
+        """Return orientation tensor ``Ortensor`` of ``Group``."""
+
+        return Ortensor3.from_features(self)
+
+    def cluster(self):
+        """Return hierarchical clustering ``Cluster`` of ``Group``."""
+        return NotImplemented
+
+    @classmethod
+    def from_csv(cls, filename, acol=0, icol=1):
+        """Create ``FeatureSet`` object from csv file
+
+        Args:
+          filename (str): name of CSV file to load
+
+        Keyword Args:
+          typ: Type of objects. Default ``Lin``
+          acol (int or str): azimuth column (starts from 0). Default 0
+          icol (int or str): inclination column (starts from 0). Default 1
+            When acol and icol are strings they are used as column headers.
+
+        Example:
+          >>> gf = FoliationSet.from_csv('file1.csv')                 #doctest: +SKIP
+          >>> gl = LineationSet.from_csv('file2.csv', acol=1, icol=2) #doctest: +SKIP
+
+        """
+        from os.path import basename
+        import csv
+
+        with open(filename) as csvfile:
+            has_header = csv.Sniffer().has_header(csvfile.read(1024))
+            csvfile.seek(0)
+            dialect = csv.Sniffer().sniff(csvfile.read(1024))
+            csvfile.seek(0)
+            if isinstance(acol, int) and isinstance(icol, int):
+                if has_header:
+                    reader = csv.DictReader(csvfile, dialect=dialect)
+                    aname, iname = reader.fieldnames[acol], reader.fieldnames[icol]
+                    r = [(float(row[aname]), float(row[iname])) for row in reader]
+                else:
+                    reader = csv.reader(csvfile, dialect=dialect)
+                    r = [(float(row[acol]), float(row[icol])) for row in reader]
+            else:
+                if has_header:
+                    reader = csv.DictReader(csvfile, dialect=dialect)
+                    r = [(float(row[acol]), float(row[icol])) for row in reader]
+                else:
+                    raise ValueError("No header line in CSV file...")
+
+        azi, inc = zip(*r)
+        return cls.from_array(azi, inc, name=basename(filename))
+
+    def to_csv(self, filename, delimiter=","):
+        """Save ``Group`` object to csv file
+
+        Args:
+          filename (str): name of CSV file to save.
+
+        Keyword Args:
+          delimiter (str): values delimiter. Default ','
+        
+        Note: Written values are rounded according to `ndigits` settings in apsg_conf
+
+        """
+        from os.path import basename
+        import csv
+        n = apsg_conf["ndigits"]
+
+        with open(filename, "w", newline="") as csvfile:
+            fieldnames = ["azi", "inc"]
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for dt in self:
+                azi, inc = dt.geo
+                writer.writerow({"azi": round(azi, n), "inc": round(inc, n)})
+
+    @classmethod
+    def from_array(cls, azis, incs, name="Default"):
+        """Create ``Group`` object from arrays of azimuths and inclinations
+
+        Args:
+          azis: list or array of azimuths
+          incs: list or array of inclinations
+
+        Keyword Args:
+          typ: type of data. ``Fol`` or ``Lin``
+          name: name of ``Group`` object. Default is 'Default'
+
+        Example:
+          >>> f = FoliationSet.from_array([120,130,140], [10,20,30])
+          >>> l = LineationSet.from_array([120,130,140], [10,20,30])
+        """
+        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
+        return cls([dtype_cls(azi, inc) for azi, inc in zip(azis, incs)], name=name)
+
+    @classmethod
+    def random_normal(cls,  N=100, mean=Vector3(0, 0, 1), sigma=20, name="Default"):
+        """Method to create ``FeatureSet`` of normaly distributed features.
+
+        Keyword Args:
+          N: number of objects to be generated
+          mean: mean orientation given as ``Vector3``. Default Vector3(0, 0, 1)
+          sigma: sigma of normal distribution. Default 20
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> np.random.seed(58463123)
+          >>> g = Group.randn_lin(100, Lin(120, 40))
+          >>> g.R
+          L:118/42
+
+        """
+        data = []
+        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
+        orig = Vector3(0, 0, 1)
+        ax = orig.cross(mean)
+        ang = orig.angle(mean)
+        for s, r in zip(180 * np.random.uniform(low=0, high=180, size=N), np.random.normal(loc=0, scale=sigma, size=N)):
+            v = orig.rotate(Vector3(s, 0), r).rotate(ax, ang)
+            data.append(dtype_cls(v))
+        return cls(data, name=name)
 
 
 class LineationSet(Vector3Set):
@@ -132,7 +318,7 @@ class PairSet(FeatureSet):
     def __repr__(self):
         return f"P({len(self)}) {self.name}"
 
-class FaultSet(PairSet):
+class FaultSet(FeatureSet):
     __feature_type__ = "Fault"
 
 

@@ -2,8 +2,8 @@
 
 from apsg.math import Vector3
 from apsg.config import apsg_conf
-from apsg.feature import Lineation, Foliation, Pair
-from apsg.feature import Vector3Set, LineationSet, FoliationSet, G
+from apsg.feature import Lineation, Foliation, Pair, Fault
+from apsg.feature import Vector3Set, LineationSet, FoliationSet, G, PairSet, FaultSet
 from apsg.feature import DefGrad3, VelGrad3, Stress3, Ellipsoid, Ortensor3
 
 
@@ -22,6 +22,8 @@ def fol(*args):
 def pair(*args):
     return Pair(*args)
 
+def fault(*args):
+    return Fault(*args)
 
 __all__ = (
     "apsg_conf",
@@ -29,6 +31,7 @@ __all__ = (
     "lin",
     "fol",
     "pair",
+    "fault",
     "Vector3Set",
     "LineationSet",
     "FoliationSet",

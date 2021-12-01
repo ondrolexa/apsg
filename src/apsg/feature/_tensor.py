@@ -7,14 +7,7 @@ from apsg.helpers._math import sind, cosd, tand, acosd, asind, atand, atan2d, sq
 from apsg.math._vector import Vector3
 from apsg.math._matrix import Matrix3
 from apsg.decorator._decorator import ensure_first_arg_same, ensure_arguments
-from apsg.feature._geodata import Pair
-from apsg.feature._container import (
-    FeatureSet,
-    Vector3Set,
-    LineationSet,
-    FoliationSet,
-    G,
-)
+from apsg.feature._geodata import Lineation, Foliation, Pair
 
 
 class Tensor3(Matrix3):
@@ -24,18 +17,18 @@ class Tensor3(Matrix3):
     @property
     def eigenlins(self):
         """
-        Return ```LineationSet``` of eigenvectors as ``Lin`` objects.
+        Return tuple of eigenvectors as ``Lineation`` objects.
         """
 
-        return Vector3Set(self.eigenvectors()).to_lin()
+        return tuple(Lineation(v) for v in self.eigenvectors())
 
     @property
     def eigenfols(self):
         """
-        Return ```FoliationSet``` of eigenplanes as ``Foliation`` objects.
+        Return tuple of eigenvectors as ``Foliation`` objects.
         """
 
-        return Vector3Set(self.eigenvectors()).to_lin()
+        return tuple(Foliation(v) for v in self.eigenvectors())
 
 
 class DefGrad3(Tensor3):

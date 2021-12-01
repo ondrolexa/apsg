@@ -226,6 +226,27 @@ class Vector2(Vector):
 
 
 class Axial2(Vector2):
+
+    def __add__(self, other):
+        if issubclass(type(other), Vector2):
+            if super().dot(other) < 0:
+                other = -other
+        return type(self)(np.add(self, other))
+
+    __radd__ = __add__
+
+    def __sub__(self, other):
+        if issubclass(type(other), Vector2):
+            if super().dot(other) < 0:
+                other = -other
+        return type(self)(np.subtract(self, other))
+
+    def __rsub__(self, other):
+        if issubclass(type(other), Vector2):
+            if super().dot(other) < 0:
+                other = -other
+        return type(self)(np.subtract(other, self))
+
     def dot(self, other):
         return abs(super().dot(other))
 
@@ -303,6 +324,17 @@ class Vector3(Vector):
 
     __pow__ = cross
 
+    def lower():
+        """Change vector direction to point towards positive Z direction"""
+        if self.z < 0:
+            return -self
+        else:
+            return +self
+
+    def is_upper():
+        """Return True if vector points towards negative Z direction"""
+        return self.z < 0
+
     @property
     def geo(self):
         return vec2geo_linear_signed(self)
@@ -338,7 +370,7 @@ class Vector3(Vector):
 
     proj = project
 
-    def transform(self, *args, **kwargs):
+    def transform(self, F, **kwargs):
         """
         Return affine transformation of vector `u` by matrix `F`.
 
@@ -360,12 +392,33 @@ class Vector3(Vector):
             Vector3(1, -1, 1)
 
         """
-        r = Vector3(np.dot(args[0], self))
+        r = Vector3(np.dot(F, self))
         if kwargs.get("norm", False):
             r = r.normalized()
         return type(self)(r)
 
 
 class Axial3(Vector3):
+
+    def __add__(self, other):
+        if issubclass(type(other), Vector3):
+            if super().dot(other) < 0:
+                other = -other
+        return type(self)(np.add(self, other))
+
+    __radd__ = __add__
+
+    def __sub__(self, other):
+        if issubclass(type(other), Vector3):
+            if super().dot(other) < 0:
+                other = -other
+        return type(self)(np.subtract(self, other))
+
+    def __rsub__(self, other):
+        if issubclass(type(other), Vector3):
+            if super().dot(other) < 0:
+                other = -other
+        return type(self)(np.subtract(other, self))
+
     def dot(self, other):
         return abs(super().dot(other))
