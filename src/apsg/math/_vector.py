@@ -35,7 +35,7 @@ class Vector:
         return np.array(self._coords, dtype=dtype)
 
     def to_json(self):
-        return {"datatype": type(self).__name__, "args": {"_coords": self._coords}}
+        return {"datatype": type(self).__name__, "args": (self._coords,)}
 
     @ensure_first_arg_same
     def __eq__(self, other):

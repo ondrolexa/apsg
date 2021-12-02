@@ -25,7 +25,7 @@ class FeatureSet:
     def to_json(self):
         return {
             "datatype": type(self).__name__,
-            "args": {"data": tuple(item.to_json() for item in self)},
+            "args": ({"collection": tuple(item.to_json() for item in self)},),
             "kwargs": {"name": self.name},
         }
 

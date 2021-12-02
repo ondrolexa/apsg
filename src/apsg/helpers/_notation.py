@@ -36,6 +36,10 @@ def vec2fol_dd(v):
         n = -n
     return (atan2d(n.y, n.x) + 180) % 360, 90 - asind(n.z)
 
+def vec2fol_dd_signed(v):
+    n = v.uv()
+    return (atan2d(n.y, n.x) + 180) % 360, 90 - asind(n.z)
+
 
 def vec2fol_rhr(v):
     n = v.uv()
@@ -43,6 +47,12 @@ def vec2fol_rhr(v):
         n = -n
     return (atan2d(n.y, n.x) + 90) % 360, 90 - asind(n.z)
 
+def vec2fol_rhr_signed(v):
+    n = v.uv()
+    return (atan2d(n.y, n.x) + 90) % 360, 90 - asind(n.z)
+
+def vec2geo_planar_signed(arg):
+    return {"dd": vec2fol_dd_signed, "rhr": vec2fol_rhr_signed}[apsg_conf["notation"]](arg)
 
 def vec2geo_planar(arg):
     return {"dd": vec2fol_dd, "rhr": vec2fol_rhr}[apsg_conf["notation"]](arg)
@@ -57,9 +67,12 @@ def vec2lin_dd(v):
         n = -n
     return atan2d(n.y, n.x) % 360, asind(n.z)
 
-def vec2geo_linear_signed(v):
+def vec2lin_dd_signed(v):
     n = v.uv()
     return atan2d(n.y, n.x) % 360, asind(n.z)
+
+def vec2geo_linear_signed(arg):
+    return {"dd": vec2lin_dd_signed, "rhr": vec2lin_dd_signed}[apsg_conf["notation"]](arg)
 
 def vec2geo_linear(arg):
     return {"dd": vec2lin_dd, "rhr": vec2lin_dd}[apsg_conf["notation"]](arg)

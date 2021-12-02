@@ -8,7 +8,9 @@ from apsg.helpers._notation import (
     geo2vec_planar,
     geo2vec_linear,
     vec2geo_planar,
+    vec2geo_planar_signed,
     vec2geo_linear,
+    vec2geo_linear_signed
 )
 from apsg.decorator._decorator import ensure_first_arg_same, ensure_arguments
 from apsg.math._vector import Vector3, Axial3
@@ -34,8 +36,8 @@ class Lineation(Axial3):
         return vec2geo_linear(self)
 
     def to_json(self):
-        azi, inc = vec2geo_linear(self)
-        return {"datatype": type(self).__name__, "arg": (azi, inc)}
+        azi, inc = vec2geo_linear_signed(self)
+        return {"datatype": type(self).__name__, "args": (azi, inc)}
 
 
 class Foliation(Axial3):
@@ -66,8 +68,8 @@ class Foliation(Axial3):
         return vec2geo_planar(self)
 
     def to_json(self):
-        azi, inc = vec2geo_planar(self)
-        return {"datatype": type(self).__name__, "args": {"azi": azi, "inc": inc}}
+        azi, inc = vec2geo_planar_signed(self)
+        return {"datatype": type(self).__name__, "args": (azi, inc)}
 
     def dipvec(self):
         return Vector3(*vec2geo_planar(self))
@@ -187,9 +189,9 @@ class Pair:
         return np.hstack((np.asarray(self.fvec, dtype=dtype), np.asarray(self.lvec, dtype=dtype)))
 
     def to_json(self):
-        fazi, finc = self.fol.geo
-        lazi, linc = self.lin.geo
-        return {"datatype": type(self).__name__, "args": {"fazi": fazi, "finc": finc, "lazi": lazi, "linc": linc}}
+        fazi, finc = vec2geo_planar_signed(self.fvec)
+        lazi, linc = vec2geo_linear_signed(self.lvec)
+        return {"datatype": type(self).__name__, "args": (fazi, finc, lazi, linc)}
 
     @classmethod
     def random(cls):
@@ -338,9 +340,9 @@ class Fault(Pair):
         return np.hstack((np.asarray(self.fvec, dtype=dtype), np.asarray(self.lvec, dtype=dtype), self.sense))
 
     def to_json(self):
-        fazi, finc = self.fvec.geo
-        lazi, linc = self.lvec.geo
-        return {"datatype": type(self).__name__, "args": {"fazi": fazi, "finc": finc, "lazi": lazi, "linc": linc, "sense": self.sense}}
+        fazi, finc = vec2geo_planar_signed(self.fvec)
+        lazi, linc = vec2geo_linear_signed(self.lvec)
+        return {"datatype": type(self).__name__, "args": (fazi, finc, lazi, linc, self.sense)}
 
     @classmethod
     def random(cls):

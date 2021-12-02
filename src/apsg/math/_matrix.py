@@ -38,7 +38,7 @@ class Matrix:
         return hash((type(self).__name__,) + self._coefs)
 
     def to_json(self):
-        return {"datatype": type(self).__name__, "args": {"_coefs": self._coefs}}
+        return {"datatype": type(self).__name__, "args": (self._coefs,)}
 
     def __array__(self, dtype=None):
         return np.array(self._coefs, dtype=dtype)

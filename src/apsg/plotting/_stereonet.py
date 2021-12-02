@@ -28,6 +28,33 @@ __all__ = ["StereoNet", "VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot", "Ro
 warnings.filterwarnings("ignore", category=mcb.mplDeprecation)
 
 
+"""
+stereonet dict
+    - property: value
+
+data dict
+    id: obj.tojson()
+
+
+artists (array of dicts)
+
+    - linear
+        - id
+        - args
+        - kwargs
+
+    - pole
+        - id
+        - args
+        - kwargs
+
+    - great_circle
+        - id
+        - args
+        - kwargs
+  """
+
+
 class StereoNet:
     def __init__(self, **kwargs):
         self.grid = kwargs.get("grid", True)
