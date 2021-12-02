@@ -38,9 +38,11 @@ class StereoNet:
             self.proj = EqualAngleProj(**kwargs)
         else:
             raise TypeError("Only 'Equal-area' and 'Equal-angle' implemented")
+        self.angles_gc = np.linspace(-90 + 1e-7, 90 - 1e-7, int(self.proj.resolution / 2))
+        self.angles_sc = np.linspace(-180 + 1e-7, 180 - 1e-7, self.proj.resolution)
 
     # just for testing
-    def draw(self, fol=Foliation(120, 40), lin=Lineation(40, 20)):
+    def draw(self):
         self.fig, self.ax = plt.subplots()
         self.ax.set_aspect(1)
         self.ax.set_axis_off()
@@ -71,43 +73,52 @@ class StereoNet:
         theta = np.linspace(0, 2 * np.pi, 200)
         self.ax.plot(np.cos(theta), np.sin(theta), "g", lw=2)
 
-        #######################
-        angles_gc = np.linspace(-90 + 1e-7, 90 - 1e-7, int(self.proj.resolution / 2))
-        angles_sc = np.linspace(-180 + 1e-7, 180 - 1e-7, self.proj.resolution)
+# Just for developement.. Will change
 
+    def great_circle(self, arg):
+        self.draw()
         # great circle
         if self.proj.rotate_data:
-            fdv = fol.transform(self.proj.R).dipvec().transform(self.proj.Ri)
+            fdv = arg.transform(self.proj.R).dipvec().transform(self.proj.Ri)
         else:
-            fdv = fol.dipvec()
-        X, Y = self.proj.project_data(
-            *np.array([fdv.rotate(fol, a) for a in angles_gc]).T
-        )
-        self.ax.plot(X, Y, "r", lw=2)
+            fdv = arg.dipvec()
+        # iterate
+        for fol, dv in zip(np.atleast_2d(arg), np.atleast_2d(fdv)):
+            X, Y = self.proj.project_data(
+                *np.array([Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]).T
+            )
+            self.ax.plot(X, Y, "b", lw=2)
+        plt.show()
+
+    def pole(self, arg):
         # pole
-        X, Y = self.proj.project_data(*np.atleast_2d(fol).T)
-        self.ax.plot(X, Y, "ro")
+        self.line(arg)
+
+    def line(self, arg):
+        self.draw()
         # linear
-        X, Y = self.proj.project_data(*np.atleast_2d(lin).T)
-        self.ax.plot(X, Y, "go")
+        X, Y = self.proj.project_data(*np.atleast_2d(arg).T)
+        self.ax.plot(X, Y, "bo")
+        plt.show()
+
+    def cone(self, arg):
+        self.draw()
         # small circle
         angle = 40
         lt = lin.transform(self.proj.R)
         cl = lt.rotate(lt.cross(Foliation(lt).dipvec()), angle).transform(self.proj.Ri)
         X, Y = self.proj.project_data(
-            *np.array([cl.rotate(lin, a) for a in angles_sc]).T
+            *np.array([cl.rotate(lin, a) for a in self.angles_sc]).T
         )
         self.ax.plot(X, Y, "g--", lw=2)
         cl = -lt.rotate(lt.cross(Foliation(lt).dipvec()), -angle).transform(
             self.proj.Ri
         )
         X, Y = self.proj.project_data(
-            *np.array([cl.rotate(lin, a) for a in angles_sc]).T
+            *np.array([cl.rotate(lin, a) for a in self.angles_sc]).T
         )
         self.ax.plot(X, Y, "m--", lw=2)
-
-        plt.show()
-
+        
 
 class RosePlot(object):
 

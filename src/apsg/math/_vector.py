@@ -149,6 +149,8 @@ class Vector2(Vector):
 
     uv = normalized
 
+    shape = __shape__
+
     @ensure_first_arg_same
     def dot(self, other):
         return self.x * other.x + self.y * other.y
@@ -296,6 +298,8 @@ class Vector3(Vector):
 
     uv = normalized
 
+    shape = __shape__
+
     @ensure_first_arg_same
     def dot(self, other):
         return self.x * other.x + self.y * other.y + self.z * other.z
@@ -324,14 +328,14 @@ class Vector3(Vector):
 
     __pow__ = cross
 
-    def lower():
+    def lower(self):
         """Change vector direction to point towards positive Z direction"""
         if self.z < 0:
             return -self
         else:
             return +self
 
-    def is_upper():
+    def is_upper(self):
         """Return True if vector points towards negative Z direction"""
         return self.z < 0
 

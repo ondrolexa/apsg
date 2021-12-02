@@ -5,6 +5,7 @@ from apsg.config import apsg_conf
 from apsg.feature import Lineation, Foliation, Pair, Fault
 from apsg.feature import Vector3Set, LineationSet, FoliationSet, G, PairSet, FaultSet
 from apsg.feature import DefGrad3, VelGrad3, Stress3, Ellipsoid, Ortensor3
+from apsg.plotting import StereoNet
 
 
 def vec3(*args):
@@ -41,6 +42,7 @@ __all__ = (
     "Stress3",
     "Ellipsoid",
     "Ortensor3",
+    "StereoNet"
 )
 
 __version__ = "1.0.0"

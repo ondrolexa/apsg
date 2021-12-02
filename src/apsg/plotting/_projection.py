@@ -36,7 +36,7 @@ class Projection:
         if self.rotate_data:
             x, y, z = self.R.dot((x, y, z))
         X, Y = self.project(x, y, z)
-        inside = X * X + Y * Y < 1.0
+        inside = X * X + Y * Y <= 1.0
         return X[inside], Y[inside]
 
     def inverse_data(self, X, Y):

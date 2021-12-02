@@ -3,8 +3,10 @@ from itertools import combinations
 import numpy as np
 
 from apsg.math._vector import Vector3
+from apsg.helpers._math import acosd
 from apsg.feature._geodata import Lineation, Foliation, Pair
 from apsg.feature._tensor import Ortensor3
+from apsg.feature._statistics import KentDistribution, vonMisesFisher
 
 
 class FeatureSet:
@@ -15,6 +17,7 @@ class FeatureSet:
         assert all([isinstance(obj, dtype_cls) for obj in data])
         self.data = tuple(data)
         self.name = name
+        self._cache = {}
 
     def __copy__(self):
         return type(self).from_list(self.data, name=self.name)
@@ -59,6 +62,27 @@ class FeatureSet:
         """Rotate ``FeatureSet`` object `phi` degress about `axis`."""
         return type(self)([e.rotate(axis, phi) for e in self], name=self.name)
 
+    def bootstrap(self, n=100, size=None):
+        """Return generator of bootstraped samples from ``FeatureSet``.
+
+        Args:
+          n: number of samples to be generated. Default 100.
+          size: number of data in sample. Default is same as ``FeatureSet``.
+
+        Example:
+          >>> np.random.seed(6034782)
+          >>> l = Vector3Set.random_fisher(n=100, position=lin(120,40))
+          >>> sm = [lb.R() for lb in l.bootstrap()]
+          >>> l.fisher_statistics()
+          {'k': 19.912361106049794, 'a95': 3.2490273703993973, 'csd': 18.151964734256303}
+          >>> Vector3Set(sm).fisher_statistics()
+          {'k': 1735.3602067018592, 'a95': 0.33932243564473413, 'csd': 1.9444205467798013}
+        """
+        if size is None:
+            size = len(self)
+        for sample in np.random.randint(0, len(self), (n, size)):
+            yield type(self)([self.data[ix] for ix in sample], name=self.name)
+
 
 class Vector3Set(FeatureSet):
     __feature_type__ = "Vector3"
@@ -98,8 +122,8 @@ class Vector3Set(FeatureSet):
         """Return cross products of all features in ``FeatureSet``
 
         Without arguments it returns cross product of all pairs in dataset.
-        If argument is group of same length or single data object element-wise
-        cross-product is calculated.
+        If argument is ``FeatureSet`` of same length or single data object
+        element-wise cross-products are calculated.
         """
         res = []
         if other is None:
@@ -113,6 +137,24 @@ class Vector3Set(FeatureSet):
         return G(res, name=self.name)
 
     __pow__ = cross
+
+    def angle(self, other=None):
+        """Return angles of all data in ``FeatureSet`` object
+
+        Without arguments it returns angles of all pairs in dataset.
+        If argument is ``FeatureSet`` of same length or single data object
+        element-wise angles are calculated.
+        """
+        res = []
+        if other is None:
+            res = [e.angle(f) for e, f in combinations(self.data, 2)]
+        elif issubclass(type(other), FeatureSet):
+            res = [e.angle(f) for e, f in zip(self, other)]
+        elif issubclass(type(other), Vector3):
+            res = [e.angle(other) for e in self]
+        else:
+            raise TypeError("Wrong argument type!")
+        return np.asarray(res)
 
     def normalized(self):
         """Return ``FeatureSet`` object with normalized (unit length) elements."""
@@ -139,7 +181,7 @@ class Vector3Set(FeatureSet):
 
         return np.asarray([e.is_upper() for e in self])
 
-    def R(self):
+    def R(self, normalized=False):
         """Return resultant of data in ``FeatureSet`` object.
 
         Resultant is of same type as features in ``FeatureSet``. Note
@@ -149,20 +191,98 @@ class Vector3Set(FeatureSet):
 
         As axial summing is not commutative we use vectorial summing of
         centered data for Fol and Lin
+
+        Args:
+            normalized: if True returns mean resultant. Default False
         """
-        return sum(self)
+        R = sum(self.normalized())
+        if normalized:
+            R = R / len(self)
+        return R
+
+    def fisher_statistics(self):
+        """Fisher's statistics
+
+        fisher_statistics returns dictionary with keys:
+            `k`    estimated precision parameter,
+            `csd`  estimated angular standard deviation
+            `a95`  confidence limit
+        """
+        stats = {"k": np.inf, "a95": 0, "csd": 0}
+        N = len(self)
+        R = abs(self.R())
+        if N != R:
+            stats["k"] = (N - 1) / (N - R)
+            stats["csd"] = 81 / np.sqrt(stats["k"])
+            stats["a95"] = acosd(1 - ((N - R) / R) * (20 ** (1 / (N - 1)) - 1))
+        return stats
 
     def var(self):
         """Spherical variance based on resultant length (Mardia 1972).
 
         var = 1 - |R| / n
         """
-        return 1 - abs(self.uv.R) / len(self)
+        return 1 - abs(self.R(normalized=True))
+
+    def delta(self):
+        """Cone angle containing ~63% of the data in degrees.
+
+        For enough large sample it approach angular standard deviation (csd)
+        of Fisher statistics
+        """
+        return acosd(abs(self.R(normalized=True)))
+
+    @property
+    def rdegree(self):
+        """Degree of preffered orientation of vectors in ``FeatureSet``.
+
+        D = 100 * (2 * |R| - n) / n
+        """
+        N = len(self)
+        return 100 * (2 * abs(self.R()) - N) / N
 
     def ortensor(self):
         """Return orientation tensor ``Ortensor`` of ``Group``."""
 
-        return Ortensor3.from_features(self)
+        return self._ortensor
+
+    @property
+    def _ortensor(self):
+        if "ortensor" not in self._cache:
+            self._cache["ortensor"] = Ortensor3.from_features(self)
+        return self._cache["ortensor"]
+
+    @property
+    def _svd(self):
+        if "svd" not in self._cache:
+            self._cache["svd"] = np.linalg.svd(self._ortensor)
+        return self._cache["svd"]
+
+    def centered(self):
+        """Rotate ``FeatureSet`` object to position that eigenvectors are parallel
+        to axes of coordinate system: E1(vertical), E2(east-west),
+        E3(north-south)
+
+        """
+        return self.transform(self._svd[2]).rotate(Vector3(0, -1, 0), 90)
+
+    def halfspace(self):
+        """Change orientation of vectors in ``FeatureSet``, so all have angle<=90 with
+        resultant.
+
+        """
+        dtype_cls = getattr(sys.modules[__name__], type(self).__feature_type__)
+        v = Vector3Set(self)
+        v_data = list(v)
+        alldone = np.all(v.angle(v.R()) <= 90)
+        while not alldone:
+            ang = v.angle(v.R())
+            for ix, do in enumerate(ang > 90):
+                if do:
+                    v_data[ix] = -v_data[ix]
+                    v = Vector3Set(v_data)
+                alldone = np.all(v.angle(v.R()) <= 90)
+        return type(self)([dtype_cls(vec) for vec in v], name=self.name)
 
     def cluster(self):
         """Return hierarchical clustering ``Cluster`` of ``Group``."""
@@ -256,12 +376,12 @@ class Vector3Set(FeatureSet):
         return cls([dtype_cls(azi, inc) for azi, inc in zip(azis, incs)], name=name)
 
     @classmethod
-    def random_normal(cls,  N=100, mean=Vector3(0, 0, 1), sigma=20, name="Default"):
+    def random_normal(cls,  n=100, position=Vector3(0, 0, 1), sigma=20, name="Default"):
         """Method to create ``FeatureSet`` of normaly distributed features.
 
         Keyword Args:
-          N: number of objects to be generated
-          mean: mean orientation given as ``Vector3``. Default Vector3(0, 0, 1)
+          n: number of objects to be generated
+          position: mean orientation given as ``Vector3``. Default Vector3(0, 0, 1)
           sigma: sigma of normal distribution. Default 20
           name: name of dataset. Default is 'Default'
 
@@ -275,12 +395,133 @@ class Vector3Set(FeatureSet):
         data = []
         dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
         orig = Vector3(0, 0, 1)
-        ax = orig.cross(mean)
-        ang = orig.angle(mean)
-        for s, r in zip(180 * np.random.uniform(low=0, high=180, size=N), np.random.normal(loc=0, scale=sigma, size=N)):
+        ax = orig.cross(position)
+        ang = orig.angle(position)
+        for s, r in zip(180 * np.random.uniform(low=0, high=180, size=n), np.random.normal(loc=0, scale=sigma, size=n)):
             v = orig.rotate(Vector3(s, 0), r).rotate(ax, ang)
             data.append(dtype_cls(v))
         return cls(data, name=name)
+
+    @classmethod
+    def random_fisher(cls,  n=100, position=Vector3(0, 0, 1), kappa=20, name="Default"):
+        """Return ``FeatureSet`` of random vectors sampled from von Mises Fisher distribution
+        around center position with concentration kappa.
+
+        Args:
+          n: number of objects to be generated
+          position: mean orientation given as ``Vector3``. Default Vector3(0, 0, 1)
+          kappa: precision parameter of the distribution. Default 20
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> l = LineationSet.random_fisher(position=lin(120,50))
+        """
+        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
+        dc = vonMisesFisher(position, kappa, n)
+        return cls([dtype_cls(d) for d in dc], name=name)
+
+    @classmethod
+    def random_fisher2(cls,  n=100, position=Vector3(0, 0, 1), kappa=20, name="Default"):
+        """Method to create ``FeatureSet`` of vectors distributed according to
+        Fisher distribution.
+
+        Note: For proper von Mises Fisher distrinbution implementation use ``random.fisher``
+        method.
+
+        Args:
+          n: number of objects to be generated
+          position: mean orientation given as ``Vector3``. Default Vector3(0, 0, 1)
+          kappa: precision parameter of the distribution. Default 20
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> l = LineationSet.random_fisher2(position=lin(120,50))
+        """
+        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
+        orig = Vector3(0, 0, 1)
+        ax = orig.cross(position)
+        ang = orig.angle(position)
+        L = np.exp(-2 * kappa)
+        a = np.random.random(n) * (1 - L) + L
+        fac = np.sqrt(-np.log(a) / (2 * kappa))
+        inc = 90 - 2 * np.degrees(np.arcsin(fac))
+        azi = 360 * np.random.random(n)
+        return cls.from_array(azi, inc, name=name).rotate(ax, ang)
+
+    @classmethod
+    def random_kent(cls, p, n=500, kappa=20, beta=None, name="Default"):
+        """Return ``FeatureSet`` of random vectors sampled from Kent distribution
+        (Kent, 1982) - The 5-parameter Fisher–Bingham distribution.
+
+        Args:
+          p: Pair object defining orientation of data
+          N: number of objects to be generated
+          kappa: concentration parameter. Default 20
+          beta: ellipticity 0 <= beta < kappa
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> p = pair(150, 40, 150, 40)
+          >>> l = LineationSet.random_kent(p, n=300, kappa=30)
+        """
+        assert issubclass(type(p), Pair), "Argument must be Pair object."
+        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
+        if beta is None:
+            beta = kappa / 2
+        kd = KentDistribution(p.lvec, p.fvec.cross(p.lvec), p.fvec, kappa, beta)
+        return cls([dtype_cls(d) for d in kd.rvs(n)], name=name)
+
+    @classmethod
+    def uniform_sfs(cls,  n=100, name="Default"):
+        """Method to create ``FeatureSet`` of uniformly distributed vectors.
+        Spherical Fibonacci Spiral points on a sphere algorithm adopted from
+        John Burkardt.
+
+        http://people.sc.fsu.edu/~jburkardt/
+
+        Keyword Args:
+          n: number of objects to be generated. Default 1000
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> v = Group.sfs_vec3(300)
+          >>> v.ortensor.eigenvals
+          (0.33346453471636356, 0.33333474915201167, 0.3332007161316248)
+        """
+        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
+        phi = (1 + np.sqrt(5)) / 2
+        i2 = 2 * np.arange(n) - n + 1
+        theta = 2 * np.pi * i2 / phi
+        sp = i2 / n
+        cp = np.sqrt((n + i2) * (n - i2)) / n
+        dc = np.array([cp * np.sin(theta), cp * np.cos(theta), sp]).T
+        return cls([dtype_cls(d) for d in dc], name=name)
+
+    @classmethod
+    def uniform_gss(cls,  n=100, name="Default"):
+        """Method to create ``FeatureSet`` of uniformly distributed vectors.
+        Golden Section Spiral points on a sphere algorithm.
+
+        http://www.softimageblog.com/archives/115
+
+        Args:
+          n: number of objects to be generated.  Default 1000
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> v = Group.gss_vec3(300)
+          >>> v.ortensor.eigenvals
+          (0.3333568856957158, 0.3333231511543691, 0.33331996314991513)
+        """
+        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
+        inc = np.pi * (3 - np.sqrt(5))
+        off = 2 / n
+        k = np.arange(n)
+        y = k * off - 1 + (off / 2)
+        r = np.sqrt(1 - y * y)
+        phi = k * inc
+        dc = np.array([np.cos(phi) * r, y, np.sin(phi) * r]).T
+        return cls([dtype_cls(d) for d in dc], name=name)
 
 
 class LineationSet(Vector3Set):
@@ -295,6 +536,10 @@ class FoliationSet(Vector3Set):
 
     def __repr__(self):
         return f"S({len(self)}) {self.name}"
+
+    def dipvec(self):
+        """Return ``FeatureSet`` object with plane dip vector."""
+        return Vector3Set([e.dipvec() for e in self], name=self.name)
 
 
 def G(lst, name="Default"):
