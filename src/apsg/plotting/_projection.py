@@ -161,9 +161,15 @@ class EqualAreaProj(Projection):
     netname = "Schmidt net"
 
     def project(self, x, y, z):
-        z[np.isclose(1 + z, np.zeros_like(z))] = 1e-7 - 1
-        sqz = np.sqrt(1 / (1 + z))
-        return y * sqz, x * sqz
+        # normalize
+        d = np.sqrt(x * x + y * y + z * z)
+        if any(d == 0):
+            return np.nan, np.nan
+        else:
+            x, y, z = x / d, y / d, z / d
+            z[np.isclose(1 + z, np.zeros_like(z))] = 1e-6 - 1
+            sqz = np.sqrt(1 / (1 + z))
+            return y * sqz, x * sqz
 
     def inverse(self, X, Y):
         X, Y = X * sqrt2, Y * sqrt2
@@ -178,8 +184,13 @@ class EqualAngleProj(Projection):
     netname = "Wulff net"
 
     def project(self, x, y, z):
-        z[np.isclose(1 + z, np.zeros_like(z))] = 1e-7 - 1
-        return y / (1 + z), x / (1 + z)
+        # normalize
+        d = np.sqrt(x * x + y * y + z * z)
+        if any(d == 0):
+            return np.nan, np.nan
+        else:
+            z[np.isclose(1 + z, np.zeros_like(z))] = 1e-7 - 1
+            return y / (1 + z), x / (1 + z)
 
     def inverse(self, X, Y):
         x = 2.0 * Y / (1.0 + X * X + Y * Y)
