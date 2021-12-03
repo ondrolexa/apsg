@@ -22,6 +22,8 @@ class FeatureSet:
     def __copy__(self):
         return type(self).from_list(self.data, name=self.name)
 
+    copy = __copy__
+
     def to_json(self):
         return {
             "datatype": type(self).__name__,
@@ -29,7 +31,8 @@ class FeatureSet:
             "kwargs": {"name": self.name},
         }
 
-    copy = __copy__
+    def label(self):
+        return str(self)
 
     def __array__(self, dtype=None):
         return np.array(self.data, dtype=dtype)

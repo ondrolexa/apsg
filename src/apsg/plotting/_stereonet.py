@@ -14,12 +14,20 @@ except ImportError:
     pass
 
 from apsg.config import apsg_conf
-from apsg.helpers import sind, cosd, tand, acosd, asind, atand, atan2d
-from apsg.math import Vector3, Axial3, Matrix3
-from apsg.feature import Lineation, Foliation, Pair, FeatureSet
-
+from apsg.helpers._math import sind, cosd, tand, acosd, asind, atand, atan2d, sqrt2
+from apsg.math._vector import Vector3, Axial3
+from apsg.math._matrix import Matrix3
+from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
+from apsg.feature._container import (
+    FeatureSet,
+    Vector3Set,
+    LineationSet,
+    FoliationSet,
+    PairSet,
+    FaultSet
+)
+from apsg.feature._tensor import DefGrad3, VelGrad3, Stress3, Ellipsoid, Ortensor3
 from apsg.plotting._projection import EqualAreaProj, EqualAngleProj
-
 
 __all__ = ["StereoNet", "VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot", "RosePlot"]
 
@@ -29,7 +37,7 @@ warnings.filterwarnings("ignore", category=mcb.mplDeprecation)
 
 
 """
-stereonet dict
+settings dict
     - property: value
 
 data dict
@@ -42,16 +50,19 @@ artists (array of dicts)
         - id
         - args
         - kwargs
+        - legend (None, True or str)
 
     - pole
         - id
         - args
         - kwargs
+        - legend (None, True or str)
 
     - great_circle
         - id
         - args
         - kwargs
+        - legend (None, True or str)
   """
 
 
@@ -67,9 +78,18 @@ class StereoNet:
             raise TypeError("Only 'Equal-area' and 'Equal-angle' implemented")
         self.angles_gc = np.linspace(-90 + 1e-7, 90 - 1e-7, int(self.proj.resolution / 2))
         self.angles_sc = np.linspace(-180 + 1e-7, 180 - 1e-7, self.proj.resolution)
+        self._builder = dict(settings=dict(kind=kind), data=dict(), artists=[])
+        self.settings = self._builder['settings']
+        self.data = self._builder['data']
+        self.artists = self._builder['artists']
+        self.show_warnings = True
+
+    def clear(self):
+        self._builder['data'] = {}
+        self._builder['artists'] = {}
 
     # just for testing
-    def draw(self):
+    def __draw_net(self):
         self.fig, self.ax = plt.subplots()
         self.ax.set_aspect(1)
         self.ax.set_axis_off()
@@ -98,41 +118,193 @@ class StereoNet:
 
         # Projection circle frame
         theta = np.linspace(0, 2 * np.pi, 200)
-        self.ax.plot(np.cos(theta), np.sin(theta), "g", lw=2)
+        self.ax.plot(np.cos(theta), np.sin(theta), "k", lw=2)
+
+    def __plot_artists(self):
+        for artist in self.artists:
+            plot_method = getattr(self, artist['method'])
+            args = tuple(self.data[obj_id] for obj_id in artist['args'])
+            kwargs = artist['kwargs']
+            plot_method(*args, **kwargs)
+
+    def show(self):
+        self.__draw_net()
+        self.__plot_artists()
+        # show
+        plt.show()
 
 # Just for developement.. Will change
 
-    def great_circle(self, arg):
-        self.draw()
-        # great circle
-        if self.proj.rotate_data:
-            fdv = arg.transform(self.proj.R).dipvec().transform(self.proj.Ri)
+    ########################################
+    # LINE                                 #
+    ########################################
+    def line(self, *args, **kwargs):
+        """Plot linear feature(s) as point(s)"""
+        if self.__validate_linear_args(args):
+            obj_ids = []
+            for arg in args:
+                obj_id = id(arg)
+                if obj_id not in self.data:
+                    self.data[obj_id] = arg
+                obj_ids.append(obj_id)
+            label = kwargs.get('legend', None)
+            if label is True:
+                if len(args) == 1:
+                    label = args[0].label()
+                else:
+                    label = f'Linear ({len(args)})'
+            artist = dict(method='_line', args=obj_ids, kwargs=self.__parse_line_kwargs(kwargs), label=label)
+            self.artists.append(artist)
+
+    def pole(self, *args, **kwargs):
+        """Plot pole of planar feature(s) as point(s)"""
+        if self.__validate_planar_args(args):
+            obj_ids = []
+            for arg in args:
+                obj_id = id(arg)
+                if obj_id not in self.data:
+                    self.data[obj_id] = arg
+                obj_ids.append(obj_id)
+            label = kwargs.get('legend', None)
+            if label is True:
+                if len(args) == 1:
+                    label = args[0].label()
+                else:
+                    label = f'Plana ({len(args)})'
+            artist = dict(method='_line', args=obj_ids, kwargs=self.__parse_line_kwargs(kwargs), label=label)
+            self.artists.append(artist)
+
+    def __validate_linear_args(self, args):
+        if args:
+            if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
+                return True
+            if self.show_warnings:
+                print('Arguments must be Vector3 or Vector3Set like objects.')
+        return False
+
+    def __parse_line_kwargs(self, kwargs):
+        parsed = {}
+        parsed['alpha'] = kwargs.get('alpha', None)
+        if 'color' in kwargs:
+            parsed['mec'] = kwargs['color']
+            parsed['mfc'] = kwargs['color']
         else:
-            fdv = arg.dipvec()
-        # iterate
-        for fol, dv in zip(np.atleast_2d(arg), np.atleast_2d(fdv)):
-            X, Y = self.proj.project_data(
-                *np.array([Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]).T
-            )
-            self.ax.plot(X, Y, "b", lw=2)
-        plt.show()
+            parsed['mec'] = kwargs.get('mec', None)
+            parsed['mfc'] = kwargs.get('mfc', None)
+        parsed['ls'] = kwargs.get('ls', 'none')
+        parsed['marker'] = kwargs.get('marker', 'o')
+        parsed['mew'] = kwargs.get('mew', 1)
+        parsed['ms'] = kwargs.get('ms', 6)
+        return parsed
 
-    def pole(self, arg):
-        # pole
-        self.line(arg)
+    def _line(self, *args, **kwargs):
+        X, Y = self.proj.project_data(*np.vstack(args).T)
+        self.ax.plot(X, Y, **kwargs)
 
-    def line(self, arg):
-        self.draw()
-        # linear
-        X, Y = self.proj.project_data(*np.atleast_2d(arg).T)
-        self.ax.plot(X, Y, "bo")
-        plt.show()
+    ########################################
+    # GREAT CIRCLE                         #
+    ########################################
 
-    def cone(self, arg):
-        self.draw()
-        # small circle
-        angle = 40
-        lt = lin.transform(self.proj.R)
+    def great_circle(self, *args, **kwargs):
+        """Plot planar feature(s) as great circle(s)"""
+        if self.__validate_planar_args(args):
+            obj_ids = []
+            for arg in args:
+                obj_id = id(arg)
+                if obj_id not in self.data:
+                    self.data[obj_id] = arg
+                obj_ids.append(obj_id)
+            label = kwargs.get('legend', None)
+            if label is True:
+                if len(args) == 1:
+                    label = args[0].label()
+                else:
+                    label = f'Planar ({len(args)})'
+            artist = dict(method='_great_circle', args=obj_ids, kwargs=self.__parse_great_circle_kwargs(kwargs), label=label)
+            self.artists.append(artist)
+
+    def __validate_planar_args(self, args):
+        if args:
+            if all([issubclass(type(arg), (Foliation, FoliationSet)) for arg in args]):
+                return True
+            if self.show_warnings:
+                print('Arguments must be Foliation or FoliationSet like objects.')
+        return False
+
+    def __parse_great_circle_kwargs(self, kwargs):
+        parsed = {}
+        parsed['alpha'] = kwargs.get('alpha', None)
+        parsed['color'] = kwargs.get('color', None)
+        parsed['ls'] = kwargs.get('ls', '-')
+        parsed['lw'] = kwargs.get('lw', 1.5)
+        parsed['marker'] = kwargs.get('marker', None)
+        parsed['mec'] = kwargs.get('mec', None)
+        parsed['mew'] = kwargs.get('mew', 1)
+        parsed['mfc'] = kwargs.get('mfc', None)
+        parsed['ms'] = kwargs.get('ms', 6)
+        return parsed
+
+    def _great_circle(self, *args, **kwargs):
+        X, Y = [], []
+        for arg in args:
+            if self.proj.rotate_data:
+                fdv = arg.transform(self.proj.R).dipvec().transform(self.proj.Ri)
+            else:
+                fdv = arg.dipvec()
+            # iterate
+            for fol, dv in zip(np.atleast_2d(arg), np.atleast_2d(fdv)):
+                x, y = self.proj.project_data(
+                    *np.array([Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]).T
+                )
+                X.append(np.hstack((x, np.nan)))
+                Y.append(np.hstack((y, np.nan)))
+        self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
+
+    ########################################
+    # CONE                                 #
+    ########################################
+
+    def cone(self, *args, **kwargs):
+        if self.__validate_cone_args(args):
+            obj_ids = []
+            for arg in args:
+                obj_id = id(arg)
+                if obj_id not in self.data:
+                    self.data[obj_id] = arg
+                obj_ids.append(obj_id)
+            label = kwargs.get('legend', None)
+            if label is True:
+                if len(args[0]) == 1:
+                    label = f'Cone {str(args[0])} ({args[1]})'
+                else:
+                    label = f'Cones ({len(args[0])})'
+            artist = dict(method='_cone', args=obj_ids, kwargs=self.__parse_cone_kwargs(kwargs), label=label)
+            self.artists.append(artist)
+
+    def __validate_cone_args(self, args):
+        if len(args) == 2:
+            if all([issubclass(type(arg), (Foliation, FoliationSet)) for arg in args[0]]) and len(args[0]) == len(args[1]):
+                return True
+            if self.show_warnings:
+                print('Argument must be Vector3 like object.')
+        return False
+
+    def __parse_cone_kwargs(self, kwargs):
+        parsed = {}
+        parsed['alpha'] = kwargs.get('alpha', None)
+        parsed['color'] = kwargs.get('color', None)
+        parsed['ls'] = kwargs.get('ls', '-')
+        parsed['lw'] = kwargs.get('lw', 1.5)
+        parsed['marker'] = kwargs.get('marker', None)
+        parsed['mec'] = kwargs.get('mec', None)
+        parsed['mew'] = kwargs.get('mew', 1)
+        parsed['mfc'] = kwargs.get('mfc', None)
+        parsed['ms'] = kwargs.get('ms', 6)
+        return parsed
+
+    def _cone(self, axis, **kwargs):
+        # fix muplitple cones plotting
+        lt = axis.transform(self.proj.R)
         cl = lt.rotate(lt.cross(Foliation(lt).dipvec()), angle).transform(self.proj.Ri)
         X, Y = self.proj.project_data(
             *np.array([cl.rotate(lin, a) for a in self.angles_sc]).T

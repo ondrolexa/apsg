@@ -135,6 +135,9 @@ class Vector2(Vector):
         n = apsg_conf["ndigits"]
         return f"Vector2({round(self.x, n):g}, {round(self.y, n):g})"
 
+    def label(self):
+        return str(self)
+
     def __len__(self):
         return 3
 
@@ -276,10 +279,14 @@ class Vector3(Vector):
     def __repr__(self):
         if apsg_conf["vec2geo"]:
             azi, inc = self.geo
-            return f"V:{azi:.0f}/{inc:.0f}"
+            return f'V:{azi:.0f}/{inc:.0f}'
         else:
             n = apsg_conf["ndigits"]
-            return f"Vector3({round(self.x, n):g}, {round(self.y, n):g}, {round(self.z, n):g})"
+            return f'Vector3({round(self.x, n):g}, {round(self.y, n):g}, {round(self.z, n):g})'
+
+    def label(self):
+        azi, inc = self.geo
+        return f'V:{azi:.0f}/{inc:.0f}'
 
     def __len__(self):
         return 3
