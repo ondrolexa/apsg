@@ -35,9 +35,24 @@ class Projection:
     def project_data(self, x, y, z):
         if self.rotate_data:
             x, y, z = self.R.dot((x, y, z))
-        X, Y = self.project(x, y, z)
-        inside = X * X + Y * Y <= 1.0
-        return X[inside], Y[inside]
+        if self.hemisphere == 'upper':
+            X, Y = self.project(-x, -y, -z)
+            inside = X * X + Y * Y <= 1.0
+            return -X[inside], -Y[inside]
+        else:
+            X, Y = self.project(x, y, z)
+            inside = X * X + Y * Y <= 1.0
+            return X[inside], Y[inside]
+
+    def project_data_antipodal(self, x, y, z):
+        if self.rotate_data:
+            x, y, z = self.R.dot((x, y, z))
+        X1, Y1 = self.project(x, y, z)
+        inside1 = X1 * X1 + Y1 * Y1 <= 1.0
+        X2, Y2 = self.project(-x, -y, -z)
+        inside2 = X2 * X2 + Y2 * Y2 <= 1.0
+        return X1[inside1], Y1[inside1], -X2[inside2], -Y2[inside2]
+        
 
     def inverse_data(self, X, Y):
         if X * X + Y * Y > 1.0:

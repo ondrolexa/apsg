@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cbook as mcb
 import matplotlib.animation as animation
+from matplotlib.patches import Circle
 from scipy.stats import vonmises
 
 try:
@@ -85,8 +86,8 @@ class StereoNet:
         self.show_warnings = True
 
     def clear(self):
-        self._builder['data'] = {}
-        self._builder['artists'] = {}
+        self._builder['data'].clear()
+        self._builder['artists'].clear()
 
     # just for testing
     def __draw_net(self):
@@ -119,6 +120,16 @@ class StereoNet:
         # Projection circle frame
         theta = np.linspace(0, 2 * np.pi, 200)
         self.ax.plot(np.cos(theta), np.sin(theta), "k", lw=2)
+        # add clipping circle
+        self.primitive = Circle(
+            (0, 0),
+            radius=1,
+            edgecolor="black",
+            fill=False,
+            clip_box="None",
+            label="_nolegend_",
+        )
+        self.ax.add_patch(self.primitive)
 
     def __plot_artists(self):
         for artist in self.artists:
@@ -133,11 +144,12 @@ class StereoNet:
         # show
         plt.show()
 
-# Just for developement.. Will change
+########################################
+# PLOTTING METHODS                     #
+########################################
 
-    ########################################
-    # LINE                                 #
-    ########################################
+# ----==== LINE ====---=
+
     def line(self, *args, **kwargs):
         """Plot linear feature(s) as point(s)"""
         if self.__validate_linear_args(args):
@@ -198,12 +210,69 @@ class StereoNet:
         return parsed
 
     def _line(self, *args, **kwargs):
-        X, Y = self.proj.project_data(*np.vstack(args).T)
-        self.ax.plot(X, Y, **kwargs)
+        x_lower, y_lower = self.proj.project_data(*np.vstack(args).T)
+        x_upper, y_upper = self.proj.project_data(*(-np.vstack(args).T))
+        handles = self.ax.plot(np.hstack((x_lower, x_upper)), np.hstack((y_lower, y_upper)), **kwargs)
+        for h in handles:
+            h.set_clip_path(self.primitive)
 
-    ########################################
-    # GREAT CIRCLE                         #
-    ########################################
+# ----==== VECTOR ====---=
+
+    def vector(self, *args, **kwargs):
+        """Plot vector feature(s) as point(s), filled on lower and open on upper hemisphere."""
+        if self.__validate_vector_args(args):
+            obj_ids = []
+            for arg in args:
+                obj_id = id(arg)
+                if obj_id not in self.data:
+                    self.data[obj_id] = arg
+                obj_ids.append(obj_id)
+            label = kwargs.get('legend', None)
+            if label is True:
+                if len(args) == 1:
+                    label = args[0].label()
+                else:
+                    label = f'Vector ({len(args)})'
+            artist = dict(method='_vector', args=obj_ids, kwargs=self.__parse_vector_kwargs(kwargs), label=label)
+            self.artists.append(artist)
+
+    def __validate_vector_args(self, args):
+        if args:
+            if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
+                return True
+            if self.show_warnings:
+                print('Arguments must be Vector3 or Vector3Set like objects.')
+        return False
+
+    def __parse_vector_kwargs(self, kwargs):
+        parsed = {}
+        parsed['alpha'] = kwargs.get('alpha', None)
+        if 'color' in kwargs:
+            parsed['mec'] = kwargs['color']
+            parsed['mfc'] = kwargs['color']
+        else:
+            parsed['mec'] = kwargs.get('mec', None)
+            parsed['mfc'] = kwargs.get('mfc', None)
+        parsed['ls'] = kwargs.get('ls', 'none')
+        parsed['marker'] = kwargs.get('marker', 'o')
+        parsed['mew'] = kwargs.get('mew', 1)
+        parsed['ms'] = kwargs.get('ms', 6)
+        return parsed
+
+    def _vector(self, *args, **kwargs):
+        x_lower, y_lower, x_upper, y_upper = self.proj.project_data_antipodal(*np.vstack(args).T)
+        handles = self.ax.plot(x_lower, y_lower, **kwargs)
+        for h in handles:
+            h.set_clip_path(self.primitive)
+        kwargs['label'] = None
+        kwargs['color'] = h.get_color() 
+        kwargs['mfc'] = 'none'
+        handles = self.ax.plot(x_upper, y_upper, **kwargs)
+        for h in handles:
+            h.set_clip_path(self.primitive)
+
+
+# ----==== GREAT CIRCLE ====----
 
     def great_circle(self, *args, **kwargs):
         """Plot planar feature(s) as great circle(s)"""
@@ -253,16 +322,23 @@ class StereoNet:
                 fdv = arg.dipvec()
             # iterate
             for fol, dv in zip(np.atleast_2d(arg), np.atleast_2d(fdv)):
+                # plot on lower
                 x, y = self.proj.project_data(
                     *np.array([Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]).T
                 )
                 X.append(np.hstack((x, np.nan)))
                 Y.append(np.hstack((y, np.nan)))
-        self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
+                # plot on upper
+                x, y = self.proj.project_data(
+                    *np.array([-Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]).T
+                )
+                X.append(np.hstack((x, np.nan)))
+                Y.append(np.hstack((y, np.nan)))
+        handles = self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
+        for h in handles:
+            h.set_clip_path(self.primitive)
 
-    ########################################
-    # CONE                                 #
-    ########################################
+# ----==== CONE ====---=
 
     def cone(self, *args, **kwargs):
         if self.__validate_cone_args(args):
@@ -283,10 +359,12 @@ class StereoNet:
 
     def __validate_cone_args(self, args):
         if len(args) == 2:
-            if all([issubclass(type(arg), (Foliation, FoliationSet)) for arg in args[0]]) and len(args[0]) == len(args[1]):
+            if issubclass(type(args[0]), Vector3) and len(args) == 2:
+                return True
+            elif all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args[0]]) and len(args[0]) == len(args[1]):
                 return True
             if self.show_warnings:
-                print('Argument must be Vector3 like object.')
+                print('First argument must be Vector3 or Vector3Set like objects and second scalar of same shape.')
         return False
 
     def __parse_cone_kwargs(self, kwargs):
@@ -302,21 +380,34 @@ class StereoNet:
         parsed['ms'] = kwargs.get('ms', 6)
         return parsed
 
-    def _cone(self, axis, **kwargs):
-        # fix muplitple cones plotting
-        lt = axis.transform(self.proj.R)
-        cl = lt.rotate(lt.cross(Foliation(lt).dipvec()), angle).transform(self.proj.Ri)
-        X, Y = self.proj.project_data(
-            *np.array([cl.rotate(lin, a) for a in self.angles_sc]).T
-        )
-        self.ax.plot(X, Y, "g--", lw=2)
-        cl = -lt.rotate(lt.cross(Foliation(lt).dipvec()), -angle).transform(
-            self.proj.Ri
-        )
-        X, Y = self.proj.project_data(
-            *np.array([cl.rotate(lin, a) for a in self.angles_sc]).T
-        )
-        self.ax.plot(X, Y, "m--", lw=2)
+    def _cone(self, *args, **kwargs):
+        X, Y = [], []
+        for axis, angle in zip(np.atleast_2d(args[0]), np.atleast_1d(args[1])):
+            if self.proj.rotate_data:
+                lt = axis.transform(self.proj.R)
+                azi, dip = Vector3(lt).geo
+                cl_lower = Vector3(azi, dip + angle).transform(self.proj.Ri)
+                cl_upper = -Vector3(azi, dip - angle).transform(self.proj.Ri)
+            else:
+                lt = axis
+                azi, dip = Vector3(lt).geo
+                cl_lower = Vector3(azi, dip + angle)
+                cl_upper = -Vector3(azi, dip - angle)
+            # plot on lower
+            x, y = self.proj.project_data(
+                *np.array([cl_lower.rotate(lt, a) for a in self.angles_sc]).T
+            )
+            X.append(np.hstack((x, np.nan)))
+            Y.append(np.hstack((y, np.nan)))
+            # plot on upper 
+            x, y = self.proj.project_data(
+                *np.array([cl_upper.rotate(-lt, a) for a in self.angles_sc]).T
+            )
+            X.append(np.hstack((x, np.nan)))
+            Y.append(np.hstack((y, np.nan)))
+        handles = self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
+        for h in handles:
+            h.set_clip_path(self.primitive)
         
 
 class RosePlot(object):
