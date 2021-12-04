@@ -4,8 +4,8 @@ from apsg.math import Vector3
 from apsg.config import apsg_conf
 from apsg.feature import Lineation, Foliation, Pair, Fault
 from apsg.feature import Vector3Set, LineationSet, FoliationSet, G, PairSet, FaultSet
-from apsg.feature import DefGrad3, VelGrad3, Stress3, Ellipsoid, Ortensor3, StereoGrid
-from apsg.plotting import StereoNet
+from apsg.feature import DefGrad3, VelGrad3, Stress3, Ellipsoid, Ortensor3
+from apsg.plotting import StereoGrid, StereoNet
 
 
 def vec3(*args):

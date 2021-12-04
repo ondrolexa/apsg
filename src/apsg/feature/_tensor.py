@@ -381,18 +381,18 @@ class Stress3(Tensor3):
 
     def normal_stress(self, n):
         """
-        Return normal stress component on plane given by normal vector.
+        Return normal stress magnitude on plane given by normal vector.
         """
 
         return float(np.dot(n, self.cauchy(n)))
 
     def shear_stress(self, n):
         """
-        Return magnitude of shear stress component on plane given
-        by normal vector.
+        Return shear stress magnitude on plane given by normal vector.
         """
 
-        return math.sqrt(self.cauchy(n) ** 2 - self.normal_stress(n) ** 2)
+        sn, tau = self.stress_comp(n)
+        return abs(tau)
 
 
 class Ellipsoid(Tensor3):

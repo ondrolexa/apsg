@@ -29,7 +29,7 @@ from apsg.feature._container import (
     PairSet,
     FaultSet,
 )
-from apsg.feature._stereogrid import StereoGrid
+from apsg.plotting._stereogrid import StereoGrid
 from apsg.feature._tensor import DefGrad3, VelGrad3, Stress3, Ellipsoid, Ortensor3
 from apsg.plotting._projection import EqualAreaProj, EqualAngleProj
 
@@ -204,6 +204,21 @@ class StereoNet:
     def show(self):
         self.__draw_net()
         self.__plot_artists()
+        self.ax.set_xlim(-1.05, 1.05)
+        self.ax.set_ylim(-1.05, 1.05)
+        self.ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+        h, labels = self.ax.get_legend_handles_labels()
+        if h:
+            lgd = self.ax.legend(
+                h,
+                labels,
+                bbox_to_anchor=(1.05, 1),
+                prop={"size": 11},
+                loc=2,
+                borderaxespad=0,
+                scatterpoints=1,
+                numpoints=1,
+            )
         self.fig.tight_layout()
         # show
         plt.show()
@@ -485,6 +500,8 @@ class StereoNet:
         cf = self.ax.tricontourf(X, Y, self.stereogrid.values, **kwargs)
         for collection in cf.collections:
             collection.set_clip_path(self.primitive)
+        if colorbar:
+            self.fig.colorbar(cf, ax=self.ax, label=label, shrink=0.6)
         # plt.colorbar(cf, format="%3.2f", spacing="proportional")
 
 
