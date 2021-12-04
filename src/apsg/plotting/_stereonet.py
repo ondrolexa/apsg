@@ -27,8 +27,9 @@ from apsg.feature._container import (
     LineationSet,
     FoliationSet,
     PairSet,
-    FaultSet
+    FaultSet,
 )
+from apsg.feature._stereogrid import StereoGrid
 from apsg.feature._tensor import DefGrad3, VelGrad3, Stress3, Ellipsoid, Ortensor3
 from apsg.plotting._projection import EqualAreaProj, EqualAngleProj
 
@@ -53,23 +54,34 @@ artists (array of dicts)
         - id
         - args
         - kwargs
-        - legend (None, True or str)
 
     - pole
         - id
         - args
         - kwargs
-        - legend (None, True or str)
 
     - great_circle
         - id
         - args
         - kwargs
-        - legend (None, True or str)
   """
 
 
 class StereoNet:
+    """
+    Blasklas
+
+    Args:
+        hemisphere: which hemisphere Default 'lower'
+        rotate_data: whether data should be rotated with overlay Default False
+        grid_position: orientation of overlay given as ``Pair`` Default pair(0, 0, 0, 0)
+        clip_pole: Default 20)
+        gridstep: grid step Default 15
+        resolution: number of grid lines points Default 361
+        n: number of contouring grid points Default 2000
+        grid_type: type of contouring grid 'gss' or 'sfs'. Default 'gss'
+    """
+
     def __init__(self, **kwargs):
         self.grid = kwargs.get("grid", True)
         self.show_warnings = kwargs.get("show_warnings", True)
@@ -80,8 +92,11 @@ class StereoNet:
             self.proj = EqualAngleProj(**kwargs)
         else:
             raise TypeError("Only 'Equal-area' and 'Equal-angle' implemented")
-        self.angles_gc = np.linspace(-90 + 1e-7, 90 - 1e-7, int(self.proj.resolution / 2))
+        self.angles_gc = np.linspace(
+            -90 + 1e-7, 90 - 1e-7, int(self.proj.resolution / 2)
+        )
         self.angles_sc = np.linspace(-180 + 1e-7, 180 - 1e-7, self.proj.resolution)
+        self.stereogrid = StereoGrid(**kwargs)
         self._kwargs = kwargs
         self._data = {}
         self._artists = []
@@ -134,9 +149,9 @@ class StereoNet:
 
     def __plot_artists(self):
         for artist in self._artists:
-            plot_method = getattr(self, artist['method'])
-            args = tuple(self._data[obj_id] for obj_id in artist['args'])
-            kwargs = artist['kwargs']
+            plot_method = getattr(self, artist["method"])
+            args = tuple(self._data[obj_id] for obj_id in artist["args"])
+            kwargs = artist["kwargs"]
             plot_method(*args, **kwargs)
 
     def __add_artist(self, method, args, kwargs):
@@ -150,186 +165,185 @@ class StereoNet:
         self._artists.append(dict(method=method, args=obj_ids, kwargs=kwargs))
 
     def to_json(self):
-        return dict(kwargs=self._kwargs,
-                    data={obj_id:obj.to_json() for obj_id, obj in self._data.items()},
-                    artists=self._artists)
+        return dict(
+            kwargs=self._kwargs,
+            data={obj_id: obj.to_json() for obj_id, obj in self._data.items()},
+            artists=self._artists,
+        )
 
     @classmethod
     def from_json(cls, json_dict):
         def parse_json_data(obj_json):
-            dtype_cls = getattr(sys.modules[__name__], obj_json['datatype'])
+            dtype_cls = getattr(sys.modules[__name__], obj_json["datatype"])
             args = []
-            for arg in obj_json['args']:
+            for arg in obj_json["args"]:
                 if isinstance(arg, dict):
-                    args.append([parse_json_data(jd) for jd in arg['collection']])
+                    args.append([parse_json_data(jd) for jd in arg["collection"]])
                 else:
                     args.append(arg)
-            kwargs =  obj_json.get('kwargs', {})
+            kwargs = obj_json.get("kwargs", {})
             return dtype_cls(*args, **kwargs)
+
         # parse
-        s = cls(**json_dict['kwargs'])
-        for obj_id, obj_json in json_dict['data'].items():
+        s = cls(**json_dict["kwargs"])
+        for obj_id, obj_json in json_dict["data"].items():
             s._data[obj_id] = parse_json_data(obj_json)
-        s._artists = json_dict['artists']
+        s._artists = json_dict["artists"]
         return s
 
     def save(self, filename):
-        with open(filename, 'wb') as f:
+        with open(filename, "wb") as f:
             pickle.dump(self.to_json(), f, pickle.HIGHEST_PROTOCOL)
 
     @classmethod
     def load(cls, filename):
-        with open(filename, 'rb') as f:
+        with open(filename, "rb") as f:
             data = pickle.load(f)
         return cls.from_json(data)
 
     def show(self):
         self.__draw_net()
         self.__plot_artists()
+        self.fig.tight_layout()
         # show
         plt.show()
 
-#######################################
+    ########################################
+    # PLOTTING METHODS                     #
+    ########################################
 
     def __parse_default_linear_kwargs(self, kwargs):
         parsed = {}
-        parsed['alpha'] = kwargs.get('alpha', None)
-        if 'color' in kwargs:
-            parsed['mec'] = kwargs['color']
-            parsed['mfc'] = kwargs['color']
+        parsed["alpha"] = kwargs.get("alpha", None)
+        if "color" in kwargs:
+            parsed["mec"] = kwargs["color"]
+            parsed["mfc"] = kwargs["color"]
         else:
-            parsed['mec'] = kwargs.get('mec', None)
-            parsed['mfc'] = kwargs.get('mfc', None)
-        parsed['ls'] = kwargs.get('ls', 'none')
-        parsed['marker'] = kwargs.get('marker', 'o')
-        parsed['mew'] = kwargs.get('mew', 1)
-        parsed['ms'] = kwargs.get('ms', 6)
+            parsed["mec"] = kwargs.get("mec", None)
+            parsed["mfc"] = kwargs.get("mfc", None)
+        parsed["ls"] = kwargs.get("ls", "none")
+        parsed["marker"] = kwargs.get("marker", "o")
+        parsed["mew"] = kwargs.get("mew", 1)
+        parsed["ms"] = kwargs.get("ms", 6)
+        parsed["label"] = kwargs.get("label", None)
         return parsed
 
     def __parse_default_planar_kwargs(self, kwargs):
         parsed = {}
-        parsed['alpha'] = kwargs.get('alpha', None)
-        parsed['color'] = kwargs.get('color', None)
-        parsed['ls'] = kwargs.get('ls', '-')
-        parsed['lw'] = kwargs.get('lw', 1.5)
-        parsed['marker'] = kwargs.get('marker', None)
-        parsed['mec'] = kwargs.get('mec', None)
-        parsed['mew'] = kwargs.get('mew', 1)
-        parsed['mfc'] = kwargs.get('mfc', None)
-        parsed['ms'] = kwargs.get('ms', 6)
+        parsed["alpha"] = kwargs.get("alpha", None)
+        parsed["color"] = kwargs.get("color", None)
+        parsed["ls"] = kwargs.get("ls", "-")
+        parsed["lw"] = kwargs.get("lw", 1.5)
+        parsed["marker"] = kwargs.get("marker", None)
+        parsed["mec"] = kwargs.get("mec", None)
+        parsed["mew"] = kwargs.get("mew", 1)
+        parsed["mfc"] = kwargs.get("mfc", None)
+        parsed["ms"] = kwargs.get("ms", 6)
+        parsed["label"] = kwargs.get("label", None)
         return parsed
 
-########################################
-# PLOTTING METHODS                     #
-########################################
-
-# ----==== LINE ====---=
+    # ----==== LINE ====---=
 
     def line(self, *args, **kwargs):
         """Plot linear feature(s) as point(s)"""
         if self.__validate_linear_args(args):
             kwargs = self.__parse_line_args(args, kwargs)
-            self.__add_artist('_line', args, kwargs)
+            self.__add_artist("_line", args, kwargs)
 
     def pole(self, *args, **kwargs):
         """Plot pole of planar feature(s) as point(s)"""
         if self.__validate_planar_args(args):
             kwargs = self.__parse_line_args(args, kwargs)
-            self.__add_artist('_line', args, kwargs)
+            self.__add_artist("_line", args, kwargs)
 
     def __validate_linear_args(self, args):
         if args:
             if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
                 return True
             if self.show_warnings:
-                print('Arguments must be Vector3 or Vector3Set like objects.')
+                print("Arguments must be Vector3 or Vector3Set like objects.")
         return False
 
     def __parse_line_args(self, args, kwargs):
         parsed = self.__parse_default_linear_kwargs(kwargs)
-        label = kwargs.get('legend', None)
-        if label is True:
+        if parsed["label"] is True:
             if len(args) == 1:
-                label = args[0].label()
+                parsed["label"] = args[0].label()
             else:
-                label = f'Planar ({len(args)})'
-        if label is not None:
-            parsed['label'] = label
+                parsed["label"] = f"Planar ({len(args)})"
         return parsed
 
     def _line(self, *args, **kwargs):
         x_lower, y_lower = self.proj.project_data(*np.vstack(args).T)
         x_upper, y_upper = self.proj.project_data(*(-np.vstack(args).T))
-        handles = self.ax.plot(np.hstack((x_lower, x_upper)), np.hstack((y_lower, y_upper)), **kwargs)
+        handles = self.ax.plot(
+            np.hstack((x_lower, x_upper)), np.hstack((y_lower, y_upper)), **kwargs
+        )
         for h in handles:
             h.set_clip_path(self.primitive)
 
-# ----==== VECTOR ====---=
+    # ----==== VECTOR ====---=
 
     def vector(self, *args, **kwargs):
         """Plot vector feature(s) as point(s), filled on lower and open on upper hemisphere."""
         if self.__validate_vector_args(args):
             kwargs = self.__parse_vector_args(args, kwargs)
-            self.__add_artist('_vector', args, kwargs)
+            self.__add_artist("_vector", args, kwargs)
 
     def __validate_vector_args(self, args):
         if args:
             if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
                 return True
             if self.show_warnings:
-                print('Arguments must be Vector3 or Vector3Set like objects.')
+                print("Arguments must be Vector3 or Vector3Set like objects.")
         return False
 
     def __parse_vector_args(self, args, kwargs):
         parsed = self.__parse_default_linear_kwargs(kwargs)
-        label = kwargs.get('legend', None)
-        if label is True:
+        if parsed["label"] is True:
             if len(args) == 1:
-                label = args[0].label()
+                parsed["label"] = args[0].label()
             else:
-                label = f'Vector ({len(args)})'
-        if label is not None:
-            parsed['label'] = label
+                parsed["label"] = f"Vector ({len(args)})"
         return parsed
 
     def _vector(self, *args, **kwargs):
-        x_lower, y_lower, x_upper, y_upper = self.proj.project_data_antipodal(*np.vstack(args).T)
+        x_lower, y_lower, x_upper, y_upper = self.proj.project_data_antipodal(
+            *np.vstack(args).T
+        )
         handles = self.ax.plot(x_lower, y_lower, **kwargs)
         for h in handles:
             h.set_clip_path(self.primitive)
-        kwargs['label'] = None
-        kwargs['color'] = h.get_color() 
-        kwargs['mfc'] = 'none'
+        kwargs["label"] = None
+        kwargs["color"] = h.get_color()
+        kwargs["mfc"] = "none"
         handles = self.ax.plot(x_upper, y_upper, **kwargs)
         for h in handles:
             h.set_clip_path(self.primitive)
 
-# ----==== GREAT CIRCLE ====----
+    # ----==== GREAT CIRCLE ====----
 
     def great_circle(self, *args, **kwargs):
         """Plot planar feature(s) as great circle(s)"""
         if self.__validate_great_circle_args(args):
             kwargs = self.__parse_great_circle_args(args, kwargs)
-            self.__add_artist('_great_circle', args, kwargs)
+            self.__add_artist("_great_circle", args, kwargs)
 
     def __validate_great_circle_args(self, args):
         if args:
             if all([issubclass(type(arg), (Foliation, FoliationSet)) for arg in args]):
                 return True
             if self.show_warnings:
-                print('Arguments must be Foliation or FoliationSet like objects.')
+                print("Arguments must be Foliation or FoliationSet like objects.")
         return False
 
     def __parse_great_circle_args(self, args, kwargs):
         parsed = self.__parse_default_planar_kwargs(kwargs)
-        label = kwargs.get('legend', None)
-        if label is True:
+        if parsed["label"] is True:
             if len(args) == 1:
-                label = args[0].label()
+                parsed["label"] = args[0].label()
             else:
-                label = f'Planar ({len(args)})'
-        if label is not None:
-            parsed['label'] = label
+                parsed["label"] = f"Planar ({len(args)})"
         return parsed
 
     def _great_circle(self, *args, **kwargs):
@@ -343,13 +357,17 @@ class StereoNet:
             for fol, dv in zip(np.atleast_2d(arg), np.atleast_2d(fdv)):
                 # plot on lower
                 x, y = self.proj.project_data(
-                    *np.array([Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]).T
+                    *np.array(
+                        [Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]
+                    ).T
                 )
                 X.append(np.hstack((x, np.nan)))
                 Y.append(np.hstack((y, np.nan)))
                 # plot on upper
                 x, y = self.proj.project_data(
-                    *np.array([-Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]).T
+                    *np.array(
+                        [-Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]
+                    ).T
                 )
                 X.append(np.hstack((x, np.nan)))
                 Y.append(np.hstack((y, np.nan)))
@@ -357,33 +375,34 @@ class StereoNet:
         for h in handles:
             h.set_clip_path(self.primitive)
 
-# ----==== CONE ====---=
+    # ----==== CONE ====---=
 
     def cone(self, *args, **kwargs):
         if self.__validate_cone_args(args):
             kwargs = self.__parse_cone_args(args, kwargs)
-            self.__add_artist('_cone', args, kwargs)
+            self.__add_artist("_cone", args, kwargs)
 
     def __validate_cone_args(self, args):
         if len(args) == 2:
             if issubclass(type(args[0]), Vector3) and len(args) == 2:
                 return True
-            elif all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args[0]]) and len(args[0]) == len(args[1]):
+            elif all(
+                [issubclass(type(arg), (Vector3, Vector3Set)) for arg in args[0]]
+            ) and len(args[0]) == len(args[1]):
                 return True
             if self.show_warnings:
-                print('First argument must be Vector3 or Vector3Set like objects and second scalar of same shape.')
+                print(
+                    "First argument must be Vector3 or Vector3Set like objects and second scalar of same shape."
+                )
         return False
 
     def __parse_cone_args(self, args, kwargs):
         parsed = self.__parse_default_planar_kwargs(kwargs)
-        label = kwargs.get('legend', None)
-        if label is True:
+        if parsed["label"] is True:
             if len(args[0]) == 1:
-                label = f'Cone {str(args[0])} ({args[1]})'
+                parsed["label"] = f"Cone {str(args[0])} ({args[1]})"
             else:
-                label = f'Cones ({len(args[0])})'   
-        if label is not None:
-            parsed['label'] = label
+                parsed["label"] = f"Cones ({len(args[0])})"
         return parsed
 
     def _cone(self, *args, **kwargs):
@@ -405,7 +424,7 @@ class StereoNet:
             )
             X.append(np.hstack((x, np.nan)))
             Y.append(np.hstack((y, np.nan)))
-            # plot on upper 
+            # plot on upper
             x, y = self.proj.project_data(
                 *np.array([cl_upper.rotate(-lt, a) for a in self.angles_sc]).T
             )
@@ -414,7 +433,60 @@ class StereoNet:
         handles = self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
         for h in handles:
             h.set_clip_path(self.primitive)
-        
+
+    ########################################
+    # CONTOURING                           #
+    ########################################
+
+    def __parse_default_contourf_kwargs(self, kwargs):
+        parsed = {}
+        parsed["alpha"] = kwargs.get("alpha", 1)
+        parsed["antialiased"] = kwargs.get("antialiased", True)
+        parsed["cmap"] = kwargs.get("cmap", "Greys")
+        parsed["levels"] = kwargs.get("levels", 6)
+        parsed["colorbar"] = kwargs.get("colorbar", False)
+        parsed["label"] = kwargs.get("label", None)
+        parsed["sigma"] = kwargs.get("sigma", None)
+        parsed["trim"] = kwargs.get("trim", True)
+        return parsed
+
+    # ----==== CONTOURF ====---=
+
+    def contourf(self, *args, **kwargs):
+        if self.__validate_contourf_args(args):
+            kwargs = self.__parse_contourf_args(args, kwargs)
+            self.__add_artist("_contourf", args, kwargs)
+
+    def __validate_contourf_args(self, args):
+        if args:
+            if all([issubclass(type(arg), Vector3Set) for arg in args]):
+                return True
+            if self.show_warnings:
+                print("Argument must be Vector3Set like objects.")
+        return False
+
+    def __parse_contourf_args(self, args, kwargs):
+        parsed = self.__parse_default_contourf_kwargs(kwargs)
+        if parsed["label"] is True:
+            if len(args) == 1:
+                parsed["label"] = args[0].label()
+            else:
+                parsed["label"] = f"Planar ({len(args)})"
+        return parsed
+
+    def _contourf(self, *args, **kwargs):
+        sigma = kwargs.pop("sigma")
+        trim = kwargs.pop("trim")
+        self.stereogrid.calculate_density(args[0], sigma=sigma, trim=trim)
+        dcgrid = np.asarray(self.stereogrid.grid).T
+        X, Y = self.proj.project_data(*dcgrid, clip_inside=False)
+        colorbar = kwargs.pop("colorbar")
+        label = kwargs.pop("label")
+        cf = self.ax.tricontourf(X, Y, self.stereogrid.values, **kwargs)
+        for collection in cf.collections:
+            collection.set_clip_path(self.primitive)
+        # plt.colorbar(cf, format="%3.2f", spacing="proportional")
+
 
 class RosePlot(object):
 
@@ -1830,7 +1902,7 @@ class StereoNetJK(object):
             angle,
             segments=segments,
             bidirectional=bidirectional,
-            **kwargs
+            **kwargs,
         )
         self.draw()
 

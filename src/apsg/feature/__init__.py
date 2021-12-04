@@ -11,6 +11,7 @@ from apsg.feature._container import (
     G,
 )
 from apsg.feature._tensor import DefGrad3, VelGrad3, Stress3, Ellipsoid, Ortensor3
+from apsg.feature._stereogrid import StereoGrid
 from apsg.feature._paleomag import Core
 
 __all__ = (
@@ -23,12 +24,12 @@ __all__ = (
     "LineationSet",
     "FoliationSet",
     "PairSet",
-    "FaultSet"
-    "G",
+    "FaultSet" "G",
     "DefGrad3",
     "VelGrad3",
     "Stress3",
     "Ellipsoid",
     "Ortensor3",
+    "StereoGrid",
     "Core",
 )

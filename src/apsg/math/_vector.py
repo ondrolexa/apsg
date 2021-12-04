@@ -9,7 +9,7 @@ from apsg.helpers._notation import (
     geo2vec_linear,
     vec2geo_planar,
     vec2geo_linear,
-    vec2geo_linear_signed
+    vec2geo_linear_signed,
 )
 from apsg.decorator._decorator import ensure_first_arg_same
 
@@ -231,7 +231,6 @@ class Vector2(Vector):
 
 
 class Axial2(Vector2):
-
     def __add__(self, other):
         if issubclass(type(other), Vector2):
             if super().dot(other) < 0:
@@ -279,14 +278,14 @@ class Vector3(Vector):
     def __repr__(self):
         if apsg_conf["vec2geo"]:
             azi, inc = self.geo
-            return f'V:{azi:.0f}/{inc:.0f}'
+            return f"V:{azi:.0f}/{inc:.0f}"
         else:
             n = apsg_conf["ndigits"]
-            return f'Vector3({round(self.x, n):g}, {round(self.y, n):g}, {round(self.z, n):g})'
+            return f"Vector3({round(self.x, n):g}, {round(self.y, n):g}, {round(self.z, n):g})"
 
     def label(self):
         azi, inc = self.geo
-        return f'V:{azi:.0f}/{inc:.0f}'
+        return f"V:{azi:.0f}/{inc:.0f}"
 
     def __len__(self):
         return 3
@@ -410,7 +409,6 @@ class Vector3(Vector):
 
 
 class Axial3(Vector3):
-
     def __add__(self, other):
         if issubclass(type(other), Vector3):
             if super().dot(other) < 0:

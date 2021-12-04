@@ -1,10 +1,13 @@
+import math
 import numpy as np
 
 from scipy.special import gamma as gamma_fun
 from scipy.special import iv as modified_bessel_2ndkind
 from scipy.special import ivp as modified_bessel_2ndkind_derivative
 from scipy.stats import uniform
-from scipy.stats import norm as gauss 
+from scipy.stats import norm as gauss
+from scipy.optimize import minimize_scalar
+
 
 def vonMisesFisher(mu, kappa, num_samples):
     """Generate N samples from von Mises Fisher
@@ -12,21 +15,21 @@ def vonMisesFisher(mu, kappa, num_samples):
 
     Adopted from https://github.com/jasonlaska/spherecluster
     """
+
     def _sample_weight(kappa):
         """Rejection sampling scheme for sampling distance from center on
         surface of the sphere.
         """
-        b = 2 / (np.sqrt(4. * kappa ** 2 + 4) + 2 * kappa)
-        x = (1. - b) / (1. + b)
+        b = 2 / (np.sqrt(4.0 * kappa ** 2 + 4) + 2 * kappa)
+        x = (1.0 - b) / (1.0 + b)
         c = kappa * x + 2 * np.log(1 - x ** 2)
 
         while True:
             z = np.random.beta(1, 1)
-            w = (1. - (1. + b) * z) / (1. - (1. - b) * z)
+            w = (1.0 - (1.0 + b) * z) / (1.0 - (1.0 - b) * z)
             u = np.random.uniform(low=0, high=1)
-            if kappa * w + 2 * np.log(1. - x * w) - c >= np.log(u):
+            if kappa * w + 2 * np.log(1.0 - x * w) - c >= np.log(u):
                 return w
-
 
     def _sample_orthonormal_to(mu):
         """Sample point on sphere orthogonal to mu."""
@@ -34,7 +37,6 @@ def vonMisesFisher(mu, kappa, num_samples):
         proj_mu_v = mu * np.dot(mu, v) / np.linalg.norm(mu)
         orthto = v - proj_mu_v
         return orthto / np.linalg.norm(orthto)
-
 
     result = np.zeros((num_samples, 3))
     for nn in range(num_samples):
@@ -45,9 +47,21 @@ def vonMisesFisher(mu, kappa, num_samples):
         v = _sample_orthonormal_to(mu)
 
         # compute new point
-        result[nn, :] = v * np.sqrt(1. - w ** 2) + w * mu
+        result[nn, :] = v * np.sqrt(1.0 - w ** 2) + w * mu
 
     return result
+
+
+def estimate_k(features):
+    # objective function to be minimized
+    def obj_fun(k):
+        W = np.exp(k * (np.abs(np.dot(features, np.asarray(features).T)))) * (
+            k / (4 * math.pi * math.sinh(k + 1e-9))
+        )
+        np.fill_diagonal(W, 0.0)
+        return -np.log(W.sum(axis=0)).sum()
+
+    return minimize_scalar(obj_fun, bounds=(0.1, len(features)), method="bounded").x
 
 
 class KentDistribution(object):

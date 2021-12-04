@@ -10,7 +10,7 @@ from apsg.helpers._notation import (
     vec2geo_planar,
     vec2geo_planar_signed,
     vec2geo_linear,
-    vec2geo_linear_signed
+    vec2geo_linear_signed,
 )
 from apsg.decorator._decorator import ensure_first_arg_same, ensure_arguments
 from apsg.math._vector import Vector3, Axial3
@@ -130,6 +130,7 @@ class Pair:
         >>> p = Pair(140, 30, 110, 26)
 
     """
+
     __slots__ = ("fvec", "lvec", "rax", "misfit")
     __shape__ = (6,)
 
@@ -144,7 +145,9 @@ class Pair:
         elif len(args) == 1 and np.asarray(args[0]).shape == Pair.__shape__:
             fvec, lvec = Vector3(args[0][:3]), Vector3(args[0][-3:])
         elif len(args) == 2:
-            if issubclass(type(args[0]), Vector3) and issubclass(type(args[1]), Vector3):
+            if issubclass(type(args[0]), Vector3) and issubclass(
+                type(args[1]), Vector3
+            ):
                 fvec, lvec = args
             else:
                 raise TypeError("Not valid arguments for Pair")
@@ -186,7 +189,9 @@ class Pair:
         return not self == other
 
     def __array__(self, dtype=None):
-        return np.hstack((np.asarray(self.fvec, dtype=dtype), np.asarray(self.lvec, dtype=dtype)))
+        return np.hstack(
+            (np.asarray(self.fvec, dtype=dtype), np.asarray(self.lvec, dtype=dtype))
+        )
 
     def to_json(self):
         fazi, finc = vec2geo_planar_signed(self.fvec)
@@ -290,6 +295,7 @@ class Fault(Pair):
         >>> p = Fault(140, 30, 110, 26, -1)
 
     """
+
     __slots__ = ("fvec", "lvec", "rax", "misfit")
     __shape__ = (7,)
 
@@ -305,7 +311,9 @@ class Fault(Pair):
             fvec, lvec, rax = args[0].fvec, args[0].lvec, args[0].rax
             sense = args[1] * lvec.cross(fvec).dot(rax)
         elif len(args) == 3:
-            if issubclass(type(args[0]), Vector3) and issubclass(type(args[1]), Vector3):
+            if issubclass(type(args[0]), Vector3) and issubclass(
+                type(args[1]), Vector3
+            ):
                 fvec, lvec = args[0], args[1]
                 sense = args[2]
         elif len(args) == 5:
@@ -327,7 +335,11 @@ class Fault(Pair):
         """
         Return `True` if pairs are equal, otherwise `False`.
         """
-        return (self.fvec == other.fvec) and (self.lvec == other.lvec) and (self.sense == other.sense)
+        return (
+            (self.fvec == other.fvec)
+            and (self.lvec == other.lvec)
+            and (self.sense == other.sense)
+        )
 
     def __ne__(self, other):
         """
@@ -337,12 +349,21 @@ class Fault(Pair):
         return not self == other
 
     def __array__(self, dtype=None):
-        return np.hstack((np.asarray(self.fvec, dtype=dtype), np.asarray(self.lvec, dtype=dtype), self.sense))
+        return np.hstack(
+            (
+                np.asarray(self.fvec, dtype=dtype),
+                np.asarray(self.lvec, dtype=dtype),
+                self.sense,
+            )
+        )
 
     def to_json(self):
         fazi, finc = vec2geo_planar_signed(self.fvec)
         lazi, linc = vec2geo_linear_signed(self.lvec)
-        return {"datatype": type(self).__name__, "args": (fazi, finc, lazi, linc, self.sense)}
+        return {
+            "datatype": type(self).__name__,
+            "args": (fazi, finc, lazi, linc, self.sense),
+        }
 
     @classmethod
     def random(cls):
@@ -350,6 +371,7 @@ class Fault(Pair):
         Random Fault
         """
         import random
+
         lvec, p = Vector3.random(), Vector3.random()
         fvec = lvec.cross(p)
         return cls(fvec, lvec, random.choice([-1, 1]))
@@ -368,7 +390,9 @@ class Fault(Pair):
             P:210/83-287/60
 
         """
-        return type(self)(self.fvec.rotate(axis, phi), self.lvec.rotate(axis, phi), self.sense)
+        return type(self)(
+            self.fvec.rotate(axis, phi), self.lvec.rotate(axis, phi), self.sense
+        )
 
     @property
     def sense(self):
@@ -377,11 +401,11 @@ class Fault(Pair):
 
     def p_vector(self, ptangle=90):
         """Return P axis as ``Vector3``"""
-        return self.fvec.rotate(self.lvec.cross(self.fvec), ptangle/2)
+        return self.fvec.rotate(self.lvec.cross(self.fvec), ptangle / 2)
 
     def t_vector(self, ptangle=90):
         """Return T-axis as ``Vector3``."""
-        return self.fvec.rotate(self.lvec.cross(self.fvec), -ptangle/2)
+        return self.fvec.rotate(self.lvec.cross(self.fvec), -ptangle / 2)
 
     @property
     def p(self):

@@ -192,9 +192,6 @@ class Vector3Set(FeatureSet):
         resultant can give other result than expected. Anyway for axial
         data orientation tensor analysis will give you right answer.
 
-        As axial summing is not commutative we use vectorial summing of
-        centered data for Fol and Lin
-
         Args:
             normalized: if True returns mean resultant. Default False
         """
@@ -261,13 +258,19 @@ class Vector3Set(FeatureSet):
             self._cache["svd"] = np.linalg.svd(self._ortensor)
         return self._cache["svd"]
 
-    def centered(self):
+    def centered(self, max_vertical=False):
         """Rotate ``FeatureSet`` object to position that eigenvectors are parallel
-        to axes of coordinate system: E1(vertical), E2(east-west),
-        E3(north-south)
+        to axes of coordinate system: E1||X (north-south), E2||X(east-west),
+        E3||X(vertical)
+
+        Args:
+            max_vertical: If True E1 is rotated to vertical. Default False
 
         """
-        return self.transform(self._svd[2]).rotate(Vector3(0, -1, 0), 90)
+        if max_vertical:
+            return self.transform(self._svd[2]).rotate(Vector3(0, -1, 0), 90)
+        else:
+            return self.transform(self._svd[2])
 
     def halfspace(self):
         """Change orientation of vectors in ``FeatureSet``, so all have angle<=90 with
@@ -349,6 +352,7 @@ class Vector3Set(FeatureSet):
         """
         from os.path import basename
         import csv
+
         n = apsg_conf["ndigits"]
 
         with open(filename, "w", newline="") as csvfile:
@@ -379,7 +383,7 @@ class Vector3Set(FeatureSet):
         return cls([dtype_cls(azi, inc) for azi, inc in zip(azis, incs)], name=name)
 
     @classmethod
-    def random_normal(cls,  n=100, position=Vector3(0, 0, 1), sigma=20, name="Default"):
+    def random_normal(cls, n=100, position=Vector3(0, 0, 1), sigma=20, name="Default"):
         """Method to create ``FeatureSet`` of normaly distributed features.
 
         Keyword Args:
@@ -400,13 +404,16 @@ class Vector3Set(FeatureSet):
         orig = Vector3(0, 0, 1)
         ax = orig.cross(position)
         ang = orig.angle(position)
-        for s, r in zip(180 * np.random.uniform(low=0, high=180, size=n), np.random.normal(loc=0, scale=sigma, size=n)):
+        for s, r in zip(
+            180 * np.random.uniform(low=0, high=180, size=n),
+            np.random.normal(loc=0, scale=sigma, size=n),
+        ):
             v = orig.rotate(Vector3(s, 0), r).rotate(ax, ang)
             data.append(dtype_cls(v))
         return cls(data, name=name)
 
     @classmethod
-    def random_fisher(cls,  n=100, position=Vector3(0, 0, 1), kappa=20, name="Default"):
+    def random_fisher(cls, n=100, position=Vector3(0, 0, 1), kappa=20, name="Default"):
         """Return ``FeatureSet`` of random vectors sampled from von Mises Fisher distribution
         around center position with concentration kappa.
 
@@ -424,7 +431,7 @@ class Vector3Set(FeatureSet):
         return cls([dtype_cls(d) for d in dc], name=name)
 
     @classmethod
-    def random_fisher2(cls,  n=100, position=Vector3(0, 0, 1), kappa=20, name="Default"):
+    def random_fisher2(cls, n=100, position=Vector3(0, 0, 1), kappa=20, name="Default"):
         """Method to create ``FeatureSet`` of vectors distributed according to
         Fisher distribution.
 
@@ -475,7 +482,7 @@ class Vector3Set(FeatureSet):
         return cls([dtype_cls(d) for d in kd.rvs(n)], name=name)
 
     @classmethod
-    def uniform_sfs(cls,  n=100, name="Default"):
+    def uniform_sfs(cls, n=100, name="Default"):
         """Method to create ``FeatureSet`` of uniformly distributed vectors.
         Spherical Fibonacci Spiral points on a sphere algorithm adopted from
         John Burkardt.
@@ -501,7 +508,7 @@ class Vector3Set(FeatureSet):
         return cls([dtype_cls(d) for d in dc], name=name)
 
     @classmethod
-    def uniform_gss(cls,  n=100, name="Default"):
+    def uniform_gss(cls, n=100, name="Default"):
         """Method to create ``FeatureSet`` of uniformly distributed vectors.
         Golden Section Spiral points on a sphere algorithm.
 
@@ -562,13 +569,12 @@ def G(lst, name="Default"):
 class PairSet(FeatureSet):
     __feature_type__ = "Pair"
 
-
     def __repr__(self):
         return f"P({len(self)}) {self.name}"
 
+
 class FaultSet(FeatureSet):
     __feature_type__ = "Fault"
-
 
     def __repr__(self):
         return f"F({len(self)}) {self.name}"

@@ -10,28 +10,7 @@ from apsg.decorator._decorator import ensure_first_arg_same, ensure_arguments
 from apsg.feature._geodata import Lineation, Foliation, Pair
 
 
-class Tensor3(Matrix3):
-    def __repr__(self):
-        return f"{type(self).__name__}\n" + Matrix3.__repr__(self)
-
-    @property
-    def eigenlins(self):
-        """
-        Return tuple of eigenvectors as ``Lineation`` objects.
-        """
-
-        return tuple(Lineation(v) for v in self.eigenvectors())
-
-    @property
-    def eigenfols(self):
-        """
-        Return tuple of eigenvectors as ``Foliation`` objects.
-        """
-
-        return tuple(Foliation(v) for v in self.eigenvectors())
-
-
-class DefGrad3(Tensor3):
+class DefGrad3(Matrix3):
     """
     ``DefGrad3`` store 3D deformation gradient tensor.
 
@@ -184,7 +163,7 @@ class DefGrad3(Tensor3):
         return Ellipsoid(np.dot(self, self.T))
 
 
-class VelGrad3(Tensor3):
+class VelGrad3(Matrix3):
     """
     ``VelGrad3`` represents 3D velocity gradient tensor.
 
@@ -212,7 +191,8 @@ class VelGrad3(Tensor3):
 
         if steps > 1:  # FIX once container for matrix will be implemented
             return [
-                DefGrad3(expm(np.asarray(self) * t)) for t in np.linspace(0, time, steps)
+                DefGrad3(expm(np.asarray(self) * t))
+                for t in np.linspace(0, time, steps)
             ]
         else:
             return DefGrad3(expm(np.asarray(self) * time))
@@ -230,6 +210,36 @@ class VelGrad3(Tensor3):
         """
 
         return type(self)((self - self.T) / 2)
+
+
+class Tensor3(Matrix3):
+    def __repr__(self):
+        return f"{type(self).__name__}\n" + Matrix3.__repr__(self)
+
+    @property
+    def eigenlins(self):
+        """
+        Return tuple of eigenvectors as ``Lineation`` objects.
+        """
+
+        return tuple(Lineation(v) for v in self.eigenvectors())
+
+    @property
+    def eigenfols(self):
+        """
+        Return tuple of eigenvectors as ``Foliation`` objects.
+        """
+
+        return tuple(Foliation(v) for v in self.eigenvectors())
+
+    @property
+    def pair(self):
+        """
+        Return ``Pair`` representing orientation of principal axes.
+        """
+
+        ev = self.eigenvectors()
+        return Pair(ev[2], ev[0])
 
 
 class Stress3(Tensor3):
