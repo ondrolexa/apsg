@@ -33,7 +33,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8"
+        "Programming Language :: Python :: 3.8",
     ],
     packages=find_packages(where="src"),
     package_dir={"": "src"},
@@ -45,9 +45,9 @@ setup(
         "jupyter": ["jupyterlab"],
     },
     project_urls={
-        'Documentation': 'https://apsg.readthedocs.io/',
-        'Source Code': 'https://github.com/ondrolexa/apsg/',
-        'Bug Tracker': 'https://github.com/ondrolexa/apsg/issues/',
+        "Documentation": "https://apsg.readthedocs.io/",
+        "Source Code": "https://github.com/ondrolexa/apsg/",
+        "Bug Tracker": "https://github.com/ondrolexa/apsg/issues/",
     },
     entry_points="""
     [console_scripts]

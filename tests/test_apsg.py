@@ -28,8 +28,8 @@ from apsg import DefGrad3
 # Vectors
 # ############################################################################
 
-class TestVector:
 
+class TestVector:
     @pytest.fixture
     def x(self):
         return vec3(1, 0, 0)
@@ -167,14 +167,18 @@ class TestVector:
     # ``aslin`` property
 
     def test_lin_conversion(self):
-        assert str(lin(vec3(1, 1, 1))) == str(lin(45, 35))        # `Vec` to `lin`
-        assert str(lin(vec3(lin(110, 37)))) == str(lin(110, 37))  # `lin` to `Vec` to `lin`
+        assert str(lin(vec3(1, 1, 1))) == str(lin(45, 35))  # `Vec` to `lin`
+        assert str(lin(vec3(lin(110, 37)))) == str(
+            lin(110, 37)
+        )  # `lin` to `Vec` to `lin`
 
     # ``asfol`` property
 
     def test_fol_conversion(self):
-        assert str(fol(vec3(1, 1, 1))) == str(fol(225, 55))       # `Vec` to `fol`
-        assert str(fol(vec3(fol(213, 52)))) == str(fol(213, 52))  # `fol` to `Vec` to `fol`
+        assert str(fol(vec3(1, 1, 1))) == str(fol(225, 55))  # `Vec` to `fol`
+        assert str(fol(vec3(fol(213, 52)))) == str(
+            fol(213, 52)
+        )  # `fol` to `Vec` to `fol`
 
     # ``asvec`` property
 
@@ -221,9 +225,9 @@ class TestVector:
         assert lhs.cross(rhs) == -rhs.cross(lhs)
 
     def test_that_vector_product_is_distributive_over_addition(self):
-        x = vec3('X')
-        y = vec3('Y')
-        z = vec3('Z')
+        x = vec3("X")
+        y = vec3("Y")
+        z = vec3("Z")
 
         assert x.cross(y + z) == x.cross(y) + x.cross(z)
 
@@ -260,7 +264,7 @@ class TestVector:
     def test_scalar_product_of_same_vectors(self):
         i = vec3(1, 2, 3)
 
-        assert np.allclose(i.dot(i), abs(i)**2)
+        assert np.allclose(i.dot(i), abs(i) ** 2)
 
     def test_scalar_product_of_orthonornal_vectors(self):
         i = vec3(1, 0, 0)
@@ -359,6 +363,7 @@ class TestVector:
 # lineation
 # ############################################################################
 
+
 class Testlineation:
     """
     The lineation is represented as axial (pseudo) vector.
@@ -438,6 +443,7 @@ class Testlineation:
 # foliation
 # ############################################################################
 
+
 class Testfoliation:
     """
     The foliation is represented as axial (pseudo) vector.
@@ -472,7 +478,7 @@ class Testfoliation:
     def test_cross_product(self):
         f1 = Foliation.random()
         f2 = Foliation.random()
-        p = f1**f2
+        p = f1 ** f2
 
         assert np.allclose([p.angle(f1), p.angle(f2)], [90, 90])
 
@@ -531,8 +537,8 @@ class Testfoliation:
 # FeatureSets
 # ############################################################################
 
-class TestVector3Set:
 
+class TestVector3Set:
     def test_rdegree_under_rotation(self):
         g = Vector3Set.random_fisher()
         assert np.allclose(g.rotate(lin(45, 45), 90).rdegree, g.rdegree)
@@ -541,7 +547,7 @@ class TestVector3Set:
         g = Vector3Set.from_array([45, 135, 225, 315], [45, 45, 45, 45])
         c1 = g.R().uv() == vec3(0, 90)
         c2 = np.allclose(abs(g.R()), np.sqrt(8))
-        c3 = np.allclose((g.rdegree / 100 + 1)**2, 2)
+        c3 = np.allclose((g.rdegree / 100 + 1) ** 2, 2)
         assert c1 and c2 and c3
 
     def test_group_type_error(self):
@@ -553,11 +559,10 @@ class TestVector3Set:
         g = Vector3Set.random_fisher(position=lin(40, 50))
         gc = g.centered()
         el = gc.ortensor().eigenlins
-        assert el[0] == vec3('x') and el[1] == vec3('y') and el[2] == vec3('z')
+        assert el[0] == vec3("x") and el[1] == vec3("y") and el[2] == vec3("z")
 
 
 class TestLineationSet:
-
     def test_rdegree_under_rotation(self):
         g = LineationSet.random_fisher()
         assert np.allclose(g.rotate(lin(45, 45), 90).rdegree, g.rdegree)
@@ -566,7 +571,7 @@ class TestLineationSet:
         g = LineationSet.from_array([45, 135, 225, 315], [45, 45, 45, 45])
         c1 = g.R().uv() == lin(0, 90)
         c2 = np.allclose(abs(g.R()), np.sqrt(8))
-        c3 = np.allclose((g.rdegree / 100 + 1)**2, 2)
+        c3 = np.allclose((g.rdegree / 100 + 1) ** 2, 2)
         assert c1 and c2 and c3
 
     def test_group_type_error(self):
@@ -583,15 +588,15 @@ class TestLineationSet:
         g = LineationSet.random_fisher(position=lin(40, 50))
         gc = g.centered()
         el = gc.ortensor().eigenlins
-        assert el[0] == vec3('x') and el[1] == vec3('y') and el[2] == vec3('z')
+        assert el[0] == vec3("x") and el[1] == vec3("y") and el[2] == vec3("z")
 
 
 # ############################################################################
 # pair
 # ############################################################################
 
-class Testpair:
 
+class Testpair:
     def test_pair_misfit(self):
         p = Pair.random()
         assert np.allclose(p.misfit, 0)
@@ -606,8 +611,8 @@ class Testpair:
 # fault
 # ############################################################################
 
-class Testfault:
 
+class Testfault:
     def test_fault_flip(self):
         f = fault(90, 30, 110, 28, -1)
         fr = f.rotate(f.rax, 180)
@@ -615,7 +620,7 @@ class Testfault:
 
     def test_fault_rotation_sense(self):
         f = fault(90, 30, 110, 28, -1)
-        assert repr(f.rotate(lin(220, 10), 60)) == 'F:343/37-301/29 +'
+        assert repr(f.rotate(lin(220, 10), 60)) == "F:343/37-301/29 +"
 
     def test_fault_t_axis(self):
         f = fault(150, 60, 150, 60, 1)

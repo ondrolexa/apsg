@@ -4,6 +4,7 @@ from matplotlib.patches import Circle
 import matplotlib.pyplot as plt
 
 from apsg.feature._statistics import estimate_k
+from apsg.feature._geodata import Lineation
 from apsg.feature._container import Vector3Set
 from apsg.plotting._projection import EqualAreaProj, EqualAngleProj
 
@@ -208,3 +209,40 @@ class StereoGrid:
             h.set_clip_path(primitive)
         fig.tight_layout()
         plt.show()
+
+    def angmech(self, faults, **kwargs):
+        """Implementation of Angelier-Mechler dihedra method
+
+        Args:
+            faults: ``FaultSet`` of data
+        
+        Kwargs:
+            method: 'probability' or 'classic'. Classic method assigns +/-1
+            to individual positions, while 'probability' returns maximum
+            likelihood estimate.
+            Other kwargs are passed to contourf
+
+        """
+
+        def angmech(dc, fs):
+            val = 0
+            for f in fs:
+                val += 2 * float(np.sign(dc.dot(f.fvec)) == np.sign(dc.dot(f.lvec))) - 1
+            return val
+
+        def angmech2(dc, fs):
+            val = 0
+            d = Lineation(dc)
+            for f in fs:
+                s = 2 * float(np.sign(dc.dot(f.fvec)) == np.sign(dc.dot(f.lvec))) - 1
+                lprob = 1 - abs(45 - f.lin.angle(d)) / 45
+                fprob = 1 - abs(45 - f.fol.angle(d)) / 45
+                val += s * lprob * fprob
+            return val
+
+        method = kwargs.pop("method", "classic")
+        if method == "probability":
+            self.apply_func(angmech2, faults)
+        else:
+            self.apply_func(angmech, faults)
+        self.contourf(**kwargs)

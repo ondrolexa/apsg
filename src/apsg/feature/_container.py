@@ -5,7 +5,7 @@ import numpy as np
 from apsg.config import apsg_conf
 from apsg.math._vector import Vector3
 from apsg.helpers._math import acosd
-from apsg.feature._geodata import Lineation, Foliation, Pair
+from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
 from apsg.feature._tensor import Ortensor3
 from apsg.feature._statistics import KentDistribution, vonMisesFisher
 
@@ -367,7 +367,7 @@ class Vector3Set(FeatureSet):
 
     @classmethod
     def from_array(cls, azis, incs, name="Default"):
-        """Create ``Group`` object from arrays of azimuths and inclinations
+        """Create ``Feature`` object from arrays of azimuths and inclinations
 
         Args:
           azis: list or array of azimuths
@@ -573,9 +573,319 @@ class PairSet(FeatureSet):
     def __repr__(self):
         return f"P({len(self)}) {self.name}"
 
+    @property
+    def fol(self):
+        """Return Foliations of pairs as FoliationSet"""
+        return FoliationSet([e.fol for e in self], name=self.name)
 
-class FaultSet(FeatureSet):
+    @property
+    def fvec(self):
+        """Return planar normal vectors of pairs as Vector3Set"""
+        return Vector3Set([e.fvec for e in self], name=self.name)
+
+    @property
+    def lin(self):
+        """Return Lineation of pairs as LineationSet"""
+        return LineationSet([e.lin for e in self], name=self.name)
+
+    @property
+    def lvec(self):
+        """Return lineation vectors of pairs as Vector3Set"""
+        return Vector3Set([e.lvec for e in self], name=self.name)
+
+    @property
+    def misfit(self):
+        """Return array of misfits"""
+        return np.array([f.misfit for f in self])
+
+    @property
+    def rax(self):
+        """
+        Return vectors perpendicular to both planar and linear parts of
+        pairs as Vector3Set
+        """
+        return Vector3Set([e.rax for e in self], name=self.name)
+
+    @property
+    def ortensor(self):
+        """Return Lisle (1989) orientation tensor ``Ortensor3`` of orientations
+        defined by pairs"""
+        return Ortensor3.from_pairs(self)
+
+    @classmethod
+    def from_csv(cls, filename, delimiter=",", facol=0, ficol=1, lacol=2, licol=3):
+        """Read ``PairSet`` from csv file"""
+
+        from os.path import basename
+        import csv
+
+        with open(filename) as csvfile:
+            has_header = csv.Sniffer().has_header(csvfile.read(1024))
+            csvfile.seek(0)
+            dialect = csv.Sniffer().sniff(csvfile.read(1024))
+            csvfile.seek(0)
+            if (
+                isinstance(facol, int)
+                and isinstance(ficol, int)
+                and isinstance(lacol, int)
+                and isinstance(licol, int)
+            ):
+                if has_header:
+                    reader = csv.DictReader(csvfile, dialect=dialect)
+                    faname, finame = reader.fieldnames[facol], reader.fieldnames[ficol]
+                    laname, liname = reader.fieldnames[lacol], reader.fieldnames[licol]
+                    r = [
+                        (
+                            float(row[faname]),
+                            float(row[finame]),
+                            float(row[laname]),
+                            float(row[liname]),
+                        )
+                        for row in reader
+                    ]
+                else:
+                    reader = csv.reader(csvfile, dialect=dialect)
+                    r = [
+                        (
+                            float(row[facol]),
+                            float(row[ficol]),
+                            float(row[lacol]),
+                            float(row[licol]),
+                        )
+                        for row in reader
+                    ]
+            else:
+                if has_header:
+                    reader = csv.DictReader(csvfile, dialect=dialect)
+                    r = [
+                        (
+                            float(row[facol]),
+                            float(row[ficol]),
+                            float(row[lacol]),
+                            float(row[licol]),
+                        )
+                        for row in reader
+                    ]
+                else:
+                    raise ValueError("No header line in CSV file...")
+
+        fazi, finc, lazi, linc = zip(*r)
+        return cls.from_array(fazi, finc, lazi, linc, name=basename(filename))
+
+    def to_csv(self, filename, delimiter=","):
+        """Save ``PairSet`` object to csv file
+
+        Args:
+          filename (str): name of CSV file to save.
+
+        Keyword Args:
+          delimiter (str): values delimiter. Default ','
+
+        Note: Written values are rounded according to `ndigits` settings in apsg_conf
+
+        """
+        import csv
+
+        n = apsg_conf["ndigits"]
+
+        with open(filename, "w", newline="") as csvfile:
+            fieldnames = ["azi", "inc", "lazi", "linc"]
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for dt in self:
+                fazi, finc = dt.fol.geo
+                lazi, linc = dt.lin.geo
+                writer.writerow(
+                    {
+                        "fazi": round(fazi, n),
+                        "finc": round(finc, n),
+                        "lazi": round(lazi, n),
+                        "linc": round(linc, n),
+                    }
+                )
+
+    @classmethod
+    def from_array(cls, fazis, fincs, lazis, lincs, name="Default"):
+        """Create ``PairSet`` from arrays of azimuths and inclinations
+
+        Args:
+          azis: list or array of azimuths
+          incs: list or array of inclinations
+
+        Keyword Args:
+          name: name of ``PairSet`` object. Default is 'Default'
+        """
+
+        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
+        return cls(
+            [
+                dtype_cls(fazi, finc, lazi, linc)
+                for fazi, finc, lazi, linc in zip(fazis, fincs, lazis, lincs)
+            ],
+            name=name,
+        )
+
+
+class FaultSet(PairSet):
     __feature_type__ = "Fault"
 
     def __repr__(self):
         return f"F({len(self)}) {self.name}"
+
+    @property
+    def sense(self):
+        """Return array of sense values"""
+        return np.array([f.sense for f in self])
+
+    @property
+    def p_vector(self, ptangle=90):
+        """Return p-axes of FaultSet as Vector3Set"""
+        return Vector3Set([e.p_vector(ptangle) for e in self], name=self.name)
+
+    @property
+    def t_vector(self, ptangle=90):
+        """Return t-axes of FaultSet as Vector3Set"""
+        return Vector3Set([e.t_vector(ptangle) for e in self], name=self.name)
+
+    @property
+    def p(self):
+        """Return p-axes of FaultSet as LineationSet"""
+        return LineationSet([e.p for e in self], name=self.name + "-P")
+
+    @property
+    def t(self):
+        """Return t-axes of FaultSet as LineationSet"""
+        return LineationSet([e.t for e in self], name=self.name + "-T")
+
+    @property
+    def m(self):
+        """Return m-planes of FaultSet as FoliationSet"""
+        return FoliationSet([e.m for e in self], name=self.name + "-M")
+
+    @property
+    def d(self):
+        """Return dihedra planes of FaultSet as FoliationSet"""
+        return FoliationSet([e.d for e in self], name=self.name + "-D")
+
+    @classmethod
+    def from_csv(
+        cls, filename, delimiter=",", facol=0, ficol=1, lacol=2, licol=3, scol=4
+    ):
+        """Read ``FaultSet`` from csv file"""
+
+        from os.path import basename
+        import csv
+
+        with open(filename) as csvfile:
+            has_header = csv.Sniffer().has_header(csvfile.read(1024))
+            csvfile.seek(0)
+            dialect = csv.Sniffer().sniff(csvfile.read(1024))
+            csvfile.seek(0)
+            if (
+                isinstance(facol, int)
+                and isinstance(ficol, int)
+                and isinstance(lacol, int)
+                and isinstance(licol, int)
+                and isinstance(scol, int)
+            ):
+                if has_header:
+                    reader = csv.DictReader(csvfile, dialect=dialect)
+                    faname, finame = reader.fieldnames[facol], reader.fieldnames[ficol]
+                    laname, liname = reader.fieldnames[lacol], reader.fieldnames[licol]
+                    sname = reader.fieldnames[scol]
+                    r = [
+                        (
+                            float(row[faname]),
+                            float(row[finame]),
+                            float(row[laname]),
+                            float(row[liname]),
+                            int(row[sname]),
+                        )
+                        for row in reader
+                    ]
+                else:
+                    reader = csv.reader(csvfile, dialect=dialect)
+                    r = [
+                        (
+                            float(row[facol]),
+                            float(row[ficol]),
+                            float(row[lacol]),
+                            float(row[licol]),
+                            int(row[scol]),
+                        )
+                        for row in reader
+                    ]
+            else:
+                if has_header:
+                    reader = csv.DictReader(csvfile, dialect=dialect)
+                    r = [
+                        (
+                            float(row[facol]),
+                            float(row[ficol]),
+                            float(row[lacol]),
+                            float(row[licol]),
+                            int(row[scol]),
+                        )
+                        for row in reader
+                    ]
+                else:
+                    raise ValueError("No header line in CSV file...")
+
+        fazi, finc, lazi, linc, sense = zip(*r)
+        return cls.from_array(fazi, finc, lazi, linc, sense, name=basename(filename))
+
+    def to_csv(self, filename, delimiter=","):
+        """Save ``FaultSet`` object to csv file
+
+        Args:
+          filename (str): name of CSV file to save.
+
+        Keyword Args:
+          delimiter (str): values delimiter. Default ','
+
+        Note: Written values are rounded according to `ndigits` settings in apsg_conf
+
+        """
+        import csv
+
+        n = apsg_conf["ndigits"]
+
+        with open(filename, "w", newline="") as csvfile:
+            fieldnames = ["fazi", "finc", "lazi", "linc", "sense"]
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for dt in self:
+                fazi, finc = dt.fol.geo
+                lazi, linc = dt.lin.geo
+                writer.writerow(
+                    {
+                        "fazi": round(fazi, n),
+                        "finc": round(finc, n),
+                        "lazi": round(lazi, n),
+                        "linc": round(linc, n),
+                        "sense": dt.sense,
+                    }
+                )
+
+    @classmethod
+    def from_array(cls, fazis, fincs, lazis, lincs, senses, name="Default"):
+        """Create ``PairSet`` from arrays of azimuths and inclinations
+
+        Args:
+          azis: list or array of azimuths
+          incs: list or array of inclinations
+
+        Keyword Args:
+          name: name of ``PairSet`` object. Default is 'Default'
+        """
+
+        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
+        return cls(
+            [
+                dtype_cls(fazi, finc, lazi, linc, sense)
+                for fazi, finc, lazi, linc, sense in zip(
+                    fazis, fincs, lazis, lincs, senses
+                )
+            ],
+            name=name,
+        )

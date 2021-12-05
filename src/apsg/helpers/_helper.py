@@ -1,5 +1,6 @@
 # some utls
 
+
 def eformat(f, prec):
     s = "{:e}".format(f)
     m, e = s.split("e")
