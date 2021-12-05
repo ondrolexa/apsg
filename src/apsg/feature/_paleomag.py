@@ -7,7 +7,6 @@ from datetime import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 
 from apsg.config import apsg_conf
 from apsg.helpers._helper import eformat
@@ -191,7 +190,8 @@ class Core(object):
         with open(filename, encoding="windows-1250") as f:
             d = f.read().splitlines()
 
-        import io
+        from io import StringIO
+        import pandas as pd
 
         headspec = [
             [0, 9],
@@ -233,8 +233,8 @@ class Core(object):
             [116, 126],
         ]
 
-        head = pd.read_fwf(io.StringIO("\n".join(d[:2])), colspecs=headspec)
-        body = pd.read_fwf(io.StringIO("\n".join(d[2:])), colspecs=bodyspec)
+        head = pd.read_fwf(StringIO("\n".join(d[:2])), colspecs=headspec)
+        body = pd.read_fwf(StringIO("\n".join(d[2:])), colspecs=bodyspec)
 
         data = {}
         data["site"] = head["Site"][0] if not pd.isna(head["Site"][0]) else ""
