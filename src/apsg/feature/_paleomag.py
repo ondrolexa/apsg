@@ -15,7 +15,6 @@ from apsg.math._vector import Vector3
 from apsg.feature._geodata import Lineation, Foliation, Pair
 from apsg.feature._container import Vector3Set
 from apsg.plotting._stereonet import StereoNet
-from apsg.helpers import eformat
 
 __all__ = ("Core",)
 
@@ -375,7 +374,7 @@ class Core(object):
     @property
     def nsteps(self):
         "Retruns steps as array of numbers"
-        pp = [re.findall("\d+", str(s)) for s in self.steps]
+        pp = [re.findall(r"\d+", str(s)) for s in self.steps]
         return np.array([int(s[0]) if s else 0 for s in pp])
 
     @property

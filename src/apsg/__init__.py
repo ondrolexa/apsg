@@ -38,6 +38,8 @@ __all__ = (
     "Vector3Set",
     "LineationSet",
     "FoliationSet",
+    "PairSet",
+    "FaultSet",
     "G",
     "DefGrad3",
     "VelGrad3",

@@ -1,6 +1,6 @@
 import numpy as np
 
-from apsg.helpers._math import sind, cosd, tand, acosd, asind, atand, atan2d, sqrt2
+from apsg.helpers._math import sqrt2
 from apsg.math._vector import Vector3
 from apsg.feature._geodata import Lineation, Foliation, Pair
 from apsg.feature._tensor import DefGrad3
@@ -92,27 +92,27 @@ class Projection:
         lon_n, lon_s = {}, {}
         for dip in range(self.gridstep, 90, self.gridstep):
             if dip >= self.clip_pole:
-                l = Vector3(0, dip)
+                lon = Vector3(0, dip)
                 X, Y = project_grid(
-                    *np.array([l.rotate(Lineation(0, 0), a) for a in angles_sc]).T
+                    *np.array([lon.rotate(Lineation(0, 0), a) for a in angles_sc]).T
                 )
                 lon_n[dip] = dict(x=X.tolist(), y=Y.tolist())
-                l = Vector3(180, dip)
+                lon = Vector3(180, dip)
                 X, Y = project_grid(
-                    *np.array([l.rotate(Lineation(180, 0), a) for a in angles_sc]).T
+                    *np.array([lon.rotate(Lineation(180, 0), a) for a in angles_sc]).T
                 )
                 lon_s[dip] = dict(x=X.tolist(), y=Y.tolist())
 
         # pole holes rims
         if self.clip_pole > 0:
-            l = Vector3(0, self.clip_pole)
+            lon = Vector3(0, self.clip_pole)
             X, Y = project_grid(
-                *np.array([l.rotate(Vector3(0, 0), a) for a in angles_sc]).T
+                *np.array([lon.rotate(Vector3(0, 0), a) for a in angles_sc]).T
             )
             polehole_n = dict(x=X.tolist(), y=Y.tolist())
-            l = Vector3(180, self.clip_pole)
+            lon = Vector3(180, self.clip_pole)
             X, Y = project_grid(
-                *np.array([l.rotate(Vector3(180, 0), a) for a in angles_sc]).T
+                *np.array([lon.rotate(Vector3(180, 0), a) for a in angles_sc]).T
             )
             polehole_s = dict(x=X.tolist(), y=Y.tolist())
         else:

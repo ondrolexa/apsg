@@ -2,7 +2,7 @@ import math
 
 sqrt2 = math.sqrt(2.0)
 
-### DEGREES TRIGINOMETRY ###
+# DEGREES TRIGINOMETRY
 
 
 def sind(x):

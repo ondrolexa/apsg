@@ -18,7 +18,7 @@ class StereoGrid:
     Args:
         n: number of grid points Default 2000
         grid_type: type of grid 'gss' or 'sfs'. Default 'gss'
-  
+
     Note: Euclidean norms are used as weights. Normalize data if you dont want to use weigths.
 
     """
@@ -73,7 +73,7 @@ class StereoGrid:
         Args:
             sigma: if none k is calculated automatically. Default None
             trim: if True, values < 0 are clipped to zero. . Default True
-        
+
         """
         # parse options
         sigma = kwargs.get("sigma", None)
@@ -137,7 +137,7 @@ class StereoGrid:
         ax.set_xlim(-1.05, 1.05)
         ax.set_ylim(-1.05, 1.05)
         if colorbar:
-            self.fig.colorbar(cf, ax=self.ax, label=label, shrink=0.6)
+            self.fig.colorbar(cf, ax=self.ax, shrink=0.6)
         plt.show()
 
     def contour(self, *args, **kwargs):
@@ -173,7 +173,7 @@ class StereoGrid:
         for collection in cf.collections:
             collection.set_clip_path(primitive)
         if colorbar:
-            self.fig.colorbar(cf, ax=self.ax, label=label, shrink=0.6)
+            self.fig.colorbar(cf, ax=self.ax, shrink=0.6)
         plt.show()
 
     def plotcountgrid(self, **kwargs):

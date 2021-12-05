@@ -3,12 +3,9 @@ import math
 import numpy as np
 
 from apsg.config import apsg_conf
-from apsg.helpers._math import sind, cosd, tand, acosd, asind, atand, atan2d, sqrt2
+from apsg.helpers._math import sind, cosd, acosd
 from apsg.helpers._notation import (
-    geo2vec_planar,
     geo2vec_linear,
-    vec2geo_planar,
-    vec2geo_linear,
     vec2geo_linear_signed,
 )
 from apsg.decorator._decorator import ensure_first_arg_same

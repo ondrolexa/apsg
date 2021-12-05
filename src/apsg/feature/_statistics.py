@@ -284,7 +284,6 @@ class KentDistribution(object):
         g1x = np.sum(self.gamma1 * xs, axis)
         g2x = np.sum(self.gamma2 * xs, axis)
         g3x = np.sum(self.gamma3 * xs, axis)
-        (k, b) = (self.kappa, self.beta)
 
         dfdk = g1x
         dfdb = g2x ** 2 - g3x ** 2

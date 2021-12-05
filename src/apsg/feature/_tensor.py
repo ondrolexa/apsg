@@ -2,12 +2,11 @@ import math
 import numpy as np
 from scipy import linalg as spla
 
-from apsg.config import apsg_conf
-from apsg.helpers._math import sind, cosd, tand, acosd, asind, atand, atan2d, sqrt2
+from apsg.helpers._math import sind, cosd, atand
 from apsg.math._vector import Vector3
 from apsg.math._matrix import Matrix3
-from apsg.decorator._decorator import ensure_first_arg_same, ensure_arguments
-from apsg.feature._geodata import Lineation, Foliation, Pair
+from apsg.decorator._decorator import ensure_arguments
+from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
 
 
 class DefGrad3(Matrix3):
@@ -366,7 +365,7 @@ class Stress3(Tensor3):
 
         """
 
-        return Fault.from_vecs(*self.stress_comp(n))
+        return Fault(*self.stress_comp(n))
 
     def stress_comp(self, n):
         """
@@ -682,7 +681,6 @@ class Ortensor3(Ellipsoid):
           L:20/9
 
         """
-        assert isinstance(p, PairSet), "Data must be of PairSet type."
         Tx = np.dot(np.array(p.lin).T, np.array(p.lin)) / len(p)
         Tz = np.dot(np.array(p.fol).T, np.array(p.fol)) / len(p)
         return cls(Tx - Tz)

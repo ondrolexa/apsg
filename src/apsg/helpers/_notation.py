@@ -1,7 +1,7 @@
 from apsg.config import apsg_conf
-from apsg.helpers._math import sind, cosd, tand, acosd, asind, atand, atan2d, sqrt2
+from apsg.helpers._math import sind, cosd, asind, atan2d
 
-### NOTATION TRANSORMATIONS ###
+# NOTATION TRANSORMATIONS
 
 
 def fol2vec_dd(azi, inc):

@@ -7,30 +7,19 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cbook as mcb
-import matplotlib.animation as animation
 from matplotlib.patches import Circle
 from scipy.stats import vonmises
 
-try:
-    import mplstereonet
-except ImportError:
-    pass
-
 from apsg.config import apsg_conf
-from apsg.helpers._math import sind, cosd, tand, acosd, asind, atand, atan2d, sqrt2
-from apsg.math._vector import Vector3, Axial3
-from apsg.math._matrix import Matrix3
-from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
+from apsg.math._vector import Vector3
+from apsg.feature._geodata import Foliation
 from apsg.feature._container import (
     FeatureSet,
     Vector3Set,
-    LineationSet,
     FoliationSet,
-    PairSet,
-    FaultSet,
 )
 from apsg.plotting._stereogrid import StereoGrid
-from apsg.feature._tensor import DefGrad3, VelGrad3, Stress3, Ellipsoid, Ortensor3
+from apsg.feature._tensor import Ortensor3
 from apsg.plotting._projection import EqualAreaProj, EqualAngleProj
 
 __all__ = ["StereoNet", "VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot", "RosePlot"]
@@ -209,7 +198,7 @@ class StereoNet:
         h, labels = self.ax.get_legend_handles_labels()
         if h:
             print("Here")
-            lgd = self.ax.legend(
+            self.ax.legend(
                 h,
                 labels,
                 bbox_to_anchor=(1.05, 1),
@@ -490,7 +479,6 @@ class StereoNet:
         dcgrid = np.asarray(self.stereogrid.grid).T
         X, Y = self.proj.project_data(*dcgrid, clip_inside=False)
         colorbar = kwargs.pop("colorbar")
-        label = kwargs.pop("label")
         cf = self.ax.tricontourf(X, Y, self.stereogrid.values, **kwargs)
         for collection in cf.collections:
             collection.set_clip_path(self.primitive)
@@ -535,7 +523,7 @@ class RosePlot(object):
     """
 
     def __init__(self, *args, **kwargs):
-        self.fig = plt.figure(figsize=kwargs.pop("figsize", settings["figsize"]))
+        self.fig = plt.figure(figsize=kwargs.pop("figsize", apsg_conf["figsize"]))
         self.fig.canvas.set_window_title("Rose plot")
         self.bins = kwargs.get("bins", 36)
         self.axial = kwargs.get("axial", True)
@@ -698,7 +686,7 @@ class VollmerPlot(_FabricPlot):
     """
 
     def __init__(self, *args, **kwargs):
-        self.fig = plt.figure(figsize=kwargs.pop("figsize", settings["figsize"]))
+        self.fig = plt.figure(figsize=kwargs.pop("figsize", apsg_conf["figsize"]))
         self.fig.canvas.set_window_title("Vollmer fabric plot")
         self.ticks = kwargs.get("ticks", True)
         self.grid = kwargs.get("grid", True)
@@ -756,10 +744,10 @@ class VollmerPlot(_FabricPlot):
         )
 
         if self.grid:
-            for l in np.arange(0.1, 1, 0.1):
-                self.triplot([l, l], [0, 1 - l], [1 - l, 0], "k:")
-                self.triplot([0, 1 - l], [l, l], [1 - l, 0], "k:")
-                self.triplot([0, 1 - l], [1 - l, 0], [l, l], "k:")
+            for ln in np.arange(0.1, 1, 0.1):
+                self.triplot([ln, ln], [0, 1 - ln], [1 - ln, 0], "k:")
+                self.triplot([0, 1 - ln], [ln, ln], [1 - ln, 0], "k:")
+                self.triplot([0, 1 - ln], [1 - ln, 0], [ln, ln], "k:")
 
         # ticks
         if self.ticks:
@@ -800,11 +788,11 @@ class VollmerPlot(_FabricPlot):
         self.draw()
 
     def plot(self, obj, *args, **kwargs):
-        if type(obj) is FeatureSet:
-            obj = obj.ortensor
+        if issubclass(type(obj), Vector3Set):
+            obj = obj.ortensor()
 
-        if not isinstance(obj, Tensor):
-            raise TypeError("%s argument is not supported!" % type(obj))
+        if not isinstance(obj, Ortensor3):
+            raise TypeError("Argument must be Vector3Set or Ortensor3")
 
         # ensure point plot
         if "ls" not in kwargs and "linestyle" not in kwargs:
@@ -853,7 +841,7 @@ class RamsayPlot(_FabricPlot):
     """
 
     def __init__(self, *args, **kwargs):
-        self.fig = plt.figure(figsize=kwargs.pop("figsize", settings["figsize"]))
+        self.fig = plt.figure(figsize=kwargs.pop("figsize", apsg_conf["figsize"]))
         self.fig.canvas.set_window_title("Ramsay deformation plot")
         self.ticks = kwargs.get("ticks", True)
         self.grid = kwargs.get("grid", False)
@@ -885,11 +873,11 @@ class RamsayPlot(_FabricPlot):
         self.draw()
 
     def plot(self, obj, *args, **kwargs):
-        if type(obj) is FeatureSet:
-            obj = obj.ortensor
+        if issubclass(type(obj), Vector3Set):
+            obj = obj.ortensor()
 
-        if not isinstance(obj, Tensor):
-            raise TypeError("%s argument is not supported!" % type(obj))
+        if not isinstance(obj, Ortensor3):
+            raise TypeError("Argument must be Vector3Set or Ortensor3")
 
         # ensure point plot
         if "ls" not in kwargs and "linestyle" not in kwargs:
@@ -945,7 +933,7 @@ class FlinnPlot(_FabricPlot):
     """
 
     def __init__(self, *args, **kwargs):
-        self.fig = plt.figure(figsize=kwargs.pop("figsize", settings["figsize"]))
+        self.fig = plt.figure(figsize=kwargs.pop("figsize", apsg_conf["figsize"]))
         self.fig.canvas.set_window_title("Flinn's deformation plot")
         self.ticks = kwargs.get("ticks", True)
         self.grid = kwargs.get("grid", False)
@@ -977,11 +965,11 @@ class FlinnPlot(_FabricPlot):
         self.draw()
 
     def plot(self, obj, *args, **kwargs):
-        if type(obj) is FeatureSet:
-            obj = obj.ortensor
+        if issubclass(type(obj), Vector3Set):
+            obj = obj.ortensor()
 
-        if not isinstance(obj, Tensor):
-            raise TypeError("%s argument is not supported!" % type(obj))
+        if not isinstance(obj, Ortensor3):
+            raise TypeError("Argument must be Vector3Set or Ortensor3")
 
         # ensure point plot
         if "ls" not in kwargs and "linestyle" not in kwargs:
@@ -1037,7 +1025,7 @@ class HsuPlot(_FabricPlot):
     """
 
     def __init__(self, *args, **kwargs):
-        self.fig = plt.figure(figsize=kwargs.pop("figsize", settings["figsize"]))
+        self.fig = plt.figure(figsize=kwargs.pop("figsize", apsg_conf["figsize"]))
         self.fig.canvas.set_window_title("Hsu fabric plot")
         self.ticks = kwargs.get("ticks", True)
         self.grid = kwargs.get("grid", True)
@@ -1069,11 +1057,11 @@ class HsuPlot(_FabricPlot):
         self.draw()
 
     def plot(self, obj, *args, **kwargs):
-        if type(obj) is FeatureSet:
-            obj = obj.ortensor
+        if issubclass(type(obj), Vector3Set):
+            obj = obj.ortensor()
 
-        if not isinstance(obj, Tensor):
-            raise TypeError("%s argument is not supported!" % type(obj))
+        if not isinstance(obj, Ortensor3):
+            raise TypeError("Argument must be Vector3Set or Ortensor3")
 
         # ensure point plot
         if "ls" not in kwargs and "linestyle" not in kwargs:
@@ -1111,854 +1099,3 @@ class HsuPlot(_FabricPlot):
         K = (y - 1) / (x - 1) if x > 1 else 0
         D = np.sqrt((x - 1) ** 2 + (y - 1) ** 2)
         return "K:{:0.2f} D:{:0.2f}".format(K, D)
-
-
-##############################################
-#   THIS IS DEPRECATED AND WILL BE REMOVED   #
-##############################################
-
-
-class StereoNetOld(object):
-
-    """
-    ``StereoNet`` class for Schmidt net plotting.
-
-    A stereonet is a lower hemisphere Schmidt net on to which a variety
-    of geological data can be plotted.
-
-    If args are provided plot is immediately shown. If no args are provided,
-    following methods and properties could be used for additional operations.
-
-    Args:
-        any plottable APSG class (most of data classes and tensors)
-
-    Keyword Args:
-        fol_plot: default method for ``Fol`` instances. ['plane' or 'pole']
-                  Default 'plane'
-        title: figure title. Default ''
-        figsize: Figure size. Default from settings ()
-        ncols: number of subplot columns. Default 1
-        ticks: show ticks. Default True
-        grid: show grid lines. Default False
-        gridlw: grid lines width. Default 1
-        grid_style: grid lines style. Default 'k:'
-        cbpad: colorbar padding. Default 0.1
-
-        Other keyword arguments are passed to matplotlib plot.
-
-    Example:
-        >>> s = StereoNet()
-        >>> g = Group.randn_lin(mean=lin(40, 20))
-        >>> s.contourf(g, 8, legend=True, sigma=2)
-        >>> s.line(g, 'g.', label='My data')
-        >>> s.show()
-    """
-
-    def __init__(self, *args, **kwargs):
-        self.ticks = kwargs.pop("ticks", True)
-        self.grid = kwargs.pop("grid", False)
-        self.gridlw = kwargs.pop("gridlw", 1)
-        self.ncols = kwargs.pop("ncols", 1)
-        self.cbpad = kwargs.pop("cbpad", 0.1)
-        self.grid_style = kwargs.pop("grid_style", "k:")
-        self.fol_plot = kwargs.pop("fol_plot", "plane")
-        figsize = kwargs.pop("figsize", settings["figsize"])
-        self._title_text = kwargs.pop("title", "")
-        self._lgd = None
-        self.active = 0
-        self.artists = []
-        self.fig, self.ax = plt.subplots(ncols=self.ncols, figsize=figsize)
-        self.fig.canvas.set_window_title("StereoNet - Schmidt projection")
-        # self.fig.set_size_inches(8 * self.ncols, 6)
-        self._axtitle = self.ncols * [None]
-        self.artist_collection = []
-        self.artist_labels = []
-        self.cid = None
-        self.cla()
-        # optionally immidiately plot passed objects
-        if args:
-            for arg in args:
-                kwargs["label"] = repr(arg)
-                if type(arg) in [Group, PairSet, FaultSet]:
-                    typ = arg.type
-                else:
-                    typ = type(arg)
-                if typ is Lin:
-                    self.line(arg, **kwargs)
-                elif typ is Fol:
-                    getattr(self, self.fol_plot)(arg, **kwargs)
-                elif typ is Vector3:
-                    self.vector(arg.aslin, **kwargs)
-                elif typ is Pair:
-                    self.pair(arg, **kwargs)
-                elif typ is Fault:
-                    self.fault(arg, **kwargs)
-                elif typ is StereoGrid:
-                    kwargs.pop("label", None)
-                    kwargs.pop("legend", None)
-                    self.contourf(arg, legend=True, **kwargs)
-                elif typ in [Ortensor, Ellipsoid, DefGrad, Stress]:
-                    kwargs.pop("label", None)
-                    self.tensor(arg, **kwargs)
-                else:
-                    raise TypeError("%s argument is not supported!" % typ)
-            self.show()
-
-    def close(self):
-        plt.close(self.fig)
-
-    @property
-    def closed(self):
-        return not plt.fignum_exists(self.fig.number)
-
-    def draw(self):
-        if self.closed:
-            print(
-                "The StereoNet figure have been closed. "
-                "Use new() method or create new one."
-            )
-        else:
-            for ax in self.fig.axes:
-                h, lbls = ax.get_legend_handles_labels()
-                if h:
-                    self._lgd = ax.legend(
-                        h,
-                        lbls,
-                        bbox_to_anchor=(1.12, 1),
-                        prop={"size": 11},
-                        loc=2,
-                        borderaxespad=0,
-                        scatterpoints=1,
-                        numpoints=1,
-                    )
-                    plt.subplots_adjust(right=0.75)
-                else:
-                    plt.subplots_adjust(right=0.9)
-            plt.draw()
-            # plt.pause(0.001)
-
-    def new(self):
-        """Re-initialize existing StereoNet."""
-        if self.closed:
-            self.__init__()
-
-    def cla(self):
-        """Clear axes and draw empty projection."""
-
-        def lat(a, phi):
-            return self._cone(l2v(a, 0), l2v(a, phi), limit=89.9999, res=91)
-
-        def lon(a, theta):
-            return self._cone(p2v(a, theta), l2v(a, theta), limit=80, res=91)
-
-        # recreate default Axes
-        self.fig.clear()
-        self.ax = self.fig.subplots(ncols=self.ncols)
-        self.annot = []
-        for ax in self.fig.axes:
-            ax.cla()
-            ax.format_coord = self.format_coord
-            ax.set_aspect("equal")
-            ax.set_autoscale_on(False)
-            ax.axis([-1.05, 1.05, -1.05, 1.05])
-            ax.set_axis_off()
-
-            # Projection circle
-            ax.text(0, 1.02, "N", ha="center", va="baseline", fontsize=16)
-            ax.add_artist(plt.Circle((0, 0), 1, color="w", zorder=0))
-            ax.add_artist(plt.Circle((0, 0), 1, color="None", ec="k", zorder=3))
-
-            if self.grid:
-                # Main cross
-                ax.plot(
-                    [-1, 1, np.nan, 0, 0],
-                    [0, 0, np.nan, -1, 1],
-                    self.grid_style,
-                    zorder=3,
-                    lw=self.gridlw,
-                )
-                # Latitudes
-                lat_n = np.array([lat(0, phi) for phi in range(10, 90, 10)])
-                ax.plot(
-                    lat_n[:, 0, :].T,
-                    lat_n[:, 1, :].T,
-                    self.grid_style,
-                    zorder=3,
-                    lw=self.gridlw,
-                )
-                lat_s = np.array([lat(180, phi) for phi in range(10, 90, 10)])
-                ax.plot(
-                    lat_s[:, 0, :].T,
-                    lat_s[:, 1, :].T,
-                    self.grid_style,
-                    zorder=3,
-                    lw=self.gridlw,
-                )
-                # Longitudes
-                le = np.array([lon(90, theta) for theta in range(10, 90, 10)])
-                ax.plot(
-                    le[:, 0, :].T,
-                    le[:, 1, :].T,
-                    self.grid_style,
-                    zorder=3,
-                    lw=self.gridlw,
-                )
-                lw = np.array([lon(270, theta) for theta in range(10, 90, 10)])
-                ax.plot(
-                    lw[:, 0, :].T,
-                    lw[:, 1, :].T,
-                    self.grid_style,
-                    zorder=3,
-                    lw=self.gridlw,
-                )
-
-            # ticks
-            if self.ticks:
-                a = np.arange(0, 360, 30)
-                tt = np.array([0.98, 1])
-                x = np.outer(tt, sind(a))
-                y = np.outer(tt, cosd(a))
-                ax.plot(x, y, "k", zorder=4)
-            # Middle cross
-            ax.plot(
-                [-0.02, 0.02, np.nan, 0, 0], [0, 0, np.nan, -0.02, 0.02], "k", zorder=4
-            )
-            annot = ax.annotate(
-                "",
-                xy=(0, 0),
-                xytext=(20, 20),
-                textcoords="offset points",
-                arrowprops=dict(arrowstyle="->"),
-                zorder=10,
-                bbox=dict(boxstyle="round", fc="w"),
-            )
-            annot.set_visible(False)
-            self.annot.append(annot)
-        self._title = self.fig.suptitle(self._title_text)
-        self.draw()
-
-    def getlin(self):
-        """Get Lin instance by mouse click."""
-        x, y = plt.ginput(1)[0]
-        return Lin(*getldd(x, y))
-
-    def getfol(self):
-        """Get Fol instance by mouse click."""
-        x, y = plt.ginput(1)[0]
-        return Fol(*getfdd(x, y))
-
-    def getlins(self):
-        """Get Group of Lin by mouse clicks."""
-        pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
-        return Group([Lin(*getldd(x, y)) for x, y in pts])
-
-    def getfols(self):
-        """Get Group of Fol by mouse clicks."""
-        pts = plt.ginput(0, mouse_add=1, mouse_pop=2, mouse_stop=3)
-        return Group([Fol(*getfdd(x, y)) for x, y in pts])
-
-    def _cone(self, axis, vector, limit=180, res=361, split=False):
-        a = np.linspace(-limit, limit, res)
-        x, y = l2xy(*v2l(rodrigues(axis, vector, a)))
-        if split:
-            dist = np.hypot(np.diff(x), np.diff(y))
-            ix = np.nonzero(dist > 1)[0]
-            x = np.insert(x, ix + 1, np.nan)
-            y = np.insert(y, ix + 1, np.nan)
-        return x, y
-
-    def _arrow(self, pos_lin, dir_lin=None, sense=1):
-        x, y = l2xy(*pos_lin.dd)
-        if dir_lin is None:
-            dx, dy = -x, -y
-        else:
-            ax, ay = l2xy(*dir_lin.dd)
-            dx, dy = -ax, -ay
-        mag = np.hypot(dx, dy)
-        u, v = sense * dx / mag, sense * dy / mag
-        return x, y, u, v
-
-    def arrow(self, pos_lin, dir_lin=None, sense=1, **kwargs):
-        """Draw arrow at given position in given direction."""
-        animate = kwargs.pop("animate", False)
-        x, y, u, v = self._arrow(pos_lin, dir_lin, sense=sense)
-        a = self.fig.axes[self.active].quiver(
-            x, y, u, v, width=2, headwidth=5, zorder=6, pivot="mid", units="dots"
-        )
-        p = self.fig.axes[self.active].scatter(x, y, color="k", s=5, zorder=6)
-        if animate:
-            self.artists.append(tuple(a + p))
-        self.draw()
-
-    def arc(self, l1, l2, *args, **kwargs):
-        """Draw great circle segment between two points."""
-        assert issubclass(type(l1), Vector3) and issubclass(
-            type(l2), Vector3
-        ), "Arguments must be subclass of Vector3"
-        animate = kwargs.pop("animate", False)
-        angstep = kwargs.pop("angstep", 1)
-        ax, phi = l1.H(l2).axisangle
-        steps = abs(int(phi / angstep))
-        angles = np.linspace(0, phi, steps)
-        rv = [l1.rotate(ax, angle) for angle in angles]
-        lh = [vv.flip if vv.upper else vv for vv in rv]  # what about Vector3?
-        x, y = l2xy(*np.array([v.dd for v in lh]).T)
-        h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
-        if animate:
-            self.artists.append(tuple(h))
-        self.draw()
-
-    def polygon(self, *args, **kwargs):
-        """Draw filled polygon defined by series of points or planes."""
-        assert len(args) > 2, "More than 2 arguments needed"
-        animate = kwargs.pop("animate", False)
-        angstep = kwargs.pop("angstep", 1)
-        coords = []
-        g = Group(list(args))
-        assert issubclass(
-            g.type, Vector3
-        ), "Only Vector3-like instances could be plotted as polygon."
-        if g.type is Fol:
-            g = Group([f1 ** f2 for f1, f2 in zip(g, g[1:] + g[:1])])
-        for l1, l2 in zip(g, g[1:] + g[:1]):
-            ax, phi = l1.H(l2).axisangle
-            steps = abs(int(phi / angstep))
-            angles = np.linspace(0, phi, steps)
-            rv = [l1.rotate(ax, angle) for angle in angles]
-            lh = [vv.flip if vv.upper else vv for vv in rv]  # what about Vector3?
-            coords.extend(np.transpose(l2xy(*np.array([v.dd for v in lh]).T)))
-        bg = plt.Polygon(coords, **kwargs)
-        h = self.ax.add_patch(bg)
-        if animate:
-            self.artists.append(tuple(h))
-        self.draw()
-
-    def plane(self, obj, *args, **kwargs):
-        """Draw Fol as great circle."""
-        assert obj.type is Fol, "Only Fol type instance could be plotted as plane."
-        if "zorder" not in kwargs:
-            kwargs["zorder"] = 5
-        animate = kwargs.pop("animate", False)
-        if isinstance(obj, Group):
-            x = []
-            y = []
-            for azi, inc in obj.dd.T:
-                xx, yy = self._cone(
-                    p2v(azi, inc),
-                    l2v(azi, inc),
-                    limit=89.9999,
-                    res=int(cosd(inc) * 179 + 2),
-                )
-                x = np.hstack((x, xx, np.nan))
-                y = np.hstack((y, yy, np.nan))
-            x = x[:-1]
-            y = y[:-1]
-        else:
-            azi, inc = obj.dd
-            x, y = self._cone(
-                p2v(azi, inc),
-                l2v(azi, inc),
-                limit=89.9999,
-                res=int(cosd(inc) * 179 + 2),
-            )
-        h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
-        if animate:
-            self.artists.append(tuple(h))
-        self.draw()
-
-    def line(self, obj, *args, **kwargs):
-        """Draw Lin as point."""
-        assert obj.type is Lin, "Only Lin type instance could be plotted as line."
-        if "zorder" not in kwargs:
-            kwargs["zorder"] = 5
-        animate = kwargs.pop("animate", False)
-        # ensure point plot
-        if "ls" not in kwargs and "linestyle" not in kwargs:
-            kwargs["linestyle"] = "none"
-        if not args:
-            if "marker" not in kwargs:
-                kwargs["marker"] = "o"
-        x, y = l2xy(*obj.dd)
-        h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
-        if animate:
-            self.artists.append(tuple(h))
-        self.draw()
-
-    def scatter(self, obj, *args, **kwargs):
-        """Draw Lin as point with varying marker size and/or color."""
-        assert obj.type in [
-            Lin,
-            Fol,
-            Vector3,
-        ], "Only Vector3, Lin or Fol type instance could be plotted with scatter."
-        if "zorder" not in kwargs:
-            kwargs["zorder"] = 5
-        if "legend" in kwargs:
-            legend = kwargs.pop("legend")
-        else:
-            legend = False
-        animate = kwargs.pop("animate", False)
-        labels = kwargs.pop("labels", False)
-        if not args:
-            if "marker" not in kwargs:
-                kwargs["marker"] = "o"
-        x, y = l2xy(*obj.aslin.dd)
-        h = self.fig.axes[self.active].scatter(x, y, *args, **kwargs)
-        if labels:
-            assert len(h.get_offsets()) == len(
-                labels
-            ), "Number of labels is not the same as the number of data."
-            self.artist_collection.append(h)
-            self.artist_labels.append(labels)
-            if self.cid is None:
-                self.cid = self.fig.canvas.mpl_connect(
-                    "motion_notify_event", self.hover
-                )
-        if legend:
-            self.fig.colorbar(h)
-        if animate:
-            self.artists.append(tuple(h))
-        self.draw()
-
-    def vector(self, obj, *args, **kwargs):
-        """ This mimics plotting on lower and upper hemisphere using
-        full and hollow symbols."""
-        assert issubclass(
-            obj.type, Vector3
-        ), "Only Vector3-like instance could be plotted as line."
-        if "zorder" not in kwargs:
-            kwargs["zorder"] = 5
-        animate = kwargs.pop("animate", False)
-        # ensure point plot
-        if "ls" not in kwargs and "linestyle" not in kwargs:
-            kwargs["linestyle"] = "none"
-        if not args:
-            if "marker" not in kwargs:
-                kwargs["marker"] = "o"
-        if isinstance(obj, Group):
-            uh = obj.upper
-            if np.any(~uh):
-                x, y = l2xy(*obj[~uh].dd)
-                h1 = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
-                kwargs.pop("label", None)
-                cc = h1[0].get_color()
-            else:
-                cc = None
-            if np.any(uh):
-                kwargs["fillstyle"] = "none"
-                x, y = l2xy(*obj[uh].flip.dd)
-                h2 = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
-                if cc is not None:
-                    h2[0].set_color(cc)
-            if animate:
-                self.artists.append(tuple(h1 + h2))
-        else:
-            if obj.upper:
-                kwargs["fillstyle"] = "none"
-                x, y = l2xy(*obj.flip.dd)
-                h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
-            else:
-                x, y = l2xy(*obj.dd)
-                h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
-            if animate:
-                self.artists.append(tuple(h))
-        self.draw()
-
-    def pole(self, obj, *args, **kwargs):
-        """Draw Fol as pole."""
-        assert obj.type is Fol, "Only Fol type instance could be plotted as poles."
-        if "zorder" not in kwargs:
-            kwargs["zorder"] = 5
-        animate = kwargs.pop("animate", False)
-        # ensure point plot
-        if "ls" not in kwargs and "linestyle" not in kwargs:
-            kwargs["linestyle"] = "none"
-        if not args:
-            if "marker" not in kwargs:
-                kwargs["marker"] = "s"
-        x, y = l2xy(*obj.aslin.dd)
-        h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
-        if animate:
-            self.artists.append(tuple(h))
-        self.draw()
-
-    def cone(self, obj, alpha, *args, **kwargs):
-        """Draw small circle."""
-        assert issubclass(
-            obj.type, Vector3
-        ), "Only Vector3-like instance could be used as cone axis."
-        if "zorder" not in kwargs:
-            kwargs["zorder"] = 5
-        animate = kwargs.pop("animate", False)
-        upper_style = False
-        if isinstance(obj, Group):
-            obj = obj.R
-        azi, inc = obj.dd
-        if obj.upper:
-            inc = -inc
-            upper_style = True
-        x, y = self._cone(
-            l2v(azi, inc),
-            l2v(azi, inc - alpha),
-            limit=180,
-            res=int(sind(alpha) * 358 + 3),
-            split=True,
-        )
-        h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
-        if upper_style:
-            for hl in h:
-                hl.set_linestyle("--")
-        if animate:
-            self.artists.append(tuple(h))
-        self.draw()
-
-    def pair(self, obj, *arg, **kwargs):
-        """Draw  Pair as great circle with small point."""
-        assert obj.type is Pair, "Only Pair type instance could be used."
-        animate = kwargs.pop("animate", False)
-        h1 = self.plane(obj.fol, *arg, **kwargs)
-        x, y = l2xy(*obj.lin.dd)
-        h2 = self.fig.axes[self.active].scatter(x, y, color="k", s=5, zorder=6)
-        if animate:
-            self.artists.append(tuple(h1 + h2))
-        self.draw()
-
-    def fault(self, obj, *arg, **kwargs):
-        """Draw a fault-and-striae as in Angelier plot"""
-        assert obj.type is Fault, "Only Fault type instance could be used."
-        animate = kwargs.get("animate", False)
-        self.plane(obj.fol, *arg, **kwargs)
-        x, y, u, v = self._arrow(obj.lin, sense=obj.sense)
-        a = self.fig.axes[self.active].quiver(
-            x, y, u, v, width=2, headwidth=5, zorder=6, pivot="mid", units="dots"
-        )
-        p = self.fig.axes[self.active].scatter(x, y, color="k", s=5, zorder=6)
-        if animate:
-            self.artists[-1] = self.artists[-1] + tuple(a + p)
-        self.draw()
-
-    def hoeppner(self, obj, *arg, **kwargs):
-        """Draw a fault-and-striae as in tangent lineation plot - Hoeppner plot."""
-        assert obj.type is Fault, "Only Fault type instance could be used."
-        animate = kwargs.get("animate", False)
-        self.pole(obj.fol, *arg, **kwargs)
-        x, y, u, v = self._arrow(obj.fvec.aslin, dir_lin=obj.lin, sense=obj.sense)
-        a = self.fig.axes[self.active].quiver(
-            x, y, u, v, width=2, headwidth=5, zorder=6, pivot="mid", units="dots"
-        )
-        p = self.fig.axes[self.active].scatter(x, y, color="k", s=5, zorder=6)
-        if animate:
-            self.artists[-1] = self.artists[-1] + tuple(a + p)
-        self.draw()
-
-    def tensor(self, obj, *arg, **kwargs):
-        """Draw tensor pricipal planes as great circles."""
-        eigenfols = kwargs.pop("eigenfols", True)
-        eigenlins = kwargs.pop("eigenlins", False)
-        if eigenfols:
-            self.plane(obj.eigenfols[0], label=obj.name + "-E1", **kwargs)
-            self.plane(obj.eigenfols[1], label=obj.name + "-E2", **kwargs)
-            self.plane(obj.eigenfols[2], label=obj.name + "-E3", **kwargs)
-        if eigenlins:
-            self.line(obj.eigenlins[0], label=obj.name + "-E1", **kwargs)
-            self.line(obj.eigenlins[1], label=obj.name + "-E2", **kwargs)
-            self.line(obj.eigenlins[2], label=obj.name + "-E3", **kwargs)
-
-    def contourf(self, obj, *args, **kwargs):
-        """Plot filled contours."""
-        clines = kwargs.pop("clines", True)
-        legend = kwargs.pop("legend", False)
-        if "cmap" not in kwargs and "colors" not in kwargs:
-            kwargs["cmap"] = "Greys"
-        if "zorder" not in kwargs:
-            kwargs["zorder"] = 1
-        if isinstance(obj, StereoGrid):
-            d = obj
-        else:
-            d = StereoGrid(obj, **kwargs)
-            # clean kwargs from StereoGrid keywords
-            for att in ["grid", "npoints", "sigma", "method", "trim"]:
-                kwargs.pop(att, None)
-        if "levels" not in kwargs:
-            if len(args) == 0:
-                args = (6,)
-            if isinstance(args[0], int):
-                mn = d.values.min()
-                mx = d.values.max()
-                levels = np.linspace(mn, mx, args[0])
-                levels[-1] += 1e-8
-                args = (levels,)
-        cs = self.fig.axes[self.active].tricontourf(d.triang, d.values, *args, **kwargs)
-        if clines:
-            kwargs["cmap"] = None
-            kwargs["colors"] = "k"
-            self.fig.axes[self.active].tricontour(d.triang, d.values, *args, **kwargs)
-        if legend:
-            if self.ncols > 1:
-                ab = self.fig.axes[self.active].get_position().bounds
-                cbaxes = self.fig.add_axes(
-                    [
-                        ab[0] + self.cbpad * ab[2],
-                        0.1,
-                        (1 - 2 * self.cbpad) * ab[2],
-                        0.03,
-                    ]
-                )
-                self.fig.colorbar(cs, cax=cbaxes, orientation="horizontal")
-                # add horizontal, calculate positions (divide bars and spaces)
-            else:
-                ab = self.fig.axes[self.active].get_position().bounds
-                cbaxes = self.fig.add_axes(
-                    [
-                        0.1,
-                        ab[1] + self.cbpad * ab[3],
-                        0.03,
-                        (1 - 2 * self.cbpad) * ab[3],
-                    ]
-                )
-                self.fig.colorbar(cs, cax=cbaxes)
-        self.draw()
-
-    def contour(self, obj, *args, **kwargs):
-        """Plot contour lines."""
-        legend = kwargs.pop("legend", False)
-        if "cmap" not in kwargs and "colors" not in kwargs:
-            kwargs["cmap"] = "Greys"
-        if "zorder" not in kwargs:
-            kwargs["zorder"] = 1
-        if isinstance(obj, StereoGrid):
-            d = obj
-        else:
-            d = StereoGrid(obj, **kwargs)
-            # clean kwargs from StereoGrid keywords
-            for att in ["grid", "npoints", "sigma", "method", "trim"]:
-                kwargs.pop(att, None)
-        if "levels" not in kwargs:
-            if len(args) == 0:
-                args = (6,)
-            if isinstance(args[0], int):
-                mn = d.values.min()
-                mx = d.values.max()
-                levels = np.linspace(mn, mx, args[0])
-                levels[-1] += 1e-8
-                args = (levels,)
-        cs = self.fig.axes[self.active].tricontour(d.triang, d.values, *args, **kwargs)
-        if legend:
-            if self.ncols > 1:
-                ab = self.fig.axes[self.active].get_position().bounds
-                cbaxes = self.fig.add_axes(
-                    [
-                        ab[0] + self.cbpad * ab[2],
-                        0.1,
-                        (1 - 2 * self.cbpad) * ab[2],
-                        0.03,
-                    ]
-                )
-                self.fig.colorbar(cs, cax=cbaxes, orientation="horizontal")
-                # add horizontal, calculate positions (divide bars and spaces)
-            else:
-                ab = self.fig.axes[self.active].get_position().bounds
-                cbaxes = self.fig.add_axes(
-                    [
-                        0.1,
-                        ab[1] + self.cbpad * ab[3],
-                        0.03,
-                        (1 - 2 * self.cbpad) * ab[3],
-                    ]
-                )
-                self.fig.colorbar(cs, cax=cbaxes)
-        self.draw()
-
-    # def _add_colorbar(self, cs):
-    #     divider = make_axes_locatable(self.fig.axes[self.active])
-    #     cax = divider.append_axes("left", size="5%", pad=0.5)
-    #     plt.colorbar(cs, cax=cax)
-    #     # modify tick labels
-    #     # cb = plt.colorbar(cs, cax=cax)
-    #     # lbl = [item.get_text()+'S' for item in cb.ax.get_yticklabels()]
-    #     # lbl[lbl.index(next(l for l in lbl if l.startswith('0')))] = 'E'
-    #     # cb.set_ticklabels(lbl)
-
-    def axtitle(self, title):
-        """Add title to active axes."""
-        self._axtitle[self.active] = self.fig.axes[self.active].set_title(title)
-        self._axtitle[self.active].set_y(-0.09)
-
-    def title(self, title=""):
-        """Set figure title."""
-        self._title_text = title
-        self._title = self.fig.suptitle(self._title_text)
-
-    def show(self):
-        """Call matplotlib show."""
-        plt.show()
-
-    def animate(self, **kwargs):
-        """Return artist animation."""
-        blit = kwargs.pop("blit", True)
-        return animation.ArtistAnimation(self.fig, self.artists, blit=blit, **kwargs)
-
-    def savefig(self, filename="apsg_stereonet.pdf", **kwargs):
-        """Save figure to file."""
-        self.draw()
-        if not self.closed:  # check if figure exists
-            bea_candidates = (self._lgd, self._title) + tuple(self._axtitle)
-            bea = [art for art in bea_candidates if art is not None]
-            self.fig.savefig(filename, bbox_extra_artists=bea, **kwargs)
-
-    def format_coord(self, x, y):
-        if np.hypot(x, y) > 1:
-            return ""
-        else:
-            v = Vector3(*getldd(x, y))
-            return repr(v.asfol) + " " + repr(v.aslin)
-
-    def hover(self, event):
-        vis = self.annot[self.active].get_visible()
-        if event.inaxes == self.fig.axes[self.active]:
-            for collection, labels in zip(self.artist_collection, self.artist_labels):
-                cont, ind = collection.contains(event)
-                if cont:
-                    self.annot[self.active].xy = collection.get_offsets()[ind["ind"][0]]
-                    text = " ".join([labels[n] for n in ind["ind"]])
-                    self.annot[self.active].set_text(text)
-                    self.annot[self.active].set_visible(True)
-                    self.fig.canvas.draw_idle()
-                else:
-                    if vis:
-                        self.annot[self.active].set_visible(False)
-                        self.fig.canvas.draw_idle()
-
-
-class StereoNetJK(object):
-
-    """
-    API to Joe Kington mplstereonet. Need maintanaince.
-    """
-
-    def __init__(self, *args, **kwargs):
-        _, self._ax = mplstereonet.subplots(*args, **kwargs)
-        self._grid_state = False
-        self._cax = None
-        self._lgd = None
-
-    def draw(self):
-        h, lbls = self._ax.get_legend_handles_labels()
-        if h:
-            self._lgd = self._ax.legend(
-                h,
-                lbls,
-                bbox_to_anchor=(1.12, 1),
-                loc=2,
-                borderaxespad=0.0,
-                numpoints=1,
-                scatterpoints=1,
-            )
-            plt.subplots_adjust(right=0.75)
-        else:
-            plt.subplots_adjust(right=0.9)
-        plt.draw()
-
-    def cla(self):
-        self._ax.cla()
-        self._ax.grid(self._grid_state)
-        self._cax = None
-        self._lgd = None
-        self.draw()
-
-    def grid(self, state=True):
-        self._ax.grid(state)
-        self._grid_state = state
-        self.draw()
-
-    def plane(self, obj, *args, **kwargs):
-        assert obj.type is Fol, "Only Fol type instance could be plotted as plane."
-        strike, dip = obj.rhr
-        self._ax.plane(strike, dip, *args, **kwargs)
-        self.draw()
-
-    def pole(self, obj, *args, **kwargs):
-        assert obj.type is Fol, "Only Fol type instance could be plotted as pole."
-        strike, dip = obj.rhr
-        self._ax.pole(strike, dip, *args, **kwargs)
-        self.draw()
-
-    def rake(self, obj, rake_angle, *args, **kwargs):
-        assert obj.type is Fol, "Only Fol type instance could be used with rake."
-        strike, dip = obj.rhr
-        self._ax.rake(strike, dip, rake_angle, *args, **kwargs)
-        self.draw()
-
-    def line(self, obj, *args, **kwargs):
-        assert obj.type is Lin, "Only Lin type instance could be plotted as line."
-        bearing, plunge = obj.dd
-        self._ax.line(plunge, bearing, *args, **kwargs)
-        self.draw()
-
-    def arrow(self, obj, sense, *args, **kwargs):
-        assert obj.type is Lin, "Only Lin type instance could be plotted as quiver."
-        bearing, plunge = obj.dd
-        xx, yy = mplstereonet.line(plunge, bearing)
-        xx1, yy1 = mplstereonet.line(plunge - 5, bearing)
-        for x, y, x1, y1 in zip(xx, yy, xx1, yy1):
-            self._ax.arrow(x, y, sense * (x1 - x), sense * (y1 - y))
-        self.draw()
-
-    def cone(self, obj, angle, segments=100, bidirectional=True, **kwargs):
-        assert obj.type is Lin, "Only Lin type instance could be used as cone axis."
-        bearing, plunge = obj.dd
-        self._ax.cone(
-            plunge,
-            bearing,
-            angle,
-            segments=segments,
-            bidirectional=bidirectional,
-            **kwargs,
-        )
-        self.draw()
-
-    def density_contour(self, group, *args, **kwargs):
-        assert type(group) is Group, "Only Group could be used for contouring."
-        if group.type is Lin:
-            bearings, plunges = group.dd
-            kwargs["measurement"] = "lines"
-            self._cax = self._ax.density_contour(plunges, bearings, *args, **kwargs)
-            plt.draw()
-        elif group.type is Fol:
-            strikes, dips = group.rhr
-            kwargs["measurement"] = "poles"
-            self._cax = self._ax.density_contour(strikes, dips, *args, **kwargs)
-            plt.draw()
-        else:
-            raise "Only Fol or Lin type Group is allowed."
-
-    def density_contourf(self, group, *args, **kwargs):
-        assert type(group) is Group, "Only Group could be used for contouring."
-        if group.type is Lin:
-            bearings, plunges = group.dd
-            kwargs["measurement"] = "lines"
-            self._cax = self._ax.density_contourf(plunges, bearings, *args, **kwargs)
-            plt.draw()
-        elif group.type is Fol:
-            strikes, dips = group.rhr
-            kwargs["measurement"] = "poles"
-            self._cax = self._ax.density_contourf(strikes, dips, *args, **kwargs)
-            plt.draw()
-        else:
-            raise "Only Fol or Lin type Group is allowed."
-
-    def colorbar(self):
-        if self._cax is not None:
-            cbaxes = self._ax.figure.add_axes([0.015, 0.2, 0.02, 0.6])
-            plt.colorbar(self._cax, cax=cbaxes)
-
-    def savefig(self, filename="stereonet.pdf", **kwargs):
-        if self._lgd is None:
-            self._ax.figure.savefig(filename, **kwargs)
-        else:
-            self._ax.figure.savefig(
-                filename, bbox_extra_artists=(self._lgd,), bbox_inches="tight", **kwargs
-            )
-
-    def show(self):
-        plt.show()

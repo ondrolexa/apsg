@@ -19,8 +19,8 @@ import pytest
 import numpy as np
 
 from apsg.config import apsg_conf
-from apsg import vec3, fol, lin, fault, pair
-from apsg import Lineation, Foliation, Pair, Fault, Vector3Set, LineationSet, FoliationSet
+from apsg import vec3, fol, lin, fault
+from apsg import Lineation, Foliation, Pair, Vector3Set, LineationSet
 from apsg import DefGrad3
 
 
@@ -41,7 +41,6 @@ class TestVector:
     @pytest.fixture
     def z(self):
         return vec3(0, 0, 1)
-
 
     def test_that_vec3_could_be_instatiated_from_single_ot_three_args(self):
         lhs = vec3([1, 2, 3])
@@ -183,7 +182,7 @@ class TestVector:
         assert str(vec3(lin(120, 10))) == str(vec3(120, 10))
 
     def test_vec_scalar_multiplication(self):
-        assert abs(vec3(10 * vec3(120,50))) == 10
+        assert abs(vec3(10 * vec3(120, 50))) == 10
 
     # ``angle`` property
     def test_that_angle_between_vectors_is_0_degrees_when_they_are_collinear(self):
@@ -522,7 +521,7 @@ class Testfoliation:
         # Anyway, axial sub is commutative.
         assert f1 - f2 == f2 - f1
 
-    def test_dd_property(self):
+    def test_geo_property(self):
         f = fol(120, 30)
 
         assert fol(*f.geo) == f
@@ -556,13 +555,6 @@ class TestVector3Set:
         el = gc.ortensor().eigenlins
         assert el[0] == vec3('x') and el[1] == vec3('y') and el[2] == vec3('z')
 
-    @pytest.mark.skip
-    def test_group_examples(self):
-        exlist = Group.examples()
-        for ex in exlist:
-            g = Group.examples(ex)
-            assert g.name == ex
-
 
 class TestLineationSet:
 
@@ -593,13 +585,6 @@ class TestLineationSet:
         el = gc.ortensor().eigenlins
         assert el[0] == vec3('x') and el[1] == vec3('y') and el[2] == vec3('z')
 
-    @pytest.mark.skip
-    def test_group_examples(self):
-        exlist = Group.examples()
-        for ex in exlist:
-            g = Group.examples(ex)
-            assert g.name == ex
-
 
 # ############################################################################
 # pair
@@ -615,6 +600,7 @@ class Testpair:
         p = Pair.random()
         pr = p.rotate(lin(45, 45), 120)
         assert np.allclose([p.fvec.angle(p.lvec), pr.fvec.angle(pr.lvec)], [90, 90])
+
 
 # ############################################################################
 # fault
@@ -638,10 +624,3 @@ class Testfault:
     def test_fault_p_axis(self):
         f = fault(150, 30, 150, 30, -1)
         assert f.p == lin(330, 15)
-
-    @pytest.mark.skip
-    def test_faultset_examples(self):
-        exlist = faultSet.examples()
-        for ex in exlist:
-            g = faultSet.examples(ex)
-            assert g.name == ex

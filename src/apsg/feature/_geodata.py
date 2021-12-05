@@ -1,12 +1,8 @@
 import warnings
-import math
 import numpy as np
 
-from apsg.config import apsg_conf
-from apsg.helpers._math import sind, cosd, tand, acosd, asind, atand, atan2d, sqrt2
 from apsg.helpers._notation import (
     geo2vec_planar,
-    geo2vec_linear,
     vec2geo_planar,
     vec2geo_planar_signed,
     vec2geo_linear,
@@ -279,7 +275,7 @@ class Fault(Pair):
     is issued, when misfit angle is bigger than 20 degrees.
 
     There are different way to create ``Fault`` object:
-    
+
     Pair() - create default Pair with fol(0,0) and lin(0,0)
     Pair(p) - p could be Pair
             - p could be tuple of (fazi, finc, lazi, linc)
@@ -314,7 +310,7 @@ class Fault(Pair):
         elif len(args) == 2 and issubclass(type(args[0]), Pair):
             fvec, lvec = args[0].fvec, args[0].lvec
             georax = lvec.lower().cross(fvec.lower())
-            if ars[0].rax == georax and args[1] < 0:
+            if args[0].rax == georax and args[1] < 0:
                 lvec = -lvec
         elif len(args) == 2:
             if issubclass(type(args[0]), Vector3) and issubclass(

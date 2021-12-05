@@ -2,6 +2,7 @@ import sys
 from itertools import combinations
 import numpy as np
 
+from apsg.config import apsg_conf
 from apsg.math._vector import Vector3
 from apsg.helpers._math import acosd
 from apsg.feature._geodata import Lineation, Foliation, Pair
@@ -348,11 +349,10 @@ class Vector3Set(FeatureSet):
 
         Keyword Args:
           delimiter (str): values delimiter. Default ','
-        
+
         Note: Written values are rounded according to `ndigits` settings in apsg_conf
 
         """
-        from os.path import basename
         import csv
 
         n = apsg_conf["ndigits"]
@@ -449,7 +449,6 @@ class Vector3Set(FeatureSet):
         Example:
           >>> l = LineationSet.random_fisher2(position=lin(120,50))
         """
-        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
         orig = Vector3(0, 0, 1)
         ax = orig.cross(position)
         ang = orig.angle(position)
