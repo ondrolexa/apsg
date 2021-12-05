@@ -87,9 +87,8 @@ class StereoGrid:
         trim = kwargs.get("trim", True)
         # do calc
         scale = np.sqrt(n * (k / 2.0 - 1) / k ** 2)
-        self.values = (
-            np.exp(k * (np.abs(np.dot(self.grid, np.asarray(features).T)) - 1)).sum(axis=1) / scale / sigma
-        )
+        cnt = np.exp(k * (np.abs(np.dot(self.grid, np.asarray(features).T)) - 1))
+        self.values = cnt.sum(axis=1) / scale / sigma
         if trim:
             self.values[self.values < 0] = np.finfo(float).tiny
         self.calculated = True

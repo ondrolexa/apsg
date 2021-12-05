@@ -206,15 +206,15 @@ class StereoNet:
         self.__plot_artists()
         self.ax.set_xlim(-1.05, 1.05)
         self.ax.set_ylim(-1.05, 1.05)
-        self.ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
         h, labels = self.ax.get_legend_handles_labels()
         if h:
+            print("Here")
             lgd = self.ax.legend(
                 h,
                 labels,
                 bbox_to_anchor=(1.05, 1),
                 prop={"size": 11},
-                loc=2,
+                loc="upper left",
                 borderaxespad=0,
                 scatterpoints=1,
                 numpoints=1,
@@ -240,7 +240,7 @@ class StereoNet:
         parsed["marker"] = kwargs.get("marker", "o")
         parsed["mew"] = kwargs.get("mew", 1)
         parsed["ms"] = kwargs.get("ms", 6)
-        parsed["label"] = kwargs.get("label", None)
+        parsed["label"] = kwargs.get("label", "_linear")
         return parsed
 
     def __parse_default_planar_kwargs(self, kwargs):
@@ -254,7 +254,7 @@ class StereoNet:
         parsed["mew"] = kwargs.get("mew", 1)
         parsed["mfc"] = kwargs.get("mfc", None)
         parsed["ms"] = kwargs.get("ms", 6)
-        parsed["label"] = kwargs.get("label", None)
+        parsed["label"] = kwargs.get("label", "_planar")
         return parsed
 
     # ----==== LINE ====---=
@@ -460,7 +460,6 @@ class StereoNet:
         parsed["cmap"] = kwargs.get("cmap", "Greys")
         parsed["levels"] = kwargs.get("levels", 6)
         parsed["colorbar"] = kwargs.get("colorbar", False)
-        parsed["label"] = kwargs.get("label", None)
         parsed["sigma"] = kwargs.get("sigma", None)
         parsed["trim"] = kwargs.get("trim", True)
         return parsed
@@ -482,11 +481,6 @@ class StereoNet:
 
     def __parse_contourf_args(self, args, kwargs):
         parsed = self.__parse_default_contourf_kwargs(kwargs)
-        if parsed["label"] is True:
-            if len(args) == 1:
-                parsed["label"] = args[0].label()
-            else:
-                parsed["label"] = f"Planar ({len(args)})"
         return parsed
 
     def _contourf(self, *args, **kwargs):
@@ -501,7 +495,7 @@ class StereoNet:
         for collection in cf.collections:
             collection.set_clip_path(self.primitive)
         if colorbar:
-            self.fig.colorbar(cf, ax=self.ax, label=label, shrink=0.6)
+            self.fig.colorbar(cf, ax=self.ax, shrink=0.6)
         # plt.colorbar(cf, format="%3.2f", spacing="proportional")
 
 

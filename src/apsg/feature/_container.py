@@ -14,7 +14,9 @@ class FeatureSet:
 
     def __init__(self, data, name="Default"):
         dtype_cls = getattr(sys.modules[__name__], type(self).__feature_type__)
-        assert all([isinstance(obj, dtype_cls) for obj in data])
+        assert all(
+            [isinstance(obj, dtype_cls) for obj in data]
+        ), f"Data must be instances of {type(self).__feature_type__}"
         self.data = tuple(data)
         self.name = name
         self._cache = {}
@@ -195,7 +197,7 @@ class Vector3Set(FeatureSet):
         Args:
             normalized: if True returns mean resultant. Default False
         """
-        R = sum(self.normalized())
+        R = sum(self)
         if normalized:
             R = R / len(self)
         return R
@@ -210,7 +212,7 @@ class Vector3Set(FeatureSet):
         """
         stats = {"k": np.inf, "a95": 0, "csd": 0}
         N = len(self)
-        R = abs(self.R())
+        R = abs(self.normalized().R())
         if N != R:
             stats["k"] = (N - 1) / (N - R)
             stats["csd"] = 81 / np.sqrt(stats["k"])
@@ -222,7 +224,7 @@ class Vector3Set(FeatureSet):
 
         var = 1 - |R| / n
         """
-        return 1 - abs(self.R(normalized=True))
+        return 1 - abs(self.normalized().R(normalized=True))
 
     def delta(self):
         """Cone angle containing ~63% of the data in degrees.
@@ -239,7 +241,7 @@ class Vector3Set(FeatureSet):
         D = 100 * (2 * |R| - n) / n
         """
         N = len(self)
-        return 100 * (2 * abs(self.R()) - N) / N
+        return 100 * (2 * abs(self.normalized().R()) - N) / N
 
     def ortensor(self):
         """Return orientation tensor ``Ortensor`` of ``Group``."""
@@ -286,7 +288,7 @@ class Vector3Set(FeatureSet):
             for ix, do in enumerate(ang > 90):
                 if do:
                     v_data[ix] = -v_data[ix]
-                    v = Vector3Set(v_data)
+                v = Vector3Set(v_data)
                 alldone = np.all(v.angle(v.R()) <= 90)
         return type(self)([dtype_cls(vec) for vec in v], name=self.name)
 

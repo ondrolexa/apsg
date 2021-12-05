@@ -89,6 +89,9 @@ class Vector:
 
     __pos__ = __copy__
 
+    def __pow__(self, other):
+        return type(self)(np.power(self, other))
+
     def __abs__(self):
         return math.sqrt(sum(map(lambda x: x * x, self._coords)))
 
@@ -159,14 +162,14 @@ class Vector2(Vector):
         return self.x * other.x + self.y * other.y
 
     def __matmul__(self, other):
-        r = np.dot(np.array(self), other)
+        r = np.dot(self, other)
         if np.asarray(r).shape == Vector2.__shape__:
             return type(self)(r)
         else:
             return float(r)
 
     def __rmatmul__(self, other):
-        r = np.dot(other, np.array(self))
+        r = np.dot(other, self)
         if np.asarray(r).shape == Vector2.__shape__:
             return type(self)(r)
         else:
@@ -187,8 +190,6 @@ class Vector2(Vector):
         """
 
         return self.x * other.y - self.y * other.x
-
-    __pow__ = cross
 
     @classmethod
     def random(cls):
@@ -231,6 +232,10 @@ class Vector2(Vector):
 
 
 class Axial2(Vector2):
+    @ensure_first_arg_same
+    def __eq__(self, other):
+        return np.allclose(self, other) or np.allclose(self, -other)
+
     def __add__(self, other):
         if issubclass(type(other), Vector2):
             if super().dot(other) < 0:
@@ -261,8 +266,18 @@ class Vector3(Vector):
     def __init__(self, *args):
         if len(args) == 0:
             coords = (0, 0, 1)
-        elif len(args) == 1 and np.asarray(args[0]).shape == Vector3.__shape__:
-            coords = args[0]
+        elif len(args) == 1:
+            if np.asarray(args[0]).shape == Vector3.__shape__:
+                coords = args[0]
+            elif isinstance(args[0], str):
+                if args[0].lower() == "x":
+                    coords = (1, 0, 0)
+                elif args[0].lower() == "y":
+                    coords = (0, 1, 0)
+                elif args[0].lower() == "z":
+                    coords = (0, 0, 1)
+                else:
+                    raise TypeError(f"Not valid arguments for {type(self).__name__}")
         elif len(args) == 2:
             coords = geo2vec_linear(*args)
         elif len(args) == 3:
@@ -311,14 +326,14 @@ class Vector3(Vector):
         return self.x * other.x + self.y * other.y + self.z * other.z
 
     def __matmul__(self, other):
-        r = np.dot(np.array(self), other)
+        r = np.dot(self, other)
         if np.asarray(r).shape == Vector3.__shape__:
             return type(self)(r)
         else:
             return float(r)
 
     def __rmatmul__(self, other):
-        r = np.dot(other, np.array(self))
+        r = np.dot(other, self)
         if np.asarray(r).shape == Vector3.__shape__:
             return type(self)(r)
         else:
@@ -332,14 +347,12 @@ class Vector3(Vector):
             self.x * other.y - self.y * other.x,
         )
 
-    __pow__ = cross
-
     def lower(self):
         """Change vector direction to point towards positive Z direction"""
         if self.z < 0:
             return -self
         else:
-            return +self
+            return self
 
     def is_upper(self):
         """Return True if vector points towards negative Z direction"""
@@ -360,7 +373,7 @@ class Vector3(Vector):
     def rotate(self, axis, theta):
         """Return the vector rotated around axis through angle theta. Right hand rule applies"""
         v = Vector3(self)  # ensure vector
-        k = axis.uv()
+        k = Vector3(axis.uv())
         return type(self)(
             cosd(theta) * v
             + sind(theta) * k.cross(v)
@@ -370,7 +383,7 @@ class Vector3(Vector):
     @ensure_first_arg_same
     def angle(self, other):
         """Return the angle to the vector other"""
-        return acosd(self.uv().dot(other.uv()))
+        return acosd(np.clip(self.uv().dot(other.uv()), -1, 1))
 
     @ensure_first_arg_same
     def project(self, other):
@@ -409,6 +422,10 @@ class Vector3(Vector):
 
 
 class Axial3(Vector3):
+    @ensure_first_arg_same
+    def __eq__(self, other):
+        return np.allclose(self, other) or np.allclose(self, -other)
+
     def __add__(self, other):
         if issubclass(type(other), Vector3):
             if super().dot(other) < 0:

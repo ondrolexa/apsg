@@ -131,7 +131,7 @@ class Pair:
 
     """
 
-    __slots__ = ("fvec", "lvec", "rax", "misfit")
+    __slots__ = ("fvec", "lvec", "misfit")
     __shape__ = (6,)
 
     def __init__(self, *args):
@@ -166,7 +166,6 @@ class Pair:
         ang = (lvec.angle(fvec) - 90) / 2
         self.fvec = Vector3(fvec.rotate(ax, ang))
         self.lvec = Vector3(lvec.rotate(ax, -ang))
-        self.rax = self.lvec.cross(self.fvec)
         self.misfit = misfit
 
     def __repr__(self):
@@ -223,6 +222,10 @@ class Pair:
 
         """
         return type(self)(self.fvec.rotate(axis, phi), self.lvec.rotate(axis, phi))
+
+    @property
+    def rax(self):
+        return self.lvec.cross(self.fvec)
 
     @property
     def fol(self):
@@ -289,14 +292,13 @@ class Fault(Pair):
         finc (float): dip of planar feature in degrees
         lazi (float): plunge direction of linear feature in degrees
         linc (float): plunge of linear feature in degrees
-        sense (float): sense of movement +/-1 hanging-wall up/down
+        sense (float): sense of movement -/+1 hanging-wall up/down reverse/normal
 
     Example:
         >>> p = Fault(140, 30, 110, 26, -1)
 
     """
 
-    __slots__ = ("fvec", "lvec", "rax", "misfit")
     __shape__ = (7,)
 
     def __init__(self, *args):
@@ -305,25 +307,37 @@ class Fault(Pair):
         elif len(args) == 1 and np.asarray(args[0]).shape == (5,):
             fazi, finc, lazi, linc, sense = (float(v) for v in args[0])
             fvec, lvec = Foliation(fazi, finc), Lineation(lazi, linc)
+            if sense < 0:
+                lvec = -lvec
         elif len(args) == 1 and issubclass(type(args[0]), Pair):
-            fvec, lvec, sense = args[0].fvec, args[0].lvec, 1
+            fvec, lvec = args[0].fvec, args[0].lvec
         elif len(args) == 2 and issubclass(type(args[0]), Pair):
-            fvec, lvec, rax = args[0].fvec, args[0].lvec, args[0].rax
-            sense = args[1] * lvec.cross(fvec).dot(rax)
+            fvec, lvec = args[0].fvec, args[0].lvec
+            georax = lvec.lower().cross(fvec.lower())
+            if ars[0].rax == georax and args[1] < 0:
+                lvec = -lvec
+        elif len(args) == 2:
+            if issubclass(type(args[0]), Vector3) and issubclass(
+                type(args[1]), Vector3
+            ):
+                fvec, lvec = args[0], args[1]
         elif len(args) == 3:
             if issubclass(type(args[0]), Vector3) and issubclass(
                 type(args[1]), Vector3
             ):
                 fvec, lvec = args[0], args[1]
-                sense = args[2]
+                rax = lvec.cross(fvec)
+                georax = lvec.lower().cross(fvec.lower())
+                if rax == georax and args[2] < 0:
+                    lvec = -lvec
         elif len(args) == 5:
             fvec = Foliation(args[0], args[1])
             lvec = Lineation(args[2], args[3])
-            sense = args[4]
+            if args[4] < 0:
+                lvec = -lvec
         else:
             raise TypeError("Not valid arguments for Fault")
         super().__init__(fvec, lvec)
-        self.lvec = sense * self.lvec
 
     def __repr__(self):
         fazi, finc = self.fol.geo
@@ -378,7 +392,7 @@ class Fault(Pair):
 
     @ensure_arguments(Vector3)
     def rotate(self, axis, phi):
-        """Rotates ``Fault`` by angle `phi` about `axis`.
+        """Rotates ``Pair`` by angle `phi` about `axis`.
 
         Args:
             axis (``Vector3``): axis of rotation
@@ -390,22 +404,27 @@ class Fault(Pair):
             P:210/83-287/60
 
         """
-        return type(self)(
-            self.fvec.rotate(axis, phi), self.lvec.rotate(axis, phi), self.sense
-        )
+        return type(self)(self.fvec.rotate(axis, phi), self.lvec.rotate(axis, phi))
+
+    @property
+    def georax(self):
+        return self.lvec.lower().cross(self.fvec.lower())
 
     @property
     def sense(self):
         """Return sense of movement (+/-1)"""
-        return round(self.lvec.cross(self.fvec).dot(self.rax))
+        if self.rax == self.georax:
+            return 1
+        else:
+            return -1
 
     def p_vector(self, ptangle=90):
         """Return P axis as ``Vector3``"""
-        return self.fvec.rotate(self.lvec.cross(self.fvec), ptangle / 2)
+        return self.fvec.rotate(self.lvec.cross(self.fvec), -ptangle / 2)
 
     def t_vector(self, ptangle=90):
         """Return T-axis as ``Vector3``."""
-        return self.fvec.rotate(self.lvec.cross(self.fvec), -ptangle / 2)
+        return self.fvec.rotate(self.lvec.cross(self.fvec), +ptangle / 2)
 
     @property
     def p(self):
