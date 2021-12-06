@@ -541,13 +541,13 @@ class Testfoliation:
 class TestVector3Set:
     def test_rdegree_under_rotation(self):
         g = Vector3Set.random_fisher()
-        assert np.allclose(g.rotate(lin(45, 45), 90).rdegree, g.rdegree)
+        assert np.allclose(g.rotate(lin(45, 45), 90).rdegree(), g.rdegree())
 
     def test_resultant_rdegree(self):
         g = Vector3Set.from_array([45, 135, 225, 315], [45, 45, 45, 45])
         c1 = g.R().uv() == vec3(0, 90)
         c2 = np.allclose(abs(g.R()), np.sqrt(8))
-        c3 = np.allclose((g.rdegree / 100 + 1) ** 2, 2)
+        c3 = np.allclose((g.rdegree() / 100 + 1) ** 2, 2)
         assert c1 and c2 and c3
 
     def test_group_type_error(self):
@@ -565,13 +565,13 @@ class TestVector3Set:
 class TestLineationSet:
     def test_rdegree_under_rotation(self):
         g = LineationSet.random_fisher()
-        assert np.allclose(g.rotate(lin(45, 45), 90).rdegree, g.rdegree)
+        assert np.allclose(g.rotate(lin(45, 45), 90).rdegree(), g.rdegree())
 
     def test_resultant_rdegree(self):
         g = LineationSet.from_array([45, 135, 225, 315], [45, 45, 45, 45])
         c1 = g.R().uv() == lin(0, 90)
         c2 = np.allclose(abs(g.R()), np.sqrt(8))
-        c3 = np.allclose((g.rdegree / 100 + 1) ** 2, 2)
+        c3 = np.allclose((g.rdegree() / 100 + 1) ** 2, 2)
         assert c1 and c2 and c3
 
     def test_group_type_error(self):
