@@ -145,22 +145,6 @@ class DefGrad3(Matrix3):
 
         return VelGrad3(logm(np.asarray(self)) / time)
 
-    @property
-    def C(self):
-        """
-        Return right Cauchy–Green deformation tensor or Green's deformation tensor
-        """
-
-        return Ellipsoid(np.dot(self.T, self))
-
-    @property
-    def B(self):
-        """
-        Return left Cauchy–Green deformation tensor or Finger deformation tensor
-        """
-
-        return Ellipsoid(np.dot(self, self.T))
-
 
 class VelGrad3(Matrix3):
     """
@@ -426,15 +410,23 @@ class Ellipsoid(Tensor3):
         )
 
     @classmethod
-    def from_defgrad(cls, F, **kwargs) -> "Ellipsoid":
+    def from_defgrad(cls, F, form='left', **kwargs) -> "Ellipsoid":
         """
-        Return ``Ellipsoid`` from ``Defgrad``.
+        Return deformation tensor from ``Defgrad3``.
 
-        It is ellipsoid resulting from deformation of sphere.
-
+        Kwargs:
+            form: 'left' or 'B' for left Cauchy–Green deformation tensor or
+                  Finger deformation tensor
+                  'right' or 'C' for right Cauchy–Green deformation tensor or
+                  Green's deformation tensor.
+                  Default is 'left'.
         """
-
-        return cls(np.dot(F, np.transpose(F)), **kwargs)
+        if form in ('left', 'B'):
+            return cls(np.dot(F, np.transpose(F)), **kwargs)
+        elif form in ('right', 'C'):
+            return cls(np.dot(np.transpose(F), F), **kwargs)
+        else:
+            raise TypeError('Wrong form argument')
 
     @classmethod
     def from_stretch(cls, x=1, y=1, z=1, **kwargs) -> "Ellipsoid":

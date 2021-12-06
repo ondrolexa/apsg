@@ -235,7 +235,6 @@ class Vector3Set(FeatureSet):
         """
         return acosd(abs(self.R(normalized=True)))
 
-    @property
     def rdegree(self):
         """Degree of preffered orientation of vectors in ``FeatureSet``.
 

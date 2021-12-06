@@ -96,7 +96,7 @@ class StereoNet:
 
     # just for testing
     def __draw_net(self):
-        self.fig, self.ax = plt.subplots()
+        self.fig, self.ax = plt.subplots(figsize=apsg_conf['figsize'])
         self.ax.set_aspect(1)
         self.ax.set_axis_off()
 
@@ -329,11 +329,11 @@ class StereoNet:
 
     def great_circle(self, *args, **kwargs):
         """Plot planar feature(s) as great circle(s)"""
-        if self.__validate_great_circle_args(args):
+        if self.__validate_planar_args(args):
             kwargs = self.__parse_great_circle_args(args, kwargs)
             self.__add_artist("_great_circle", args, kwargs)
 
-    def __validate_great_circle_args(self, args):
+    def __validate_planar_args(self, args):
         if args:
             if all([issubclass(type(arg), (Foliation, FoliationSet)) for arg in args]):
                 return True
