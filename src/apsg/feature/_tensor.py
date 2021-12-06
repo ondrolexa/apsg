@@ -410,7 +410,7 @@ class Ellipsoid(Tensor3):
         )
 
     @classmethod
-    def from_defgrad(cls, F, form='left', **kwargs) -> "Ellipsoid":
+    def from_defgrad(cls, F, form="left", **kwargs) -> "Ellipsoid":
         """
         Return deformation tensor from ``Defgrad3``.
 
@@ -421,12 +421,12 @@ class Ellipsoid(Tensor3):
                   Green's deformation tensor.
                   Default is 'left'.
         """
-        if form in ('left', 'B'):
+        if form in ("left", "B"):
             return cls(np.dot(F, np.transpose(F)), **kwargs)
-        elif form in ('right', 'C'):
+        elif form in ("right", "C"):
             return cls(np.dot(np.transpose(F), F), **kwargs)
         else:
-            raise TypeError('Wrong form argument')
+            raise TypeError("Wrong form argument")
 
     @classmethod
     def from_stretch(cls, x=1, y=1, z=1, **kwargs) -> "Ellipsoid":
