@@ -200,7 +200,6 @@ class StereoNet:
         self.ax.set_ylim(-1.05, 1.05)
         h, labels = self.ax.get_legend_handles_labels()
         if h:
-            print("Here")
             self.ax.legend(
                 h,
                 labels,
@@ -292,26 +291,18 @@ class StereoNet:
                 parsed["label"] = f"Linear ({len(args)})"
         return parsed
 
-    def __parse_scatter_sizes_args(self, args, kwargs):
+    def __parse_scatter_args(self, args, kwargs):
         parsed = self.__parse_default_scatter_kwargs(kwargs)
         if parsed["label"] is True:
             if len(args) == 1:
                 parsed["label"] = args[0].label()
             else:
                 parsed["label"] = f"Scatter ({len(args)})"
-        # add scalar arguments to kwargs as list
-        parsed["s"] = [float(v) for v in np.atleast_1d(args[1])]
-        return parsed
-
-    def __parse_scatter_colors_args(self, args, kwargs):
-        parsed = self.__parse_default_scatter_kwargs(kwargs)
-        if parsed["label"] is True:
-            if len(args) == 1:
-                parsed["label"] = args[0].label()
-            else:
-                parsed["label"] = f"Scatter ({len(args)})"
-        # add scalar arguments to kwargs as list
-        parsed["c"] = [float(v) for v in np.atleast_1d(args[1])]
+        # parse size or color arguments to kwargs as list
+        if parsed["s"] is not None:
+            parsed["s"] = [float(v) for v in np.atleast_1d(parsed["s"])]
+        if parsed["c"] is not None:
+            parsed["c"] = [float(v) for v in np.atleast_1d(parsed["c"])]
         return parsed
 
     def __parse_vector_args(self, args, kwargs):
@@ -448,77 +439,39 @@ class StereoNet:
 
     # ----==== SCATTER ====---=
 
-    def scatter_size(self, *args, **kwargs):
-        """Plot linear feature(s) as point(s)"""
-        if self.__validate_linear_scalar_args(args):
-            kwargs = self.__parse_scatter_sizes_args(args, kwargs)
-            self.__add_artist("_scatter", args[0], kwargs)
-
-    def scatter_color(self, *args, **kwargs):
-        """Plot linear feature(s) as point(s)"""
-        if self.__validate_linear_scalar_args(args):
-            kwargs = self.__parse_scatter_colors_args(args, kwargs)
-            self.__add_artist("_scatter", args[0], kwargs)
+    def scatter(self, *args, **kwargs):
+        """Plot linear feature(s) as point(s) using scatter"""
+        if self.__validate_vector_args(args):
+            kwargs = self.__parse_scatter_args(args, kwargs)
+            self.__add_artist("_scatter", args, kwargs)
 
     def _scatter(self, *args, **kwargs):
         legend = kwargs.pop("legend")
         num = kwargs.pop("num")
+        x_lower, y_lower, mask_lower = self.proj.project_data(
+            *np.vstack(args).T, return_mask=True
+        )
+        x_upper, y_upper, mask_upper = self.proj.project_data(
+            *(-np.vstack(args).T), return_mask=True
+        )
         if kwargs["s"] is not None:
-            sizes = kwargs.pop("s")
-            x_lower, y_lower, s_lower = self.proj.project_data(
-                *np.vstack(args).T, clip_also=sizes
-            )
-            x_upper, y_upper, s_upper = self.proj.project_data(
-                *(-np.vstack(args).T), clip_also=sizes
-            )
-            sc = self.ax.scatter(
-                np.hstack((x_lower, x_upper)),
-                np.hstack((y_lower, y_upper)),
-                s=np.hstack((s_lower, s_upper)),
-                **kwargs,
-            )
-            if legend:
-                self.ax.legend(
-                    *sc.legend_elements("sizes", num=num),
-                    bbox_to_anchor=(1.05, 1),
-                    prop={"size": 11},
-                    loc="upper left",
-                    borderaxespad=0,
-                    scatterpoints=1,
-                    numpoints=1,
-                )
-        elif kwargs["c"] is not None:
-            colors = kwargs.pop("c")
-            x_lower, y_lower, c_lower = self.proj.project_data(
-                *np.vstack(args).T, clip_also=colors
-            )
-            x_upper, y_upper, c_upper = self.proj.project_data(
-                *(-np.vstack(args).T), clip_also=colors
-            )
-            sc = self.ax.scatter(
-                np.hstack((x_lower, x_upper)),
-                np.hstack((y_lower, y_upper)),
-                c=np.hstack((c_lower, c_upper)),
-                **kwargs,
-            )
-            if legend:
-                self.ax.legend(
-                    *sc.legend_elements("colors", num=num),
-                    bbox_to_anchor=(1.05, 1),
-                    prop={"size": 11},
-                    loc="upper left",
-                    borderaxespad=0,
-                    scatterpoints=1,
-                    numpoints=1,
-                )
-        else:
-            x_lower, y_lower, c_lower = self.proj.project_data(*np.vstack(args).T)
-            x_upper, y_upper, c_upper = self.proj.project_data(*(-np.vstack(args).T))
-            sc = self.ax.scatter(
-                np.hstack((x_lower, x_upper)),
-                np.hstack((y_lower, y_upper)),
-                c=np.hstack((c_lower, c_upper)),
-                **kwargs,
+            s = np.atleast_1d(kwargs["s"])
+            kwargs["s"] = np.hstack((s[mask_lower], s[mask_upper]))
+        if kwargs["c"] is not None:
+            c = np.atleast_1d(kwargs["c"])
+            kwargs["c"] = np.hstack((c[mask_lower], c[mask_upper]))
+        sc = self.ax.scatter(
+            np.hstack((x_lower, x_upper)), np.hstack((y_lower, y_upper)), **kwargs,
+        )
+        if legend:
+            self.ax.legend(
+                *sc.legend_elements("sizes", num=num),
+                bbox_to_anchor=(1.05, 1),
+                prop={"size": 11},
+                loc="upper left",
+                borderaxespad=0,
+                scatterpoints=1,
+                numpoints=1,
             )
         sc.set_clip_path(self.primitive)
 
@@ -587,9 +540,9 @@ class StereoNet:
         if self.__validate_linear_scalar_args(args):
             kwargs = self.__parse_cone_args(args, kwargs)
             # scalar arguments are stored in kwargs due tu serialization
-            self.__add_artist("_cone", args[0], kwargs)
+            self.__add_artist("_cone", (args[0],), kwargs)
 
-    def _cone(self, *args, **kwargs):
+    def _cone(self, args, **kwargs):
         X, Y = [], []
         # get scalar arguments from kwargs
         angles = kwargs.pop("angles")
@@ -693,7 +646,7 @@ class StereoNet:
     def contourf(self, *args, **kwargs):
         if self.__validate_contourf_args(args):
             kwargs = self.__parse_contourf_args(args, kwargs)
-            self.__add_artist("_contourf", args[0], kwargs)
+            self.__add_artist("_contourf", args, kwargs)
 
     def _contourf(self, *args, **kwargs):
         sigma = kwargs.pop("sigma")

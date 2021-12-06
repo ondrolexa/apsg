@@ -55,13 +55,16 @@ def vonMisesFisher(mu, kappa, num_samples):
 def estimate_k(features):
     # objective function to be minimized
     def obj_fun(k):
-        W = np.exp(k * (np.abs(np.dot(features, np.asarray(features).T)))) * (
-            k / (4 * math.pi * math.sinh(k + 1e-9))
-        )
+        W = np.exp(
+            k * (np.abs(np.dot(np.asarray(features), np.asarray(features).T)))
+        ) * (k / (4 * math.pi * math.sinh(k + 1e-9)))
         np.fill_diagonal(W, 0.0)
         return -np.log(W.sum(axis=0)).sum()
 
-    return minimize_scalar(obj_fun, bounds=(0.1, len(features)), method="bounded").x
+    if len(features) > 1:
+        return minimize_scalar(obj_fun, bounds=(0.1, len(features)), method="bounded").x
+    else:
+        return 1
 
 
 class KentDistribution(object):

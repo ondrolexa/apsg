@@ -3,6 +3,7 @@ import matplotlib.tri as tri
 from matplotlib.patches import Circle
 import matplotlib.pyplot as plt
 
+from apsg.config import apsg_conf
 from apsg.feature._statistics import estimate_k
 from apsg.feature._geodata import Lineation
 from apsg.feature._container import Vector3Set
@@ -113,7 +114,7 @@ class StereoGrid:
         parsed["cmap"] = kwargs.get("cmap", "Greys")
         parsed["levels"] = kwargs.get("levels", 6)
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=apsg_conf["figsize"])
         ax.set_aspect(1)
         ax.set_axis_off()
 
@@ -151,7 +152,7 @@ class StereoGrid:
         parsed["linestyles"] = kwargs.get("linestyles", "-")
         parsed["levels"] = kwargs.get("levels", 6)
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=apsg_conf["figsize"])
         ax.set_aspect(1)
         ax.set_axis_off()
 
@@ -182,7 +183,7 @@ class StereoGrid:
 
         proj = EqualAreaProj(**kwargs)
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=apsg_conf["figsize"])
         ax.set_aspect(1)
         ax.set_axis_off()
 

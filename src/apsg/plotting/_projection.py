@@ -17,15 +17,15 @@ class Projection:
         self.R = np.array(DefGrad3.from_pair(self.grid_position))
         self.Ri = np.linalg.inv(self.R)
 
-    def project_data(self, x, y, z, clip_inside=True, clip_also=None):
+    def project_data(self, x, y, z, clip_inside=True, return_mask=False):
         if self.rotate_data:
             x, y, z = self.R.dot((x, y, z))
         if self.hemisphere == "upper":
             X, Y = self._project(-x, -y, -z)
             if clip_inside:
                 inside = X * X + Y * Y <= 1.0
-                if clip_also is not None:
-                    return -X[inside], -Y[inside], np.asarray(clip_also)[inside]
+                if return_mask:
+                    return -X[inside], -Y[inside], inside
                 else:
                     return -X[inside], -Y[inside]
             else:
@@ -34,8 +34,8 @@ class Projection:
             X, Y = self._project(x, y, z)
             if clip_inside:
                 inside = X * X + Y * Y <= 1.0
-                if clip_also is not None:
-                    return X[inside], Y[inside], np.asarray(clip_also)[inside]
+                if return_mask:
+                    return X[inside], Y[inside], inside
                 else:
                     return X[inside], Y[inside]
             else:
