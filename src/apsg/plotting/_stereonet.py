@@ -349,7 +349,9 @@ class StereoNet:
 
     def __parse_quiver_args(self, args, kwargs):
         parsed = self.__parse_default_quiver_kwargs(kwargs)
-        parsed["sense"] = [int(np.copysign(1, v)) for v in np.atleast_1d(kwargs.get('sense', 1))]
+        parsed["sense"] = [
+            int(np.copysign(1, v)) for v in np.atleast_1d(kwargs.get("sense", 1))
+        ]
         return parsed
 
     # ARGUMENTS VALIDATIONS #
@@ -432,7 +434,7 @@ class StereoNet:
         if self.__validate_planar_args(args):
             kwargs = self.__parse_line_args(args, kwargs)
             if len(args) > 1:
-                parsed["label"] = f"Planar ({len(args)})"
+                kwargs["label"] = f"Planar ({len(args)})"
             self.__add_artist("_line", args, kwargs)
 
     def _line(self, *args, **kwargs):
@@ -628,8 +630,14 @@ class StereoNet:
 
     def _pair(self, *args, **kwargs):
         self._great_circle(*[arg.fol for arg in args], **kwargs)
-        self._line(*[arg.lin for arg in args], marker='o', ls='none', mfc=kwargs.get('color'), mec=kwargs.get('color'), ms=kwargs.get('ms'))
- 
+        self._line(
+            *[arg.lin for arg in args],
+            marker="o",
+            ls="none",
+            mfc=kwargs.get("color"),
+            mec=kwargs.get("color"),
+            ms=kwargs.get("ms"),
+        )
 
     # ----==== FAULT ====---=
 
@@ -642,7 +650,7 @@ class StereoNet:
     def _fault(self, *args, **kwargs):
         self._great_circle(*[arg.fol for arg in args], **kwargs)
         quiver_kwargs = self.__parse_default_quiver_kwargs(kwargs)
-        quiver_kwargs['pivot'] = 'tail'
+        quiver_kwargs["pivot"] = "tail"
         for arg in args:
             self._arrow(arg.lin, sense=arg.sense, **quiver_kwargs)
 
@@ -655,18 +663,24 @@ class StereoNet:
 
     def _arrow(self, *args, **kwargs):
         x_lower, y_lower = self.proj.project_data(*np.vstack(np.atleast_2d(args[0])).T)
-        x_upper, y_upper = self.proj.project_data(*(-np.vstack(np.atleast_2d(args[0])).T))
+        x_upper, y_upper = self.proj.project_data(
+            *(-np.vstack(np.atleast_2d(args[0])).T)
+        )
         x = np.hstack((x_lower, x_upper))
         y = np.hstack((y_lower, y_upper))
         if len(args) > 1:
-            x_lower, y_lower = self.proj.project_data(*np.vstack(np.atleast_2d(args[1])).T)
-            x_upper, y_upper = self.proj.project_data(*(-np.vstack(np.atleast_2d(args[1])).T))
+            x_lower, y_lower = self.proj.project_data(
+                *np.vstack(np.atleast_2d(args[1])).T
+            )
+            x_upper, y_upper = self.proj.project_data(
+                *(-np.vstack(np.atleast_2d(args[1])).T)
+            )
             dx = np.hstack((x_lower, x_upper))
             dy = np.hstack((y_lower, y_upper))
         else:
             dx, dy = x, y
         mag = np.hypot(dx, dy)
-        sense = np.atleast_1d(kwargs.pop('sense'))
+        sense = np.atleast_1d(kwargs.pop("sense"))
         u, v = sense * dx / mag, sense * dy / mag
         self.ax.quiver(x, y, u, v, **kwargs)
 
@@ -684,6 +698,7 @@ class StereoNet:
     def _contourf(self, *args, **kwargs):
         sigma = kwargs.pop("sigma")
         trim = kwargs.pop("trim")
+        colorbar = kwargs.pop("colorbar")
         self.stereogrid.calculate_density(args[0], sigma=sigma, trim=trim)
         dcgrid = np.asarray(self.stereogrid.grid).T
         X, Y = self.proj.project_data(*dcgrid, clip_inside=False)
