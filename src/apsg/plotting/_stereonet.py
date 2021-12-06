@@ -243,7 +243,6 @@ class StereoNet:
         parsed["color"] = kwargs.get("color", None)
         parsed["ls"] = kwargs.get("ls", "-")
         parsed["lw"] = kwargs.get("lw", 1.5)
-        parsed["marker"] = kwargs.get("marker", None)
         parsed["mec"] = kwargs.get("mec", None)
         parsed["mew"] = kwargs.get("mew", 1)
         parsed["mfc"] = kwargs.get("mfc", None)
@@ -273,6 +272,15 @@ class StereoNet:
         parsed["colorbar"] = kwargs.get("colorbar", False)
         parsed["sigma"] = kwargs.get("sigma", None)
         parsed["trim"] = kwargs.get("trim", True)
+        return parsed
+
+    def __parse_default_quiver_kwargs(self, kwargs):
+        parsed = {}
+        parsed["color"] = kwargs.get("color", None)
+        parsed["width"] = kwargs.get("width", 2)
+        parsed["headwidth"] = kwargs.get("headwidth", 5)
+        parsed["pivot"] = kwargs.get("pivot", "mid")
+        parsed["units"] = "dots"
         return parsed
 
     def __parse_line_args(self, args, kwargs):
@@ -339,19 +347,15 @@ class StereoNet:
         parsed = self.__parse_default_contourf_kwargs(kwargs)
         return parsed
 
+    def __parse_quiver_args(self, args, kwargs):
+        parsed = self.__parse_default_quiver_kwargs(kwargs)
+        parsed["sense"] = [int(np.copysign(1, v)) for v in np.atleast_1d(kwargs.get('sense', 1))]
+        return parsed
+
     # ARGUMENTS VALIDATIONS #
 
     # all args vector3-like
     def __validate_vector_args(self, args):
-        if args:
-            if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
-                return True
-            if self.show_warnings:
-                print("Arguments must be Vector3 or Vector3Set like objects.")
-        return False
-
-    # all args linear
-    def __validate_linear_args(self, args):
         if args:
             if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
                 return True
@@ -386,6 +390,24 @@ class StereoNet:
                 print("Arguments must be Foliation or FoliationSet like objects.")
         return False
 
+    # all pair
+    def __validate_pair_args(self, args):
+        if args:
+            if all([issubclass(type(arg), (Pair, PairSet)) for arg in args]):
+                return True
+            if self.show_warnings:
+                print("Arguments must be Pair or PairSet like objects.")
+        return False
+
+    # all fault
+    def __validate_fault_args(self, args):
+        if args:
+            if all([issubclass(type(arg), (Fault, FaultSet)) for arg in args]):
+                return True
+            if self.show_warnings:
+                print("Arguments must be Fault or FaultSet like objects.")
+        return False
+
     # first vector sets
     def __validate_contourf_args(self, args):
         if args:
@@ -395,11 +417,13 @@ class StereoNet:
                 print("First argument must be Vector3Set like objects.")
         return False
 
+    # ACTUAL PLOTTING #
+
     # ----==== LINE ====---=
 
     def line(self, *args, **kwargs):
         """Plot linear feature(s) as point(s)"""
-        if self.__validate_linear_args(args):
+        if self.__validate_vector_args(args):
             kwargs = self.__parse_line_args(args, kwargs)
             self.__add_artist("_line", args, kwargs)
 
@@ -420,7 +444,7 @@ class StereoNet:
         for h in handles:
             h.set_clip_path(self.primitive)
 
-    # ----==== SCATTER SIZE ====---=
+    # ----==== SCATTER ====---=
 
     def scatter_size(self, *args, **kwargs):
         """Plot linear feature(s) as point(s)"""
@@ -593,6 +617,58 @@ class StereoNet:
         handles = self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
         for h in handles:
             h.set_clip_path(self.primitive)
+
+    # ----==== PAIR ====---=
+
+    def pair(self, *args, **kwargs):
+        """Plot pair feature(s) as great circle and point"""
+        if self.__validate_pair_args(args):
+            kwargs = self.__parse_great_circle_args(args, kwargs)
+            self.__add_artist("_pair", args, kwargs)
+
+    def _pair(self, *args, **kwargs):
+        self._great_circle(*[arg.fol for arg in args], **kwargs)
+        self._line(*[arg.lin for arg in args], marker='o', ls='none', mfc=kwargs.get('color'), mec=kwargs.get('color'), ms=kwargs.get('ms'))
+ 
+
+    # ----==== FAULT ====---=
+
+    def fault(self, *args, **kwargs):
+        """Plot fault feature(s) as great circle and point"""
+        if self.__validate_fault_args(args):
+            kwargs = self.__parse_great_circle_args(args, kwargs)
+            self.__add_artist("_fault", args, kwargs)
+
+    def _fault(self, *args, **kwargs):
+        self._great_circle(*[arg.fol for arg in args], **kwargs)
+        quiver_kwargs = self.__parse_default_quiver_kwargs(kwargs)
+        quiver_kwargs['pivot'] = 'tail'
+        for arg in args:
+            self._arrow(arg.lin, sense=arg.sense, **quiver_kwargs)
+
+    # ----==== ARROW ====---=
+    def arrow(self, *args, **kwargs):
+        """Plot arrows at position of first argument and oriented in direction of second"""
+        if self.__validate_vector_args(args):
+            kwargs = self.__parse_quiver_args(args, kwargs)
+            self.__add_artist("_arrow", args, kwargs)
+
+    def _arrow(self, *args, **kwargs):
+        x_lower, y_lower = self.proj.project_data(*np.vstack(np.atleast_2d(args[0])).T)
+        x_upper, y_upper = self.proj.project_data(*(-np.vstack(np.atleast_2d(args[0])).T))
+        x = np.hstack((x_lower, x_upper))
+        y = np.hstack((y_lower, y_upper))
+        if len(args) > 1:
+            x_lower, y_lower = self.proj.project_data(*np.vstack(np.atleast_2d(args[1])).T)
+            x_upper, y_upper = self.proj.project_data(*(-np.vstack(np.atleast_2d(args[1])).T))
+            dx = np.hstack((x_lower, x_upper))
+            dy = np.hstack((y_lower, y_upper))
+        else:
+            dx, dy = x, y
+        mag = np.hypot(dx, dy)
+        sense = np.atleast_1d(kwargs.pop('sense'))
+        u, v = sense * dx / mag, sense * dy / mag
+        self.ax.quiver(x, y, u, v, **kwargs)
 
     ########################################
     # CONTOURING                           #
