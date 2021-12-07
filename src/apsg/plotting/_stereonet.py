@@ -49,7 +49,7 @@ class StereoNet:
     """
 
     def __init__(self, **kwargs):
-        self._kwargs = apsg_conf["stereonet_default_kwargs"]
+        self._kwargs = apsg_conf["stereonet_default_kwargs"].copy()
         self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
         self._kwargs["title"] = kwargs.get("title", None)
         if self._kwargs["kind"].lower() in ["equal-area", "schmidt", "earea"]:
@@ -88,20 +88,46 @@ class StereoNet:
                 self.ax.plot(d["x"], d["y"], "k:", lw=1)
             for dip, d in ov["lon_s"].items():
                 self.ax.plot(d["x"], d["y"], "k:", lw=1)
+            if ov["main_xz"]:
+                self.ax.plot(ov["main_xz"]["x"], ov["main_xz"]["y"], "k:", lw=1)
+            if ov["main_yz"]:
+                self.ax.plot(ov["main_yz"]["x"], ov["main_yz"]["y"], "k:", lw=1)
+            if ov["main_xy"]:
+                self.ax.plot(ov["main_xy"]["x"], ov["main_xy"]["y"], "k:", lw=1)
             if ov["polehole_n"]:
                 self.ax.plot(ov["polehole_n"]["x"], ov["polehole_n"]["y"], "k", lw=1)
             if ov["polehole_s"]:
                 self.ax.plot(ov["polehole_s"]["x"], ov["polehole_s"]["y"], "k", lw=1)
-            if ov["main_ns"]:
-                self.ax.plot(ov["main_ns"]["x"], ov["main_ns"]["y"], "k", lw=1)
-            if ov["main_ew"]:
-                self.ax.plot(ov["main_ew"]["x"], ov["main_ew"]["y"], "k", lw=1)
-            if ov["main_h"]:
-                self.ax.plot(ov["main_h"]["x"], ov["main_h"]["y"], "k", lw=1)
+            if ov["main_x"]:
+                self.ax.plot(ov["main_x"]["x"], ov["main_x"]["y"], "k", lw=2)
+            if ov["main_y"]:
+                self.ax.plot(ov["main_y"]["x"], ov["main_y"]["y"], "k", lw=2)
+            if ov["main_z"]:
+                self.ax.plot(ov["main_z"]["x"], ov["main_z"]["y"], "k", lw=2)
 
         # Projection circle frame
         theta = np.linspace(0, 2 * np.pi, 200)
         self.ax.plot(np.cos(theta), np.sin(theta), "k", lw=2)
+        # Minor ticks
+        if self._kwargs["minor_ticks"] is not None:
+            ticks = np.array([1, 1.02])
+            theta = np.arange(0, 2 * np.pi, np.radians(self._kwargs["minor_ticks"]))
+            self.ax.plot(
+                np.outer(ticks, np.cos(theta)),
+                np.outer(ticks, np.sin(theta)),
+                "k",
+                lw=1,
+            )
+        # Major ticks
+        if self._kwargs["major_ticks"] is not None:
+            ticks = np.array([1, 1.03])
+            theta = np.arange(0, 2 * np.pi, np.radians(self._kwargs["major_ticks"]))
+            self.ax.plot(
+                np.outer(ticks, np.cos(theta)),
+                np.outer(ticks, np.sin(theta)),
+                "k",
+                lw=1.5,
+            )
         # add clipping circle
         self.primitive = Circle(
             (0, 0),
@@ -183,6 +209,9 @@ class StereoNet:
     def savefig(self, filename="stereonet.png", **kwargs):
         self.render()
         self.fig.savefig(filename, **kwargs)
+        plt.close()
+        delattr(self, "ax")
+        delattr(self, "fig")
 
     ########################################
     # PLOTTING METHODS                     #

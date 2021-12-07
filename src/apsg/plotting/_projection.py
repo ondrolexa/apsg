@@ -16,6 +16,7 @@ class Projection:
         self.overlay_resolution = kwargs.get(
             "overlay_resolution", 361
         )  # number of grid lines points
+        self.overlay_cross_size = kwargs.get("overlay_cross_size", 3)
         self.R = np.array(DefGrad3.from_pair(self.overlay_position))
         self.Ri = np.linalg.inv(self.R)
 
@@ -63,6 +64,12 @@ class Projection:
             x, y, z = self.Ri.dot((x, y, z))
         return x, y, z
 
+    def project_overlay(self, x, y, z):
+        x, y, z = self.R.dot((x, y, z))
+        X, Y = self._project(x, y, z)
+        inside = X * X + Y * Y < 1.0
+        return X[inside], Y[inside]
+
     def get_grid_overlay(self):
         angles_gc = np.linspace(-90 + 1e-7, 90 - 1e-7, int(self.overlay_resolution / 2))
         angles_gc_clipped = np.linspace(
@@ -71,78 +78,153 @@ class Projection:
             int(self.overlay_resolution / 2),
         )
         angles_sc = np.linspace(-180 + 1e-7, 180 - 1e-7, self.overlay_resolution)
-        # lats
+        angles_cross = np.linspace(
+            -self.overlay_cross_size,
+            self.overlay_cross_size,
+            2 * self.overlay_cross_size,
+        )
+
+        # latitude grid
         lat_e, lat_w = {}, {}
         for dip in range(self.overlay_step, 90, self.overlay_step):
             f = Foliation(90, dip)
-            if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
-                fdv = f.transform(self.R).dipvec().transform(self.Ri)
-                X, Y = self.project_data(
+            if f.transform(self.R).angle(Foliation(0, 0)) > 0.1:
+                fdv = f.dipvec()
+                X, Y = self.project_overlay(
                     *np.array([fdv.rotate(f, a) for a in angles_gc_clipped]).T
                 )
-                lat_e[dip] = dict(x=X.tolist(), y=Y.tolist())
+                lat_e[dip] = dict(x=X, y=Y)
+                X, Y = self.project_overlay(
+                    *np.array([-fdv.rotate(f, a) for a in angles_gc_clipped]).T
+                )
+                lat_e[-dip] = dict(x=X, y=Y)
             f = Foliation(270, dip)
-            if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
-                fdv = f.transform(self.R).dipvec().transform(self.Ri)
-                X, Y = self.project_data(
+            if f.transform(self.R).angle(Foliation(0, 0)) > 0.1:
+                fdv = f.dipvec()
+                X, Y = self.project_overlay(
                     *np.array([fdv.rotate(f, a) for a in angles_gc_clipped]).T
                 )
-                lat_w[dip] = dict(x=X.tolist(), y=Y.tolist())
+                lat_w[dip] = dict(x=X, y=Y)
+                X, Y = self.project_overlay(
+                    *np.array([-fdv.rotate(f, a) for a in angles_gc_clipped]).T
+                )
+                lat_w[-dip] = dict(x=X, y=Y)
 
-        # lons
+        # longitude grid
         lon_n, lon_s = {}, {}
         for dip in range(self.overlay_step, 90, self.overlay_step):
             if dip >= self.clip_pole:
                 lon = Vector3(0, dip)
-                X, Y = self.project_data(
+                X, Y = self.project_overlay(
                     *np.array([lon.rotate(Lineation(0, 0), a) for a in angles_sc]).T
                 )
-                lon_n[dip] = dict(x=X.tolist(), y=Y.tolist())
+                lon_n[dip] = dict(x=X, y=Y)
                 lon = Vector3(180, dip)
-                X, Y = self.project_data(
+                X, Y = self.project_overlay(
                     *np.array([lon.rotate(Lineation(180, 0), a) for a in angles_sc]).T
                 )
-                lon_s[dip] = dict(x=X.tolist(), y=Y.tolist())
+                lon_s[dip] = dict(x=X, y=Y)
 
         # pole holes rims
         if self.clip_pole > 0:
             lon = Vector3(0, self.clip_pole)
-            X, Y = self.project_data(
+            X, Y = self.project_overlay(
                 *np.array([lon.rotate(Vector3(0, 0), a) for a in angles_sc]).T
             )
-            polehole_n = dict(x=X.tolist(), y=Y.tolist())
+            polehole_n = dict(x=X, y=Y)
             lon = Vector3(180, self.clip_pole)
-            X, Y = self.project_data(
+            X, Y = self.project_overlay(
                 *np.array([lon.rotate(Vector3(180, 0), a) for a in angles_sc]).T
             )
-            polehole_s = dict(x=X.tolist(), y=Y.tolist())
+            polehole_s = dict(x=X, y=Y)
         else:
             polehole_n, polehole_s = {}, {}
 
-        # Principal cross N-S
+        # Principal axis X
+        l = Vector3(1, 0, 0)
+        X1, Y1 = self.project_overlay(
+            *np.array([l.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
+        )
+        X2, Y2 = self.project_overlay(
+            *np.array([l.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
+        )
+        X3, Y3 = self.project_overlay(
+            *np.array([-l.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
+        )
+        X4, Y4 = self.project_overlay(
+            *np.array([-l.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
+        )
+        main_x = dict(
+            x=np.hstack((X1, np.nan, X2, np.nan, X3, np.nan, X4)),
+            y=np.hstack((Y1, np.nan, Y2, np.nan, Y3, np.nan, Y4)),
+        )
+        # Principal axis Y
+        l = Vector3(0, 1, 0).transform(self.R).lower().transform(self.Ri)
+        X1, Y1 = self.project_overlay(
+            *np.array([l.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
+        )
+        X2, Y2 = self.project_overlay(
+            *np.array([l.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
+        )
+        X3, Y3 = self.project_overlay(
+            *np.array([-l.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
+        )
+        X4, Y4 = self.project_overlay(
+            *np.array([-l.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
+        )
+        main_y = dict(
+            x=np.hstack((X1, np.nan, X2, np.nan, X3, np.nan, X4)),
+            y=np.hstack((Y1, np.nan, Y2, np.nan, Y3, np.nan, Y4)),
+        )
+        # Principal axis Z
+        l = Vector3(0, 0, 1).transform(self.R).lower().transform(self.Ri)
+        X1, Y1 = self.project_overlay(
+            *np.array([l.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
+        )
+        X2, Y2 = self.project_overlay(
+            *np.array([l.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
+        )
+        X3, Y3 = self.project_overlay(
+            *np.array([-l.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
+        )
+        X4, Y4 = self.project_overlay(
+            *np.array([-l.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
+        )
+        main_z = dict(
+            x=np.hstack((X1, np.nan, X2, np.nan, X3, np.nan, X4)),
+            y=np.hstack((Y1, np.nan, Y2, np.nan, Y3, np.nan, Y4)),
+        )
+
+        # Principal plane XZ
         f = Foliation(90, 90)
-        if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
+        if f.transform(self.R).angle(Foliation(0, 0)) > 0.1:
             fdv = f.transform(self.R).dipvec().transform(self.Ri)
-            X, Y = self.project_data(*np.array([fdv.rotate(f, a) for a in angles_gc]).T)
-            main_ns = dict(x=X.tolist(), y=Y.tolist())
+            X, Y = self.project_overlay(
+                *np.array([fdv.rotate(f, a) for a in angles_gc]).T
+            )
+            main_xz = dict(x=X, y=Y)
         else:
-            main_ns = {}
-        # Principal cross E-W
+            main_xz = {}
+        # Principal plane YZ
         f = Foliation(0, 90)
-        if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
+        if f.transform(self.R).angle(Foliation(0, 0)) > 0.1:
             fdv = f.transform(self.R).dipvec().transform(self.Ri)
-            X, Y = self.project_data(*np.array([fdv.rotate(f, a) for a in angles_gc]).T)
-            main_ew = dict(x=X.tolist(), y=Y.tolist())
+            X, Y = self.project_overlay(
+                *np.array([fdv.rotate(f, a) for a in angles_gc]).T
+            )
+            main_yz = dict(x=X, y=Y)
         else:
-            main_ew = {}
-        # Principal horizontal
+            main_yz = {}
+        # Principal plane XY
         f = Foliation(0, 0)
-        if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
+        if f.transform(self.R).angle(Foliation(0, 0)) > 0.1:
             fdv = f.transform(self.R).dipvec().transform(self.Ri)
-            X, Y = self.project_data(*np.array([fdv.rotate(f, a) for a in angles_gc]).T)
-            main_h = dict(x=X.tolist(), y=Y.tolist())
+            X, Y = self.project_overlay(
+                *np.array([fdv.rotate(f, a) for a in angles_gc]).T
+            )
+            main_xy = dict(x=X, y=Y)
         else:
-            main_h = {}
+            main_xy = {}
 
         return dict(
             lat_e=lat_e,
@@ -151,9 +233,12 @@ class Projection:
             lon_s=lon_s,
             polehole_n=polehole_n,
             polehole_s=polehole_s,
-            main_ns=main_ns,
-            main_ew=main_ew,
-            main_h=main_h,
+            main_xz=main_xz,
+            main_yz=main_yz,
+            main_xy=main_xy,
+            main_x=main_x,
+            main_y=main_y,
+            main_z=main_z,
         )
 
 
