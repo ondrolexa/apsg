@@ -96,7 +96,7 @@ class DefGrad3(Matrix3):
         return cls.from_axisangle(v1.cross(v2), v1.angle(v2))
 
     @classmethod
-    def from_two_pairs(cls, p1, p2):
+    def from_two_pairs(cls, p1, p2, symmetry=False):
         """
         Return ``DefGrad3`` representing rotation of coordinates from system
         defined by ``Pair`` p1 to system defined by ``Pair`` p2.
@@ -119,7 +119,19 @@ class DefGrad3(Matrix3):
 
         """
 
-        return cls(cls.from_pair(p2) @ cls.from_pair(p1).I)
+        if symmetry:
+            R4 = [
+                cls(cls.from_pair(Pair(p2.fvec, p2.lvec)) @ cls.from_pair(p1).I),
+                cls(cls.from_pair(Pair(-p2.fvec, p2.lvec)) @ cls.from_pair(p1).I),
+                cls(cls.from_pair(Pair(p2.fvec, -p2.lvec)) @ cls.from_pair(p1).I),
+                cls(cls.from_pair(Pair(-p2.fvec, -p2.lvec)) @ cls.from_pair(p1).I),
+            ]
+            axes, angles = zip(*[R.axisangle() for R in R4])
+            angles = [abs(a) for a in angles]
+            ix = angles.index(min(angles))
+            return R4[ix]
+        else:
+            return cls(cls.from_pair(p2) @ cls.from_pair(p1).I)
 
     @property
     def R(self):

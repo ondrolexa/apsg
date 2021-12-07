@@ -176,6 +176,22 @@ class StereoNet_Fault(StereoNet_Artists):
                 self.kwargs["label"] = f"Fault ({len(self.args)})"
 
 
+class StereoNet_Hoeppner(StereoNet_Artists):
+    def __init__(self, *args, **kwargs):
+        self.stereonet_method = "_hoeppner"
+        self.args = args
+        self.parse_kwargs(kwargs)
+
+    def parse_kwargs(self, kwargs):
+        super().update_kwargs("default_hoeppner_kwargs")
+        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        if not isinstance(self.kwargs["label"], str):
+            if len(self.args) == 1:
+                self.kwargs["label"] = self.args[0].label()
+            else:
+                self.kwargs["label"] = f"Fault ({len(self.args)})"
+
+
 class StereoNet_Arrow(StereoNet_Artists):
     def __init__(self, *args, **kwargs):
         self.stereonet_method = "_arrow"
@@ -190,7 +206,7 @@ class StereoNet_Arrow(StereoNet_Artists):
                 self.kwargs["label"] = self.args[0].label()
             else:
                 self.kwargs["label"] = f"Fault ({len(self.args)})"
-        self.kwargs = (
+        self.kwargs["sense"] = (
             np.copysign(1, np.atleast_1d(kwargs.get("sense", 1))).astype(int).tolist()
         )
 
@@ -267,6 +283,13 @@ class ArtistFactory:
             return StereoNet_Fault(*args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet fault")
+
+    @staticmethod
+    def create_hoeppner(*args, **kwargs):
+        if all([issubclass(type(arg), (Fault, FaultSet)) for arg in args]):
+            return StereoNet_Hoeppner(*args, **kwargs)
+        else:
+            raise TypeError("Not valid arguments for Stereonet heoppner")
 
     @staticmethod
     def create_arrow(*args, **kwargs):

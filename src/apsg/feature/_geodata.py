@@ -184,9 +184,10 @@ class Pair:
         return not self == other
 
     def __array__(self, dtype=None):
-        return np.hstack(
-            (np.asarray(self.fvec, dtype=dtype), np.asarray(self.lvec, dtype=dtype))
-        )
+        return np.hstack((self.fvec, self.lvec)).astype(dtype)
+
+    def label(self):
+        return str(self)
 
     def to_json(self):
         fazi, finc = vec2geo_planar_signed(self.fvec)
@@ -359,13 +360,7 @@ class Fault(Pair):
         return not self == other
 
     def __array__(self, dtype=None):
-        return np.hstack(
-            (
-                np.asarray(self.fvec, dtype=dtype),
-                np.asarray(self.lvec, dtype=dtype),
-                self.sense,
-            )
-        )
+        return np.hstack((self.fvec, self.lvec, self.sense)).astype(dtype)
 
     def to_json(self):
         fazi, finc = vec2geo_planar_signed(self.fvec)

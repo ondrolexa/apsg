@@ -56,6 +56,9 @@ apsg_conf = dict(
     default_fault_kwargs=dict(
         alpha=None, color=None, ls="-", lw=1.5, mec=None, mew=1, mfc=None, ms=2,
     ),
+    default_hoeppner_kwargs=dict(
+        alpha=None, color=None, mec=None, mfc=None, ls="none", marker="o", mew=1, ms=5,
+    ),
     default_quiver_kwargs=dict(
         color=None, width=2, headwidth=5, pivot="mid", units="dots",
     ),
@@ -64,6 +67,9 @@ apsg_conf = dict(
         antialiased=True,
         cmap="Greys",
         levels=6,
+        clines=True,
+        linewidths=1,
+        linestyles=None,
         colorbar=False,
         trim=True,
         sigma=None,

@@ -572,6 +572,9 @@ class PairSet(FeatureSet):
     def __repr__(self):
         return f"P({len(self)}) {self.name}"
 
+    def __array__(self, dtype=None):
+        return np.array([np.array(p) for p in self.data], dtype=dtype)
+
     @property
     def fol(self):
         """Return Foliations of pairs as FoliationSet"""
@@ -610,6 +613,14 @@ class PairSet(FeatureSet):
         """Return Lisle (1989) orientation tensor ``Ortensor3`` of orientations
         defined by pairs"""
         return Ortensor3.from_pairs(self)
+
+    def label(self):
+        return str(self)
+
+    @classmethod
+    def random(cls, n=25):
+        """Create PairSet of random pairs"""
+        return PairSet([Pair.random() for i in range(n)])
 
     @classmethod
     def from_csv(cls, filename, delimiter=",", facol=0, ficol=1, lacol=2, licol=3):
@@ -765,6 +776,11 @@ class FaultSet(PairSet):
     def d(self):
         """Return dihedra planes of FaultSet as FoliationSet"""
         return FoliationSet([e.d for e in self], name=self.name + "-D")
+
+    @classmethod
+    def random(cls, n=25):
+        """Create PairSet of random pairs"""
+        return FaultSet([Fault.random() for i in range(n)])
 
     @classmethod
     def from_csv(

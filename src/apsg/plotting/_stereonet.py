@@ -51,6 +51,7 @@ class StereoNet:
     def __init__(self, **kwargs):
         self._kwargs = apsg_conf["stereonet_default_kwargs"]
         self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
+        self._kwargs["title"] = kwargs.get("title", None)
         if self._kwargs["kind"].lower() in ["equal-area", "schmidt", "earea"]:
             self.proj = EqualAreaProj(**self._kwargs)
         elif self._kwargs["kind"].lower() in ["equal-angle", "wulff", "eangle"]:
@@ -71,7 +72,6 @@ class StereoNet:
         self._data.clear()
         self._artists = []
 
-    # just for testing
     def __draw_net(self):
         self.fig, self.ax = plt.subplots(figsize=apsg_conf["figsize"])
         self.ax.set_aspect(1)
@@ -155,7 +155,7 @@ class StereoNet:
             data = pickle.load(f)
         return cls.from_json(data)
 
-    def show(self):
+    def render(self):
         self.__draw_net()
         self.__plot_artists()
         self.ax.set_xlim(-1.05, 1.05)
@@ -172,9 +172,17 @@ class StereoNet:
                 scatterpoints=1,
                 numpoints=1,
             )
+        if self._kwargs["title"] is not None:
+            self.fig.suptitle(self._kwargs["title"])
         self.fig.tight_layout()
-        # show
+
+    def show(self):
+        self.render()
         plt.show()
+
+    def savefig(self, filename="stereonet.png", **kwargs):
+        self.render()
+        self.fig.savefig(filename, **kwargs)
 
     ########################################
     # PLOTTING METHODS                     #
@@ -244,6 +252,14 @@ class StereoNet:
         except TypeError as err:
             print(err)
 
+    def hoeppner(self, *args, **kwargs):
+        """Plot a fault-and-striae as in tangent lineation plot - Hoeppner plot."""
+        try:
+            artist = ArtistFactory.create_hoeppner(*args, **kwargs)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
     def arrow(self, *args, **kwargs):
         """Plot arrows at position of first argument and oriented in direction of second"""
         try:
@@ -256,9 +272,10 @@ class StereoNet:
         """Plot filled contours."""
         try:
             artist = ArtistFactory.create_contourf(*args, **kwargs)
-            sigma = kwargs.get("sigma")
-            trim = kwargs.get("trim")
-            self.grid.calculate_density(args[0], sigma=sigma, trim=trim)
+            # ad-hoc density calculation needed to access correct grid properties
+            self.grid.calculate_density(
+                args[0], sigma=kwargs.get("sigma"), trim=kwargs.get("trim")
+            )
             self._artists.append(artist)
         except TypeError as err:
             print(err)
@@ -275,6 +292,7 @@ class StereoNet:
         )
         for h in handles:
             h.set_clip_path(self.primitive)
+        return handles
 
     def _vector(self, *args, **kwargs):
         x_lower, y_lower, x_upper, y_upper = self.proj.project_data_antipodal(
@@ -289,6 +307,7 @@ class StereoNet:
         handles = self.ax.plot(x_upper, y_upper, **kwargs)
         for h in handles:
             h.set_clip_path(self.primitive)
+        return handles
 
     def _great_circle(self, *args, **kwargs):
         X, Y = [], []
@@ -298,7 +317,7 @@ class StereoNet:
             else:
                 fdv = arg.dipvec()
             # iterate
-            for fol, dv in zip(np.vstack(args), np.atleast_2d(fdv)):
+            for fol, dv in zip(np.atleast_2d(arg), np.atleast_2d(fdv)):
                 # plot on lower
                 x, y = self.proj.project_data(
                     *np.array(
@@ -380,6 +399,7 @@ class StereoNet:
         handles = self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
         for h in handles:
             h.set_clip_path(self.primitive)
+        return handles
 
     def _pair(self, *args, **kwargs):
         line_marker = kwargs.pop("line_marker")
@@ -395,11 +415,18 @@ class StereoNet:
 
     def _fault(self, *args, **kwargs):
         h = self._great_circle(*[arg.fol for arg in args], **kwargs)
-        quiver_kwargs = self.__parse_default_quiver_kwargs(kwargs)
+        quiver_kwargs = apsg_conf["default_quiver_kwargs"]
         quiver_kwargs["pivot"] = "tail"
         quiver_kwargs["color"] = h[0].get_color()
         for arg in args:
             self._arrow(arg.lin, sense=arg.sense, **quiver_kwargs)
+
+    def _hoeppner(self, *args, **kwargs):
+        h = self._line(*[arg.fol for arg in args], **kwargs)
+        quiver_kwargs = apsg_conf["default_quiver_kwargs"]
+        quiver_kwargs["color"] = h[0].get_color()
+        for arg in args:
+            self._arrow(arg.fol, arg.lin, sense=arg.sense, **quiver_kwargs)
 
     def _arrow(self, *args, **kwargs):
         x_lower, y_lower = self.proj.project_data(*np.vstack(np.atleast_2d(args[0])).T)
@@ -429,12 +456,24 @@ class StereoNet:
         trim = kwargs.pop("trim")
         colorbar = kwargs.pop("colorbar")
         label = kwargs.pop("label")
-        # self.grid.calculate_density(args[0], sigma=sigma, trim=trim)
+        clines = kwargs.pop("clines")
+        linewidths = kwargs.pop("linewidths")
+        linestyles = kwargs.pop("linestyles")
+        if not self.grid.calculated:
+            self.grid.calculate_density(args[0], sigma=sigma, trim=trim)
         dcgrid = np.asarray(self.grid.grid).T
         X, Y = self.proj.project_data(*dcgrid, clip_inside=False)
         cf = self.ax.tricontourf(X, Y, self.grid.values, **kwargs)
         for collection in cf.collections:
             collection.set_clip_path(self.primitive)
+        if clines:
+            kwargs["cmap"] = None
+            kwargs["colors"] = "k"
+            kwargs["linewidths"] = linewidths
+            kwargs["linestyles"] = linestyles
+            cl = self.ax.tricontour(X, Y, self.grid.values, **kwargs)
+            for collection in cl.collections:
+                collection.set_clip_path(self.primitive)
         if colorbar:
             self.fig.colorbar(cf, ax=self.ax, shrink=0.6)
         # plt.colorbar(cf, format="%3.2f", spacing="proportional")
