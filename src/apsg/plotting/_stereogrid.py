@@ -27,12 +27,12 @@ class StereoGrid:
 
     def __init__(self, **kwargs):
         # parse options
-        self.n = kwargs.get("n", 2000)
+        self.grid_n = kwargs.get("grid_n", 2000)
         # grid type
         if kwargs.get("grid_type", "gss") == "gss":
-            self.grid = Vector3Set.uniform_gss(n=self.n)
+            self.grid = Vector3Set.uniform_gss(n=self.grid_n)
         else:
-            self.grid = Vector3Set.uniform_sfs(n=self.n)
+            self.grid = Vector3Set.uniform_sfs(n=self.grid_n)
         # projection
         kind = str(kwargs.get("kind", "Equal-area")).lower()
         if kind in ["equal-area", "schmidt", "earea"]:
@@ -42,7 +42,7 @@ class StereoGrid:
         else:
             raise TypeError("Only 'Equal-area' and 'Equal-angle' implemented")
         # initial values
-        self.values = np.zeros(self.n, dtype=float)
+        self.values = np.zeros(self.grid_n, dtype=float)
         self.calculated = False
 
     def __repr__(self):
@@ -55,7 +55,7 @@ class StereoGrid:
             )
         else:
             info = ""
-        return f"StereoGrid {self.proj.__class__.__name__} {self.n} points." + info
+        return f"StereoGrid {self.proj.__class__.__name__} {self.grid_n} points." + info
 
     def min(self):
         return self.values.min()
@@ -101,7 +101,7 @@ class StereoGrid:
         as argument and return scalar value.
 
         """
-        for i in range(self.n):
+        for i in range(self.grid_n):
             self.values[i] = func(self.grid[i], *args, **kwargs)
         self.calculated = True
 

@@ -9,12 +9,12 @@ from apsg.feature._tensor import DefGrad3
 class Projection:
     def __init__(self, **kwargs):
         self.rotate_data = kwargs.get("rotate_data", False)
-        self.grid_position = kwargs.get("grid_position", Pair())
-        self.clip_pole = kwargs.get("clip_pole", 20)
+        self.overlay_position = Pair(kwargs.get("overlay_position"))
+        self.clip_pole = kwargs.get("clip_pole", 15)
         self.hemisphere = kwargs.get("hemisphere", "lower")
-        self.gridstep = kwargs.get("gridstep", 15)  # grid step
-        self.resolution = kwargs.get("resolution", 361)  # number of grid lines points
-        self.R = np.array(DefGrad3.from_pair(self.grid_position))
+        self.overlay_step = kwargs.get("overlay_step", 15)  # grid step
+        self.overlay_resolution = kwargs.get("overlay_resolution", 361)  # number of grid lines points
+        self.R = np.array(DefGrad3.from_pair(self.overlay_position))
         self.Ri = np.linalg.inv(self.R)
 
     def project_data(self, x, y, z, clip_inside=True, return_mask=False):
@@ -62,49 +62,34 @@ class Projection:
         return x, y, z
 
     def get_grid_overlay(self):
-        def project_grid(x, y, z):
-            if self.clip_pole > 0:  # clip with safe buffer for pole rims
-                polehole = [
-                    Lineation(0, 0).angle(Vector3(xx, yy, zz)) < self.clip_pole - 0.2
-                    for xx, yy, zz in zip(x, y, z)
-                ]
-            else:
-                polehole = []
-            x, y, z = self.R.dot((x, y, z))
-            X, Y = self._project(x, y, z)
-            inside = X * X + Y * Y < 1.0
-            X[polehole] = np.nan
-            Y[polehole] = np.nan
-            return X[inside], Y[inside]
-
-        angles_gc = np.linspace(-90 + 1e-7, 90 - 1e-7, int(self.resolution / 2))
-        # angles_lon = np.linspace(-180 + 1e-7, 180 - 1e-7, self.resolution)
-        angles_sc = np.linspace(-180 + 1e-7, 180 - 1e-7, self.resolution)
+        angles_gc = np.linspace(-90 + 1e-7, 90 - 1e-7, int(self.overlay_resolution / 2))
+        angles_gc_clipped = np.linspace(-90 + self.clip_pole + 1e-7, 90 -self.clip_pole - 1e-7, int(self.overlay_resolution / 2))
+        angles_sc = np.linspace(-180 + 1e-7, 180 - 1e-7, self.overlay_resolution)
         # lats
         lat_e, lat_w = {}, {}
-        for dip in range(self.gridstep, 90, self.gridstep):
+        for dip in range(self.overlay_step, 90, self.overlay_step):
             f = Foliation(90, dip)
             if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
                 fdv = f.transform(self.R).dipvec().transform(self.Ri)
-                X, Y = project_grid(*np.array([fdv.rotate(f, a) for a in angles_gc]).T)
+                X, Y = self.project_data(*np.array([fdv.rotate(f, a) for a in angles_gc_clipped]).T)
                 lat_e[dip] = dict(x=X.tolist(), y=Y.tolist())
             f = Foliation(270, dip)
             if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
                 fdv = f.transform(self.R).dipvec().transform(self.Ri)
-                X, Y = project_grid(*np.array([fdv.rotate(f, a) for a in angles_gc]).T)
+                X, Y = self.project_data(*np.array([fdv.rotate(f, a) for a in angles_gc_clipped]).T)
                 lat_w[dip] = dict(x=X.tolist(), y=Y.tolist())
 
         # lons
         lon_n, lon_s = {}, {}
-        for dip in range(self.gridstep, 90, self.gridstep):
+        for dip in range(self.overlay_step, 90, self.overlay_step):
             if dip >= self.clip_pole:
                 lon = Vector3(0, dip)
-                X, Y = project_grid(
+                X, Y = self.project_data(
                     *np.array([lon.rotate(Lineation(0, 0), a) for a in angles_sc]).T
                 )
                 lon_n[dip] = dict(x=X.tolist(), y=Y.tolist())
                 lon = Vector3(180, dip)
-                X, Y = project_grid(
+                X, Y = self.project_data(
                     *np.array([lon.rotate(Lineation(180, 0), a) for a in angles_sc]).T
                 )
                 lon_s[dip] = dict(x=X.tolist(), y=Y.tolist())
@@ -112,12 +97,12 @@ class Projection:
         # pole holes rims
         if self.clip_pole > 0:
             lon = Vector3(0, self.clip_pole)
-            X, Y = project_grid(
+            X, Y = self.project_data(
                 *np.array([lon.rotate(Vector3(0, 0), a) for a in angles_sc]).T
             )
             polehole_n = dict(x=X.tolist(), y=Y.tolist())
             lon = Vector3(180, self.clip_pole)
-            X, Y = project_grid(
+            X, Y = self.project_data(
                 *np.array([lon.rotate(Vector3(180, 0), a) for a in angles_sc]).T
             )
             polehole_s = dict(x=X.tolist(), y=Y.tolist())
@@ -128,7 +113,7 @@ class Projection:
         f = Foliation(90, 90)
         if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
             fdv = f.transform(self.R).dipvec().transform(self.Ri)
-            X, Y = project_grid(*np.array([fdv.rotate(f, a) for a in angles_gc]).T)
+            X, Y = self.project_data(*np.array([fdv.rotate(f, a) for a in angles_gc]).T)
             main_ns = dict(x=X.tolist(), y=Y.tolist())
         else:
             main_ns = {}
@@ -136,7 +121,7 @@ class Projection:
         f = Foliation(0, 90)
         if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
             fdv = f.transform(self.R).dipvec().transform(self.Ri)
-            X, Y = project_grid(*np.array([fdv.rotate(f, a) for a in angles_gc]).T)
+            X, Y = self.project_data(*np.array([fdv.rotate(f, a) for a in angles_gc]).T)
             main_ew = dict(x=X.tolist(), y=Y.tolist())
         else:
             main_ew = {}
@@ -144,7 +129,7 @@ class Projection:
         f = Foliation(0, 0)
         if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
             fdv = f.transform(self.R).dipvec().transform(self.Ri)
-            X, Y = project_grid(*np.array([fdv.rotate(f, a) for a in angles_gc]).T)
+            X, Y = self.project_data(*np.array([fdv.rotate(f, a) for a in angles_gc]).T)
             main_h = dict(x=X.tolist(), y=Y.tolist())
         else:
             main_h = {}

@@ -94,6 +94,9 @@ class Vector:
 
     magnitude = __abs__
 
+    def label(self):
+        return str(self)
+
     def is_unit(self):
         return math.isclose(self.magnitude(), 1)
 
@@ -134,9 +137,6 @@ class Vector2(Vector):
     def __repr__(self):
         n = apsg_conf["ndigits"]
         return f"Vector2({round(self.x, n):g}, {round(self.y, n):g})"
-
-    def label(self):
-        return str(self)
 
     def __len__(self):
         return 3
@@ -294,10 +294,6 @@ class Vector3(Vector):
         else:
             n = apsg_conf["ndigits"]
             return f"Vector3({round(self.x, n):g}, {round(self.y, n):g}, {round(self.z, n):g})"
-
-    def label(self):
-        azi, inc = self.geo
-        return f"V:{azi:.0f}/{inc:.0f}"
 
     def __len__(self):
         return 3

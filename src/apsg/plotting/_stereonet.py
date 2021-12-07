@@ -24,39 +24,13 @@ from apsg.feature._container import (
 from apsg.plotting._stereogrid import StereoGrid
 from apsg.feature._tensor import Ortensor3
 from apsg.plotting._projection import EqualAreaProj, EqualAngleProj
+from apsg.plotting._stereonet_artist import ArtistFactory
 
 __all__ = ["StereoNet", "VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot", "RosePlot"]
 
 
 # Ignore `matplotlib`s deprecation warnings.
 warnings.filterwarnings("ignore", category=mcb.mplDeprecation)
-
-
-"""
-settings dict
-    - property: value
-
-data dict
-    id: obj.tojson()
-
-
-artists (array of dicts)
-
-    - linear
-        - id
-        - args
-        - kwargs
-
-    - pole
-        - id
-        - args
-        - kwargs
-
-    - great_circle
-        - id
-        - args
-        - kwargs
-  """
 
 
 class StereoNet:
@@ -75,21 +49,19 @@ class StereoNet:
     """
 
     def __init__(self, **kwargs):
-        self.grid = kwargs.get("grid", True)
-        self.show_warnings = kwargs.get("show_warnings", True)
-        kind = str(kwargs.get("kind", "Equal-area")).lower()
-        if kind in ["equal-area", "schmidt", "earea"]:
-            self.proj = EqualAreaProj(**kwargs)
-        elif kind in ["equal-angle", "wulff", "eangle"]:
-            self.proj = EqualAngleProj(**kwargs)
+        self._kwargs = apsg_conf['stereonet_default_kwargs']
+        self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
+        if self._kwargs['kind'].lower() in ["equal-area", "schmidt", "earea"]:
+            self.proj = EqualAreaProj(**self._kwargs)
+        elif self._kwargs['kind'].lower() in ["equal-angle", "wulff", "eangle"]:
+            self.proj = EqualAngleProj(**self._kwargs)
         else:
             raise TypeError("Only 'Equal-area' and 'Equal-angle' implemented")
         self.angles_gc = np.linspace(
-            -90 + 1e-7, 90 - 1e-7, int(self.proj.resolution / 2)
+            -90 + 1e-7, 90 - 1e-7, int(self.proj.overlay_resolution / 2)
         )
-        self.angles_sc = np.linspace(-180 + 1e-7, 180 - 1e-7, self.proj.resolution)
-        self.stereogrid = StereoGrid(**kwargs)
-        self._kwargs = kwargs
+        self.angles_sc = np.linspace(-180 + 1e-7, 180 - 1e-7, self.proj.overlay_resolution)
+        self.grid = StereoGrid(**self._kwargs)
         self._data = {}
         self._artists = []
 
@@ -104,7 +76,7 @@ class StereoNet:
         self.ax.set_axis_off()
 
         # overlay
-        if self.grid:
+        if self._kwargs['overlay']:
             ov = self.proj.get_grid_overlay()
             for dip, d in ov["lat_e"].items():
                 self.ax.plot(d["x"], d["y"], "k:", lw=1)
@@ -141,20 +113,8 @@ class StereoNet:
 
     def __plot_artists(self):
         for artist in self._artists:
-            plot_method = getattr(self, artist["method"])
-            args = tuple(self._data[obj_id] for obj_id in artist["args"])
-            kwargs = artist["kwargs"]
-            plot_method(*args, **kwargs)
-
-    def __add_artist(self, method, args, kwargs):
-        """Local data caching"""
-        obj_ids = []
-        for arg in args:
-            obj_id = id(arg)
-            if obj_id not in self._data:
-                self._data[obj_id] = arg
-            obj_ids.append(obj_id)
-        self._artists.append(dict(method=method, args=obj_ids, kwargs=kwargs))
+            plot_method = getattr(self, artist.stereonet_method)
+            plot_method(*artist.args, **artist.kwargs)
 
     def to_json(self):
         return dict(
@@ -215,218 +175,85 @@ class StereoNet:
         plt.show()
 
     ########################################
-    # PLOTTING                             #
+    # PLOTTING METHODS                     #
     ########################################
-
-    # KWARGS PARSING ROUTINES #
-
-    def __parse_default_linear_kwargs(self, kwargs):
-        parsed = {}
-        parsed["alpha"] = kwargs.get("alpha", None)
-        if "color" in kwargs:
-            parsed["mec"] = kwargs["color"]
-            parsed["mfc"] = kwargs["color"]
-        else:
-            parsed["mec"] = kwargs.get("mec", None)
-            parsed["mfc"] = kwargs.get("mfc", None)
-        parsed["ls"] = kwargs.get("ls", "none")
-        parsed["marker"] = kwargs.get("marker", "o")
-        parsed["mew"] = kwargs.get("mew", 1)
-        parsed["ms"] = kwargs.get("ms", 6)
-        parsed["label"] = kwargs.get("label", "_linear")
-        return parsed
-
-    def __parse_default_planar_kwargs(self, kwargs):
-        parsed = {}
-        parsed["alpha"] = kwargs.get("alpha", None)
-        parsed["color"] = kwargs.get("color", None)
-        parsed["ls"] = kwargs.get("ls", "-")
-        parsed["lw"] = kwargs.get("lw", 1.5)
-        parsed["mec"] = kwargs.get("mec", None)
-        parsed["mew"] = kwargs.get("mew", 1)
-        parsed["mfc"] = kwargs.get("mfc", None)
-        parsed["ms"] = kwargs.get("ms", 6)
-        parsed["label"] = kwargs.get("label", "_planar")
-        return parsed
-
-    def __parse_default_scatter_kwargs(self, kwargs):
-        parsed = {}
-        parsed["alpha"] = kwargs.get("alpha", None)
-        parsed["s"] = kwargs.get("s", None)
-        parsed["c"] = kwargs.get("c", None)
-        parsed["linewidths"] = kwargs.get("linewidths", 1.5)
-        parsed["marker"] = kwargs.get("marker", None)
-        parsed["cmap"] = kwargs.get("cmap", None)
-        parsed["legend"] = kwargs.get("legend", False)
-        parsed["num"] = kwargs.get("num", "auto")
-        parsed["label"] = kwargs.get("label", "_scatter")
-        return parsed
-
-    def __parse_default_contourf_kwargs(self, kwargs):
-        parsed = {}
-        parsed["alpha"] = kwargs.get("alpha", 1)
-        parsed["antialiased"] = kwargs.get("antialiased", True)
-        parsed["cmap"] = kwargs.get("cmap", "Greys")
-        parsed["levels"] = kwargs.get("levels", 6)
-        parsed["colorbar"] = kwargs.get("colorbar", False)
-        parsed["sigma"] = kwargs.get("sigma", None)
-        parsed["trim"] = kwargs.get("trim", True)
-        return parsed
-
-    def __parse_default_quiver_kwargs(self, kwargs):
-        parsed = {}
-        parsed["color"] = kwargs.get("color", None)
-        parsed["width"] = kwargs.get("width", 2)
-        parsed["headwidth"] = kwargs.get("headwidth", 5)
-        parsed["pivot"] = kwargs.get("pivot", "mid")
-        parsed["units"] = "dots"
-        return parsed
-
-    def __parse_line_args(self, args, kwargs):
-        parsed = self.__parse_default_linear_kwargs(kwargs)
-        if parsed["label"] is True:
-            if len(args) == 1:
-                parsed["label"] = args[0].label()
-            else:
-                parsed["label"] = f"Linear ({len(args)})"
-        return parsed
-
-    def __parse_scatter_args(self, args, kwargs):
-        parsed = self.__parse_default_scatter_kwargs(kwargs)
-        if parsed["label"] is True:
-            if len(args) == 1:
-                parsed["label"] = args[0].label()
-            else:
-                parsed["label"] = f"Scatter ({len(args)})"
-        # parse size or color arguments to kwargs as list
-        if parsed["s"] is not None:
-            parsed["s"] = [float(v) for v in np.atleast_1d(parsed["s"])]
-        if parsed["c"] is not None:
-            parsed["c"] = [float(v) for v in np.atleast_1d(parsed["c"])]
-        return parsed
-
-    def __parse_vector_args(self, args, kwargs):
-        parsed = self.__parse_default_linear_kwargs(kwargs)
-        if parsed["label"] is True:
-            if len(args) == 1:
-                parsed["label"] = args[0].label()
-            else:
-                parsed["label"] = f"Vector ({len(args)})"
-        return parsed
-
-    def __parse_great_circle_args(self, args, kwargs):
-        parsed = self.__parse_default_planar_kwargs(kwargs)
-        if parsed["label"] is True:
-            if len(args) == 1:
-                parsed["label"] = args[0].label()
-            else:
-                parsed["label"] = f"Planar ({len(args)})"
-        return parsed
-
-    def __parse_cone_args(self, args, kwargs):
-        parsed = self.__parse_default_planar_kwargs(kwargs)
-        if parsed["label"] is True:
-            if len(args[0]) == 1:
-                parsed["label"] = f"Cone {str(args[0])} ({args[1]})"
-            else:
-                parsed["label"] = f"Cones ({len(args[0])})"
-        # add scalar arguments to kwargs as list
-        parsed["angles"] = [float(v) for v in np.atleast_1d(args[1])]
-        return parsed
-
-    def __parse_contourf_args(self, args, kwargs):
-        parsed = self.__parse_default_contourf_kwargs(kwargs)
-        return parsed
-
-    def __parse_quiver_args(self, args, kwargs):
-        parsed = self.__parse_default_quiver_kwargs(kwargs)
-        parsed["sense"] = [
-            int(np.copysign(1, v)) for v in np.atleast_1d(kwargs.get("sense", 1))
-        ]
-        return parsed
-
-    # ARGUMENTS VALIDATIONS #
-
-    # all args vector3-like
-    def __validate_vector_args(self, args):
-        if args:
-            if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
-                return True
-            if self.show_warnings:
-                print("Arguments must be Vector3 or Vector3Set like objects.")
-        return False
-
-    # first linear second scalar
-    def __validate_linear_scalar_args(self, args):
-        if len(args) == 2:
-            if issubclass(type(args[0]), Vector3) and len(args) == 2:
-                return True
-            elif all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args[0]]):
-                if len(args[0]) == len(np.atleast_1d(args[1])):
-                    return True
-                else:
-                    if self.show_warnings:
-                        print("Second argument must have same length as first.")
-                    return False
-            if self.show_warnings:
-                print(
-                    "First argument must be Vector3 or Vector3Set like objects and second scalar of same shape."
-                )
-        return False
-
-    # all planar
-    def __validate_planar_args(self, args):
-        if args:
-            if all([issubclass(type(arg), (Foliation, FoliationSet)) for arg in args]):
-                return True
-            if self.show_warnings:
-                print("Arguments must be Foliation or FoliationSet like objects.")
-        return False
-
-    # all pair
-    def __validate_pair_args(self, args):
-        if args:
-            if all([issubclass(type(arg), (Pair, PairSet)) for arg in args]):
-                return True
-            if self.show_warnings:
-                print("Arguments must be Pair or PairSet like objects.")
-        return False
-
-    # all fault
-    def __validate_fault_args(self, args):
-        if args:
-            if all([issubclass(type(arg), (Fault, FaultSet)) for arg in args]):
-                return True
-            if self.show_warnings:
-                print("Arguments must be Fault or FaultSet like objects.")
-        return False
-
-    # first vector sets
-    def __validate_contourf_args(self, args):
-        if args:
-            if issubclass(type(args[0]), Vector3Set):
-                return True
-            if self.show_warnings:
-                print("First argument must be Vector3Set like objects.")
-        return False
-
-    # ACTUAL PLOTTING #
-
-    # ----==== LINE ====---=
 
     def line(self, *args, **kwargs):
         """Plot linear feature(s) as point(s)"""
-        if self.__validate_vector_args(args):
-            kwargs = self.__parse_line_args(args, kwargs)
-            self.__add_artist("_line", args, kwargs)
+        try:
+            artist = ArtistFactory.create_point(*args, **kwargs)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
 
     def pole(self, *args, **kwargs):
         """Plot pole of planar feature(s) as point(s)"""
-        if self.__validate_planar_args(args):
-            kwargs = self.__parse_line_args(args, kwargs)
-            if len(args) > 1:
-                kwargs["label"] = f"Planar ({len(args)})"
-            self.__add_artist("_line", args, kwargs)
+        try:
+            artist = ArtistFactory.create_pole(*args, **kwargs)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
+    def vector(self, *args, **kwargs):
+        """Plot vector feature(s) as point(s), filled on lower and open on upper hemisphere."""
+        try:
+            artist = ArtistFactory.create_point(*args, **kwargs)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
+    def scatter(self, *args, **kwargs):
+        """Plot vector-like feature(s) as point(s) using scatter"""
+        try:
+            artist = ArtistFactory.create_scatter(*args, **kwargs)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
+    def great_circle(self, *args, **kwargs):
+        """Plot planar feature(s) as great circle(s)"""
+        try:
+            artist = ArtistFactory.create_great_circle(*args, **kwargs)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
+    def cone(self, *args, **kwargs):
+        """Plot small circle(s) with given angle(s)"""
+        try:
+            artist = ArtistFactory.create_cone(*args, **kwargs)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
+    def pair(self, *args, **kwargs):
+        """Plot pair feature(s) as great circle and point"""
+        try:
+            artist = ArtistFactory.create_pair(*args, **kwargs)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
+    def fault(self, *args, **kwargs):
+        """Plot fault feature(s) as great circle and point"""
+        try:
+            artist = ArtistFactory.create_fault(*args, **kwargs)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
+    def arrow(self, *args, **kwargs):
+        """Plot arrows at position of first argument and oriented in direction of second"""
+        try:
+            artist = ArtistFactory.create_arrow(*args, **kwargs)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
+    ########################################
+    # PLOTTING ROUTINES                    #
+    ########################################
 
     def _line(self, *args, **kwargs):
         x_lower, y_lower = self.proj.project_data(*np.vstack(args).T)
@@ -437,13 +264,48 @@ class StereoNet:
         for h in handles:
             h.set_clip_path(self.primitive)
 
-    # ----==== SCATTER ====---=
+    def _vector(self, *args, **kwargs):
+        x_lower, y_lower, x_upper, y_upper = self.proj.project_data_antipodal(
+            *np.vstack(args).T
+        )
+        handles = self.ax.plot(x_lower, y_lower, **kwargs)
+        for h in handles:
+            h.set_clip_path(self.primitive)
+        kwargs["label"] = None
+        kwargs["color"] = h.get_color()
+        kwargs["mfc"] = "none"
+        handles = self.ax.plot(x_upper, y_upper, **kwargs)
+        for h in handles:
+            h.set_clip_path(self.primitive)
 
-    def scatter(self, *args, **kwargs):
-        """Plot linear feature(s) as point(s) using scatter"""
-        if self.__validate_vector_args(args):
-            kwargs = self.__parse_scatter_args(args, kwargs)
-            self.__add_artist("_scatter", args, kwargs)
+    def _great_circle(self, *args, **kwargs):
+        X, Y = [], []
+        for arg in args:
+            if self.proj.rotate_data:
+                fdv = arg.transform(self.proj.R).dipvec().transform(self.proj.Ri)
+            else:
+                fdv = arg.dipvec()
+            # iterate
+            for fol, dv in zip(np.vstack(args), np.atleast_2d(fdv)):
+                # plot on lower
+                x, y = self.proj.project_data(
+                    *np.array(
+                        [Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]
+                    ).T
+                )
+                X.append(np.hstack((x, np.nan)))
+                Y.append(np.hstack((y, np.nan)))
+                # plot on upper
+                x, y = self.proj.project_data(
+                    *np.array(
+                        [-Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]
+                    ).T
+                )
+                X.append(np.hstack((x, np.nan)))
+                Y.append(np.hstack((y, np.nan)))
+        handles = self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
+        for h in handles:
+            h.set_clip_path(self.primitive)
 
     def _scatter(self, *args, **kwargs):
         legend = kwargs.pop("legend")
@@ -475,78 +337,11 @@ class StereoNet:
             )
         sc.set_clip_path(self.primitive)
 
-    # ----==== VECTOR ====---=
-
-    def vector(self, *args, **kwargs):
-        """Plot vector feature(s) as point(s), filled on lower and open on upper hemisphere."""
-        if self.__validate_vector_args(args):
-            kwargs = self.__parse_vector_args(args, kwargs)
-            self.__add_artist("_vector", args, kwargs)
-
-    def _vector(self, *args, **kwargs):
-        x_lower, y_lower, x_upper, y_upper = self.proj.project_data_antipodal(
-            *np.vstack(args).T
-        )
-        handles = self.ax.plot(x_lower, y_lower, **kwargs)
-        for h in handles:
-            h.set_clip_path(self.primitive)
-        kwargs["label"] = None
-        kwargs["color"] = h.get_color()
-        kwargs["mfc"] = "none"
-        handles = self.ax.plot(x_upper, y_upper, **kwargs)
-        for h in handles:
-            h.set_clip_path(self.primitive)
-
-    # ----==== GREAT CIRCLE ====----
-
-    def great_circle(self, *args, **kwargs):
-        """Plot planar feature(s) as great circle(s)"""
-        if self.__validate_planar_args(args):
-            kwargs = self.__parse_great_circle_args(args, kwargs)
-            self.__add_artist("_great_circle", args, kwargs)
-
-    def _great_circle(self, *args, **kwargs):
-        X, Y = [], []
-        for arg in args:
-            if self.proj.rotate_data:
-                fdv = arg.transform(self.proj.R).dipvec().transform(self.proj.Ri)
-            else:
-                fdv = arg.dipvec()
-            # iterate
-            for fol, dv in zip(np.atleast_2d(arg), np.atleast_2d(fdv)):
-                # plot on lower
-                x, y = self.proj.project_data(
-                    *np.array(
-                        [Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]
-                    ).T
-                )
-                X.append(np.hstack((x, np.nan)))
-                Y.append(np.hstack((y, np.nan)))
-                # plot on upper
-                x, y = self.proj.project_data(
-                    *np.array(
-                        [-Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]
-                    ).T
-                )
-                X.append(np.hstack((x, np.nan)))
-                Y.append(np.hstack((y, np.nan)))
-        handles = self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
-        for h in handles:
-            h.set_clip_path(self.primitive)
-
-    # ----==== CONE ====---=
-
-    def cone(self, *args, **kwargs):
-        if self.__validate_linear_scalar_args(args):
-            kwargs = self.__parse_cone_args(args, kwargs)
-            # scalar arguments are stored in kwargs due tu serialization
-            self.__add_artist("_cone", (args[0],), kwargs)
-
-    def _cone(self, args, **kwargs):
+    def _cone(self, *args, **kwargs):
         X, Y = [], []
         # get scalar arguments from kwargs
         angles = kwargs.pop("angles")
-        for axis, angle in zip(np.atleast_2d(args), angles):
+        for axis, angle in zip(np.vstack(args), angles):
             if self.proj.rotate_data:
                 lt = axis.transform(self.proj.R)
                 azi, dip = Vector3(lt).geo
@@ -573,46 +368,25 @@ class StereoNet:
         for h in handles:
             h.set_clip_path(self.primitive)
 
-    # ----==== PAIR ====---=
-
-    def pair(self, *args, **kwargs):
-        """Plot pair feature(s) as great circle and point"""
-        if self.__validate_pair_args(args):
-            kwargs = self.__parse_great_circle_args(args, kwargs)
-            self.__add_artist("_pair", args, kwargs)
-
     def _pair(self, *args, **kwargs):
-        self._great_circle(*[arg.fol for arg in args], **kwargs)
+        line_marker = kwargs.pop('line_marker')
+        h = self._great_circle(*[arg.fol for arg in args], **kwargs)
         self._line(
             *[arg.lin for arg in args],
-            marker="o",
+            marker=line_marker,
             ls="none",
-            mfc=kwargs.get("color"),
-            mec=kwargs.get("color"),
+            mfc=h[0].get_color(),
+            mec=h[0].get_color(),
             ms=kwargs.get("ms"),
         )
 
-    # ----==== FAULT ====---=
-
-    def fault(self, *args, **kwargs):
-        """Plot fault feature(s) as great circle and point"""
-        if self.__validate_fault_args(args):
-            kwargs = self.__parse_great_circle_args(args, kwargs)
-            self.__add_artist("_fault", args, kwargs)
-
     def _fault(self, *args, **kwargs):
-        self._great_circle(*[arg.fol for arg in args], **kwargs)
+        h = self._great_circle(*[arg.fol for arg in args], **kwargs)
         quiver_kwargs = self.__parse_default_quiver_kwargs(kwargs)
         quiver_kwargs["pivot"] = "tail"
+        quiver_kwargs["color"] = h[0].get_color()
         for arg in args:
             self._arrow(arg.lin, sense=arg.sense, **quiver_kwargs)
-
-    # ----==== ARROW ====---=
-    def arrow(self, *args, **kwargs):
-        """Plot arrows at position of first argument and oriented in direction of second"""
-        if self.__validate_vector_args(args):
-            kwargs = self.__parse_quiver_args(args, kwargs)
-            self.__add_artist("_arrow", args, kwargs)
 
     def _arrow(self, *args, **kwargs):
         x_lower, y_lower = self.proj.project_data(*np.vstack(np.atleast_2d(args[0])).T)
@@ -637,25 +411,14 @@ class StereoNet:
         u, v = sense * dx / mag, sense * dy / mag
         self.ax.quiver(x, y, u, v, **kwargs)
 
-    ########################################
-    # CONTOURING                           #
-    ########################################
-
-    # ----==== CONTOURF ====---=
-
-    def contourf(self, *args, **kwargs):
-        if self.__validate_contourf_args(args):
-            kwargs = self.__parse_contourf_args(args, kwargs)
-            self.__add_artist("_contourf", args, kwargs)
-
     def _contourf(self, *args, **kwargs):
         sigma = kwargs.pop("sigma")
         trim = kwargs.pop("trim")
         colorbar = kwargs.pop("colorbar")
-        self.stereogrid.calculate_density(args[0], sigma=sigma, trim=trim)
-        dcgrid = np.asarray(self.stereogrid.grid).T
+        self.grid.calculate_density(args[0], sigma=sigma, trim=trim)
+        dcgrid = np.asarray(self.grid.grid).T
         X, Y = self.proj.project_data(*dcgrid, clip_inside=False)
-        cf = self.ax.tricontourf(X, Y, self.stereogrid.values, **kwargs)
+        cf = self.ax.tricontourf(X, Y, self.grid.values, **kwargs)
         for collection in cf.collections:
             collection.set_clip_path(self.primitive)
         if colorbar:
