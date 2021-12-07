@@ -139,6 +139,25 @@ class DefGrad3(Matrix3):
         _, V = spla.polar(self, "left")
         return type(self)(V)
 
+    def axisangle(self):
+        """Return rotation part of ``DefGrad`` axis, angle tuple."""
+        R = self.R
+        w, W = np.linalg.eig(R.T)
+        i = np.where(abs(np.real(w) - 1.0) < 1e-8)[0]
+        if not len(i):
+            raise ValueError("no unit eigenvector corresponding to eigenvalue 1")
+        axis = Vector3(np.real(W[:, i[-1]]).squeeze())
+        # rotation angle depending on direction
+        cosa = (np.trace(R) - 1.0) / 2.0
+        if abs(axis[2]) > 1e-8:
+            sina = (R[1][0] + (cosa - 1.0) * axis[0] * axis[1]) / axis[2]
+        elif abs(axis[1]) > 1e-8:
+            sina = (R[0][2] + (cosa - 1.0) * axis[0] * axis[2]) / axis[1]
+        else:
+            sina = (R[2][1] + (cosa - 1.0) * axis[1] * axis[2]) / axis[0]
+        angle = np.rad2deg(np.arctan2(sina, cosa))
+        return axis, angle
+
     def velgrad(self, time=1):
         """Return ``VelGrad`` for given time"""
         from scipy.linalg import logm

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 from apsg.config import apsg_conf
 from apsg.feature._statistics import estimate_k
+from apsg.math._vector import Vector3
 from apsg.feature._geodata import Lineation
 from apsg.feature._container import Vector3Set
 from apsg.plotting._projection import EqualAreaProj, EqualAngleProj
@@ -46,12 +47,10 @@ class StereoGrid:
         self.calculated = False
 
     def __repr__(self):
-        maxazi, maxinc = self.max_at()
-        minazi, mininc = self.min_at()
         if self.calculated:
             info = (
-                f"\nMaximum: {self.max():.4f} at V:{maxazi:.0f}/{maxinc:.0f}"
-                + f"\nMinimum: {self.min():.4f} at V:{minazi:.0f}/{mininc:.0f}"
+                f"\nMaximum: {self.max():.4f} at {self.max_at()}"
+                + f"\nMinimum: {self.min():.4f} at {self.min_at()}"
             )
         else:
             info = ""
@@ -64,10 +63,10 @@ class StereoGrid:
         return self.values.max()
 
     def min_at(self):
-        return self.grid[self.values.argmin()].geo
+        return Vector3(self.grid[self.values.argmin()])
 
     def max_at(self):
-        return self.grid[self.values.argmax()].geo
+        return Vector3(self.grid[self.values.argmax()])
 
     def calculate_density(self, features, **kwargs):
         """Calculate density of elements from ``FeatureSet`` object.
@@ -216,7 +215,7 @@ class StereoGrid:
 
         Args:
             faults: ``FaultSet`` of data
-        
+
         Kwargs:
             method: 'probability' or 'classic'. Classic method assigns +/-1
             to individual positions, while 'probability' returns maximum

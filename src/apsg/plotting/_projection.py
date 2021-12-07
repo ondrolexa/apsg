@@ -13,7 +13,9 @@ class Projection:
         self.clip_pole = kwargs.get("clip_pole", 15)
         self.hemisphere = kwargs.get("hemisphere", "lower")
         self.overlay_step = kwargs.get("overlay_step", 15)  # grid step
-        self.overlay_resolution = kwargs.get("overlay_resolution", 361)  # number of grid lines points
+        self.overlay_resolution = kwargs.get(
+            "overlay_resolution", 361
+        )  # number of grid lines points
         self.R = np.array(DefGrad3.from_pair(self.overlay_position))
         self.Ri = np.linalg.inv(self.R)
 
@@ -63,7 +65,11 @@ class Projection:
 
     def get_grid_overlay(self):
         angles_gc = np.linspace(-90 + 1e-7, 90 - 1e-7, int(self.overlay_resolution / 2))
-        angles_gc_clipped = np.linspace(-90 + self.clip_pole + 1e-7, 90 -self.clip_pole - 1e-7, int(self.overlay_resolution / 2))
+        angles_gc_clipped = np.linspace(
+            -90 + self.clip_pole + 1e-7,
+            90 - self.clip_pole - 1e-7,
+            int(self.overlay_resolution / 2),
+        )
         angles_sc = np.linspace(-180 + 1e-7, 180 - 1e-7, self.overlay_resolution)
         # lats
         lat_e, lat_w = {}, {}
@@ -71,12 +77,16 @@ class Projection:
             f = Foliation(90, dip)
             if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
                 fdv = f.transform(self.R).dipvec().transform(self.Ri)
-                X, Y = self.project_data(*np.array([fdv.rotate(f, a) for a in angles_gc_clipped]).T)
+                X, Y = self.project_data(
+                    *np.array([fdv.rotate(f, a) for a in angles_gc_clipped]).T
+                )
                 lat_e[dip] = dict(x=X.tolist(), y=Y.tolist())
             f = Foliation(270, dip)
             if f.transform(self.R).angle(Foliation(0, 0)) > 1e-6:
                 fdv = f.transform(self.R).dipvec().transform(self.Ri)
-                X, Y = self.project_data(*np.array([fdv.rotate(f, a) for a in angles_gc_clipped]).T)
+                X, Y = self.project_data(
+                    *np.array([fdv.rotate(f, a) for a in angles_gc_clipped]).T
+                )
                 lat_w[dip] = dict(x=X.tolist(), y=Y.tolist())
 
         # lons

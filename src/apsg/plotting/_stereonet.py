@@ -49,18 +49,20 @@ class StereoNet:
     """
 
     def __init__(self, **kwargs):
-        self._kwargs = apsg_conf['stereonet_default_kwargs']
+        self._kwargs = apsg_conf["stereonet_default_kwargs"]
         self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
-        if self._kwargs['kind'].lower() in ["equal-area", "schmidt", "earea"]:
+        if self._kwargs["kind"].lower() in ["equal-area", "schmidt", "earea"]:
             self.proj = EqualAreaProj(**self._kwargs)
-        elif self._kwargs['kind'].lower() in ["equal-angle", "wulff", "eangle"]:
+        elif self._kwargs["kind"].lower() in ["equal-angle", "wulff", "eangle"]:
             self.proj = EqualAngleProj(**self._kwargs)
         else:
             raise TypeError("Only 'Equal-area' and 'Equal-angle' implemented")
         self.angles_gc = np.linspace(
             -90 + 1e-7, 90 - 1e-7, int(self.proj.overlay_resolution / 2)
         )
-        self.angles_sc = np.linspace(-180 + 1e-7, 180 - 1e-7, self.proj.overlay_resolution)
+        self.angles_sc = np.linspace(
+            -180 + 1e-7, 180 - 1e-7, self.proj.overlay_resolution
+        )
         self.grid = StereoGrid(**self._kwargs)
         self._data = {}
         self._artists = []
@@ -76,7 +78,7 @@ class StereoNet:
         self.ax.set_axis_off()
 
         # overlay
-        if self._kwargs['overlay']:
+        if self._kwargs["overlay"]:
             ov = self.proj.get_grid_overlay()
             for dip, d in ov["lat_e"].items():
                 self.ax.plot(d["x"], d["y"], "k:", lw=1)
@@ -186,7 +188,6 @@ class StereoNet:
         except TypeError as err:
             print(err)
 
-
     def pole(self, *args, **kwargs):
         """Plot pole of planar feature(s) as point(s)"""
         try:
@@ -251,6 +252,17 @@ class StereoNet:
         except TypeError as err:
             print(err)
 
+    def contourf(self, *args, **kwargs):
+        """Plot filled contours."""
+        try:
+            artist = ArtistFactory.create_contourf(*args, **kwargs)
+            sigma = kwargs.get("sigma")
+            trim = kwargs.get("trim")
+            self.grid.calculate_density(args[0], sigma=sigma, trim=trim)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
     ########################################
     # PLOTTING ROUTINES                    #
     ########################################
@@ -306,6 +318,7 @@ class StereoNet:
         handles = self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
         for h in handles:
             h.set_clip_path(self.primitive)
+        return handles
 
     def _scatter(self, *args, **kwargs):
         legend = kwargs.pop("legend")
@@ -369,7 +382,7 @@ class StereoNet:
             h.set_clip_path(self.primitive)
 
     def _pair(self, *args, **kwargs):
-        line_marker = kwargs.pop('line_marker')
+        line_marker = kwargs.pop("line_marker")
         h = self._great_circle(*[arg.fol for arg in args], **kwargs)
         self._line(
             *[arg.lin for arg in args],
@@ -415,7 +428,8 @@ class StereoNet:
         sigma = kwargs.pop("sigma")
         trim = kwargs.pop("trim")
         colorbar = kwargs.pop("colorbar")
-        self.grid.calculate_density(args[0], sigma=sigma, trim=trim)
+        label = kwargs.pop("label")
+        # self.grid.calculate_density(args[0], sigma=sigma, trim=trim)
         dcgrid = np.asarray(self.grid.grid).T
         X, Y = self.proj.project_data(*dcgrid, clip_inside=False)
         cf = self.ax.tricontourf(X, Y, self.grid.values, **kwargs)
