@@ -14,13 +14,17 @@ from apsg.feature._container import (
 
 
 class StereoNet_Artists:
+    def __init__(self, factory, *args, **kwargs):
+        self.factory = factory
+
     def update_kwargs(self, style):
         self.kwargs = apsg_conf[style].copy()
         self.kwargs["label"] = self.stereonet_method
 
 
 class StereoNet_Point(StereoNet_Artists):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, factory, *args, **kwargs):
+        super().__init__(factory, *args, **kwargs)
         self.stereonet_method = "_line"
         self.args = args
         self.parse_kwargs(kwargs)
@@ -36,7 +40,8 @@ class StereoNet_Point(StereoNet_Artists):
 
 
 class StereoNet_Pole(StereoNet_Artists):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, factory, *args, **kwargs):
+        super().__init__(factory, *args, **kwargs)
         self.stereonet_method = "_line"
         self.args = args
         self.parse_kwargs(kwargs)
@@ -52,7 +57,8 @@ class StereoNet_Pole(StereoNet_Artists):
 
 
 class StereoNet_Vector(StereoNet_Artists):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, factory, *args, **kwargs):
+        super().__init__(factory, *args, **kwargs)
         self.stereonet_method = "_vector"
         self.args = args
         self.parse_kwargs(kwargs)
@@ -68,7 +74,8 @@ class StereoNet_Vector(StereoNet_Artists):
 
 
 class StereoNet_Scatter(StereoNet_Artists):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, factory, *args, **kwargs):
+        super().__init__(factory, *args, **kwargs)
         self.stereonet_method = "_scatter"
         self.args = args
         self.parse_kwargs(kwargs)
@@ -101,7 +108,8 @@ class StereoNet_Scatter(StereoNet_Artists):
 
 
 class StereoNet_Great_Circle(StereoNet_Artists):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, factory, *args, **kwargs):
+        super().__init__(factory, *args, **kwargs)
         self.stereonet_method = "_great_circle"
         self.args = args
         self.parse_kwargs(kwargs)
@@ -117,7 +125,8 @@ class StereoNet_Great_Circle(StereoNet_Artists):
 
 
 class StereoNet_Cone(StereoNet_Artists):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, factory, *args, **kwargs):
+        super().__init__(factory, *args, **kwargs)
         self.stereonet_method = "_cone"
         self.args = args
         self.parse_kwargs(kwargs)
@@ -145,7 +154,8 @@ class StereoNet_Cone(StereoNet_Artists):
 
 
 class StereoNet_Pair(StereoNet_Artists):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, factory, *args, **kwargs):
+        super().__init__(factory, *args, **kwargs)
         self.stereonet_method = "_pair"
         self.args = args
         self.parse_kwargs(kwargs)
@@ -161,7 +171,8 @@ class StereoNet_Pair(StereoNet_Artists):
 
 
 class StereoNet_Fault(StereoNet_Artists):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, factory, *args, **kwargs):
+        super().__init__(factory, *args, **kwargs)
         self.stereonet_method = "_fault"
         self.args = args
         self.parse_kwargs(kwargs)
@@ -177,7 +188,8 @@ class StereoNet_Fault(StereoNet_Artists):
 
 
 class StereoNet_Hoeppner(StereoNet_Artists):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, factory, *args, **kwargs):
+        super().__init__(factory, *args, **kwargs)
         self.stereonet_method = "_hoeppner"
         self.args = args
         self.parse_kwargs(kwargs)
@@ -193,7 +205,8 @@ class StereoNet_Hoeppner(StereoNet_Artists):
 
 
 class StereoNet_Arrow(StereoNet_Artists):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, factory, *args, **kwargs):
+        super().__init__(factory, *args, **kwargs)
         self.stereonet_method = "_arrow"
         self.args = args[:2]  # take max 2 args
         self.parse_kwargs(kwargs)
@@ -212,7 +225,8 @@ class StereoNet_Arrow(StereoNet_Artists):
 
 
 class StereoNet_Contourf(StereoNet_Artists):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, factory, *args, **kwargs):
+        super().__init__(factory, *args, **kwargs)
         self.stereonet_method = "_contourf"
         self.args = args[:1]  # take only first arg
         self.parse_kwargs(kwargs)
@@ -228,35 +242,35 @@ class ArtistFactory:
     @staticmethod
     def create_point(*args, **kwargs):
         if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
-            return StereoNet_Point(*args, **kwargs)
+            return StereoNet_Point("create_point", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet point")
 
     @staticmethod
     def create_pole(*args, **kwargs):
         if all([issubclass(type(arg), (Foliation, FoliationSet)) for arg in args]):
-            return StereoNet_Pole(*args, **kwargs)
+            return StereoNet_Pole("create_pole", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet pole")
 
     @staticmethod
     def create_scatter(*args, **kwargs):
         if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
-            return StereoNet_Scatter(*args, **kwargs)
+            return StereoNet_Scatter("create_scatter", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet scatter")
 
     @staticmethod
     def create_vector(*args, **kwargs):
         if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
-            return StereoNet_Vector(*args, **kwargs)
+            return StereoNet_Vector("create_vector", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet vector")
 
     @staticmethod
     def create_great_circle(*args, **kwargs):
         if all([issubclass(type(arg), (Foliation, FoliationSet)) for arg in args]):
-            return StereoNet_Great_Circle(*args, **kwargs)
+            return StereoNet_Great_Circle("create_great_circle", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet great circle")
 
@@ -264,7 +278,7 @@ class ArtistFactory:
     def create_cone(*args, **kwargs):
         if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
             if "angles" in kwargs:
-                return StereoNet_Cone(*args, **kwargs)
+                return StereoNet_Cone("create_cone", *args, **kwargs)
             else:
                 raise TypeError("Keyword argument angles must be provided.")
         else:
@@ -273,34 +287,34 @@ class ArtistFactory:
     @staticmethod
     def create_pair(*args, **kwargs):
         if all([issubclass(type(arg), (Pair, PairSet)) for arg in args]):
-            return StereoNet_Pair(*args, **kwargs)
+            return StereoNet_Pair("create_pair", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet pair")
 
     @staticmethod
     def create_fault(*args, **kwargs):
         if all([issubclass(type(arg), (Fault, FaultSet)) for arg in args]):
-            return StereoNet_Fault(*args, **kwargs)
+            return StereoNet_Fault("create_fault", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet fault")
 
     @staticmethod
     def create_hoeppner(*args, **kwargs):
         if all([issubclass(type(arg), (Fault, FaultSet)) for arg in args]):
-            return StereoNet_Hoeppner(*args, **kwargs)
+            return StereoNet_Hoeppner("create_hoeppner", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet heoppner")
 
     @staticmethod
     def create_arrow(*args, **kwargs):
         if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args[:2]]):
-            return StereoNet_Arrow(*args, **kwargs)
+            return StereoNet_Arrow("create_arrow", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet arrow")
 
     @staticmethod
     def create_contourf(*args, **kwargs):
         if issubclass(type(args[0]), Vector3Set):
-            return StereoNet_Contourf(*args, **kwargs)
+            return StereoNet_Contourf("create_contourf", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet contourf")

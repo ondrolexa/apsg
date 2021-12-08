@@ -65,11 +65,9 @@ class StereoNet:
             -180 + 1e-7, 180 - 1e-7, self.proj.overlay_resolution
         )
         self.grid = StereoGrid(**self._kwargs)
-        self._data = {}
         self._artists = []
 
     def clear(self):
-        self._data.clear()
         self._artists = []
 
     def __draw_net(self):
@@ -145,11 +143,21 @@ class StereoNet:
             plot_method(*artist.args, **artist.kwargs)
 
     def to_json(self):
-        return dict(
-            kwargs=self._kwargs,
-            data={obj_id: obj.to_json() for obj_id, obj in self._data.items()},
-            artists=self._artists,
-        )
+        data = {}
+        artists = []
+        for artist in self._artists:
+            for obj in artist.args:
+                obj_id = id(obj)
+                if obj_id not in data:
+                    data[obj_id] = obj.to_json()
+            artist_dict = dict(
+                factory=artist.factory,
+                stereonet_method=artist.stereonet_method,
+                args=tuple([id(obj) for obj in artist.args]),
+                kwargs=artist.kwargs.copy(),
+            )
+            artists.append(artist_dict)
+        return dict(kwargs=self._kwargs, data=data, artists=artists,)
 
     @classmethod
     def from_json(cls, json_dict):
@@ -166,9 +174,15 @@ class StereoNet:
 
         # parse
         s = cls(**json_dict["kwargs"])
+        data = {}
         for obj_id, obj_json in json_dict["data"].items():
-            s._data[obj_id] = parse_json_data(obj_json)
-        s._artists = json_dict["artists"]
+            data[obj_id] = parse_json_data(obj_json)
+        s._artists = []
+        for artist in json_dict["artists"]:
+            args = tuple([data[obj_id] for obj_id in artist["args"]])
+            s._artists.append(
+                getattr(ArtistFactory, artist["factory"])(*args, **artist["kwargs"])
+            )
         return s
 
     def save(self, filename):
