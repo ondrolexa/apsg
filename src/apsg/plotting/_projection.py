@@ -3,7 +3,7 @@ import numpy as np
 from apsg.helpers._math import sqrt2
 from apsg.math._vector import Vector3
 from apsg.feature._geodata import Lineation, Foliation, Pair
-from apsg.feature._tensor import DefGrad3
+from apsg.feature._tensor import DeformationGradient3
 
 
 class Projection:
@@ -17,7 +17,7 @@ class Projection:
             "overlay_resolution", 361
         )  # number of grid lines points
         self.overlay_cross_size = kwargs.get("overlay_cross_size", 3)
-        self.R = np.array(DefGrad3.from_pair(self.overlay_position))
+        self.R = np.array(DeformationGradient3.from_pair(self.overlay_position))
         self.Ri = np.linalg.inv(self.R)
 
     def project_data(self, x, y, z, clip_inside=True, return_mask=False):

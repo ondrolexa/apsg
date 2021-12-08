@@ -22,7 +22,7 @@ from apsg.feature._container import (
     FaultSet,
 )
 from apsg.plotting._stereogrid import StereoGrid
-from apsg.feature._tensor import Ortensor3
+from apsg.feature._tensor import OrientationTensor3
 from apsg.plotting._projection import EqualAreaProj, EqualAngleProj
 from apsg.plotting._stereonet_artist import ArtistFactory
 
@@ -812,8 +812,8 @@ class VollmerPlot(_FabricPlot):
         if issubclass(type(obj), Vector3Set):
             obj = obj.ortensor()
 
-        if not isinstance(obj, Ortensor3):
-            raise TypeError("Argument must be Vector3Set or Ortensor3")
+        if not isinstance(obj, OrientationTensor3):
+            raise TypeError("Argument must be Vector3Set or OrientationTensor3")
 
         # ensure point plot
         if "ls" not in kwargs and "linestyle" not in kwargs:
@@ -897,8 +897,8 @@ class RamsayPlot(_FabricPlot):
         if issubclass(type(obj), Vector3Set):
             obj = obj.ortensor()
 
-        if not isinstance(obj, Ortensor3):
-            raise TypeError("Argument must be Vector3Set or Ortensor3")
+        if not isinstance(obj, OrientationTensor3):
+            raise TypeError("Argument must be Vector3Set or OrientationTensor3")
 
         # ensure point plot
         if "ls" not in kwargs and "linestyle" not in kwargs:
@@ -989,8 +989,8 @@ class FlinnPlot(_FabricPlot):
         if issubclass(type(obj), Vector3Set):
             obj = obj.ortensor()
 
-        if not isinstance(obj, Ortensor3):
-            raise TypeError("Argument must be Vector3Set or Ortensor3")
+        if not isinstance(obj, OrientationTensor3):
+            raise TypeError("Argument must be Vector3Set or OrientationTensor3")
 
         # ensure point plot
         if "ls" not in kwargs and "linestyle" not in kwargs:
@@ -1081,8 +1081,8 @@ class HsuPlot(_FabricPlot):
         if issubclass(type(obj), Vector3Set):
             obj = obj.ortensor()
 
-        if not isinstance(obj, Ortensor3):
-            raise TypeError("Argument must be Vector3Set or Ortensor3")
+        if not isinstance(obj, OrientationTensor3):
+            raise TypeError("Argument must be Vector3Set or OrientationTensor3")
 
         # ensure point plot
         if "ls" not in kwargs and "linestyle" not in kwargs:

@@ -6,7 +6,7 @@ from apsg.config import apsg_conf
 from apsg.math._vector import Vector3
 from apsg.helpers._math import acosd
 from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
-from apsg.feature._tensor import Ortensor3
+from apsg.feature._tensor import OrientationTensor3
 from apsg.feature._statistics import KentDistribution, vonMisesFisher
 
 
@@ -172,7 +172,7 @@ class Vector3Set(FeatureSet):
         """Return affine transformation of all features ``FeatureSet`` by matrix 'F'.
 
         Args:
-          F: Transformation matrix. Should be array-like value e.g. ``DefGrad3``
+          F: Transformation matrix. Should be array-like value e.g. ``DeformationGradient3``
 
         Keyword Args:
           norm: normalize transformed features. True or False. Default False
@@ -251,7 +251,7 @@ class Vector3Set(FeatureSet):
     @property
     def _ortensor(self):
         if "ortensor" not in self._cache:
-            self._cache["ortensor"] = Ortensor3.from_features(self)
+            self._cache["ortensor"] = OrientationTensor3.from_features(self)
         return self._cache["ortensor"]
 
     @property
@@ -552,20 +552,6 @@ class FoliationSet(Vector3Set):
         return Vector3Set([e.dipvec() for e in self], name=self.name)
 
 
-def G(lst, name="Default"):
-    if hasattr(lst, "__len__"):
-        dtype_cls = type(lst[0])
-        assert all([isinstance(obj, dtype_cls) for obj in lst])
-        if dtype_cls is Vector3:
-            return Vector3Set(lst, name=name)
-        elif dtype_cls is Lineation:
-            return LineationSet(lst, name=name)
-        elif dtype_cls is Foliation:
-            return FoliationSet(lst, name=name)
-        else:
-            raise TypeError("Wrong datatype to create FeatureSet")
-
-
 class PairSet(FeatureSet):
     __feature_type__ = "Pair"
 
@@ -610,9 +596,9 @@ class PairSet(FeatureSet):
 
     @property
     def ortensor(self):
-        """Return Lisle (1989) orientation tensor ``Ortensor3`` of orientations
+        """Return Lisle (1989) orientation tensor ``OrientationTensor3`` of orientations
         defined by pairs"""
-        return Ortensor3.from_pairs(self)
+        return OrientationTensor3.from_pairs(self)
 
     def label(self):
         return str(self)
@@ -904,3 +890,17 @@ class FaultSet(PairSet):
             ],
             name=name,
         )
+
+
+def G(lst, name="Default"):
+    if hasattr(lst, "__len__"):
+        dtype_cls = type(lst[0])
+        assert all([isinstance(obj, dtype_cls) for obj in lst])
+        if dtype_cls is Vector3:
+            return Vector3Set(lst, name=name)
+        elif dtype_cls is Lineation:
+            return LineationSet(lst, name=name)
+        elif dtype_cls is Foliation:
+            return FoliationSet(lst, name=name)
+        else:
+            raise TypeError("Wrong datatype to create FeatureSet")

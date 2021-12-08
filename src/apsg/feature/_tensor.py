@@ -9,9 +9,9 @@ from apsg.decorator._decorator import ensure_arguments
 from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
 
 
-class DefGrad3(Matrix3):
+class DeformationGradient3(Matrix3):
     """
-    ``DefGrad3`` store 3D deformation gradient tensor.
+    ``DeformationGradient3`` store 3D deformation gradient tensor.
 
     Args:
       a (3x3 array_like): Input data, that can be converted to
@@ -21,7 +21,7 @@ class DefGrad3(Matrix3):
       ``DefGrad`` object
 
     Example:
-      >>> F = DefGrad3(np.diag([2, 1, 0.5]))
+      >>> F = DeformationGradient3(np.diag([2, 1, 0.5]))
     """
 
     @classmethod
@@ -56,14 +56,14 @@ class DefGrad3(Matrix3):
     @classmethod
     @ensure_arguments(Vector3)
     def from_axisangle(cls, vector, theta):
-        """Return ``DefGrad3`` representing rotation around axis.
+        """Return ``DeformationGradient3`` representing rotation around axis.
 
         Args:
           vector: Rotation axis as ``Vector3`` like object
           theta: Angle of rotation in degrees
 
         Example:
-          >>> F = DefGrad3.from_axis(lin(120, 30), 45)
+          >>> F = DeformationGradient3.from_axis(lin(120, 30), 45)
         """
 
         x, y, z = vector.uv()
@@ -83,7 +83,7 @@ class DefGrad3(Matrix3):
     @classmethod
     @ensure_arguments(Vector3, Vector3)
     def from_two_vectors(cls, v1, v2):
-        """Return ``DefGrad3`` representing rotation around axis perpendicular
+        """Return ``DeformationGradient3`` representing rotation around axis perpendicular
         to both vectors and rotate v1 to v2.
 
         Args:
@@ -91,14 +91,14 @@ class DefGrad3(Matrix3):
           v2: ``Vector3`` like object
 
         Example:
-          >>> F = DefGrad3.from_two_vectors(lin(120, 30), lin(210, 60))
+          >>> F = DeformationGradient3.from_two_vectors(lin(120, 30), lin(210, 60))
         """
         return cls.from_axisangle(v1.cross(v2), v1.angle(v2))
 
     @classmethod
     def from_two_pairs(cls, p1, p2, symmetry=False):
         """
-        Return ``DefGrad3`` representing rotation of coordinates from system
+        Return ``DeformationGradient3`` representing rotation of coordinates from system
         defined by ``Pair`` p1 to system defined by ``Pair`` p2.
 
         Lineation in pair define x axis and normal to foliation in pair define z axis
@@ -113,7 +113,7 @@ class DefGrad3(Matrix3):
         Example:
             >>> p1 = pair(58, 36, 81, 34)
             >>> p2 = pair(217,42, 162, 27)
-            >>> R = DefGrad3.from_two_pairs(p1, p2)
+            >>> R = DeformationGradient3.from_two_pairs(p1, p2)
             >>> p1.transform(R) == p2
             True
 
@@ -174,22 +174,22 @@ class DefGrad3(Matrix3):
         """Return ``VelGrad`` for given time"""
         from scipy.linalg import logm
 
-        return VelGrad3(logm(np.asarray(self)) / time)
+        return VelocityGradient3(logm(np.asarray(self)) / time)
 
 
-class VelGrad3(Matrix3):
+class VelocityGradient3(Matrix3):
     """
-    ``VelGrad3`` represents 3D velocity gradient tensor.
+    ``VelocityGradient3`` represents 3D velocity gradient tensor.
 
     Args:
       a (3x3 array_like): Input data, that can be converted to
           3x3 2D array. This includes lists, tuples and ndarrays.
 
     Returns:
-      ``VelGrad3`` object
+      ``VelocityGradient3`` object
 
     Example:
-      >>> L = VelGrad3(np.diag([0.1, 0, -0.1]))
+      >>> L = VelocityGradient3(np.diag([0.1, 0, -0.1]))
     """
 
     def defgrad(self, time=1, steps=1):
@@ -205,11 +205,11 @@ class VelGrad3(Matrix3):
 
         if steps > 1:  # FIX once container for matrix will be implemented
             return [
-                DefGrad3(expm(np.asarray(self) * t))
+                DeformationGradient3(expm(np.asarray(self) * t))
                 for t in np.linspace(0, time, steps)
             ]
         else:
-            return DefGrad3(expm(np.asarray(self) * time))
+            return DeformationGradient3(expm(np.asarray(self) * time))
 
     def rate(self):
         """
@@ -348,7 +348,10 @@ class Stress3(Tensor3):
         coordinate system to the principal one.
 
         """
-        return type(self)(np.diag(self.eigenvalues())), DefGrad3(self.eigenvectors())
+        return (
+            type(self)(np.diag(self.eigenvalues())),
+            DeformationGradient3(self.eigenvectors()),
+        )
 
     def cauchy(self, n):
         """
@@ -623,7 +626,7 @@ class Ellipsoid(Tensor3):
         )
 
 
-class Ortensor3(Ellipsoid):
+class OrientationTensor3(Ellipsoid):
     """
     Represents an orientation tensor, which characterize data distribution
     using eigenvalue method. See (Watson 1966, Scheidegger 1965).
@@ -636,10 +639,10 @@ class Ortensor3(Ellipsoid):
              Array could be also ``Group`` (for backward compatibility)
 
     Returns:
-      ``Ortensor3`` object
+      ``OrientationTensor3`` object
 
     Example:
-      >>> ot = Ortensor3([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
+      >>> ot = OrientationTensor3([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
       >>> ot
       Ortensor:  Kind: LLS
       (E1:8,E2:2,E3:1)
@@ -653,7 +656,7 @@ class Ortensor3(Ellipsoid):
         return super().__repr__()
 
     @classmethod
-    def from_features(cls, g) -> "Ortensor3":
+    def from_features(cls, g) -> "OrientationTensor3":
         """
         Return ``Ortensor`` of data in ``Group``
 
@@ -677,7 +680,7 @@ class Ortensor3(Ellipsoid):
         return cls(np.dot(np.array(g).T, np.array(g)) / len(g))
 
     @classmethod
-    def from_pairs(cls, p) -> "Ortensor3":
+    def from_pairs(cls, p) -> "OrientationTensor3":
         """
         Return Lisle (19890``Ortensor`` of orthogonal data in ``PairSet``
 

@@ -1,31 +1,29 @@
 # -*- coding: utf-8 -*-
 
-from apsg.math import Vector3
+from apsg.math import Vector3 as vec3
 from apsg.config import apsg_conf
-from apsg.feature import Lineation, Foliation, Pair, Fault
-from apsg.feature import Vector3Set, LineationSet, FoliationSet, G, PairSet, FaultSet
-from apsg.feature import DefGrad3, VelGrad3, Stress3, Ellipsoid, Ortensor3
+from apsg.feature import (
+    Lineation as lin,
+    Foliation as fol,
+    Pair as pair,
+    Fault as fault,
+)
+from apsg.feature import (
+    Vector3Set as vecset,
+    LineationSet as linset,
+    FoliationSet as folset,
+    PairSet as pairset,
+    FaultSet as faultset,
+)
+from apsg.feature import (
+    DeformationGradient3 as defgrad,
+    VelocityGradient3 as velgrad,
+    Stress3 as stress,
+    Ellipsoid as ellipsoid,
+    OrientationTensor3 as ortensor,
+)
+from apsg.feature import G
 from apsg.plotting import StereoGrid, StereoNet
-
-
-def vec3(*args):
-    return Vector3(*args)
-
-
-def lin(*args):
-    return Lineation(*args)
-
-
-def fol(*args):
-    return Foliation(*args)
-
-
-def pair(*args):
-    return Pair(*args)
-
-
-def fault(*args):
-    return Fault(*args)
 
 
 __all__ = (
@@ -35,17 +33,17 @@ __all__ = (
     "fol",
     "pair",
     "fault",
-    "Vector3Set",
-    "LineationSet",
-    "FoliationSet",
-    "PairSet",
-    "FaultSet",
+    "vecset",
+    "linset",
+    "folset",
+    "pairset",
+    "faultset",
     "G",
-    "DefGrad3",
-    "VelGrad3",
-    "Stress3",
-    "Ellipsoid",
-    "Ortensor3",
+    "defgrad",
+    "velgrad",
+    "stress",
+    "ellipsoid",
+    "ortensor",
     "StereoGrid",
     "StereoNet",
 )

@@ -10,7 +10,13 @@ from apsg.feature._container import (
     FaultSet,
     G,
 )
-from apsg.feature._tensor import DefGrad3, VelGrad3, Stress3, Ellipsoid, Ortensor3
+from apsg.feature._tensor import (
+    DeformationGradient3,
+    VelocityGradient3,
+    Stress3,
+    Ellipsoid,
+    OrientationTensor3,
+)
 from apsg.feature._paleomag import Core
 
 __all__ = (
@@ -25,10 +31,10 @@ __all__ = (
     "PairSet",
     "FaultSet",
     "G",
-    "DefGrad3",
-    "VelGrad3",
+    "DeformationGradient3",
+    "VelocityGradient3",
     "Stress3",
     "Ellipsoid",
-    "Ortensor3",
+    "OrientationTensor3",
     "Core",
 )

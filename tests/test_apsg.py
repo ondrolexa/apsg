@@ -19,9 +19,9 @@ import pytest
 import numpy as np
 
 from apsg.config import apsg_conf
-from apsg import vec3, fol, lin, fault
-from apsg import Lineation, Foliation, Pair, Vector3Set, LineationSet
-from apsg import DefGrad3
+from apsg import vec3, fol, lin, fault, pair
+from apsg import vecset, linset, folset
+from apsg import defgrad
 
 
 # ############################################################################
@@ -307,15 +307,15 @@ class TestVector:
     # ``H`` method
 
     def test_mutual_rotation(self, x, y, z):
-        current = DefGrad3.from_two_vectors(x, y)
-        expects = DefGrad3.from_axisangle(z, 90)
+        current = defgrad.from_two_vectors(x, y)
+        expects = defgrad.from_axisangle(z, 90)
 
         assert current == expects
 
     # ``transform`` method
 
     def test_transform_method(self, x, y, z):
-        F = DefGrad3.from_axisangle(z, 90)
+        F = defgrad.from_axisangle(z, 90)
         current = x.transform(F)
         expects = y
 
@@ -371,7 +371,7 @@ class Testlineation:
 
     @pytest.fixture
     def x(self):
-        return lin(0, 0)
+        return lin.unit_x()
 
     @pytest.mark.skip
     def test_repr(self, x):
@@ -381,44 +381,44 @@ class Testlineation:
         assert str(x) == "L:0/0"
 
     def test_equality_for_oposite_dir(self):
-        lin = Lineation.random()
-        assert lin == -lin
+        l = lin.random()
+        assert l == -l
 
     def test_anlge_for_oposite_dir(self):
-        lin = Lineation.random()
-        assert lin.angle(-lin) == 0
+        l = lin.random()
+        assert l.angle(-l) == 0
 
     def test_that_azimuth_0_is_same_as_360(self):
         assert lin(0, 20) == lin(360, 20)
 
     def test_scalar_product(self):
-        lin = Lineation.random()
-        assert np.allclose(lin.dot(lin), 1)
+        l = lin.random()
+        assert np.allclose(l.dot(l), 1)
 
     def test_cross_product(self):
-        l1 = Lineation.random()
-        l2 = Lineation.random()
+        l1 = lin.random()
+        l2 = lin.random()
         p = l1.cross(l2)
 
         assert np.allclose([p.angle(l1), p.angle(l2)], [90, 90])
 
     def test_mutual_rotation(self):
-        l1 = Lineation.random()
-        l2 = Lineation.random()
-        F = DefGrad3.from_two_vectors(l1, l2)
+        l1 = lin.random()
+        l2 = lin.random()
+        F = defgrad.from_two_vectors(l1, l2)
 
         assert l1.transform(F) == l2
 
     def test_angle_under_rotation(self):
-        l1 = Lineation.random()
-        l2 = Lineation.random()
-        D = DefGrad3.from_axisangle(lin(45, 45), 60)
+        l1 = lin.random()
+        l2 = lin.random()
+        D = defgrad.from_axisangle(lin(45, 45), 60)
 
         assert np.allclose(l1.angle(l2), l1.transform(D).angle(l2.transform(D)))
 
     def test_add_operator__simple(self):
-        l1 = Lineation.random()
-        l2 = Lineation.random()
+        l1 = lin.random()
+        l2 = lin.random()
 
         assert l1 + l2 == l1 + (-l2)
 
@@ -426,8 +426,8 @@ class Testlineation:
         assert l1 + l2 == l2 + l1
 
     def test_sub_operator__simple(self):
-        l1 = Lineation.random()
-        l2 = Lineation.random()
+        l1 = lin.random()
+        l2 = lin.random()
 
         assert l1 - l2 == l1 - (-l2)
 
@@ -435,8 +435,8 @@ class Testlineation:
         assert l1 - l2 == l2 - l1
 
     def test_geo_property(self):
-        l1 = lin(120, 30)
-        assert lin(*l1.geo) == l1
+        l = lin(120, 30)
+        assert lin(*l.geo) == l
 
 
 # ############################################################################
@@ -461,57 +461,57 @@ class Testfoliation:
         assert str(x) == "S:0/0"
 
     def test_equality_for_oposite_dir(self):
-        f = Foliation.random()
+        f = fol.random()
         assert f == -f
 
     def test_anlge_for_oposite_dir(self):
-        f = Foliation.random()
+        f = fol.random()
         assert f.angle(-f) == 0
 
     def test_that_azimuth_0_is_same_as_360(self):
         assert fol(0, 20) == fol(360, 20)
 
     def test_scalar_product(self):
-        f = Foliation.random()
+        f = fol.random()
         assert np.allclose(f.dot(f), 1)
 
     def test_cross_product(self):
-        f1 = Foliation.random()
-        f2 = Foliation.random()
+        f1 = fol.random()
+        f2 = fol.random()
         p = f1 ** f2
 
         assert np.allclose([p.angle(f1), p.angle(f2)], [90, 90])
 
     def test_foliation_product(self):
-        f1 = Foliation.random()
-        f2 = Foliation.random()
+        f1 = fol.random()
+        f2 = fol.random()
         p = f1.cross(f2)
 
         assert np.allclose([p.angle(f1), p.angle(f2)], [90, 90])
 
     def test_foliation_product_operator(self):
-        f1 = Foliation.random()
-        f2 = Foliation.random()
+        f1 = fol.random()
+        f2 = fol.random()
 
         assert f1.cross(f2) == f1 ** f2
 
     def test_mutual_rotation(self):
-        f1 = Foliation.random()
-        f2 = Foliation.random()
-        F = DefGrad3.from_two_vectors(f1, f2)
+        f1 = fol.random()
+        f2 = fol.random()
+        F = defgrad.from_two_vectors(f1, f2)
 
         assert f1.transform(F) == f2
 
     def test_angle_under_rotation(self):
-        f1 = Foliation.random()
-        f2 = Foliation.random()
-        D = DefGrad3.from_axisangle(lin(45, 45), 60)
+        f1 = fol.random()
+        f2 = fol.random()
+        D = defgrad.from_axisangle(lin(45, 45), 60)
 
         assert np.allclose(f1.angle(f2), f1.transform(D).angle(f2.transform(D)))
 
     def test_add_operator__simple(self):
-        f1 = Foliation.random()
-        f2 = Foliation.random()
+        f1 = fol.random()
+        f2 = fol.random()
 
         assert f1 + f2 == f1 + (-f2)
 
@@ -519,8 +519,8 @@ class Testfoliation:
         assert f1 + f2 == f2 + f1
 
     def test_sub_operator__simple(self):
-        f1 = Foliation.random()
-        f2 = Foliation.random()
+        f1 = fol.random()
+        f2 = fol.random()
 
         assert f1 - f2 == f1 - (-f2)
 
@@ -540,11 +540,11 @@ class Testfoliation:
 
 class TestVector3Set:
     def test_rdegree_under_rotation(self):
-        g = Vector3Set.random_fisher()
+        g = vecset.random_fisher()
         assert np.allclose(g.rotate(lin(45, 45), 90).rdegree(), g.rdegree())
 
     def test_resultant_rdegree(self):
-        g = Vector3Set.from_array([45, 135, 225, 315], [45, 45, 45, 45])
+        g = vecset.from_array([45, 135, 225, 315], [45, 45, 45, 45])
         c1 = g.R().uv() == vec3(0, 90)
         c2 = np.allclose(abs(g.R()), np.sqrt(8))
         c3 = np.allclose((g.rdegree() / 100 + 1) ** 2, 2)
@@ -552,11 +552,11 @@ class TestVector3Set:
 
     def test_group_type_error(self):
         with pytest.raises(Exception) as exc:
-            Vector3Set([1, 2, 3])
+            vecset([1, 2, 3])
             assert "Data must be instances of Vector3" == str(exc.exception)
 
     def test_centered_group(self):
-        g = Vector3Set.random_fisher(position=lin(40, 50))
+        g = vecset.random_fisher(position=lin(40, 50))
         gc = g.centered()
         el = gc.ortensor().eigenlins
         assert el[0] == vec3("x") and el[1] == vec3("y") and el[2] == vec3("z")
@@ -564,11 +564,11 @@ class TestVector3Set:
 
 class TestLineationSet:
     def test_rdegree_under_rotation(self):
-        g = LineationSet.random_fisher()
+        g = linset.random_fisher()
         assert np.allclose(g.rotate(lin(45, 45), 90).rdegree(), g.rdegree())
 
     def test_resultant_rdegree(self):
-        g = LineationSet.from_array([45, 135, 225, 315], [45, 45, 45, 45])
+        g = linset.from_array([45, 135, 225, 315], [45, 45, 45, 45])
         c1 = g.R().uv() == lin(0, 90)
         c2 = np.allclose(abs(g.R()), np.sqrt(8))
         c3 = np.allclose((g.rdegree() / 100 + 1) ** 2, 2)
@@ -576,16 +576,16 @@ class TestLineationSet:
 
     def test_group_type_error(self):
         with pytest.raises(Exception) as exc:
-            LineationSet([1, 2, 3])
+            linset([1, 2, 3])
             assert "Data must be instances of Lineation" == str(exc.exception)
 
     def test_group_heterogenous_error(self):
         with pytest.raises(Exception) as exc:
-            LineationSet([fol(10, 10), lin(20, 20)])
+            linset([fol(10, 10), lin(20, 20)])
             assert "Data must be instances of Lineation" == str(exc.exception)
 
     def test_centered_group(self):
-        g = LineationSet.random_fisher(position=lin(40, 50))
+        g = linset.random_fisher(position=lin(40, 50))
         gc = g.centered()
         el = gc.ortensor().eigenlins
         assert el[0] == vec3("x") and el[1] == vec3("y") and el[2] == vec3("z")
@@ -598,11 +598,11 @@ class TestLineationSet:
 
 class Testpair:
     def test_pair_misfit(self):
-        p = Pair.random()
+        p = pair.random()
         assert np.allclose(p.misfit, 0)
 
     def test_pair_rotate(self):
-        p = Pair.random()
+        p = pair.random()
         pr = p.rotate(lin(45, 45), 120)
         assert np.allclose([p.fvec.angle(p.lvec), pr.fvec.angle(pr.lvec)], [90, 90])
 

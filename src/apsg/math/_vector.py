@@ -200,6 +200,14 @@ class Vector2(Vector):
         """Return the vector rotated through angle theta. Right hand rule applies"""
         return NotImplemented
 
+    @classmethod
+    def unit_x(cls):
+        return cls(1, 0)
+
+    @classmethod
+    def unit_y(cls):
+        return cls(0, 1)
+
     def transform(self, *args, **kwargs):
         """
         Return affine transformation of vector `u` by matrix `F`.
@@ -354,6 +362,18 @@ class Vector3(Vector):
     @property
     def geo(self):
         return vec2geo_linear_signed(self)
+
+    @classmethod
+    def unit_x(cls):
+        return cls(1, 0, 0)
+
+    @classmethod
+    def unit_y(cls):
+        return cls(0, 1, 0)
+
+    @classmethod
+    def unit_z(cls):
+        return cls(0, 0, 1)
 
     @classmethod
     def random(cls):
