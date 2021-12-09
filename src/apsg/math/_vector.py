@@ -107,11 +107,25 @@ class Vector:
 
     @ensure_first_arg_same
     def project(self, other):
-        """Return one vector projected on the vector other"""
+        """Return vector projectio on the vector other"""
         n = other.normalized()
         return type(self)(self.dot(n) * n)
 
     proj = project
+
+    @ensure_first_arg_same
+    def reject(self, other):
+        """Return vector rejection on the vector other"""
+        return self - self.project(other)
+
+    @ensure_first_arg_same
+    def slerp(self, other, t):
+        """Return a spherical linear interpolation between self and other vector
+
+        Note that for non-unit vectors the interpolation is not uniform
+        """
+        theta = self.angle(other)
+        return type(self)(self * sind((1 - t) * theta) + other * sind(t * theta)) / sind(theta)
 
     @property
     def x(self):
@@ -397,14 +411,6 @@ class Vector3(Vector):
     def angle(self, other):
         """Return the angle to the vector other"""
         return acosd(np.clip(self.uv().dot(other.uv()), -1, 1))
-
-    @ensure_first_arg_same
-    def project(self, other):
-        """Return one vector projected on the vector other"""
-        n = other.uv()
-        return type(self)(self.dot(n) * n)
-
-    proj = project
 
     def transform(self, F, **kwargs):
         """
