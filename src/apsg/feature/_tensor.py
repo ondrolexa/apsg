@@ -781,4 +781,4 @@ class OrientationTensor3(Ellipsoid):
     @property
     def mad(self) -> float:
         """Paleomag MAD"""
-        return atand(np.sqrt((self.E2 + self.E3) / self.E1)))
+        return atand(np.sqrt((self.E2 + self.E3) / self.E1))
