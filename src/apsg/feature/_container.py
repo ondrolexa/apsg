@@ -64,6 +64,18 @@ class FeatureSet:
         else:
             raise TypeError("Only {self.__name__} is allowed")
 
+    @property
+    def x(self):
+        return np.array([e.x for e in self])
+
+    @property
+    def y(self):
+        return np.array([e.y for e in self])
+
+    @property
+    def z(self):
+        return np.array([e.z for e in self])
+
     def rotate(self, axis, phi):
         """Rotate ``FeatureSet`` object `phi` degress about `axis`."""
         return type(self)([e.rotate(axis, phi) for e in self], name=self.name)
