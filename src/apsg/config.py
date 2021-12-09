@@ -26,7 +26,7 @@ apsg_conf = dict(
         alpha=None, color=None, mec=None, mfc=None, ls="none", marker="o", mew=1, ms=6,
     ),
     default_vector_kwargs=dict(
-        alpha=None, color=None, mec=None, mfc=None, ls="none", marker="o", mew=1, ms=6,
+        alpha=None, color=None, mec=None, mfc=None, ls="none", marker="o", mew=2, ms=6,
     ),
     default_great_circle_kwargs=dict(
         alpha=None, color=None, ls="-", lw=1.5, mec=None, mew=1, mfc=None, ms=2,

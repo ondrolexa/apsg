@@ -250,7 +250,7 @@ class StereoNet:
     def vector(self, *args, **kwargs):
         """Plot vector feature(s) as point(s), filled on lower and open on upper hemisphere."""
         try:
-            artist = ArtistFactory.create_point(*args, **kwargs)
+            artist = ArtistFactory.create_vector(*args, **kwargs)
             self._artists.append(artist)
         except TypeError as err:
             print(err)
@@ -341,15 +341,23 @@ class StereoNet:
         x_lower, y_lower, x_upper, y_upper = self.proj.project_data_antipodal(
             *np.vstack(args).T
         )
-        handles = self.ax.plot(x_lower, y_lower, **kwargs)
-        for h in handles:
-            h.set_clip_path(self.primitive)
-        kwargs["label"] = None
-        kwargs["color"] = h.get_color()
-        kwargs["mfc"] = "none"
-        handles = self.ax.plot(x_upper, y_upper, **kwargs)
-        for h in handles:
-            h.set_clip_path(self.primitive)
+        if x_lower:
+            handles = self.ax.plot(x_lower, y_lower, **kwargs)
+            for h in handles:
+                h.set_clip_path(self.primitive)
+            u_kwargs = kwargs.copy()
+            u_kwargs["label"] = "_upper"
+            u_kwargs["mec"] = h.get_color()
+            u_kwargs["mfc"] = "none"
+            handles = self.ax.plot(x_upper, y_upper, **u_kwargs)
+            for h in handles:
+                h.set_clip_path(self.primitive)
+        else:
+            u_kwargs = kwargs.copy()
+            u_kwargs["mfc"] = "none"
+            handles = self.ax.plot(x_upper, y_upper, **u_kwargs)
+            for h in handles:
+                h.set_clip_path(self.primitive)
         return handles
 
     def _great_circle(self, *args, **kwargs):
