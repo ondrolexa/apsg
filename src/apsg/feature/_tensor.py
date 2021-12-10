@@ -752,7 +752,7 @@ class OrientationTensor3(Ellipsoid):
         return 7.5 * np.sum((self._evals - 1 / 3) ** 2)
 
     @property
-    def MADp(self) -> float:
+    def aMAD_l(self) -> float:
         """
         Return approximate angular deviation from the major axis along E1.
         """
@@ -760,12 +760,33 @@ class OrientationTensor3(Ellipsoid):
         return atand(np.sqrt((1 - self.E1) / self.E1))
 
     @property
-    def MADo(self) -> float:
+    def aMAD_p(self) -> float:
         """
         Return approximate deviation from the plane normal to E3.
         """
 
         return atand(np.sqrt(self.E3 / (1 - self.E3)))
+
+    @property
+    def aMAD(self) -> float:
+        """
+        Return approximate deviation according to shape
+        """
+
+        if self.shape > 1:
+            return self.aMADl
+        else:
+            return self.aMADp
+
+    @property
+    def MAD_l(self) -> float:
+        """Return maximum angular deviation (MAD) of linearly distributed vectors. Kirschvink 1980"""
+        return atand(np.sqrt((self.E2 + self.E3) / self.E1))
+
+    @property
+    def MAD_p(self) -> float:
+        """Return maximum angular deviation (MAD) of planarly distributed vectors. Kirschvink 1980"""
+        return atand(np.sqrt(self.E3 / self.E2 + self.E3 / self.E1))
 
     @property
     def MAD(self) -> float:
@@ -774,11 +795,6 @@ class OrientationTensor3(Ellipsoid):
         """
 
         if self.shape > 1:
-            return self.MADp
+            return self.MADl
         else:
-            return self.MADo
-
-    @property
-    def mad(self) -> float:
-        """Paleomag MAD"""
-        return atand(np.sqrt((self.E2 + self.E3) / self.E1))
+            return self.MADp

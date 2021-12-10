@@ -124,6 +124,23 @@ class StereoNet_Great_Circle(StereoNet_Artists):
                 self.kwargs["label"] = f"Planar ({len(self.args)})"
 
 
+class StereoNet_Arc(StereoNet_Artists):
+    def __init__(self, factory, *args, **kwargs):
+        super().__init__(factory, *args, **kwargs)
+        self.stereonet_method = "_arc"
+        self.args = args
+        self.parse_kwargs(kwargs)
+
+    def parse_kwargs(self, kwargs):
+        super().update_kwargs("default_arc_kwargs")
+        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        if not isinstance(self.kwargs["label"], str):
+            if len(self.args) == 1:
+                self.kwargs["label"] = self.args[0].label()
+            else:
+                self.kwargs["label"] = f"Planar ({len(self.args)})"
+
+
 class StereoNet_Cone(StereoNet_Artists):
     def __init__(self, factory, *args, **kwargs):
         super().__init__(factory, *args, **kwargs)
@@ -273,6 +290,15 @@ class ArtistFactory:
             return StereoNet_Great_Circle("create_great_circle", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet great circle")
+
+    @staticmethod
+    def create_arc(*args, **kwargs):
+        if issubclass(type(args[0]), Vector3Set):
+            args = args[0].data
+        if all([issubclass(type(arg), Vector3) for arg in args]):
+            return StereoNet_Arc("create_arc", *args, **kwargs)
+        else:
+            raise TypeError("Not valid arguments for Stereonet arc")
 
     @staticmethod
     def create_cone(*args, **kwargs):

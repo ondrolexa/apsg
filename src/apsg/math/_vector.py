@@ -124,10 +124,9 @@ class Vector:
 
         Note that for non-unit vectors the interpolation is not uniform
         """
-        theta = self.angle(other)
-        return type(self)(
-            self * sind((1 - t) * theta) + other * sind(t * theta)
-        ) / sind(theta)
+        a, b = Vector3(self), Vector3(other)
+        theta = a.angle(b)
+        return type(self)(a * sind((1 - t) * theta) + b * sind(t * theta)) / sind(theta)
 
     @property
     def x(self):

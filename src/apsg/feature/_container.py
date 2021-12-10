@@ -209,7 +209,7 @@ class Vector3Set(FeatureSet):
 
         return np.asarray([e.is_upper() for e in self])
 
-    def R(self, normalized=False):
+    def R(self, mean=False):
         """Return resultant of data in ``FeatureSet`` object.
 
         Resultant is of same type as features in ``FeatureSet``. Note
@@ -218,10 +218,10 @@ class Vector3Set(FeatureSet):
         data orientation tensor analysis will give you right answer.
 
         Args:
-            normalized: if True returns mean resultant. Default False
+            mean: if True returns mean resultant. Default False
         """
         R = sum(self)
-        if normalized:
+        if mean:
             R = R / len(self)
         return R
 
@@ -247,7 +247,7 @@ class Vector3Set(FeatureSet):
 
         var = 1 - |R| / n
         """
-        return 1 - abs(self.normalized().R(normalized=True))
+        return 1 - abs(self.normalized().R(mean=True))
 
     def delta(self):
         """Cone angle containing ~63% of the data in degrees.
@@ -255,7 +255,7 @@ class Vector3Set(FeatureSet):
         For enough large sample it approach angular standard deviation (csd)
         of Fisher statistics
         """
-        return acosd(abs(self.R(normalized=True)))
+        return acosd(abs(self.R(mean=True)))
 
     def rdegree(self):
         """Degree of preffered orientation of vectors in ``FeatureSet``.

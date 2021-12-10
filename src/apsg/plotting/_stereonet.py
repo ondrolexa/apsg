@@ -271,6 +271,14 @@ class StereoNet:
         except TypeError as err:
             print(err)
 
+    def arc(self, *args, **kwargs):
+        """Plot arc bewtween two vectors along great circle(s)"""
+        try:
+            artist = ArtistFactory.create_arc(*args, **kwargs)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
     def cone(self, *args, **kwargs):
         """Plot small circle(s) with given angle(s)"""
         try:
@@ -341,7 +349,7 @@ class StereoNet:
         x_lower, y_lower, x_upper, y_upper = self.proj.project_data_antipodal(
             *np.vstack(args).T
         )
-        if x_lower:
+        if len(x_lower) > 0:
             handles = self.ax.plot(x_lower, y_lower, **kwargs)
             for h in handles:
                 h.set_clip_path(self.primitive)
@@ -388,6 +396,33 @@ class StereoNet:
         handles = self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
         for h in handles:
             h.set_clip_path(self.primitive)
+        return handles
+
+    def _arc(self, *args, **kwargs):
+        X_lower, Y_lower = [], []
+        X_upper, Y_upper = [], []
+        antipodal = any([type(arg) is Vector3 for arg in args])
+        u_kwargs = kwargs.copy()
+        u_kwargs["ls"] = "--"
+        u_kwargs["label"] = "_upper"
+        for arg1, arg2 in zip(args[:-1], args[1:]):
+            steps = max(2, int(arg1.angle(arg2)))
+            # plot on lower
+            x_lower, y_lower, x_upper, y_upper = self.proj.project_data_antipodal(
+                *np.array([arg1.slerp(arg2, t) for t in np.linspace(0, 1, steps)]).T
+            )
+            X_lower.append(np.hstack((x_lower, np.nan)))
+            Y_lower.append(np.hstack((y_lower, np.nan)))
+            X_upper.append(np.hstack((x_upper, np.nan)))
+            Y_upper.append(np.hstack((y_upper, np.nan)))
+        handles = self.ax.plot(np.hstack(X_lower), np.hstack(Y_lower), **kwargs)
+        for h in handles:
+            h.set_clip_path(self.primitive)
+        if antipodal:
+            u_kwargs["color"] = h.get_color()
+            handles_2 = self.ax.plot(np.hstack(X_upper), np.hstack(Y_upper), **u_kwargs)
+            for h in handles_2:
+                h.set_clip_path(self.primitive)
         return handles
 
     def _scatter(self, *args, **kwargs):

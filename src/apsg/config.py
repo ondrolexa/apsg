@@ -31,6 +31,9 @@ apsg_conf = dict(
     default_great_circle_kwargs=dict(
         alpha=None, color=None, ls="-", lw=1.5, mec=None, mew=1, mfc=None, ms=2,
     ),
+    default_arc_kwargs=dict(
+        alpha=None, color=None, ls="-", lw=1, mec=None, mew=1, mfc=None, ms=2,
+    ),
     default_scatter_kwargs=dict(
         alpha=None,
         s=None,

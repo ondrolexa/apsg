@@ -13,6 +13,7 @@ from apsg.helpers._helper import eformat
 from apsg.math._vector import Vector3
 from apsg.feature._geodata import Lineation, Foliation, Pair
 from apsg.feature._container import Vector3Set
+from apsg.feature._tensor import DeformationGradient3
 from apsg.plotting._stereonet import StereoNet
 
 __all__ = ("Core",)
@@ -385,7 +386,7 @@ class Core(object):
     @property
     def geo(self):
         "Returns `Vector3Set` of vectors in in-situ coordinates system"
-        H = self.sref.H(self.gref)
+        H = DeformationGradient3.from_two_pairs(self.sref, self.gref)
         return self.V.transform(H)
 
     @property
@@ -397,15 +398,17 @@ class Core(object):
 
     def pca(self, kind="geo", origin=False):
         data = getattr(self, kind)
-        if origin:
-            data.append(Vector3([0, 0, 0]))
-        r = data.R / len(data)
-        dv = Vector3Set([v - r for v in data])
-        ot = dv.ortensor
-        pca = ot.eigenvects[0]
-        if pca.angle(r) > 90:
-            pca = -pca
-        mad = np.degrees(np.arctan(np.sqrt((ot.E2 + ot.E3) / ot.E1)))
+        if not origin:
+            r = data.R(mean=True) / len(data)
+            data = Vector3Set([v - r for v in data])
+        ot = data.ortensor()
+        if ot.shape > 1:
+            pca = ot.V1
+            if pca.angle(r) > 90:
+                pca = -pca
+        else:
+            pca = ot.V3
+        mad = ot.MAD()
         return pca, mad
 
     def zijderveld_plot(self, kind="geo"):
