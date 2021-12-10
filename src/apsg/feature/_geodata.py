@@ -114,16 +114,16 @@ class Pair:
 
     There are different way to create ``Pair`` object:
 
-    Pair() - create default Pair with fol(0,0) and lin(0,0)
-    Pair(p) - p could be Pair
+    pair() - create default Pair with fol(0,0) and lin(0,0)
+    pair(p) - p could be Pair
             - p could be tuple of (fazi, finc, lazi, linc)
             - p could be tuple of (fx, fy ,fz, lx, ly, lz)
-    Pair(f, l) - f and l could be Vector3 like objects, e.g. Foliation and Lineation
-    Pair(fazi, finc, lazi, linc) - four numerical arguments defining fol(fazi, finc)
+    pair(f, l) - f and l could be Vector3 like objects, e.g. Foliation and Lineation
+    pair(fazi, finc, lazi, linc) - four numerical arguments defining fol(fazi, finc)
                                    and lin(lazi, linc)
 
     Example:
-        >>> p = Pair(140, 30, 110, 26)
+        >>> p = pair(140, 30, 110, 26)
 
     """
 
@@ -213,7 +213,7 @@ class Pair:
             phi (float): angle of rotation in degrees
 
         Example:
-            >>> p = Pair(fol(140, 30), lin(110, 26))
+            >>> p = pair(fol(140, 30), lin(110, 26))
             >>> p.rotate(lin(40, 50), 120)
             P:210/83-287/60
 
@@ -253,7 +253,7 @@ class Pair:
 
         Example:
           >>> F = [[1, 0, 0], [0, 1, 1], [0, 0, 1]]
-          >>> p = Pair(90, 90, 0, 50)
+          >>> p = pair(90, 90, 0, 50)
           >>> p.transform(F)
           P:90/45-50/37
 
@@ -277,13 +277,13 @@ class Fault(Pair):
 
     There are different way to create ``Fault`` object:
 
-    Pair() - create default Pair with fol(0,0) and lin(0,0)
-    Pair(p) - p could be Pair
-            - p could be tuple of (fazi, finc, lazi, linc)
-            - p could be tuple of (fx, fy ,fz, lx, ly, lz)
-    Pair(f, l) - f and l could be Vector3 like objects, e.g. Foliation and Lineation
-    Pair(fazi, finc, lazi, linc) - four numerical arguments defining fol(fazi, finc)
-                                   and lin(lazi, linc)
+    fault() - create default Pair with fol(0,0) and lin(0,0)
+    fault(p) - p could be Fault
+             - p could be tuple of (fazi, finc, lazi, linc, sense)
+             - p could be tuple of (fx, fy ,fz, lx, ly, lz)
+    fault(f, l) - f and l could be Vector3 like objects, e.g. Foliation and Lineation
+    fault(fazi, finc, lazi, linc, sense) - four numerical arguments defining fol(fazi, finc)
+                                           lin(lazi, linc) and sense
 
         fazi (float): dip azimuth of planar feature in degrees
         finc (float): dip of planar feature in degrees
@@ -292,7 +292,7 @@ class Fault(Pair):
         sense (float): sense of movement -/+1 hanging-wall up/down reverse/normal
 
     Example:
-        >>> p = Fault(140, 30, 110, 26, -1)
+        >>> p = fault(140, 30, 110, 26, -1)
 
     """
 
@@ -380,22 +380,6 @@ class Fault(Pair):
         lvec, p = Vector3.random(), Vector3.random()
         fvec = lvec.cross(p)
         return cls(fvec, lvec, random.choice([-1, 1]))
-
-    @ensure_arguments(Vector3)
-    def rotate(self, axis, phi):
-        """Rotates ``Pair`` by angle `phi` about `axis`.
-
-        Args:
-            axis (``Vector3``): axis of rotation
-            phi (float): angle of rotation in degrees
-
-        Example:
-            >>> p = Pair(fol(140, 30), lin(110, 26))
-            >>> p.rotate(lin(40, 50), 120)
-            P:210/83-287/60
-
-        """
-        return type(self)(self.fvec.rotate(axis, phi), self.lvec.rotate(axis, phi))
 
     @property
     def georax(self):

@@ -320,20 +320,19 @@ class Vector3Set(FeatureSet):
 
     @classmethod
     def from_csv(cls, filename, acol=0, icol=1):
-        """Create ``FeatureSet`` object from csv file
+        """Create ``FeatureSet`` object from csv file of azimuths and inclinations
 
         Args:
           filename (str): name of CSV file to load
 
         Keyword Args:
-          typ: Type of objects. Default ``Lin``
           acol (int or str): azimuth column (starts from 0). Default 0
           icol (int or str): inclination column (starts from 0). Default 1
             When acol and icol are strings they are used as column headers.
 
         Example:
-          >>> gf = FoliationSet.from_csv('file1.csv')                 #doctest: +SKIP
-          >>> gl = LineationSet.from_csv('file2.csv', acol=1, icol=2) #doctest: +SKIP
+          >>> gf = folset.from_csv('file1.csv')                 #doctest: +SKIP
+          >>> gl = linset.from_csv('file2.csv', acol=1, icol=2) #doctest: +SKIP
 
         """
         from os.path import basename
@@ -363,7 +362,7 @@ class Vector3Set(FeatureSet):
         return cls.from_array(azi, inc, name=basename(filename))
 
     def to_csv(self, filename, delimiter=","):
-        """Save ``Group`` object to csv file
+        """Save ``FeatureSet`` object to csv file of azimuths and inclinations
 
         Args:
           filename (str): name of CSV file to save.
@@ -388,22 +387,41 @@ class Vector3Set(FeatureSet):
 
     @classmethod
     def from_array(cls, azis, incs, name="Default"):
-        """Create ``Feature`` object from arrays of azimuths and inclinations
+        """Create ``FeatureSet`` object from arrays of azimuths and inclinations
 
         Args:
           azis: list or array of azimuths
           incs: list or array of inclinations
 
         Keyword Args:
-          typ: type of data. ``Fol`` or ``Lin``
-          name: name of ``Group`` object. Default is 'Default'
+          name: name of ``FeatureSet`` object. Default is 'Default'
 
         Example:
-          >>> f = FoliationSet.from_array([120,130,140], [10,20,30])
-          >>> l = LineationSet.from_array([120,130,140], [10,20,30])
+          >>> f = folset.from_array([120,130,140], [10,20,30])
+          >>> l = linset.from_array([120,130,140], [10,20,30])
         """
         dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
         return cls([dtype_cls(azi, inc) for azi, inc in zip(azis, incs)], name=name)
+
+    @classmethod
+    def from_xyz(cls, x, y, z, name="Default"):
+        """Create ``FeatureSet`` object from arrays of x, y and z components
+
+        Args:
+          x: list or array of x components
+          y: list or array of y components
+          z: list or array of z components
+
+        Keyword Args:
+          name: name of ``FeatureSet`` object. Default is 'Default'
+
+        Example:
+          >>> v = vecset.from_xyz([-0.4330127, -0.4330127, -0.66793414],
+                                  [0.75, 0.25, 0.60141061],
+                                  [0.5, 0.8660254, 0.43837115])
+        """
+        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
+        return cls([dtype_cls(xx, yy, zz) for xx, yy, zz in zip(x, y, z)], name=name)
 
     @classmethod
     def random_normal(cls, n=100, position=Vector3(0, 0, 1), sigma=20, name="Default"):
@@ -417,9 +435,9 @@ class Vector3Set(FeatureSet):
 
         Example:
           >>> np.random.seed(58463123)
-          >>> g = Group.randn_lin(100, Lin(120, 40))
-          >>> g.R
-          L:118/42
+          >>> l = linset.random_normal(100, lin(120, 40))
+          >>> l.R
+          L:120/39
 
         """
         data = []
@@ -447,7 +465,7 @@ class Vector3Set(FeatureSet):
           name: name of dataset. Default is 'Default'
 
         Example:
-          >>> l = LineationSet.random_fisher(position=lin(120,50))
+          >>> l = linset.random_fisher(position=lin(120,50))
         """
         dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
         dc = vonMisesFisher(position, kappa, n)
@@ -468,7 +486,7 @@ class Vector3Set(FeatureSet):
           name: name of dataset. Default is 'Default'
 
         Example:
-          >>> l = LineationSet.random_fisher2(position=lin(120,50))
+          >>> l = linset.random_fisher2(position=lin(120,50))
         """
         orig = Vector3(0, 0, 1)
         ax = orig.cross(position)
@@ -494,7 +512,7 @@ class Vector3Set(FeatureSet):
 
         Example:
           >>> p = pair(150, 40, 150, 40)
-          >>> l = LineationSet.random_kent(p, n=300, kappa=30)
+          >>> l = linset.random_kent(p, n=300, kappa=30)
         """
         assert issubclass(type(p), Pair), "Argument must be Pair object."
         dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
@@ -516,9 +534,9 @@ class Vector3Set(FeatureSet):
           name: name of dataset. Default is 'Default'
 
         Example:
-          >>> v = Group.sfs_vec3(300)
-          >>> v.ortensor.eigenvals
-          (0.33346453471636356, 0.33333474915201167, 0.3332007161316248)
+          >>> v = vecset.uniform_sfs(300)
+          >>> v.ortensor().eigenvalues()
+          (0.3334645347163635, 0.33333474915201167, 0.33320071613162483)
         """
         dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
         phi = (1 + np.sqrt(5)) / 2
@@ -541,9 +559,9 @@ class Vector3Set(FeatureSet):
           name: name of dataset. Default is 'Default'
 
         Example:
-          >>> v = Group.gss_vec3(300)
-          >>> v.ortensor.eigenvals
-          (0.3333568856957158, 0.3333231511543691, 0.33331996314991513)
+          >>> v = vecset.uniform_gss(300)
+          >>> v.ortensor().eigenvalues()
+          (0.33335688569571587, 0.33332315115436933, 0.33331996314991513)
         """
         dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
         inc = np.pi * (3 - np.sqrt(5))
