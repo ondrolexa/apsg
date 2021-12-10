@@ -53,7 +53,17 @@ class FeatureSet:
         return len(self.data)
 
     def __getitem__(self, key):
-        return self.data[key]
+        if isinstance(key, slice):
+            return type(self)(self.data[key])
+        elif isinstance(key, int):
+            return self.data[key]
+        elif isinstance(key, np.ndarray):  # fancy indexing
+            idxs = np.arange(len(self.data), dtype=int)[key]
+            return type(self)([self.data[ix] for ix in idxs])
+        else:
+            raise TypeError(
+                "Wrong index. Only slice, int and numpy array for fancy indexing are allowed."
+            )
 
     def __iter__(self):
         return iter(self.data)
