@@ -6,7 +6,8 @@ API to read data from PySDB database
 
 import sqlite3
 from os.path import isfile
-from apsg.feature import Foliation, Lineation, Group
+from apsg.feature._geodata import Lineation, Foliation
+from apsg.feature._container import LineationSet, FoliationSet
 
 
 class SDB(object):
@@ -219,7 +220,7 @@ class SDB(object):
         else:
             raise ValueError("Keyword structs must be list or string.")
 
-    def group(self, structs, **kwargs):
+    def getset(self, structs, **kwargs):
         """Method to retrieve data from SDB database to apsg.Group
 
         Args:
@@ -241,12 +242,12 @@ class SDB(object):
             else:
                 name = " ".join(structs)
             if self.is_planar(structs):
-                res = Group(
+                res = FoliationSet(
                     [Foliation(el["azimuth"], el["inclination"]) for el in sel],
                     name=name,
                 )
             else:
-                res = Group(
+                res = LineationSet(
                     [Lineation(el["azimuth"], el["inclination"]) for el in sel],
                     name=name,
                 )
