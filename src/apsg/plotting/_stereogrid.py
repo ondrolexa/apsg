@@ -63,10 +63,10 @@ class StereoGrid:
         return self.values.max()
 
     def min_at(self):
-        return Vector3(self.grid[self.values.argmin()])
+        return Lineation(self.grid[self.values.argmin()])
 
     def max_at(self):
-        return Vector3(self.grid[self.values.argmax()])
+        return Lineation(self.grid[self.values.argmax()])
 
     def calculate_density(self, features, **kwargs):
         """Calculate density of elements from ``FeatureSet`` object.
@@ -245,4 +245,3 @@ class StereoGrid:
             self.apply_func(angmech2, faults)
         else:
             self.apply_func(angmech, faults)
-        self.contourf(**kwargs)

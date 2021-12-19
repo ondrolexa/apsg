@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 from apsg.config import apsg_conf
-from apsg.helpers._math import sind, cosd, acosd
+from apsg.helpers._math import sind, cosd, acosd, atan2d
 from apsg.helpers._notation import (
     geo2vec_linear,
     vec2geo_linear_signed,
@@ -143,6 +143,16 @@ class Vector2(Vector):
     def __init__(self, *args):
         if len(args) == 1 and np.asarray(args[0]).shape == Vector2.__shape__:
             coords = args[0]
+        elif len(args) == 1:
+            if isinstance(args[0], str):
+                if args[0].lower() == "x":
+                    coords = (1, 0)
+                elif args[0].lower() == "y":
+                    coords = (0, 1)
+                else:
+                    raise TypeError(f"Not valid arguments for {type(self).__name__}")
+            else:
+                coords = sind(args[0]), cosd(args[0])
         elif len(args) == 2:
             coords = args
         else:
@@ -168,6 +178,10 @@ class Vector2(Vector):
     uv = normalized
 
     shape = __shape__
+
+    @property
+    def direction(self):
+        return atan2d(self.x, self.y)
 
     @ensure_first_arg_same
     def dot(self, other):
@@ -208,7 +222,7 @@ class Vector2(Vector):
         """
         Random 2D vector
         """
-        return cls(np.random.randn(2)).normalized()
+        return cls(360 * np.random.rand())
 
     @ensure_first_arg_same
     def rotate(self, axis, theta):
@@ -251,7 +265,7 @@ class Vector2(Vector):
         return type(self)(r)
 
 
-class Axial2(Vector2):
+class Axial2(Vector2):  # Do we need it?
     @ensure_first_arg_same
     def __eq__(self, other):
         return np.allclose(self, other) or np.allclose(self, -other)
@@ -298,6 +312,8 @@ class Vector3(Vector):
                     coords = (0, 0, 1)
                 else:
                     raise TypeError(f"Not valid arguments for {type(self).__name__}")
+            else:
+                raise TypeError(f"Not valid arguments for {type(self).__name__}")
         elif len(args) == 2:
             coords = geo2vec_linear(*args)
         elif len(args) == 3:

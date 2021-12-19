@@ -20,7 +20,7 @@ import numpy as np
 
 from apsg.config import apsg_conf
 from apsg import vec3, fol, lin, fault, pair
-from apsg import vecset, linset, folset
+from apsg import vec3set, linset, folset
 from apsg import defgrad
 
 
@@ -540,11 +540,11 @@ class Testfoliation:
 
 class TestVector3Set:
     def test_rdegree_under_rotation(self):
-        g = vecset.random_fisher()
+        g = vec3set.random_fisher()
         assert np.allclose(g.rotate(lin(45, 45), 90).rdegree(), g.rdegree())
 
     def test_resultant_rdegree(self):
-        g = vecset.from_array([45, 135, 225, 315], [45, 45, 45, 45])
+        g = vec3set.from_array([45, 135, 225, 315], [45, 45, 45, 45])
         c1 = g.R().uv() == vec3(0, 90)
         c2 = np.allclose(abs(g.R()), np.sqrt(8))
         c3 = np.allclose((g.rdegree() / 100 + 1) ** 2, 2)
@@ -552,11 +552,11 @@ class TestVector3Set:
 
     def test_group_type_error(self):
         with pytest.raises(Exception) as exc:
-            vecset([1, 2, 3])
+            vec3set([1, 2, 3])
             assert "Data must be instances of Vector3" == str(exc.exception)
 
     def test_centered_group(self):
-        g = vecset.random_fisher(position=lin(40, 50))
+        g = vec3set.random_fisher(position=lin(40, 50))
         gc = g.centered()
         el = gc.ortensor().eigenlins
         assert el[0] == vec3("x") and el[1] == vec3("y") and el[2] == vec3("z")

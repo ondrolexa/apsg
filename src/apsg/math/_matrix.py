@@ -29,7 +29,10 @@ class Matrix:
     def __repr__(self):
         n = apsg_conf["ndigits"]
         m = [[round(e, n) for e in row] for row in self._coefs]
-        return str(np.array(m))
+        return f"{type(self).__name__}\n{str(np.array(m))}"
+
+    def label(self):
+        return str(type(self).__name__)
 
     def __hash__(self):
         return hash((type(self).__name__,) + self._coefs)

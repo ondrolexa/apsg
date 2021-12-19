@@ -13,7 +13,7 @@ from apsg.helpers._helper import eformat
 from apsg.math._vector import Vector3
 from apsg.feature._geodata import Lineation, Foliation, Pair
 from apsg.feature._container import Vector3Set
-from apsg.feature._tensor import DeformationGradient3
+from apsg.feature._tensor3 import DeformationGradient3
 from apsg.plotting._stereonet import StereoNet
 
 __all__ = ("Core",)
@@ -71,7 +71,7 @@ class Core(object):
 
     def __getitem__(self, key):
         """Group fancy indexing"""
-        if isinstance(key, int):
+        if np.issubdtype(type(key), np.integer):
             key = self.steps[key]
         if isinstance(key, slice):
             res = deepcopy(self)

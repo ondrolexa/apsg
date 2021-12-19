@@ -8,7 +8,7 @@ import numpy as np
 
 from apsg.math import Matrix3
 from apsg import vec3
-from apsg import lin, fol, vecset
+from apsg import lin, fol, vec3set
 from apsg import defgrad, velgrad, stress, ortensor
 
 # Matrix3 type is value object => structural equality
@@ -29,7 +29,7 @@ def test_that_tensors_are_not_equal_and_has_different_hash(helpers):
 
 
 def test_tensor_repr_and_str():
-    assert "[[2. 1. 1.]\n [1. 2. 1.]\n [1. 1. 2.]]" == str(
+    assert "Matrix3\n[[2. 1. 1.]\n [1. 2. 1.]\n [1. 1. 2.]]" == str(
         Matrix3([[2, 1, 1], [1, 2, 1], [1, 1, 2]])
     )
 
@@ -39,7 +39,7 @@ def test_tensor_repr_and_str():
 
 def test_ortensor_uniform():
     f = fol.random()
-    g = vecset([f.pole(), f.rake(-45), f.rake(45)])
+    g = vec3set([f.pole(), f.rake(-45), f.rake(45)])
     ot = ortensor.from_features(g)
     assert np.allclose(ot.eigenvalues(), np.ones(3) / 3)
 

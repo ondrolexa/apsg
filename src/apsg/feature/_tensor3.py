@@ -18,27 +18,27 @@ class DeformationGradient3(Matrix3):
           3x3 2D array. This includes lists, tuples and ndarrays.
 
     Returns:
-      ``DefGrad`` object
+      ``DeformationGradient3`` object
 
     Example:
-      >>> F = DeformationGradient3(np.diag([2, 1, 0.5]))
+      >>> F = defgrad(np.diag([2, 1, 0.5]))
     """
 
     @classmethod
     def from_ratios(cls, Rxy=1, Ryz=1):
-        """Return isochoric ``DefGrad`` tensor with axial stretches defined by strain ratios.
+        """Return isochoric ``DeformationGradient3`` tensor with axial stretches defined by strain ratios.
         Default is identity tensor.
 
         Keyword Args:
           Rxy, Ryz (float): strain ratios
 
         Example:
-          >>> F = DefGrad.from_ratios(Rxy=2, Ryz=3)
+          >>> F = defgrad.from_ratios(Rxy=2, Ryz=3)
           >>> F
-          DefGrad:
-          [[2.28942849 0.         0.        ]
-           [0.         1.14471424 0.        ]
-           [0.         0.         0.38157141]]
+          DeformationGradient3
+          [[2.289 0.    0.   ]
+           [0.    1.145 0.   ]
+           [0.    0.    0.382]]
 
         """
 
@@ -63,7 +63,7 @@ class DeformationGradient3(Matrix3):
           theta: Angle of rotation in degrees
 
         Example:
-          >>> F = DeformationGradient3.from_axis(lin(120, 30), 45)
+          >>> F = defgrad.from_axisangle(lin(120, 30), 45)
         """
 
         x, y, z = vector.uv()
@@ -91,7 +91,7 @@ class DeformationGradient3(Matrix3):
           v2: ``Vector3`` like object
 
         Example:
-          >>> F = DeformationGradient3.from_two_vectors(lin(120, 30), lin(210, 60))
+          >>> F = defgrad.from_two_vectors(lin(120, 30), lin(210, 60))
         """
         return cls.from_axisangle(v1.cross(v2), v1.angle(v2))
 
@@ -113,7 +113,7 @@ class DeformationGradient3(Matrix3):
         Example:
             >>> p1 = pair(58, 36, 81, 34)
             >>> p2 = pair(217,42, 162, 27)
-            >>> R = DeformationGradient3.from_two_pairs(p1, p2)
+            >>> R = defgrad.from_two_pairs(p1, p2)
             >>> p1.transform(R) == p2
             True
 
@@ -135,24 +135,24 @@ class DeformationGradient3(Matrix3):
 
     @property
     def R(self):
-        """Return rotation part of ``DefGrad`` from polar decomposition."""
+        """Return rotation part of ``DeformationGradient3`` from polar decomposition."""
         R, _ = spla.polar(self)
         return type(self)(R)
 
     @property
     def U(self):
-        """Return stretching part of ``DefGrad`` from right polar decomposition."""
+        """Return stretching part of ``DeformationGradient3`` from right polar decomposition."""
         _, U = spla.polar(self, "right")
         return type(self)(U)
 
     @property
     def V(self):
-        """Return stretching part of ``DefGrad`` from left polar decomposition."""
+        """Return stretching part of ``DeformationGradient3`` from left polar decomposition."""
         _, V = spla.polar(self, "left")
         return type(self)(V)
 
     def axisangle(self):
-        """Return rotation part of ``DefGrad`` axis, angle tuple."""
+        """Return rotation part of ``DeformationGradient3`` axis, angle tuple."""
         R = self.R
         w, W = np.linalg.eig(R.T)
         i = np.where(abs(np.real(w) - 1.0) < 1e-8)[0]
@@ -171,7 +171,7 @@ class DeformationGradient3(Matrix3):
         return axis, angle
 
     def velgrad(self, time=1):
-        """Return ``VelGrad`` for given time"""
+        """Return ``VelocityGradient3`` for given time"""
         from scipy.linalg import logm
 
         return VelocityGradient3(logm(np.asarray(self)) / time)
@@ -189,17 +189,17 @@ class VelocityGradient3(Matrix3):
       ``VelocityGradient3`` object
 
     Example:
-      >>> L = VelocityGradient3(np.diag([0.1, 0, -0.1]))
+      >>> L = velgrad(np.diag([0.1, 0, -0.1]))
     """
 
     def defgrad(self, time=1, steps=1):
         """
-        Return ``DefGrad`` tensor accumulated after given time.
+        Return ``DeformationGradient3`` tensor accumulated after given time.
 
         Keyword Args:
             time (float): time of deformation. Default 1
             steps (int): when bigger than 1, will return a list
-                         of ``DefGrad`` tensors for each timestep.
+                         of ``DeformationGradient3`` tensors for each timestep.
         """
         from scipy.linalg import expm
 
@@ -227,8 +227,6 @@ class VelocityGradient3(Matrix3):
 
 
 class Tensor3(Matrix3):
-    def __repr__(self):
-        return f"{type(self).__name__}\n" + Matrix3.__repr__(self)
 
     @property
     def eigenlins(self):
@@ -268,7 +266,7 @@ class Stress3(Tensor3):
       ``Stress3`` object
 
     Example:
-      >>> S = Stress3([[-8, 0, 0],[0, -5, 0],[0, 0, -1]])
+      >>> S = stress([[-8, 0, 0],[0, -5, 0],[0, 0, -1]])
     """
 
     @classmethod
@@ -282,12 +280,12 @@ class Stress3(Tensor3):
           xx, xy, xz, yy, yz, zz (float): tensor components
 
         Example:
-          >>> S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+          >>> S = stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
           >>> S
-          Stress:
-          [[-5  1  0]
-           [ 1 -2  0]
-           [ 0  0 10]]
+          Stress3
+          [[-5.  1.  0.]
+           [ 1. -2.  0.]
+           [ 0.  0. 10.]]
 
         """
 
@@ -361,13 +359,13 @@ class Stress3(Tensor3):
           n: normal given as ``Vector3`` or ``Foliation`` object
 
         Example:
-          >>> S = Stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+          >>> S = stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
           >>> S.cauchy(fol(160, 30))
-          V(-2.520, 0.812, 8.660)
+          Vector3(-2.52, 0.812, 8.66)
 
         """
 
-        return Vector3(np.dot(self, n))
+        return Vector3(np.dot(self, n.normalized()))
 
     def fault(self, n):
         """
@@ -377,7 +375,7 @@ class Stress3(Tensor3):
           n: normal given as ``Vector3`` or ``Foliation`` object
 
         Example:
-          >>> S = Stress.from_comp(xx=-5, yy=-2, zz=10, xy=8)
+          >>> S = stress.from_comp(xx=-5, yy=-2, zz=10, xy=8)
           >>> S.fault(fol(160, 30))
           F:160/30-141/29 +
 
@@ -426,22 +424,18 @@ class Ellipsoid(Tensor3):
       ``Ellipsoid`` object
 
     Example:
-      >>> E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
+      >>> E = ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
       >>> E
-      Ellipsoid:  Kind: LLS
-      (E1:2.828,E2:1.414,E3:1)
-      [[8 0 0]
-       [0 2 0]
-       [0 0 1]]
+      Ellipsoid
+      [[8. 0. 0.]
+       [0. 2. 0.]
+       [0. 0. 1.]]
+      (λ1:2.83, λ2:1.41, λ3:1)
 
     """
 
     def __repr__(self) -> str:
-        return (
-            f"{type(self).__name__} {self.kind}\n"
-            + f"(E1:{self.E1:.3g},E2:{self.E2:.3g},E3:{self.E3:.3g})\n"
-            + Matrix3.__repr__(self)
-        )
+        return f"{Matrix3.__repr__(self)}\n(λ1:{self.lambda1:.3g}, λ2:{self.lambda2:.3g}, λ3:{self.lambda3:.3g})"
 
     @classmethod
     def from_defgrad(cls, F, form="left", **kwargs) -> "Ellipsoid":
@@ -625,92 +619,6 @@ class Ellipsoid(Tensor3):
             else 0
         )
 
-
-class OrientationTensor3(Ellipsoid):
-    """
-    Represents an orientation tensor, which characterize data distribution
-    using eigenvalue method. See (Watson 1966, Scheidegger 1965).
-
-    See following methods and properties for additional operations.
-
-    Args:
-      matrix (3x3 array_like): Input data, that can be converted to
-             3x3 2D matrix. This includes lists, tuples and ndarrays.
-             Array could be also ``Group`` (for backward compatibility)
-
-    Returns:
-      ``OrientationTensor3`` object
-
-    Example:
-      >>> ot = OrientationTensor3([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
-      >>> ot
-      Ortensor:  Kind: LLS
-      (E1:8,E2:2,E3:1)
-      [[8 0 0]
-       [0 2 0]
-       [0 0 1]]
-
-    """
-
-    def __repr__(self) -> str:
-        return super().__repr__()
-
-    @classmethod
-    def from_features(cls, g) -> "OrientationTensor3":
-        """
-        Return ``Ortensor`` of data in ``Group``
-
-        Args:
-            g: ``Group`` of ``Vector3``, ``Lin`` or ``Foliation``
-
-        Example:
-          >>> g = Group.examples('B2')
-          >>> ot = Ortensor.from_group(g)
-          >>> ot
-          Ortensor: B2 Kind: L
-          (E1:0.9825,E2:0.01039,E3:0.007101)
-          [[ 0.19780807 -0.13566589 -0.35878837]
-           [-0.13566589  0.10492993  0.25970594]
-           [-0.35878837  0.25970594  0.697262  ]]
-          >>> ot.eigenlins.data
-          [L:144/57, L:360/28, L:261/16]
-
-        """
-
-        return cls(np.dot(np.array(g).T, np.array(g)) / len(g))
-
-    @classmethod
-    def from_pairs(cls, p) -> "OrientationTensor3":
-        """
-        Return Lisle (19890``Ortensor`` of orthogonal data in ``PairSet``
-
-        Lisle, R. (1989). The Statistical Analysis of Orthogonal Orientation Data. The Journal of Geology, 97(3), 360-364.
-
-        Args:
-            p: ``PairSet``
-
-        Example:
-          >>> p = PairSet([Pair(109, 82, 21, 10),
-                           Pair(118, 76, 30, 11),
-                           Pair(97, 86, 7, 3),
-                           Pair(109, 75, 23, 14) ])
-          >>> ot = Ortensor.from_pairs(p)
-          >>> ot
-          Ortensor: Default Kind: LS
-          (E1:0.956,E2:0.00473,E3:-0.9608)
-          [[ 0.7307853   0.57519626  0.08621956]
-           [ 0.57519626 -0.72530456  0.22401935]
-           [ 0.08621956  0.22401935 -0.00548074]]
-          >>> ot.eigenfols[2]
-          S:108/79
-          >>> ot.eigenlins[0]
-          L:20/9
-
-        """
-        Tx = np.dot(np.array(p.lin).T, np.array(p.lin)) / len(p)
-        Tz = np.dot(np.array(p.fol).T, np.array(p.fol)) / len(p)
-        return cls(Tx - Tz)
-
     @property
     def P(self) -> float:
         """
@@ -749,7 +657,7 @@ class OrientationTensor3(Ellipsoid):
         Intensity index (Lisle, 1985).
         """
 
-        return 7.5 * np.sum((self._evals - 1 / 3) ** 2)
+        return 7.5 * np.sum((np.array(self.eigenvalues()) - 1 / 3) ** 2)
 
     @property
     def aMAD_l(self) -> float:
@@ -774,9 +682,9 @@ class OrientationTensor3(Ellipsoid):
         """
 
         if self.shape > 1:
-            return self.aMADl
+            return self.aMAD_l
         else:
-            return self.aMADp
+            return self.aMAD_p
 
     @property
     def MAD_l(self) -> float:
@@ -795,6 +703,83 @@ class OrientationTensor3(Ellipsoid):
         """
 
         if self.shape > 1:
-            return self.MADl
+            return self.MAD_l
         else:
-            return self.MADp
+            return self.MAD_p
+
+
+class OrientationTensor3(Ellipsoid):
+    """
+    Represents an orientation tensor, which characterize data distribution
+    using eigenvalue method. See (Watson 1966, Scheidegger 1965).
+
+    See following methods and properties for additional operations.
+
+    Args:
+      matrix (3x3 array_like): Input data, that can be converted to
+             3x3 2D matrix. This includes lists, tuples and ndarrays.
+             Array could be also ``Group`` (for backward compatibility)
+
+    Returns:
+      ``OrientationTensor3`` object
+
+    Example:
+      >>> ot = ortensor([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
+      >>> ot
+      OrientationTensor3
+      [[8. 0. 0.]
+       [0. 2. 0.]
+       [0. 0. 1.]]
+      (λ1:2.83, λ2:1.41, λ3:1)
+
+    """
+
+    @classmethod
+    def from_features(cls, g) -> "OrientationTensor3":
+        """
+        Return ``Ortensor`` of data in ``Group``
+
+        Args:
+            g: ``Group`` of ``Vector3``, ``Lin`` or ``Foliation``
+
+        Example:
+          >>> g = linset.random_fisher(position=lin(120,50))
+          >>> ot = ortensor.from_features(g)
+          >>> ot
+          OrientationTensor3
+          [[ 0.142 -0.151 -0.212]
+           [-0.151  0.326  0.37 ]
+           [-0.212  0.37   0.532]]
+          (λ1:0.95, λ2:0.241, λ3:0.2)
+          >>> ot.eigenlins
+          (L:120/49, L:216/5, L:310/40)
+
+        """
+
+        return cls(np.dot(np.array(g).T, np.array(g)) / len(g))
+
+    @classmethod
+    def from_pairs(cls, p) -> "OrientationTensor3":
+        """
+        Return Lisle (19890``Ortensor`` of orthogonal data in ``PairSet``
+
+        Lisle, R. (1989). The Statistical Analysis of Orthogonal Orientation Data. The Journal of Geology, 97(3), 360-364.
+
+        Args:
+            p: ``PairSet``
+
+        Example:
+          >>> p = pairset([pair(109, 82, 21, 10),
+                           pair(118, 76, 30, 11),
+                           pair(97, 86, 7, 3),
+                           pair(109, 75, 23, 14)])
+          >>> ot = ortensor.from_pairs(p)
+          >>> ot
+          OrientationTensor3
+          [[ 0.731  0.575  0.086]
+           [ 0.575 -0.725  0.224]
+           [ 0.086  0.224 -0.005]]
+          (λ1:0.98, λ2:0.978, λ3:0.0688)
+
+        """
+        return cls(OrientationTensor3.from_features(p.lvec) - OrientationTensor3.from_features(p.fvec))

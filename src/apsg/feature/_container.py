@@ -1,12 +1,14 @@
 import sys
 from itertools import combinations
 import numpy as np
+from scipy.stats import vonmises
 
 from apsg.config import apsg_conf
-from apsg.math._vector import Vector3
+from apsg.helpers._math import sind, cosd, atan2d
+from apsg.math._vector import Vector2, Vector3
 from apsg.helpers._math import acosd
 from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
-from apsg.feature._tensor import OrientationTensor3
+from apsg.feature._tensor3 import OrientationTensor3, Ellipsoid
 from apsg.feature._statistics import KentDistribution, vonMisesFisher
 
 
@@ -18,7 +20,8 @@ class FeatureSet:
         assert all(
             [isinstance(obj, dtype_cls) for obj in data]
         ), f"Data must be instances of {type(self).__feature_type__}"
-        self.data = tuple(data)
+        # cast to correct instances
+        self.data = tuple([dtype_cls(d) for d in data])
         self.name = name
         self._cache = {}
 
@@ -35,7 +38,7 @@ class FeatureSet:
         }
 
     def label(self):
-        return str(self)
+        return self.name
 
     def __array__(self, dtype=None):
         return np.array(self.data, dtype=dtype)
@@ -55,7 +58,8 @@ class FeatureSet:
     def __getitem__(self, key):
         if isinstance(key, slice):
             return type(self)(self.data[key])
-        elif isinstance(key, int):
+        #elif isinstance(key, int):
+        elif np.issubdtype(type(key), np.integer):
             return self.data[key]
         elif isinstance(key, np.ndarray):  # fancy indexing
             idxs = np.arange(len(self.data), dtype=int)[key]
@@ -73,18 +77,6 @@ class FeatureSet:
             return type(self)(self.data + other.data, name=self.name)
         else:
             raise TypeError("Only {self.__name__} is allowed")
-
-    @property
-    def x(self):
-        return np.array([e.x for e in self])
-
-    @property
-    def y(self):
-        return np.array([e.y for e in self])
-
-    @property
-    def z(self):
-        return np.array([e.z for e in self])
 
     def rotate(self, axis, phi):
         """Rotate ``FeatureSet`` object `phi` degress about `axis`."""
@@ -108,19 +100,309 @@ class FeatureSet:
         """
         if size is None:
             size = len(self)
-        for sample in np.random.randint(0, len(self), (n, size)):
-            yield type(self)([self.data[ix] for ix in sample], name=self.name)
+        for i in range(n):
+            yield self[np.random.choice(range(len(self)), size)]
+
+
+class Vector2Set(FeatureSet):
+    __feature_type__ = "Vector2"
+
+    def __repr__(self):
+        return f"V2({len(self)}) {self.name}"
+
+    def __abs__(self):
+        """Returns array of euclidean norms"""
+        return np.asarray([abs(e) for e in self])
+
+    @property
+    def x(self):
+        return np.array([e.x for e in self])
+
+    @property
+    def y(self):
+        return np.array([e.y for e in self])
+
+    @property
+    def direction(self):
+        """Return arrays of direction angles"""
+        return np.asarray([e.direction for e in self]).T
+
+    def proj(self, vec):
+        """Return projections of all features in ``FeatureSet`` onto vector.
+
+        """
+        return type(self)([e.project() for e in self], name=self.name)
+
+    def dot(self, vec):
+        """Return array of dot products of all features in ``FeatureSet`` with vector.
+
+        """
+        return np.array([e.dot(vec) for e in self])
+
+    def cross(self, other=None):
+        """Return cross products of all features in ``FeatureSet``
+
+        Without arguments it returns cross product of all pairs in dataset.
+        If argument is ``FeatureSet`` of same length or single data object
+        element-wise cross-products are calculated.
+        """
+        res = []
+        if other is None:
+            res = [e.cross(f) for e, f in combinations(self.data, 2)]
+        elif issubclass(type(other), FeatureSet):
+            res = [e.cross(f) for e, f in zip(self, other)]
+        elif issubclass(type(other), Vector3):
+            res = [e.cross(other) for e in self]
+        else:
+            raise TypeError("Wrong argument type!")
+        return np.asarray(res)
+
+    __pow__ = cross
+
+    def angle(self, other=None):
+        """Return angles of all data in ``FeatureSet`` object
+
+        Without arguments it returns angles of all pairs in dataset.
+        If argument is ``FeatureSet`` of same length or single data object
+        element-wise angles are calculated.
+        """
+        res = []
+        if other is None:
+            res = [e.angle(f) for e, f in combinations(self.data, 2)]
+        elif issubclass(type(other), FeatureSet):
+            res = [e.angle(f) for e, f in zip(self, other)]
+        elif issubclass(type(other), Vector3):
+            res = [e.angle(other) for e in self]
+        else:
+            raise TypeError("Wrong argument type!")
+        return np.asarray(res)
+
+    def normalized(self):
+        """Return ``FeatureSet`` object with normalized (unit length) elements."""
+        return type(self)([e.normalized() for e in self], name=self.name)
+
+    uv = normalized
+
+    def transform(self, F, **kwargs):
+        """Return affine transformation of all features ``FeatureSet`` by matrix 'F'.
+
+        Args:
+          F: Transformation matrix. Should be array-like value e.g. ``DeformationGradient3``
+
+        Keyword Args:
+          norm: normalize transformed features. True or False. Default False
+
+        """
+        return type(self)([e.transform(F, **kwargs) for e in self], name=self.name)
+
+    def R(self, mean=False):
+        """Return resultant of data in ``FeatureSet`` object.
+
+        Resultant is of same type as features in ``FeatureSet``. Note
+        that ``Foliation`` and ``Lineation`` are axial in nature so
+        resultant can give other result than expected. Anyway for axial
+        data orientation tensor analysis will give you right answer.
+
+        Args:
+            mean: if True returns mean resultant. Default False
+        """
+        R = sum(self)
+        if mean:
+            R = R / len(self)
+        return R
+
+    def fisher_statistics(self):
+        """Fisher's statistics
+
+        fisher_statistics returns dictionary with keys:
+            `k`    estimated precision parameter,
+            `csd`  estimated angular standard deviation
+            `a95`  confidence limit
+        """
+        stats = {"k": np.inf, "a95": 0, "csd": 0}
+        N = len(self)
+        R = abs(self.normalized().R())
+        if N != R:
+            stats["k"] = (N - 1) / (N - R)
+            stats["csd"] = 81 / np.sqrt(stats["k"])
+            stats["a95"] = acosd(1 - ((N - R) / R) * (20 ** (1 / (N - 1)) - 1))
+        return stats
+
+    def var(self):
+        """Spherical variance based on resultant length (Mardia 1972).
+
+        var = 1 - |R| / n
+        """
+        return 1 - abs(self.normalized().R(mean=True))
+
+    def delta(self):
+        """Cone angle containing ~63% of the data in degrees.
+
+        For enough large sample it approach angular standard deviation (csd)
+        of Fisher statistics
+        """
+        return acosd(abs(self.R(mean=True)))
+
+    def rdegree(self):
+        """Degree of preffered orientation of vectors in ``FeatureSet``.
+
+        D = 100 * (2 * |R| - n) / n
+        """
+        N = len(self)
+        return 100 * (2 * abs(self.normalized().R()) - N) / N
+
+    def ortensor(self):
+        """Return orientation tensor ``Ortensor`` of ``Group``."""
+
+        return self._ortensor
+
+    @property
+    def _ortensor(self):
+        # if "ortensor" not in self._cache:
+        #     self._cache["ortensor"] = OrientationTensor2.from_features(self)
+        # return self._cache["ortensor"]
+        return NotImplemented
+
+    @property
+    def _svd(self):
+        # if "svd" not in self._cache:
+        #     self._cache["svd"] = np.linalg.svd(self._ortensor)
+        # return self._cache["svd"]
+        return NotImplemented
+
+    def centered(self, max_vertical=False):
+        """Rotate ``FeatureSet`` object to position that eigenvectors are parallel
+        to axes of coordinate system: E1||X (north-south), E2||X(east-west),
+        E3||X(vertical)
+
+        Args:
+            max_vertical: If True E1 is rotated to vertical. Default False
+
+        """
+        # if max_vertical:
+        #     return self.transform(self._svd[2]).rotate(Vector3(0, -1, 0), 90)
+        # else:
+        #     return self.transform(self._svd[2])
+        return NotImplemented
+
+    def halfspace(self):
+        """Change orientation of vectors in ``FeatureSet``, so all have angle<=90 with
+        resultant.
+
+        """
+        dtype_cls = getattr(sys.modules[__name__], type(self).__feature_type__)
+        v = Vector3Set(self)
+        v_data = list(v)
+        alldone = np.all(v.angle(v.R()) <= 90)
+        while not alldone:
+            ang = v.angle(v.R())
+            for ix, do in enumerate(ang > 90):
+                if do:
+                    v_data[ix] = -v_data[ix]
+                v = Vector3Set(v_data)
+                alldone = np.all(v.angle(v.R()) <= 90)
+        return type(self)([dtype_cls(vec) for vec in v], name=self.name)
+
+    def cluster(self):
+        """Return hierarchical clustering ``Cluster`` of ``Group``."""
+        return NotImplemented
+
+    @classmethod
+    def from_direction(cls, angles, name="Default"):
+        """Create ``FeatureSet`` object from arrays of direction angles
+
+        Args:
+          angles: list or angles
+
+        Keyword Args:
+          name: name of ``FeatureSet`` object. Default is 'Default'
+
+        Example:
+          >>> f = vec2set.from_angles([120,130,140,125, 132. 131])
+        """
+        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
+        return cls([dtype_cls(a) for a in angles], name=name)
+
+    @classmethod
+    def from_xy(cls, x, y, name="Default"):
+        """Create ``FeatureSet`` object from arrays of x and y components
+
+        Args:
+          x: list or array of x components
+          y: list or array of y components
+
+        Keyword Args:
+          name: name of ``FeatureSet`` object. Default is 'Default'
+
+        Example:
+          >>> v = vec2set.from_xy([-0.4330127, -0.4330127, -0.66793414],
+                                  [0.75, 0.25, 0.60141061])
+        """
+        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
+        return cls([dtype_cls(xx, yy) for xx, yy in zip(x, y)], name=name)
+
+    @classmethod
+    def random(cls, n=100, name="Default"):
+        """Method to create ``FeatureSet`` of features with uniformly distributed random orientation.
+
+        Keyword Args:
+          n: number of objects to be generated
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> np.random.seed(58463123)
+          >>> l = vec2set.random(100)
+
+        """
+        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
+        return cls([dtype_cls.random() for i in range(n)], name=name)
+
+    @classmethod
+    def random_vonmises(cls, n=100, position=0, kappa=5, name="Default"):
+        """Return ``FeatureSet`` of random vectors sampled from von Mises distribution
+        around center position with concentration kappa.
+
+        Args:
+          n: number of objects to be generated
+          position: mean orientation given as angle. Default 0
+          kappa: precision parameter of the distribution. Default 20
+          name: name of dataset. Default is 'Default'
+
+        Example:
+          >>> l = linset.random_fisher(position=lin(120,50))
+        """
+        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
+        angles = np.degrees(vonmises.rvs(kappa, loc=np.radians(position), size=n))
+        return cls([dtype_cls(a) for a in angles], name=name)
 
 
 class Vector3Set(FeatureSet):
     __feature_type__ = "Vector3"
 
     def __repr__(self):
-        return f"V({len(self)}) {self.name}"
+        return f"V3({len(self)}) {self.name}"
 
     def __abs__(self):
         """Returns array of euclidean norms"""
         return np.asarray([abs(e) for e in self])
+
+    @property
+    def x(self):
+        return np.array([e.x for e in self])
+
+    @property
+    def y(self):
+        return np.array([e.y for e in self])
+
+    @property
+    def z(self):
+        return np.array([e.z for e in self])
+
+    @property
+    def geo(self):
+        """Return arrays of azi and inc according to apsg_conf['notation']"""
+        azi, inc = np.asarray([e.geo for e in self]).T
+        return azi, inc
 
     def to_lin(self):
         """Return ``LineationSet`` object with all data converted to ``Lineation``."""
@@ -416,7 +698,7 @@ class Vector3Set(FeatureSet):
           name: name of ``FeatureSet`` object. Default is 'Default'
 
         Example:
-          >>> v = vecset.from_xyz([-0.4330127, -0.4330127, -0.66793414],
+          >>> v = vec3set.from_xyz([-0.4330127, -0.4330127, -0.66793414],
                                   [0.75, 0.25, 0.60141061],
                                   [0.5, 0.8660254, 0.43837115])
         """
@@ -499,7 +781,7 @@ class Vector3Set(FeatureSet):
         return cls.from_array(azi, inc, name=name).rotate(ax, ang)
 
     @classmethod
-    def random_kent(cls, p, n=500, kappa=20, beta=None, name="Default"):
+    def random_kent(cls, p, n=100, kappa=20, beta=None, name="Default"):
         """Return ``FeatureSet`` of random vectors sampled from Kent distribution
         (Kent, 1982) - The 5-parameter Fisher–Bingham distribution.
 
@@ -534,7 +816,7 @@ class Vector3Set(FeatureSet):
           name: name of dataset. Default is 'Default'
 
         Example:
-          >>> v = vecset.uniform_sfs(300)
+          >>> v = vec3set.uniform_sfs(300)
           >>> v.ortensor().eigenvalues()
           (0.3334645347163635, 0.33333474915201167, 0.33320071613162483)
         """
@@ -559,7 +841,7 @@ class Vector3Set(FeatureSet):
           name: name of dataset. Default is 'Default'
 
         Example:
-          >>> v = vecset.uniform_gss(300)
+          >>> v = vec3set.uniform_gss(300)
           >>> v.ortensor().eigenvalues()
           (0.33335688569571587, 0.33332315115436933, 0.33331996314991513)
         """
@@ -932,15 +1214,234 @@ class FaultSet(PairSet):
         )
 
 
+class EllipsoidSet(FeatureSet):
+    __feature_type__ = "Ellipsoid"
+
+    @property
+    def strength(self) -> float:
+        """
+        Return the Woodcock strength.
+        """
+        return np.array([e.strength for e in self])
+
+    @property
+    def shape(self) -> float:
+        """
+        return the Woodcock shape.
+        """
+        return np.array([e.shape for e in self])
+
+    @property
+    def lambda1(self) -> float:
+        """
+        Return the square root of maximum eigenvalue.
+        """
+        return np.array([e.lambda1 for e in self])
+
+    @property
+    def lambda2(self) -> float:
+        """
+        Return the square root of middle eigenvalue.
+        """
+        return np.array([e.lambda2 for e in self])
+
+    @property
+    def lambda3(self) -> float:
+        """
+        Return the square root of minimum eigenvalue.
+        """
+        return np.array([e.lambda3 for e in self])
+
+    @property
+    def e1(self) -> float:
+        """
+        Return the maximum natural principal strain.
+        """
+        return np.array([e.e1 for e in self])
+
+    @property
+    def e2(self) -> float:
+        """
+        Return the middle natural principal strain.
+        """
+        return np.array([e.e2 for e in self])
+
+    @property
+    def e3(self) -> float:
+        """
+        Return the minimum natural principal strain.
+        """
+        return np.array([e.e3 for e in self])
+
+    @property
+    def Rxy(self) -> float:
+        return np.array([e.Rxy for e in self])
+
+    @property
+    def Ryz(self) -> float:
+        return np.array([e.Ryz for e in self])
+
+    @property
+    def e12(self) -> float:
+        return np.array([e.e12 for e in self])
+
+    @property
+    def e13(self) -> float:
+        return np.array([e.e13 for e in self])
+
+    @property
+    def e23(self) -> float:
+        return np.array([e.e23 for e in self])
+
+    @property
+    def k(self) -> float:
+        """
+        Return the strain symmetry.
+        """
+        return np.array([e.k for e in self])
+
+    @property
+    def d(self) -> float:
+        """
+        Return the strain intensity.
+        """
+        return np.array([e.d for e in self])
+
+    @property
+    def K(self) -> float:
+        """
+        Return the strain symmetry (Ramsay, 1983).
+        """
+        return np.array([e.K for e in self])
+
+    @property
+    def D(self) -> float:
+        """
+        return the strain intensity.
+        """
+        return np.array([e.D for e in self])
+
+    @property
+    def r(self) -> float:
+        """
+        Return the strain intensity (Watterson, 1968).
+        """
+        return np.array([e.r for e in self])
+
+    @property
+    def goct(self) -> float:
+        """
+        Return the natural octahedral unit shear (Nadai, 1963).
+        """
+        return np.array([e.goct for e in self])
+
+    @property
+    def eoct(self) -> float:
+        """
+        Return the natural octahedral unit strain (Nadai, 1963).
+        """
+        return np.array([e.eoct for e in self])
+
+    @property
+    def lode(self) -> float:
+        """
+        Return Lode parameter (Lode, 1926).
+         """
+        return np.array([e.lode for e in self])
+
+    @property
+    def P(self) -> float:
+        """
+        Point index (Vollmer, 1990).
+        """
+        return np.array([e.P for e in self])
+
+    @property
+    def G(self) -> float:
+        """
+        Girdle index (Vollmer, 1990).
+        """
+        return np.array([e.G for e in self])
+
+    @property
+    def R(self) -> float:
+        """
+        Random index (Vollmer, 1990).
+        """
+        return np.array([e.R for e in self])
+
+    @property
+    def B(self) -> float:
+        """
+        Cylindricity index (Vollmer, 1990).
+        """
+        return np.array([e.B for e in self])
+
+    @property
+    def Intensity(self) -> float:
+        """
+        Intensity index (Lisle, 1985).
+        """
+        return np.array([e.Intensity for e in self])
+
+    @property
+    def aMAD_l(self) -> float:
+        """
+        Return approximate angular deviation from the major axis along E1.
+        """
+        return np.array([e.aMAD_l for e in self])
+
+    @property
+    def aMAD_p(self) -> float:
+        """
+        Return approximate deviation from the plane normal to E3.
+        """
+        return np.array([e.aMAD_p for e in self])
+
+    @property
+    def aMAD(self) -> float:
+        """
+        Return approximate deviation according to shape
+        """
+        return np.array([e.aMAD for e in self])
+
+    @property
+    def MAD_l(self) -> float:
+        """Return maximum angular deviation (MAD) of linearly distributed vectors. Kirschvink 1980"""
+        return np.array([e.MAD_l for e in self])
+
+    @property
+    def MAD_p(self) -> float:
+        """Return maximum angular deviation (MAD) of planarly distributed vectors. Kirschvink 1980"""
+        return np.array([e.MAD_p for e in self])
+
+    @property
+    def MAD(self) -> float:
+        """
+        Return approximate deviation according to shape
+        """
+        return np.array([e.MAD for e in self])
+
+
+class OrientationTensor3Set(EllipsoidSet):
+    __feature_type__ = "OrientationTensor3"
+
+
 def G(lst, name="Default"):
     if hasattr(lst, "__len__"):
         dtype_cls = type(lst[0])
         assert all([isinstance(obj, dtype_cls) for obj in lst])
         if dtype_cls is Vector3:
             return Vector3Set(lst, name=name)
+        elif dtype_cls is Vector2:
+            return Vector2Set(lst, name=name)
         elif dtype_cls is Lineation:
             return LineationSet(lst, name=name)
         elif dtype_cls is Foliation:
             return FoliationSet(lst, name=name)
+        elif dtype_cls is Pair:
+            return PairSet(lst, name=name)
+        elif dtype_cls is Fault:
+            return FaultSet(lst, name=name)
         else:
             raise TypeError("Wrong datatype to create FeatureSet")

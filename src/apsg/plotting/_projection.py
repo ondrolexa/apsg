@@ -3,7 +3,7 @@ import numpy as np
 from apsg.helpers._math import sqrt2
 from apsg.math._vector import Vector3
 from apsg.feature._geodata import Lineation, Foliation, Pair
-from apsg.feature._tensor import DeformationGradient3
+from apsg.feature._tensor3 import DeformationGradient3
 
 
 class Projection:

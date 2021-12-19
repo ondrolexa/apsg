@@ -155,7 +155,7 @@ class Pair:
 
         fvec = Vector3(fvec)
         lvec = Vector3(lvec)
-        misfit = 90 - fvec.angle(lvec)
+        misfit = abs(90 - fvec.angle(lvec))
         if misfit > 20:
             warnings.warn(f"Warning: Misfit angle is {misfit:.1f} degrees.")
         ax = fvec.cross(lvec)
