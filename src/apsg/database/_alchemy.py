@@ -3,9 +3,9 @@ SqlAlchemy interface to PySDB database
 
 Create example:
 
-    >>> from apsg.alchemy import AlchemySession
+    >>> from apsg.database import SDBSession
 
-    >>> db = AlchemySession('database.sdb', create=True)
+    >>> db = SDBSession('database.sdb', create=True)
     >>> unit = db.unit(name='DMU', description='Deamonic Magmatic Unit')
     >>> site1 = db.site(unit=unit, name='LX001', x_coord=25487.54, y_coord=563788.2, description='granite sheet')
     >>> site2 = db.site(unit=unit, name='LX002', x_coord=25934.36, y_coord=564122.5, description='diorite dyke')
@@ -16,14 +16,14 @@ Create example:
 
 Update example:
 
-    >>> db = AlchemySession('database.sdb')
+    >>> db = SDBSession('database.sdb')
     >>> unit = db.unit(name='DMU')
     >>> site3 = db.site(unit=unit, name='LX003', x_coord=25713.7, y_coord=563977.1, description='massive gabbro')
     >>> db.close()
 
 Tags example:
 
-    >>> db = AlchemySession('database.sdb')
+    >>> db = SDBSession('database.sdb')
     >>> unit = db.unit(name='DMU')
     >>> site1 = db.site(name='LX001')
     >>> struct = db.structype(structure='S2')
@@ -34,7 +34,7 @@ Tags example:
 
 Attach example:
 
-    >>> db = AlchemySession('database.sdb')
+    >>> db = SDBSession('database.sdb')
     >>> unit = db.unit(name='DMU')
     >>> site = db.site(name='LX001')
     >>> S = db.structype(structure='S')
@@ -46,7 +46,7 @@ Attach example:
 
 APSG classes example:
 
-    >>> db = AlchemySession('database.sdb')
+    >>> db = SDBSession('database.sdb')
     >>> unit = db.unit(name='DMU')
     >>> site = db.site(name='LX003')
 
@@ -62,6 +62,14 @@ APSG classes example:
     >>> db.add_pair(p, S2, L2, site=site)
     >>> db.close()
 
+Read data
+
+    >>> db = SDBSession('/home/ondro/Documents/MyData/databases/pysdb/datalx_new.sdb')
+    >>> S2 = db.structype(structure='S2')
+    >>> g = db.getset(structype=S2)
+or directly
+    >>> g = db.getset('S2')
+
 """
 
 import os
@@ -69,6 +77,8 @@ from datetime import datetime
 import contextlib
 
 from apsg.feature import Foliation, Lineation, Pair
+from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
+from apsg.feature._container import LineationSet, FoliationSet
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
@@ -251,7 +261,7 @@ def before_insert_pos_update(mapper, connection, target):
         target.pos = maxpos
 
 
-class AlchemySession:
+class SDBSession:
     def __init__(self, sdb_file, **kwargs):
         if kwargs.get("create", False):
             with contextlib.suppress(FileNotFoundError):
@@ -333,8 +343,9 @@ class AlchemySession:
         assert "site" in kwargs, "site must be provided for structdata"
         assert "structype" in kwargs, "structype must be provided for structdata"
         assert kwargs["structype"].planar, "structype must be planar"
-        kwargs["azimuth"] = fol.dd[0]
-        kwargs["inclination"] = fol.dd[1]
+        azi, inc = fol.geo
+        kwargs["azimuth"] = azi
+        kwargs["inclination"] = inc
         return self.add_structdata(**kwargs)
 
     def add_lin(self, lin, **kwargs):
@@ -344,8 +355,9 @@ class AlchemySession:
         assert "site" in kwargs, "site must be provided for structdata"
         assert "structype" in kwargs, "structype must be provided for structdata"
         assert not kwargs["structype"].planar, "structype must be linear"
-        kwargs["azimuth"] = lin.dd[0]
-        kwargs["inclination"] = lin.dd[1]
+        azi, inc = lin.geo
+        kwargs["azimuth"] = azi
+        kwargs["inclination"] = inc
         return self.add_structdata(**kwargs)
 
     def attach(self, fol, lin):
@@ -367,25 +379,49 @@ class AlchemySession:
             sites = self.session.query(Site).filter_by(**kwargs).all()
         else:
             sites = self.session.query(Site).all()
-        return sites
+        if len(sites) == 1:
+            return sites[0]
+        else:
+            return sites
 
     def units(self, **kwargs):
         if kwargs:
             units = self.session.query(Unit).filter_by(**kwargs).all()
         else:
             units = self.session.query(Unit).all()
-        return units
+        if len(units) == 1:
+            return units[0]
+        else:
+            return units
 
     def structypes(self, **kwargs):
         if kwargs:
             structypes = self.session.query(Structype).filter_by(**kwargs).all()
         else:
             structypes = self.session.query(Structype).all()
-        return structypes
+        if len(structypes) == 1:
+            return structypes[0]
+        else:
+            return structypes
 
     def tags(self, **kwargs):
         if kwargs:
             tags = self.session.query(Tag).filter_by(**kwargs).all()
         else:
             tags = self.session.query(Tag).all()
-        return tags
+        if len(tags) == 1:
+            return tags[0]
+        else:
+            return tags
+
+    def getset(self, structype, **kwargs):
+        if isinstance(structype, str):
+            structypes = self.session.query(Structype).filter_by(structure=structype).all()
+            assert len(structypes) == 1, f'There is no structure {structype} in db'
+            structype = structypes[0]
+        data = self.session.query(Structdata).filter_by(structype=structype, **kwargs).all()
+        if structype.planar:
+            res = FoliationSet([Foliation(v.azimuth, v.inclination) for v in data], name=structype.structure)
+        else:
+            res = LineationSet([Lineation(v.azimuth, v.inclination) for v in data], name=structype.structure)
+        return res

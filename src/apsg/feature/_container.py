@@ -58,7 +58,7 @@ class FeatureSet:
     def __getitem__(self, key):
         if isinstance(key, slice):
             return type(self)(self.data[key])
-        #elif isinstance(key, int):
+        # elif isinstance(key, int):
         elif np.issubdtype(type(key), np.integer):
             return self.data[key]
         elif isinstance(key, np.ndarray):  # fancy indexing
@@ -1407,12 +1407,16 @@ class EllipsoidSet(FeatureSet):
 
     @property
     def MAD_l(self) -> float:
-        """Return maximum angular deviation (MAD) of linearly distributed vectors. Kirschvink 1980"""
+        """
+        Return maximum angular deviation (MAD) of linearly distributed vectors. Kirschvink 1980
+        """
         return np.array([e.MAD_l for e in self])
 
     @property
     def MAD_p(self) -> float:
-        """Return maximum angular deviation (MAD) of planarly distributed vectors. Kirschvink 1980"""
+        """
+        Return maximum angular deviation (MAD) of planarly distributed vectors. Kirschvink 1980
+        """
         return np.array([e.MAD_p for e in self])
 
     @property

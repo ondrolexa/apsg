@@ -41,6 +41,7 @@ from apsg.plotting import (
     RamsayPlot,
     FlinnPlot,
     HsuPlot,
+    quicknet
 )
 
 
@@ -78,6 +79,7 @@ __all__ = (
     "RamsayPlot",
     "FlinnPlot",
     "HsuPlot",
+    "quicknet"
 )
 
 __version__ = "1.0.0"

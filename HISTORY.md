@@ -1,6 +1,10 @@
 # Changes
 
-## 0.7.1 (master)
+## 1.0.0 (XX YY 2022)
+New major release
+
+
+### 0.7.1 (master)
  * paleomag rs3 input/output improved
  * Simple SQLAlchemy API to sdb database implemented
  * StereoNet arc method fixed

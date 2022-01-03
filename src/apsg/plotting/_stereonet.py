@@ -571,3 +571,21 @@ class StereoNet:
         if colorbar:
             self.fig.colorbar(cf, ax=self.ax, shrink=0.6)
         # plt.colorbar(cf, format="%3.2f", spacing="proportional")
+
+
+def quicknet(*args, **kwargs):
+    savefig = kwargs.get('savefig', False)
+    filename = kwargs.get('filename', 'stereonet.png')
+    savefig_kwargs = kwargs.get('savefig_kwargs', {})
+    s = StereoNet(**kwargs)
+    for arg in args:
+        if isinstance(arg, FoliationSet):
+            s.pole(arg)
+        elif isinstance(arg, LineationSet):
+            s.line(arg)
+        else:
+            pass
+    if savefig:
+        s.savefig(filename, **savefig_kwargs)
+    else:
+        s.show()
