@@ -3,7 +3,7 @@ import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import vonmises, circmean, bootstrap
+from scipy.stats import vonmises, circmean
 
 from apsg.config import apsg_conf
 from apsg.math._vector import Vector2
@@ -38,14 +38,12 @@ class RosePlot(object):
         Other keyword arguments are passed to matplotlib plot.
 
     Examples:
-        >>> g = Group.randn_fol(mean=fol(120, 0))
-        >>> direction, dip  = g.rhr
-        >>> RosePlot(direction)
-        >>> RosePlot(direction, density=True)
-        >>> RosePlot(direction, pdf=True)
-        >>> s = RosePlot()
-        >>> s.plot(direction, color='r')
-        >>> s.show()
+        >>> v = vec2set.random_vonmises(position=120)
+        >>> p = RosePlot(grid=False)
+        >>> p.pdf(v)
+        >>> p.bar(v, fc='none', ec='k', lw=1)
+        >>> p.muci(v)
+        >>> p.show()
     """
 
     def __init__(self, **kwargs):
@@ -254,23 +252,20 @@ class RosePlot(object):
     def _muci(self, *args, **kwargs):
         ang = np.radians(np.concatenate([arg.direction for arg in args]))
         conflevel = kwargs.pop("confidence_level")
+        n_resamples = kwargs.pop("n_resamples")
         # calculate mean and CI
         if self._kwargs["axial"]:
             mu = circmean(2 * ang) / 2
             ang_shift = ang + np.pi / 2 - mu
-            bci = bootstrap(
-                (2 * ang_shift,), circmean, confidence_level=conflevel
-            ).confidence_interval
-            low = bci.low / 2 + mu - np.pi / 2
-            high = bci.high / 2 + mu - np.pi / 2
+            bsmu = [circmean(np.random.choice(2 * ang_shift, size=len(ang_shift))) for i in range(n_resamples)]
+            low = np.percentile(bsmu, 100 - conflevel) / 2 + mu - np.pi / 2
+            high = np.percentile(bsmu, conflevel) / 2 + mu - np.pi / 2
         else:
             mu = circmean(ang)
             ang_shift = ang + np.pi - mu
-            bci = bootstrap(
-                (ang_shift,), circmean, confidence_level=conflevel
-            ).confidence_interval
-            low = bci.low + mu - np.pi
-            high = bci.high + mu - np.pi
+            bsmu = [circmean(np.random.choice(ang_shift, size=len(ang_shift))) for i in range(n_resamples)]
+            low = np.percentile(bsmu, (100 - conflevel) / 2) + mu - np.pi
+            high = np.percentile(bsmu, 100 - (100 - conflevel) / 2) + mu - np.pi
         radii = []
         for arg in args:
             p = 0

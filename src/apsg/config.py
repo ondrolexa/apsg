@@ -93,13 +93,13 @@ apsg_conf = dict(
         grid_kw=dict(),
     ),
     roseplot_default_bar_kwargs=dict(
-        alpha=None, color=None, ls="-", lw=1.5, legend=False,
+        alpha=None, color=None, ec=None, fc=None, ls="-", lw=1.5, legend=False,
     ),
     roseplot_default_pdf_kwargs=dict(
-        alpha=None, color=None, ls="-", lw=1.5, legend=False,
+        alpha=None, color=None, ec=None, fc=None, ls="-", lw=1.5, legend=False,
     ),
     roseplot_default_muci_kwargs=dict(
-        confidence_level=0.95, alpha=None, color="r", ls="-", lw=1.5,
+        confidence_level=95, alpha=None, color="r", ls="-", lw=1.5, n_resamples=9999,
     ),
     fabricplot_default_kwargs=dict(
         ticks=True,
