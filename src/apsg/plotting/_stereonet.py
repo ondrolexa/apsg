@@ -436,25 +436,24 @@ class StereoNet:
         x_upper, y_upper, mask_upper = self.proj.project_data(
             *(-np.vstack(args).T), return_mask=True
         )
+        prop = 'sizes'
         if kwargs["s"] is not None:
             s = np.atleast_1d(kwargs["s"])
             kwargs["s"] = np.hstack((s[mask_lower], s[mask_upper]))
         if kwargs["c"] is not None:
             c = np.atleast_1d(kwargs["c"])
             kwargs["c"] = np.hstack((c[mask_lower], c[mask_upper]))
+            prop = 'colors'
         sc = self.ax.scatter(
             np.hstack((x_lower, x_upper)), np.hstack((y_lower, y_upper)), **kwargs,
         )
         if legend:
             self.ax.legend(
-                *sc.legend_elements("sizes", num=num),
+                *sc.legend_elements(prop, num=num),
                 bbox_to_anchor=(1.05, 1),
                 prop={"size": 11},
                 loc="upper left",
-                borderaxespad=0,
-                scatterpoints=1,
-                numpoints=1,
-            )
+                borderaxespad=0            )
         sc.set_clip_path(self.primitive)
 
     def _cone(self, *args, **kwargs):
@@ -569,7 +568,7 @@ class StereoNet:
             for collection in cl.collections:
                 collection.set_clip_path(self.primitive)
         if colorbar:
-            self.fig.colorbar(cf, ax=self.ax, shrink=0.6)
+            self.fig.colorbar(cf, ax=self.ax, shrink=0.5, anchor=(0.0, 0.3))
         # plt.colorbar(cf, format="%3.2f", spacing="proportional")
 
 
