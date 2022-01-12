@@ -416,11 +416,17 @@ class Vector3Set(FeatureSet):
         """Return ``Vector3Set`` object with all data converted to ``Vector3``."""
         return Vector3Set([Vector3(e) for e in self], name=self.name)
 
-    def proj(self, vec):
+    def project(self, vec):
         """Return projections of all features in ``FeatureSet`` onto vector.
 
         """
-        return type(self)([e.project() for e in self], name=self.name)
+        return type(self)([e.project(vec) for e in self], name=self.name)
+
+    def reject(self, vec):
+        """Return rejections of all features in ``FeatureSet`` onto vector.
+
+        """
+        return type(self)([e.reject(vec) for e in self], name=self.name)
 
     def dot(self, vec):
         """Return array of dot products of all features in ``FeatureSet`` with vector.
