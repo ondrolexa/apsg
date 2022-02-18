@@ -64,16 +64,16 @@ class StereoNet:
             -180 + 1e-7, 180 - 1e-7, self.proj.overlay_resolution
         )
         self.grid = StereoGrid(**self._kwargs)
-        self._artists = []
+        self.fig, self.ax = plt.subplots(figsize=apsg_conf["figsize"])
+        self.clear()
 
     def clear(self):
         self._artists = []
-
-    def _draw_layout(self):
-        self.fig, self.ax = plt.subplots(figsize=apsg_conf["figsize"])
+        self.ax.cla()
         self.ax.set_aspect(1)
         self.ax.set_axis_off()
 
+    def _draw_layout(self):
         # overlay
         if self._kwargs["overlay"]:
             ov = self.proj.get_grid_overlay()
