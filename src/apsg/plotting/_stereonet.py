@@ -64,7 +64,10 @@ class StereoNet:
             -180 + 1e-7, 180 - 1e-7, self.proj.overlay_resolution
         )
         self.grid = StereoGrid(**self._kwargs)
-        self.fig = plt.figure(figsize=apsg_conf["figsize"])
+        self.fig = plt.figure(figsize=apsg_conf["figsize"],
+                              dpi=apsg_conf["dpi"],
+                              facecolor=apsg_conf["facecolor"]
+                              )
         self.clear()
 
     def clear(self):
@@ -321,10 +324,10 @@ class StereoNet:
         except TypeError as err:
             print(err)
 
-    def contourf(self, *args, **kwargs):
+    def contour(self, *args, **kwargs):
         """Plot filled contours."""
         try:
-            artist = StereoNetArtistFactory.create_contourf(*args, **kwargs)
+            artist = StereoNetArtistFactory.create_contour(*args, **kwargs)
             # ad-hoc density calculation needed to access correct grid properties
             if len(args) > 0:
                 self.grid.calculate_density(
@@ -542,7 +545,7 @@ class StereoNet:
         except:
             pass
 
-    def _contourf(self, *args, **kwargs):
+    def _contour(self, *args, **kwargs):
         sigma = kwargs.pop("sigma")
         trim = kwargs.pop("trim")
         colorbar = kwargs.pop("colorbar")

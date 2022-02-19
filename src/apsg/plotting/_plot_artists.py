@@ -250,7 +250,7 @@ class StereoNet_Arrow(StereoNet_Artists):
 class StereoNet_Contourf(StereoNet_Artists):
     def __init__(self, factory, *args, **kwargs):
         super().__init__(factory, *args, **kwargs)
-        self.stereonet_method = "_contourf"
+        self.stereonet_method = "_contour"
         if len(args) > 0:
             self.args = args[:1]  # take only first arg
         else:
@@ -258,7 +258,7 @@ class StereoNet_Contourf(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_contourf_kwargs")
+        super().update_kwargs("stereonet_default_contour_kwargs")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             self.kwargs["label"] = self.args[0].label()
@@ -348,13 +348,13 @@ class StereoNetArtistFactory:
             raise TypeError("Not valid arguments for Stereonet arrow")
 
     @staticmethod
-    def create_contourf(*args, **kwargs):
+    def create_contour(*args, **kwargs):
         if len(args) == 0:
-            return StereoNet_Contourf("create_contourf", **kwargs)
+            return StereoNet_Contourf("create_contour", **kwargs)
         elif issubclass(type(args[0]), Vector3Set):
-            return StereoNet_Contourf("create_contourf", *args, **kwargs)
+            return StereoNet_Contourf("create_contour", *args, **kwargs)
         else:
-            raise TypeError("Not valid arguments for Stereonet contourf")
+            raise TypeError("Not valid arguments for Stereonet contour")
 
 
 # RosePlot

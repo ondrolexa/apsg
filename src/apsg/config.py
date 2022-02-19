@@ -5,6 +5,8 @@ apsg_conf = dict(
     vec2geo=False,  # repr Vector3 using notation
     ndigits=3,  # Round to ndigits in repr
     figsize=(8, 6),  # Default figure size
+    dpi=100,  # Default figure dpi
+    facecolor='white',  # Default figure facecolor
     stereonet_default_kwargs=dict(
         kind="equal-area",
         overlay_position=(0, 0, 0, 0),
@@ -67,7 +69,7 @@ apsg_conf = dict(
     stereonet_default_quiver_kwargs=dict(
         color=None, width=2, headwidth=5, pivot="mid", units="dots",
     ),
-    stereonet_default_contourf_kwargs=dict(
+    stereonet_default_contour_kwargs=dict(
         alpha=None,
         antialiased=True,
         cmap="Greys",
