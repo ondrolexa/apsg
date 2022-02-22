@@ -158,14 +158,15 @@ class StereoNet:
             data = pickle.load(f)
         return cls.from_json(data)
 
-    def render(self):
-        plt.close(0)  # close previously rendered figure
+    def init_figure(self):
         self.fig = plt.figure(0, figsize=apsg_conf["figsize"],
                               dpi=apsg_conf["dpi"],
                               facecolor=apsg_conf["facecolor"]
                               )
         if hasattr(self.fig.canvas.manager, 'set_window_title'):
             self.fig.canvas.manager.set_window_title(self.proj.netname)
+
+    def __render(self):
         self.ax = self.fig.add_subplot()
         self.ax.set_aspect(1)
         self.ax.set_axis_off()
@@ -189,8 +190,17 @@ class StereoNet:
             self.fig.suptitle(self._kwargs["title"])
         self.fig.tight_layout()
 
+    def render(self):
+        if not hasattr(self, 'fig'):
+            self.init_figure()
+        else:
+            self.fig.clear()
+        self.__render()
+
     def show(self):
-        self.render()
+        plt.close(0)  # close previously rendered figure
+        self.init_figure()
+        self.__render()
         plt.show()
 
     def savefig(self, filename="stereonet.png", **kwargs):
