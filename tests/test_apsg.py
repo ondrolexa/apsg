@@ -17,7 +17,6 @@ Proper unit tests should fail for exactly one reason
 
 import pytest
 import numpy as np
-import math
 
 from apsg.config import apsg_conf
 from apsg import vec3, fol, lin, fault, pair
@@ -265,13 +264,13 @@ class TestVector:
     def test_scalar_product_of_same_vectors(self):
         i = vec3(1, 2, 3)
 
-        assert math.isclose(i.dot(i), abs(i) ** 2)
+        assert np.isclose(i.dot(i), abs(i) ** 2)
 
     def test_scalar_product_of_orthonornal_vectors(self):
         i = vec3(1, 0, 0)
         j = vec3(0, 1, 0)
 
-        assert math.isclose(i.dot(j), 0)
+        assert np.isclose(i.dot(j), 0)
 
     # ``rotate`` method
 
@@ -387,14 +386,14 @@ class Testlineation:
 
     def test_anlge_for_oposite_dir(self):
         l = lin.random()
-        assert math.isclose(l.angle(-l), 0)
+        assert np.isclose(l.angle(-l), 0)
 
     def test_that_azimuth_0_is_same_as_360(self):
         assert lin(0, 20) == lin(360, 20)
 
     def test_scalar_product(self):
         l = lin.random()
-        assert math.isclose(l.dot(l), 1)
+        assert np.isclose(l.dot(l), 1)
 
     def test_cross_product(self):
         l1 = lin.random()
@@ -415,7 +414,7 @@ class Testlineation:
         l2 = lin.random()
         D = defgrad.from_axisangle(lin(45, 45), 60)
 
-        assert math.isclose(l1.angle(l2), l1.transform(D).angle(l2.transform(D)))
+        assert np.isclose(l1.angle(l2), l1.transform(D).angle(l2.transform(D)))
 
     def test_add_operator__simple(self):
         l1 = lin.random()
@@ -467,14 +466,14 @@ class Testfoliation:
 
     def test_anlge_for_oposite_dir(self):
         f = fol.random()
-        assert math.isclose(f.angle(-f), 0)
+        assert np.isclose(f.angle(-f), 0)
 
     def test_that_azimuth_0_is_same_as_360(self):
         assert fol(0, 20) == fol(360, 20)
 
     def test_scalar_product(self):
         f = fol.random()
-        assert math.isclose(f.dot(f), 1)
+        assert np.isclose(f.dot(f), 1)
 
     def test_cross_product(self):
         f1 = fol.random()
@@ -508,7 +507,7 @@ class Testfoliation:
         f2 = fol.random()
         D = defgrad.from_axisangle(lin(45, 45), 60)
 
-        assert math.isclose(f1.angle(f2), f1.transform(D).angle(f2.transform(D)))
+        assert np.isclose(f1.angle(f2), f1.transform(D).angle(f2.transform(D)))
 
     def test_add_operator__simple(self):
         f1 = fol.random()
@@ -542,13 +541,13 @@ class Testfoliation:
 class TestVector3Set:
     def test_rdegree_under_rotation(self):
         g = vec3set.random_fisher()
-        assert math.isclose(g.rotate(lin(45, 45), 90).rdegree(), g.rdegree())
+        assert np.isclose(g.rotate(lin(45, 45), 90).rdegree(), g.rdegree())
 
     def test_resultant_rdegree(self):
         g = vec3set.from_array([45, 135, 225, 315], [45, 45, 45, 45])
         c1 = g.R().uv() == vec3(0, 90)
-        c2 = math.isclose(abs(g.R()), np.sqrt(8))
-        c3 = math.isclose((g.rdegree() / 100 + 1) ** 2, 2)
+        c2 = np.isclose(abs(g.R()), np.sqrt(8))
+        c3 = np.isclose((g.rdegree() / 100 + 1) ** 2, 2)
         assert c1 and c2 and c3
 
     def test_group_type_error(self):
@@ -571,8 +570,8 @@ class TestLineationSet:
     def test_resultant_rdegree(self):
         g = linset.from_array([45, 135, 225, 315], [45, 45, 45, 45])
         c1 = g.R().uv() == lin(0, 90)
-        c2 = math.isclose(abs(g.R()), np.sqrt(8))
-        c3 = math.isclose((g.rdegree() / 100 + 1) ** 2, 2)
+        c2 = np.isclose(abs(g.R()), np.sqrt(8))
+        c3 = np.isclose((g.rdegree() / 100 + 1) ** 2, 2)
         assert c1 and c2 and c3
 
     def test_group_type_error(self):
@@ -600,7 +599,7 @@ class TestLineationSet:
 class Testpair:
     def test_pair_misfit(self):
         p = pair.random()
-        assert math.isclose(p.misfit, 0)
+        assert np.isclose(p.misfit, 0)
 
     def test_pair_rotate(self):
         p = pair.random()
