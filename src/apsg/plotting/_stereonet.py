@@ -64,18 +64,10 @@ class StereoNet:
             -180 + 1e-7, 180 - 1e-7, self.proj.overlay_resolution
         )
         self.grid = StereoGrid(**self._kwargs)
-        self.fig = plt.figure(figsize=apsg_conf["figsize"],
-                              dpi=apsg_conf["dpi"],
-                              facecolor=apsg_conf["facecolor"]
-                              )
         self.clear()
 
     def clear(self):
         self._artists = []
-        self.fig.clear()
-        self.ax = self.fig.add_subplot()
-        self.ax.set_aspect(1)
-        self.ax.set_axis_off()
 
     def _draw_layout(self):
         # overlay
@@ -147,47 +139,13 @@ class StereoNet:
 
     def to_json(self):
         data = {}
-        artists = []
-        for artist in self._artists:
-            for obj in artist.args:
-                obj_id = id(obj)
-                if obj_id not in data:
-                    data[obj_id] = obj.to_json()
-            artist_dict = dict(
-                factory=artist.factory,
-                stereonet_method=artist.stereonet_method,
-                args=tuple([id(obj) for obj in artist.args]),
-                kwargs=artist.kwargs.copy(),
-            )
-            artists.append(artist_dict)
-        return dict(kwargs=self._kwargs, data=data, artists=artists,)
+        artists = [artist.to_json() for artist in self._artists]
+        return dict(kwargs=self._kwargs, artists=artists)
 
     @classmethod
     def from_json(cls, json_dict):
-        def parse_json_data(obj_json):
-            dtype_cls = getattr(sys.modules[__name__], obj_json["datatype"])
-            args = []
-            for arg in obj_json["args"]:
-                if isinstance(arg, dict):
-                    args.append([parse_json_data(jd) for jd in arg["collection"]])
-                else:
-                    args.append(arg)
-            kwargs = obj_json.get("kwargs", {})
-            return dtype_cls(*args, **kwargs)
-
-        # parse
         s = cls(**json_dict["kwargs"])
-        data = {}
-        for obj_id, obj_json in json_dict["data"].items():
-            data[obj_id] = parse_json_data(obj_json)
-        s._artists = []
-        for artist in json_dict["artists"]:
-            args = tuple([data[obj_id] for obj_id in artist["args"]])
-            s._artists.append(
-                getattr(StereoNetArtistFactory, artist["factory"])(
-                    *args, **artist["kwargs"]
-                )
-            )
+        s._artists = [artist_from_json(artist) for artist in json_dict["artists"]]
         return s
 
     def save(self, filename):
@@ -201,6 +159,16 @@ class StereoNet:
         return cls.from_json(data)
 
     def render(self):
+        plt.close(0)  # close previously rendered figure
+        self.fig = plt.figure(0, figsize=apsg_conf["figsize"],
+                              dpi=apsg_conf["dpi"],
+                              facecolor=apsg_conf["facecolor"]
+                              )
+        if hasattr(self.fig.canvas.manager, 'set_window_title'):
+            self.fig.canvas.manager.set_window_title(self.proj.netname)
+        self.ax = self.fig.add_subplot()
+        self.ax.set_aspect(1)
+        self.ax.set_axis_off()
         self._draw_layout()
         self._plot_artists()
         self.ax.set_xlim(-1.05, 1.05)
@@ -228,9 +196,7 @@ class StereoNet:
     def savefig(self, filename="stereonet.png", **kwargs):
         self.render()
         self.fig.savefig(filename, **kwargs)
-        plt.close()
-        delattr(self, "ax")
-        delattr(self, "fig")
+        plt.close(0)
 
     ########################################
     # PLOTTING METHODS                     #
@@ -553,6 +519,8 @@ class StereoNet:
         clines = kwargs.pop("clines")
         linewidths = kwargs.pop("linewidths")
         linestyles = kwargs.pop("linestyles")
+        show_data = kwargs.pop("show_data")
+        data_kwargs = kwargs.pop("data_kwargs")
         if not self.grid.calculated:
             if len(args) > 0:
                 self.grid.calculate_density(args[0], sigma=sigma, trim=trim)
@@ -571,9 +539,29 @@ class StereoNet:
             cl = self.ax.tricontour(X, Y, self.grid.values, **kwargs)
             for collection in cl.collections:
                 collection.set_clip_path(self.primitive)
+        if show_data:
+            artist = StereoNetArtistFactory.create_point(*args[0], **data_kwargs)
+            self._line(*artist.args, **artist.kwargs)
         if colorbar:
             self.fig.colorbar(cf, ax=self.ax, shrink=0.5, anchor=(0.0, 0.3))
         # plt.colorbar(cf, format="%3.2f", spacing="proportional")
+
+
+def feature_from_json(obj_json):
+    dtype_cls = getattr(sys.modules[__name__], obj_json["datatype"])
+    args = []
+    for arg in obj_json["args"]:
+        if isinstance(arg, dict):
+            args.append([feature_from_json(jd) for jd in arg["collection"]])
+        else:
+            args.append(arg)
+    kwargs = obj_json.get("kwargs", {})
+    return dtype_cls(*args, **kwargs)
+
+
+def artist_from_json(obj_json):
+    args=tuple([feature_from_json(arg_json) for arg_json in obj_json["args"]])
+    return getattr(StereoNetArtistFactory, obj_json["factory"])(*args, **obj_json["kwargs"])
 
 
 def quicknet(*args, **kwargs):

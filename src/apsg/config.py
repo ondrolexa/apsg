@@ -80,6 +80,8 @@ apsg_conf = dict(
         colorbar=False,
         trim=True,
         sigma=None,
+        show_data=False,
+        data_kwargs=dict(),
     ),
     roseplot_default_kwargs=dict(
         bins=36,

@@ -44,7 +44,6 @@ from apsg.plotting import (
     quicknet
 )
 
-
 __all__ = (
     "apsg_conf",
     "vec3",

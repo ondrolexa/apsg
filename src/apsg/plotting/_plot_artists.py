@@ -255,7 +255,7 @@ class StereoNet_Arrow(StereoNet_Artists):
         )
 
 
-class StereoNet_Contourf(StereoNet_Artists):
+class StereoNet_Contour(StereoNet_Artists):
     def __init__(self, factory, *args, **kwargs):
         super().__init__(factory, *args, **kwargs)
         self.stereonet_method = "_contour"
@@ -358,9 +358,9 @@ class StereoNetArtistFactory:
     @staticmethod
     def create_contour(*args, **kwargs):
         if len(args) == 0:
-            return StereoNet_Contourf("create_contour", **kwargs)
+            return StereoNet_Contour("create_contour", **kwargs)
         elif issubclass(type(args[0]), Vector3Set):
-            return StereoNet_Contourf("create_contour", *args, **kwargs)
+            return StereoNet_Contour("create_contour", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet contour")
 
