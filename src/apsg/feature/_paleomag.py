@@ -6,7 +6,6 @@ from copy import deepcopy
 from datetime import datetime
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from apsg.config import apsg_conf
 from apsg.helpers._helper import eformat

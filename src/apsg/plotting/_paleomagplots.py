@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import sys
-import warnings
-import pickle
-
 import numpy as np
 import matplotlib.pyplot as plt
 
+from apsg.config import apsg_conf
 from apsg.plotting._stereonet import StereoNet
+
 
 def zijderveld_plot(core, kind="geo"):
     def onpick(core, event, fig):
@@ -43,6 +41,7 @@ def zijderveld_plot(core, kind="geo"):
     plt.tight_layout()
     plt.show()
 
+
 def demag_plot(core):
     fig, ax = plt.subplots(figsize=apsg_conf["figsize"])
     ax.plot(core.nsteps[0], core.MAG[0] / core.MAG.max(), "k+", markersize=14)
@@ -54,6 +53,7 @@ def demag_plot(core):
     ax.set_ylim(0, 1.02)
     ax.yaxis.grid()
     plt.show()
+
 
 def stereo_plot(core, kind="geo", **kwargs):
     data = getattr(core, kind)

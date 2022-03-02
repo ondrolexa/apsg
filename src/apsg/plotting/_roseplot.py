@@ -9,6 +9,7 @@ from apsg.config import apsg_conf
 from apsg.math._vector import Vector2
 from apsg.feature._container import Vector2Set
 from apsg.plotting._plot_artists import RosePlotArtistFactory
+from apsg.feature import feature_from_json
 
 __all__ = ["RosePlot"]
 

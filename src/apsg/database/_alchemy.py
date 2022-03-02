@@ -76,7 +76,6 @@ import os
 from datetime import datetime
 import contextlib
 
-from apsg.feature import Foliation, Lineation, Pair
 from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
 from apsg.feature._container import LineationSet, FoliationSet
 

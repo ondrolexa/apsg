@@ -55,6 +55,7 @@ __all__ = (
     "Core",
 )
 
+
 def feature_from_json(obj_json):
     dtype_cls = getattr(sys.modules[__name__], obj_json["datatype"])
     args = []

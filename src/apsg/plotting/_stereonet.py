@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import sys
 import warnings
 import pickle
 
@@ -434,7 +433,7 @@ class StereoNet:
                 bbox_to_anchor=(1.05, 1),
                 prop={"size": 11},
                 loc="upper left",
-                borderaxespad=0            )
+                borderaxespad=0)
         sc.set_clip_path(self.primitive)
 
     def _cone(self, *args, **kwargs):
