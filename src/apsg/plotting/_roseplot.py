@@ -55,7 +55,6 @@ class RosePlot(object):
         self._artists = []
 
     def _draw_layout(self):
-        self.fig = plt.figure(figsize=apsg_conf["figsize"])
         self.ax = self.fig.add_subplot(111, polar=True)
         # self.ax.format_coord = self.format_coord
         self.ax.set_theta_direction(-1)
@@ -69,47 +68,13 @@ class RosePlot(object):
 
     def to_json(self):
         data = {}
-        artists = []
-        for artist in self._artists:
-            for obj in artist.args:
-                obj_id = id(obj)
-                if obj_id not in data:
-                    data[obj_id] = obj.to_json()
-            artist_dict = dict(
-                factory=artist.factory,
-                roseplot_method=artist.roseplot_method,
-                args=tuple([id(obj) for obj in artist.args]),
-                kwargs=artist.kwargs.copy(),
-            )
-            artists.append(artist_dict)
-        return dict(kwargs=self._kwargs, data=data, artists=artists,)
+        artists = [artist.to_json() for artist in self._artists]
+        return dict(kwargs=self._kwargs, artists=artists)
 
     @classmethod
     def from_json(cls, json_dict):
-        def parse_json_data(obj_json):
-            dtype_cls = getattr(sys.modules[__name__], obj_json["datatype"])
-            args = []
-            for arg in obj_json["args"]:
-                if isinstance(arg, dict):
-                    args.append([parse_json_data(jd) for jd in arg["collection"]])
-                else:
-                    args.append(arg)
-            kwargs = obj_json.get("kwargs", {})
-            return dtype_cls(*args, **kwargs)
-
-        # parse
         s = cls(**json_dict["kwargs"])
-        data = {}
-        for obj_id, obj_json in json_dict["data"].items():
-            data[obj_id] = parse_json_data(obj_json)
-        s._artists = []
-        for artist in json_dict["artists"]:
-            args = tuple([data[obj_id] for obj_id in artist["args"]])
-            s._artists.append(
-                getattr(RosePlotArtistFactory, artist["factory"])(
-                    *args, **artist["kwargs"]
-                )
-            )
+        s._artists = [roseartist_from_json(artist) for artist in json_dict["artists"]]
         return s
 
     def save(self, filename):
@@ -122,7 +87,15 @@ class RosePlot(object):
             data = pickle.load(f)
         return cls.from_json(data)
 
-    def render(self):
+    def init_figure(self):
+        self.fig = plt.figure(0, figsize=apsg_conf["figsize"],
+                              dpi=apsg_conf["dpi"],
+                              facecolor=apsg_conf["facecolor"]
+                              )
+        if hasattr(self.fig.canvas.manager, 'set_window_title'):
+            self.fig.canvas.manager.set_window_title('Rose diagram')
+
+    def _render(self):
         self._draw_layout()
         self._plot_artists()
         h, lbls = self.ax.get_legend_handles_labels()
@@ -141,16 +114,23 @@ class RosePlot(object):
             self.fig.suptitle(self._kwargs["title"])
         self.fig.tight_layout()
 
+    def render(self):
+        if not hasattr(self, 'fig'):
+            self.init_figure()
+        else:
+            self.fig.clear()
+        self._render()
+
     def show(self):
-        self.render()
+        plt.close(0)  # close previously rendered figure
+        self.init_figure()
+        self._render()
         plt.show()
 
     def savefig(self, filename="roseplot.png", **kwargs):
         self.render()
         self.fig.savefig(filename, **kwargs)
-        plt.close()
-        delattr(self, "ax")
-        delattr(self, "fig")
+        plt.close(0)
 
     ########################################
     # PLOTTING METHODS                     #
@@ -287,3 +267,7 @@ class RosePlot(object):
         self.ax.plot([mu, mu + np.pi], [mur, mur], **kwargs)
         self.ax.plot(ci_angles, mur * np.ones_like(ci_angles), **kwargs)
         self.ax.plot(ci_angles + np.pi, mur * np.ones_like(ci_angles), **kwargs)
+
+def roseartist_from_json(obj_json):
+    args=tuple([feature_from_json(arg_json) for arg_json in obj_json["args"]])
+    return getattr(RosePlotArtistFactory, obj_json["factory"])(*args, **obj_json["kwargs"])

@@ -41,7 +41,7 @@ class FabricPlot(object):
     @classmethod
     def from_json(cls, json_dict):
         s = cls(**json_dict["kwargs"])
-        s._artists = [artist_from_json(artist) for artist in json_dict["artists"]]
+        s._artists = [fabricartist_from_json(artist) for artist in json_dict["artists"]]
         return s
 
     def save(self, filename):
@@ -91,9 +91,7 @@ class FabricPlot(object):
     def savefig(self, filename="fabricplot.png", **kwargs):
         self.render()
         self.fig.savefig(filename, **kwargs)
-        plt.close()
-        delattr(self, "ax")
-        delattr(self, "fig")
+        plt.close(0)
 
 
 class VollmerPlot(FabricPlot):
@@ -472,6 +470,6 @@ class HsuPlot(FabricPlot):
         return f"lode:{x * 6 / np.pi:0.2f} eoct:{y:0.2f}"
 
 
-def artist_from_json(obj_json):
+def fabricartist_from_json(obj_json):
     args=tuple([feature_from_json(arg_json) for arg_json in obj_json["args"]])
     return getattr(FabricPlotArtistFactory, obj_json["factory"])(*args, **obj_json["kwargs"])

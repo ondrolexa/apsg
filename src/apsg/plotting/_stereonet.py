@@ -146,7 +146,7 @@ class StereoNet:
     @classmethod
     def from_json(cls, json_dict):
         s = cls(**json_dict["kwargs"])
-        s._artists = [artist_from_json(artist) for artist in json_dict["artists"]]
+        s._artists = [stereonetartist_from_json(artist) for artist in json_dict["artists"]]
         return s
 
     def save(self, filename):
@@ -558,7 +558,7 @@ class StereoNet:
         # plt.colorbar(cf, format="%3.2f", spacing="proportional")
 
 
-def artist_from_json(obj_json):
+def stereonetartist_from_json(obj_json):
     args=tuple([feature_from_json(arg_json) for arg_json in obj_json["args"]])
     return getattr(StereoNetArtistFactory, obj_json["factory"])(*args, **obj_json["kwargs"])
 
