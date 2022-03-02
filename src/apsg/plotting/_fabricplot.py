@@ -9,6 +9,7 @@ from apsg.config import apsg_conf
 from apsg.feature._tensor3 import Ellipsoid
 from apsg.feature._container import EllipsoidSet
 from apsg.plotting._plot_artists import FabricPlotArtistFactory
+from apsg.feature import feature_from_json
 
 __all__ = ["VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot"]
 
@@ -34,47 +35,13 @@ class FabricPlot(object):
 
     def to_json(self):
         data = {}
-        artists = []
-        for artist in self._artists:
-            for obj in artist.args:
-                obj_id = id(obj)
-                if obj_id not in data:
-                    data[obj_id] = obj.to_json()
-            artist_dict = dict(
-                factory=artist.factory,
-                fabricplot_method=artist.fabricplot_method,
-                args=tuple([id(obj) for obj in artist.args]),
-                kwargs=artist.kwargs.copy(),
-            )
-            artists.append(artist_dict)
-        return dict(kwargs=self._kwargs, data=data, artists=artists,)
+        artists = [artist.to_json() for artist in self._artists]
+        return dict(kwargs=self._kwargs, artists=artists)
 
     @classmethod
     def from_json(cls, json_dict):
-        def parse_json_data(obj_json):
-            dtype_cls = getattr(sys.modules[__name__], obj_json["datatype"])
-            args = []
-            for arg in obj_json["args"]:
-                if isinstance(arg, dict):
-                    args.append([parse_json_data(jd) for jd in arg["collection"]])
-                else:
-                    args.append(arg)
-            kwargs = obj_json.get("kwargs", {})
-            return dtype_cls(*args, **kwargs)
-
-        # parse
         s = cls(**json_dict["kwargs"])
-        data = {}
-        for obj_id, obj_json in json_dict["data"].items():
-            data[obj_id] = parse_json_data(obj_json)
-        s._artists = []
-        for artist in json_dict["artists"]:
-            args = tuple([data[obj_id] for obj_id in artist["args"]])
-            s._artists.append(
-                getattr(FabricPlotArtistFactory, artist["factory"])(
-                    *args, **artist["kwargs"]
-                )
-            )
+        s._artists = [artist_from_json(artist) for artist in json_dict["artists"]]
         return s
 
     def save(self, filename):
@@ -87,7 +54,15 @@ class FabricPlot(object):
             data = pickle.load(f)
         return cls.from_json(data)
 
-    def render(self):
+    def init_figure(self):
+        self.fig = plt.figure(0, figsize=apsg_conf["figsize"],
+                              dpi=apsg_conf["dpi"],
+                              facecolor=apsg_conf["facecolor"]
+                              )
+        if hasattr(self.fig.canvas.manager, 'set_window_title'):
+            self.fig.canvas.manager.set_window_title(self.window_title)
+
+    def _render(self):
         self._draw_layout()
         self._plot_artists()
         h, lbls = self.ax.get_legend_handles_labels()
@@ -105,6 +80,13 @@ class FabricPlot(object):
         if self._kwargs["title"] is not None:
             self.fig.suptitle(self._kwargs["title"])
         self.fig.tight_layout()
+
+    def render(self):
+        if not hasattr(self, 'fig'):
+            self.init_figure()
+        else:
+            self.fig.clear()
+        self._render()
 
     def savefig(self, filename="fabricplot.png", **kwargs):
         self.render()
@@ -125,10 +107,10 @@ class VollmerPlot(FabricPlot):
         self.B = np.array([1, 3 ** 0.5 / 2])
         self.C = np.array([0.5, 0])
         self.Ti = np.linalg.inv(np.array([self.A - self.C, self.B - self.C]).T)
+        self.window_title = 'Vollmer fabric plot'
         super().__init__(**kwargs)
 
     def _draw_layout(self):
-        self.fig = plt.figure(figsize=apsg_conf["figsize"])
         self.ax = self.fig.add_subplot(111)
         self.ax.format_coord = self.format_coord
         self.ax.set_aspect("equal")
@@ -207,8 +189,9 @@ class VollmerPlot(FabricPlot):
             self.ax.plot(x, y, "k", lw=1)
 
     def show(self):
-        self.render()
-        self.fig.canvas.set_window_title("Vollmer fabric plot")
+        plt.close(0)  # close previously rendered figure
+        self.init_figure()
+        self._render()
         plt.show()
 
     ########################################
@@ -273,9 +256,9 @@ class RamsayPlot(FabricPlot):
     def __init__(self, *args, **kwargs):
         self.mx = kwargs.pop("axes_max", "auto")
         super().__init__(**kwargs)
+        self.window_title = 'Ramsay deformation plot'
 
     def _draw_layout(self):
-        self.fig = plt.figure(figsize=apsg_conf["figsize"])
         self.ax = self.fig.add_subplot(111)
         self.ax.format_coord = self.format_coord
         self.ax.set_aspect("equal")
@@ -288,7 +271,9 @@ class RamsayPlot(FabricPlot):
             self.ax.grid(True)
 
     def show(self):
-        self.render()
+        plt.close(0)  # close previously rendered figure
+        self.init_figure()
+        self._render()
         if self.mx == "auto":
             mx = max(self.ax.get_xlim()[1], self.ax.get_ylim()[1])
         else:
@@ -298,7 +283,6 @@ class RamsayPlot(FabricPlot):
         self.ax.plot([0, mx], [0, mx], "k", lw=0.5)
         box = self.ax.get_position()
         self.ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        self.fig.canvas.set_window_title("Ramsay deformation plot")
         plt.show()
 
     ########################################
@@ -350,9 +334,9 @@ class FlinnPlot(FabricPlot):
     def __init__(self, *args, **kwargs):
         self.mx = kwargs.pop("axes_max", "auto")
         super().__init__(**kwargs)
+        self.window_title = 'Flinn deformation plot'
 
     def _draw_layout(self):
-        self.fig = plt.figure(figsize=apsg_conf["figsize"])
         self.ax = self.fig.add_subplot(111)
         self.ax.format_coord = self.format_coord
         self.ax.set_aspect("equal")
@@ -365,7 +349,9 @@ class FlinnPlot(FabricPlot):
             self.ax.grid(True)
 
     def show(self):
-        self.render()
+        plt.close(0)  # close previously rendered figure
+        self.init_figure()
+        self._render()
         if self.mx == "auto":
             mx = max(self.ax.get_xlim()[1], self.ax.get_ylim()[1])
         else:
@@ -375,7 +361,6 @@ class FlinnPlot(FabricPlot):
         self.ax.plot([1, mx], [1, mx], "k", lw=0.5)
         box = self.ax.get_position()
         self.ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        self.fig.canvas.set_window_title("Flinn deformation plot")
         plt.show()
 
     ########################################
@@ -427,9 +412,9 @@ class HsuPlot(FabricPlot):
     def __init__(self, *args, **kwargs):
         self.mx = kwargs.pop("axes_max", "auto")
         super().__init__(**kwargs)
+        self.window_title = 'Hsu deformation plot'
 
     def _draw_layout(self):
-        self.fig = plt.figure(figsize=apsg_conf["figsize"])
         self.ax = self.fig.add_subplot(111, polar=True)
         self.ax.format_coord = self.format_coord
         self.ax.set_theta_zero_location("N")
@@ -444,7 +429,9 @@ class HsuPlot(FabricPlot):
             self.ax.grid(True)
 
     def show(self):
-        self.render()
+        plt.close(0)  # close previously rendered figure
+        self.init_figure()
+        self._render()
         plt.show()
 
     ########################################
@@ -483,3 +470,8 @@ class HsuPlot(FabricPlot):
 
     def format_coord(self, x, y):
         return f"lode:{x * 6 / np.pi:0.2f} eoct:{y:0.2f}"
+
+
+def artist_from_json(obj_json):
+    args=tuple([feature_from_json(arg_json) for arg_json in obj_json["args"]])
+    return getattr(FabricPlotArtistFactory, obj_json["factory"])(*args, **obj_json["kwargs"])

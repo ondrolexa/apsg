@@ -20,6 +20,7 @@ from apsg.feature._container import (
     PairSet,
     FaultSet,
 )
+from apsg.feature import feature_from_json
 from apsg.plotting._stereogrid import StereoGrid
 from apsg.feature._tensor3 import OrientationTensor3
 from apsg.plotting._projection import EqualAreaProj, EqualAngleProj
@@ -166,7 +167,7 @@ class StereoNet:
         if hasattr(self.fig.canvas.manager, 'set_window_title'):
             self.fig.canvas.manager.set_window_title(self.proj.netname)
 
-    def __render(self):
+    def _render(self):
         self.ax = self.fig.add_subplot()
         self.ax.set_aspect(1)
         self.ax.set_axis_off()
@@ -195,12 +196,12 @@ class StereoNet:
             self.init_figure()
         else:
             self.fig.clear()
-        self.__render()
+        self._render()
 
     def show(self):
         plt.close(0)  # close previously rendered figure
         self.init_figure()
-        self.__render()
+        self._render()
         plt.show()
 
     def savefig(self, filename="stereonet.png", **kwargs):
@@ -555,18 +556,6 @@ class StereoNet:
         if colorbar:
             self.fig.colorbar(cf, ax=self.ax, shrink=0.5, anchor=(0.0, 0.3))
         # plt.colorbar(cf, format="%3.2f", spacing="proportional")
-
-
-def feature_from_json(obj_json):
-    dtype_cls = getattr(sys.modules[__name__], obj_json["datatype"])
-    args = []
-    for arg in obj_json["args"]:
-        if isinstance(arg, dict):
-            args.append([feature_from_json(jd) for jd in arg["collection"]])
-        else:
-            args.append(arg)
-    kwargs = obj_json.get("kwargs", {})
-    return dtype_cls(*args, **kwargs)
 
 
 def artist_from_json(obj_json):

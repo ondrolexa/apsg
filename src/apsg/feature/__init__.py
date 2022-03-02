@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
 from apsg.feature._container import (
     FeatureSet,
@@ -54,3 +55,13 @@ __all__ = (
     "Core",
 )
 
+def feature_from_json(obj_json):
+    dtype_cls = getattr(sys.modules[__name__], obj_json["datatype"])
+    args = []
+    for arg in obj_json["args"]:
+        if isinstance(arg, dict):
+            args.append([feature_from_json(jd) for jd in arg["collection"]])
+        else:
+            args.append(arg)
+    kwargs = obj_json.get("kwargs", {})
+    return dtype_cls(*args, **kwargs)

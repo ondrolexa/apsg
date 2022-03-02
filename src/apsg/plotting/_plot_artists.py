@@ -449,6 +449,14 @@ class FabricPlot_Artists:
         self.kwargs = apsg_conf[style].copy()
         self.kwargs["label"] = self.fabricplot_method
 
+    def to_json(self):
+        return dict(
+            factory=self.factory,
+            fabricplot_method=self.fabricplot_method,
+            args=tuple([obj.to_json() for obj in self.args]),
+            kwargs=self.kwargs.copy(),
+        )
+
 
 class FabricPlot_Point(FabricPlot_Artists):
     def __init__(self, factory, *args, **kwargs):

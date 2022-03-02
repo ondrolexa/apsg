@@ -14,7 +14,6 @@ from apsg.math._vector import Vector3
 from apsg.feature._geodata import Lineation, Foliation, Pair
 from apsg.feature._container import Vector3Set
 from apsg.feature._tensor3 import DeformationGradient3
-from apsg.plotting._stereonet import StereoNet
 
 __all__ = ("Core",)
 
@@ -410,66 +409,3 @@ class Core(object):
             pca = ot.V3
         mad = ot.MAD()
         return pca, mad
-
-    def zijderveld_plot(self, kind="geo"):
-        data = getattr(self, kind)
-        N, E, Z = np.array(data).T
-        N0, E0, Z0 = data[0]
-        fig, ax = plt.subplots(facecolor="white", figsize=apsg_conf["figsize"])
-        ax.plot(E, N, "b-", label="Horizontal")
-        ax.plot(E0, N0, "b+", markersize=14)
-        ax.plot(E, N, "bo", picker=5)
-        ax.plot(E, -Z, "g-", label="Vertical")
-        ax.plot(E0, -Z0, "g+", markersize=14)
-        ax.plot(E, -Z, "go", picker=5)
-        fig.canvas.mpl_connect("pick_event", lambda event: self.onpick(event, fig))
-        mx = np.max(np.abs(ax.axis()))
-        ax.axis([-mx, mx, -mx, mx])
-        ax.set_aspect(1)
-        ax.spines["left"].set_position("zero")
-        ax.spines["right"].set_position("zero")
-        ax.spines["bottom"].set_position("zero")
-        ax.spines["top"].set_position("zero")
-        t = ax.xaxis.get_ticklocs()
-        ax.xaxis.set_ticklabels([])
-        ax.yaxis.set_ticklabels([])
-        # t = ax.xaxis.get_ticklocs()
-        # ax.xaxis.set_ticks(t[t != 0])
-        # t = ax.yaxis.get_ticklocs()
-        # ax.yaxis.set_ticks(t[t != 0])
-        ax.set_title("{} {}".format(self.site, self.specimen), loc="left")
-        plt.legend(title="Unit={:g}A/m".format(t[1] - t[0]))
-        plt.tight_layout()
-        plt.show()
-
-    def demag_plot(self):
-        fig, ax = plt.subplots(figsize=apsg_conf["figsize"])
-        ax.plot(self.nsteps[0], self.MAG[0] / self.MAG.max(), "k+", markersize=14)
-        ax.plot(self.nsteps, self.MAG / self.MAG.max(), "ko-")
-        ax.set_ylabel("M/Mmax")
-        ax.set_title(
-            "{} {} (Mmax = {:g})".format(self.site, self.specimen, self.MAG.max())
-        )
-        ax.set_ylim(0, 1.02)
-        ax.yaxis.grid()
-        plt.show()
-
-    def stereo_plot(self, kind="geo", **kwargs):
-        data = getattr(self, kind)
-        tt = {
-            "V": "Specimen coordinates",
-            "geo": "Geographic coordinates",
-            "tilt": "Tilted coordinates",
-        }
-        s = StereoNet(
-            title="{} {}\n{}".format(self.site, self.specimen, tt[kind]), **kwargs
-        )
-        for f1, f2 in zip(data[:-1], data[1:]):
-            s.arc(f1, f2, "k:")
-        s.vector(data[0], "k+", markersize=14)
-        s.vector(data, "ko")
-        s.show()
-
-    def onpick(self, event, fig):
-        fig.suptitle("{}".format(self.steps[event.ind[0]]))
-        fig.canvas.draw()
