@@ -495,14 +495,14 @@ class FabricPlot_Path(FabricPlot_Artists):
 class FabricPlotArtistFactory:
     @staticmethod
     def create_point(*args, **kwargs):
-        if all([issubclass(type(arg), Ellipsoid) for arg in args]):
+        if all([issubclass(type(arg), (Ellipsoid, EllipsoidSet)) for arg in args]):
             return FabricPlot_Point("create_point", *args, **kwargs)
         else:
-            raise TypeError("Not valid arguments for Ramsayplot point")
+            raise TypeError("Not valid arguments for Fabric plot point")
 
     @staticmethod
     def create_path(*args, **kwargs):
         if all([issubclass(type(arg), EllipsoidSet) for arg in args]):
             return FabricPlot_Path("create_path", *args, **kwargs)
         else:
-            raise TypeError("Not valid arguments for Ramsayplot path")
+            raise TypeError("Not valid arguments for Fabric plot path")
