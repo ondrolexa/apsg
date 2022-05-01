@@ -541,11 +541,11 @@ class Ellipsoid(Tensor3):
 
     @property
     def Rxy(self) -> float:
-        return self.lambda1 / self.lambda2
+        return self.lambda1 / self.lambda2 if self.lambda2 != 0 else np.inf
 
     @property
     def Ryz(self) -> float:
-        return self.lambda2 / self.lambda3
+        return self.lambda2 / self.lambda3 if self.lambda3 != 0 else np.inf
 
     @property
     def e12(self) -> float:
