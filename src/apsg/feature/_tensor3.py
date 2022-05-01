@@ -564,7 +564,7 @@ class Ellipsoid(Tensor3):
         """
         Return the strain symmetry.
         """
-        return (self.Rxy - 1) / (self.Ryz - 1)
+        return (self.Rxy - 1) / (self.Ryz - 1) if self.Ryz > 1 else np.inf
 
     @property
     def d(self) -> float:
