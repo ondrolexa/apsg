@@ -96,6 +96,43 @@ class DeformationGradient3(Matrix3):
         return cls.from_axisangle(v1.cross(v2), v1.angle(v2))
 
     @classmethod
+    @ensure_arguments(Vector3, Vector3, Vector3)
+    def from_vectors_axis(cls, v1, v2, a):
+        """
+        Return ``DeformationGradient3`` representing rotation of vector v1 to v2 around
+        axis a. 
+
+        If v1.angle(a) is not equal to v2.angle(b), the minimum adjustment of rotation axis
+        is done automatically.
+
+        Args:
+          v1: ``Vector3`` like object
+          v2: ``Vector3`` like object
+           a: estimated rotation axis ``Vector3`` like object
+
+        Returns:
+            ``Defgrad3`` rotational matrix
+
+        Example:
+            >>> v1 = lin(130, 49)
+            >>> v2 = lin(209, 77)
+            >>> a = lin(30, 30)
+            >>> R = defgrad.from_vectors_axis(v1, v2, a)
+            >>> v1.transform(R) == v2
+            True
+            >>> a_fix, theta = R.axisangle()
+            >>> lin(a_fix)
+            L:31/30
+
+        """
+        n = v1.cross(v2).cross(v1 + v2)
+        a_fix = a.reject(n).normalized()
+        v1p = v1.reject(a_fix)
+        v2p = v2.reject(a_fix)
+        return cls.from_axisangle(v1p.cross(v2p), v1p.angle(v2p))
+
+
+    @classmethod
     def from_two_pairs(cls, p1, p2, symmetry=False):
         """
         Return ``DeformationGradient3`` representing rotation of coordinates from system
