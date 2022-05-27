@@ -138,7 +138,7 @@ class StereoGrid:
         ax.set_xlim(-1.05, 1.05)
         ax.set_ylim(-1.05, 1.05)
         if colorbar:
-            self.fig.colorbar(cf, ax=self.ax, shrink=0.6)
+            fig.colorbar(cf, ax=ax, shrink=0.6)
         plt.show()
 
     def contour(self, *args, **kwargs):
@@ -174,7 +174,7 @@ class StereoGrid:
         for collection in cf.collections:
             collection.set_clip_path(primitive)
         if colorbar:
-            self.fig.colorbar(cf, ax=self.ax, shrink=0.6)
+            fig.colorbar(cf, ax=ax, shrink=0.6)
         plt.show()
 
     def plotcountgrid(self, **kwargs):
