@@ -6,7 +6,7 @@ apsg_conf = dict(
     ndigits=3,  # Round to ndigits in repr
     figsize=(8, 6),  # Default figure size
     dpi=100,  # Default figure dpi
-    facecolor='white',  # Default figure facecolor
+    facecolor="white",  # Default figure facecolor
     stereonet_default_kwargs=dict(
         kind="equal-area",
         overlay_position=(0, 0, 0, 0),
@@ -119,6 +119,14 @@ apsg_conf = dict(
         alpha=None, color=None, mec=None, mfc=None, ls="none", marker="o", mew=1, ms=8,
     ),
     fabricplot_default_path_kwargs=dict(
-        alpha=None, color=None, ls="-", lw=1.5, marker=None, mec=None, mew=1, mfc=None, ms=6,
+        alpha=None,
+        color=None,
+        ls="-",
+        lw=1.5,
+        marker=None,
+        mec=None,
+        mew=1,
+        mfc=None,
+        ms=6,
     ),
 )

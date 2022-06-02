@@ -2,7 +2,7 @@ import numpy as np
 
 from apsg.config import apsg_conf
 from apsg.math._vector import Vector2, Vector3
-from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
+from apsg.feature._geodata import Lineation, Foliation, Pair, Fault, Cone
 from apsg.feature._tensor3 import Ellipsoid, OrientationTensor3
 from apsg.feature._container import (
     FeatureSet,
@@ -12,6 +12,7 @@ from apsg.feature._container import (
     FoliationSet,
     PairSet,
     FaultSet,
+    ConeSet,
     EllipsoidSet,
     OrientationTensor3Set,
 )
@@ -155,6 +156,35 @@ class StereoNet_Arc(StereoNet_Artists):
                 self.kwargs["label"] = f"Planar ({len(self.args)})"
 
 
+# class StereoNet_Cone(StereoNet_Artists):
+#     def __init__(self, factory, *args, **kwargs):
+#         super().__init__(factory, *args, **kwargs)
+#         self.stereonet_method = "_cone"
+#         self.args = args
+#         self.parse_kwargs(kwargs)
+
+#     def parse_kwargs(self, kwargs):
+#         super().update_kwargs("stereonet_default_cone_kwargs")
+#         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+#         self.kwargs["angle"] = np.atleast_1d(kwargs["angle"]).tolist()
+#         nof = np.vstack(self.args).shape[0]
+#         noa = len(self.kwargs["angle"])
+#         if np.vstack(self.args).shape[0] != len(self.kwargs["angle"]):
+#             raise TypeError(
+#                 f"Number of angles ({noa}) do not match number of features ({nof})"
+#             )
+#         if not isinstance(self.kwargs["label"], str):
+#             if len(self.args) == 1:
+#                 if issubclass(type(self.args[0]), Vector3):
+#                     self.kwargs[
+#                         "label"
+#                     ] = f"Cone {self.args[0].label()} ({self.kwargs['angle'][0]})"
+#                 else:
+#                     self.kwargs["label"] = f"Cones ({len(self.args[0])})"
+#             else:
+#                 self.kwargs["label"] = f"Cones ({len(self.args)})"
+
+
 class StereoNet_Cone(StereoNet_Artists):
     def __init__(self, factory, *args, **kwargs):
         super().__init__(factory, *args, **kwargs)
@@ -165,21 +195,9 @@ class StereoNet_Cone(StereoNet_Artists):
     def parse_kwargs(self, kwargs):
         super().update_kwargs("stereonet_default_cone_kwargs")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
-        self.kwargs["angle"] = np.atleast_1d(kwargs["angle"]).tolist()
-        nof = np.vstack(self.args).shape[0]
-        noa = len(self.kwargs["angle"])
-        if np.vstack(self.args).shape[0] != len(self.kwargs["angle"]):
-            raise TypeError(
-                f"Number of angles ({noa}) do not match number of features ({nof})"
-            )
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
-                if issubclass(type(self.args[0]), Vector3):
-                    self.kwargs[
-                        "label"
-                    ] = f"Cone {self.args[0].label()} ({self.kwargs['angle'][0]})"
-                else:
-                    self.kwargs["label"] = f"Cones ({len(self.args[0])})"
+                self.kwargs["label"] = self.args[0].label()
             else:
                 self.kwargs["label"] = f"Cones ({len(self.args)})"
 
@@ -317,13 +335,20 @@ class StereoNetArtistFactory:
         else:
             raise TypeError("Not valid arguments for Stereonet arc")
 
+    # @staticmethod
+    # def create_cone(*args, **kwargs):
+    #     if all([issubclass(type(arg), (Cone, ConeSet)) for arg in args]):
+    #         if "angle" in kwargs:
+    #             return StereoNet_Cone("create_cone", *args, **kwargs)
+    #         else:
+    #             raise TypeError("Keyword argument angle must be provided.")
+    #     else:
+    #         raise TypeError("Not valid arguments for Stereonet cone")
+
     @staticmethod
     def create_cone(*args, **kwargs):
-        if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
-            if "angle" in kwargs:
-                return StereoNet_Cone("create_cone", *args, **kwargs)
-            else:
-                raise TypeError("Keyword argument angle must be provided.")
+        if all([issubclass(type(arg), (Cone, ConeSet)) for arg in args]):
+            return StereoNet_Cone("create_cone", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet cone")
 

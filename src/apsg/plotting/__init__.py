@@ -7,7 +7,7 @@ from apsg.plotting._fabricplot import VollmerPlot, RamsayPlot, FlinnPlot, HsuPlo
 from apsg.plotting._plot_artists import (
     StereoNetArtistFactory,
     RosePlotArtistFactory,
-    FabricPlotArtistFactory
+    FabricPlotArtistFactory,
 )
 
 __all__ = (
@@ -21,5 +21,5 @@ __all__ = (
     "quicknet",
     "StereoNetArtistFactory",
     "RosePlotArtistFactory",
-    "FabricPlotArtistFactory"
+    "FabricPlotArtistFactory",
 )

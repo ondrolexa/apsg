@@ -89,12 +89,14 @@ class RosePlot(object):
         return cls.from_json(data)
 
     def init_figure(self):
-        self.fig = plt.figure(0, figsize=apsg_conf["figsize"],
-                              dpi=apsg_conf["dpi"],
-                              facecolor=apsg_conf["facecolor"]
-                              )
-        if hasattr(self.fig.canvas.manager, 'set_window_title'):
-            self.fig.canvas.manager.set_window_title('Rose diagram')
+        self.fig = plt.figure(
+            0,
+            figsize=apsg_conf["figsize"],
+            dpi=apsg_conf["dpi"],
+            facecolor=apsg_conf["facecolor"],
+        )
+        if hasattr(self.fig.canvas.manager, "set_window_title"):
+            self.fig.canvas.manager.set_window_title("Rose diagram")
 
     def _render(self):
         self._draw_layout()
@@ -116,7 +118,7 @@ class RosePlot(object):
         self.fig.tight_layout()
 
     def render(self):
-        if not hasattr(self, 'fig'):
+        if not hasattr(self, "fig"):
             self.init_figure()
         else:
             self.fig.clear()
@@ -238,13 +240,19 @@ class RosePlot(object):
         if self._kwargs["axial"]:
             mu = circmean(2 * ang) / 2
             ang_shift = ang + np.pi / 2 - mu
-            bsmu = [circmean(np.random.choice(2 * ang_shift, size=len(ang_shift))) for i in range(n_resamples)]
+            bsmu = [
+                circmean(np.random.choice(2 * ang_shift, size=len(ang_shift)))
+                for i in range(n_resamples)
+            ]
             low = np.percentile(bsmu, 100 - conflevel) / 2 + mu - np.pi / 2
             high = np.percentile(bsmu, conflevel) / 2 + mu - np.pi / 2
         else:
             mu = circmean(ang)
             ang_shift = ang + np.pi - mu
-            bsmu = [circmean(np.random.choice(ang_shift, size=len(ang_shift))) for i in range(n_resamples)]
+            bsmu = [
+                circmean(np.random.choice(ang_shift, size=len(ang_shift)))
+                for i in range(n_resamples)
+            ]
             low = np.percentile(bsmu, (100 - conflevel) / 2) + mu - np.pi
             high = np.percentile(bsmu, 100 - (100 - conflevel) / 2) + mu - np.pi
         radii = []
@@ -269,6 +277,9 @@ class RosePlot(object):
         self.ax.plot(ci_angles, mur * np.ones_like(ci_angles), **kwargs)
         self.ax.plot(ci_angles + np.pi, mur * np.ones_like(ci_angles), **kwargs)
 
+
 def roseartist_from_json(obj_json):
-    args=tuple([feature_from_json(arg_json) for arg_json in obj_json["args"]])
-    return getattr(RosePlotArtistFactory, obj_json["factory"])(*args, **obj_json["kwargs"])
+    args = tuple([feature_from_json(arg_json) for arg_json in obj_json["args"]])
+    return getattr(RosePlotArtistFactory, obj_json["factory"])(
+        *args, **obj_json["kwargs"]
+    )

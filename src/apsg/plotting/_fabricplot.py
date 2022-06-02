@@ -54,11 +54,13 @@ class FabricPlot(object):
         return cls.from_json(data)
 
     def init_figure(self):
-        self.fig = plt.figure(0, figsize=apsg_conf["figsize"],
-                              dpi=apsg_conf["dpi"],
-                              facecolor=apsg_conf["facecolor"]
-                              )
-        if hasattr(self.fig.canvas.manager, 'set_window_title'):
+        self.fig = plt.figure(
+            0,
+            figsize=apsg_conf["figsize"],
+            dpi=apsg_conf["dpi"],
+            facecolor=apsg_conf["facecolor"],
+        )
+        if hasattr(self.fig.canvas.manager, "set_window_title"):
             self.fig.canvas.manager.set_window_title(self.window_title)
 
     def _render(self):
@@ -81,7 +83,7 @@ class FabricPlot(object):
         self.fig.tight_layout()
 
     def render(self):
-        if not hasattr(self, 'fig'):
+        if not hasattr(self, "fig"):
             self.init_figure()
         else:
             self.fig.clear()
@@ -104,7 +106,7 @@ class VollmerPlot(FabricPlot):
         self.B = np.array([1, 3 ** 0.5 / 2])
         self.C = np.array([0.5, 0])
         self.Ti = np.linalg.inv(np.array([self.A - self.C, self.B - self.C]).T)
-        self.window_title = 'Vollmer fabric plot'
+        self.window_title = "Vollmer fabric plot"
         super().__init__(**kwargs)
 
     def _draw_layout(self):
@@ -253,7 +255,7 @@ class RamsayPlot(FabricPlot):
     def __init__(self, *args, **kwargs):
         self.mx = kwargs.pop("axes_max", "auto")
         super().__init__(**kwargs)
-        self.window_title = 'Ramsay deformation plot'
+        self.window_title = "Ramsay deformation plot"
 
     def _draw_layout(self):
         self.ax = self.fig.add_subplot(111)
@@ -331,7 +333,7 @@ class FlinnPlot(FabricPlot):
     def __init__(self, *args, **kwargs):
         self.mx = kwargs.pop("axes_max", "auto")
         super().__init__(**kwargs)
-        self.window_title = 'Flinn deformation plot'
+        self.window_title = "Flinn deformation plot"
 
     def _draw_layout(self):
         self.ax = self.fig.add_subplot(111)
@@ -409,7 +411,7 @@ class HsuPlot(FabricPlot):
     def __init__(self, *args, **kwargs):
         self.mx = kwargs.pop("axes_max", "auto")
         super().__init__(**kwargs)
-        self.window_title = 'Hsu deformation plot'
+        self.window_title = "Hsu deformation plot"
 
     def _draw_layout(self):
         self.ax = self.fig.add_subplot(111, polar=True)
@@ -470,5 +472,7 @@ class HsuPlot(FabricPlot):
 
 
 def fabricartist_from_json(obj_json):
-    args=tuple([feature_from_json(arg_json) for arg_json in obj_json["args"]])
-    return getattr(FabricPlotArtistFactory, obj_json["factory"])(*args, **obj_json["kwargs"])
+    args = tuple([feature_from_json(arg_json) for arg_json in obj_json["args"]])
+    return getattr(FabricPlotArtistFactory, obj_json["factory"])(
+        *args, **obj_json["kwargs"]
+    )

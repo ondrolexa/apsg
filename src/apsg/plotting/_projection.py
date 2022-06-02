@@ -20,29 +20,23 @@ class Projection:
         self.R = np.array(DeformationGradient3.from_pair(self.overlay_position))
         self.Ri = np.linalg.inv(self.R)
 
-    def project_data(self, x, y, z, clip_inside=True, return_mask=False):
+    def project_data(self, x, y, z, clip_inside=True):
         if self.rotate_data:
             x, y, z = self.R.dot((x, y, z))
         if self.hemisphere == "upper":
             X, Y = self._project(-x, -y, -z)
             if clip_inside:
-                inside = X * X + Y * Y <= 1.0
-                if return_mask:
-                    return -X[inside], -Y[inside], inside
-                else:
-                    return -X[inside], -Y[inside]
-            else:
-                return -X, -Y
+                outside = X * X + Y * Y > 1.0
+                X[outside] = np.nan
+                Y[outside] = np.nan
+            return -X, -Y
         else:
             X, Y = self._project(x, y, z)
             if clip_inside:
-                inside = X * X + Y * Y <= 1.0
-                if return_mask:
-                    return X[inside], Y[inside], inside
-                else:
-                    return X[inside], Y[inside]
-            else:
-                return X, Y
+                outside = X * X + Y * Y > 1.0
+                X[outside] = np.nan
+                Y[outside] = np.nan
+            return X, Y
 
     def project_data_antipodal(self, x, y, z, clip_inside=True):
         if self.rotate_data:
@@ -50,11 +44,13 @@ class Projection:
         X1, Y1 = self._project(x, y, z)
         X2, Y2 = self._project(-x, -y, -z)
         if clip_inside:
-            inside1 = X1 * X1 + Y1 * Y1 <= 1.0
-            inside2 = X2 * X2 + Y2 * Y2 <= 1.0
-            return X1[inside1], Y1[inside1], -X2[inside2], -Y2[inside2]
-        else:
-            return X1, Y1, -X2, -Y2
+            outside1 = X1 * X1 + Y1 * Y1 > 1.0
+            outside2 = X2 * X2 + Y2 * Y2 > 1.0
+            X1[outside1] = np.nan
+            Y1[outside1] = np.nan
+            X2[outside2] = np.nan
+            Y2[outside2] = np.nan
+        return X1, Y1, -X2, -Y2
 
     def inverse_data(self, X, Y):
         if X * X + Y * Y > 1.0:
@@ -67,8 +63,10 @@ class Projection:
     def project_overlay(self, x, y, z):
         x, y, z = self.R.dot((x, y, z))
         X, Y = self._project(x, y, z)
-        inside = X * X + Y * Y < 1.0
-        return X[inside], Y[inside]
+        outside = X * X + Y * Y >= 1.0
+        X[outside] = np.nan
+        Y[outside] = np.nan
+        return X, Y
 
     def get_grid_overlay(self):
         angles_gc = np.linspace(-90 + 1e-7, 90 - 1e-7, int(self.overlay_resolution / 2))

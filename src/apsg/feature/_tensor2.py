@@ -326,7 +326,9 @@ class Ellipse(Tensor2):
     """
 
     def __repr__(self) -> str:
-        return f"{Matrix2.__repr__(self)}\n(ar:{self.ar:.3g}, ori:{self.orientation:.3g})"
+        return (
+            f"{Matrix2.__repr__(self)}\n(ar:{self.ar:.3g}, ori:{self.orientation:.3g})"
+        )
 
     @classmethod
     def from_defgrad(cls, F, form="left", **kwargs) -> "Ellipse":

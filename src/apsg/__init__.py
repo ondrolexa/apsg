@@ -7,6 +7,7 @@ from apsg.feature import (
     Foliation as fol,
     Pair as pair,
     Fault as fault,
+    Cone as cone,
 )
 from apsg.feature import (
     Vector3Set as vec3set,
@@ -15,6 +16,7 @@ from apsg.feature import (
     FoliationSet as folset,
     PairSet as pairset,
     FaultSet as faultset,
+    ConeSet as coneset,
     EllipsoidSet as ellipsoidset,
     OrientationTensor3Set as ortensorset,
 )
@@ -41,7 +43,7 @@ from apsg.plotting import (
     RamsayPlot,
     FlinnPlot,
     HsuPlot,
-    quicknet
+    quicknet,
 )
 
 __all__ = (
@@ -52,12 +54,14 @@ __all__ = (
     "fol",
     "pair",
     "fault",
+    "cone",
     "vec3set",
     "vec2set",
     "linset",
     "folset",
     "pairset",
     "faultset",
+    "coneset",
     "ellipsoidset",
     "ortensorset",
     "G",
@@ -78,7 +82,7 @@ __all__ = (
     "RamsayPlot",
     "FlinnPlot",
     "HsuPlot",
-    "quicknet"
+    "quicknet",
 )
 
 __version__ = "1.0.0"

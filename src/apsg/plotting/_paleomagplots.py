@@ -11,6 +11,7 @@ def zijderveld_plot(core, kind="geo"):
     def onpick(core, event, fig):
         fig.suptitle("{}".format(core.steps[event.ind[0]]))
         fig.canvas.draw()
+
     data = getattr(core, kind)
     N, E, Z = np.array(data).T
     N0, E0, Z0 = data[0]
@@ -47,9 +48,7 @@ def demag_plot(core):
     ax.plot(core.nsteps[0], core.MAG[0] / core.MAG.max(), "k+", markersize=14)
     ax.plot(core.nsteps, core.MAG / core.MAG.max(), "ko-")
     ax.set_ylabel("M/Mmax")
-    ax.set_title(
-        "{} {} (Mmax = {:g})".format(core.site, core.specimen, core.MAG.max())
-    )
+    ax.set_title("{} {} (Mmax = {:g})".format(core.site, core.specimen, core.MAG.max()))
     ax.set_ylim(0, 1.02)
     ax.yaxis.grid()
     plt.show()

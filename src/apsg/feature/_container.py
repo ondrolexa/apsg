@@ -7,7 +7,7 @@ from apsg.config import apsg_conf
 from apsg.helpers._math import sind, cosd, atan2d
 from apsg.math._vector import Vector2, Vector3
 from apsg.helpers._math import acosd
-from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
+from apsg.feature._geodata import Lineation, Foliation, Pair, Fault, Cone
 from apsg.feature._tensor3 import OrientationTensor3, Ellipsoid
 from apsg.feature._statistics import KentDistribution, vonMisesFisher
 
@@ -1218,6 +1218,13 @@ class FaultSet(PairSet):
             ],
             name=name,
         )
+
+
+class ConeSet(FeatureSet):
+    __feature_type__ = "Cone"
+
+    def __repr__(self):
+        return f"C({len(self)}) {self.name}"
 
 
 class EllipsoidSet(FeatureSet):

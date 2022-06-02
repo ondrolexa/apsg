@@ -10,7 +10,7 @@ from matplotlib.patches import Circle
 
 from apsg.config import apsg_conf
 from apsg.math._vector import Vector3
-from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
+from apsg.feature._geodata import Lineation, Foliation, Pair, Fault, Cone
 from apsg.feature._container import (
     FeatureSet,
     Vector3Set,
@@ -145,7 +145,9 @@ class StereoNet:
     @classmethod
     def from_json(cls, json_dict):
         s = cls(**json_dict["kwargs"])
-        s._artists = [stereonetartist_from_json(artist) for artist in json_dict["artists"]]
+        s._artists = [
+            stereonetartist_from_json(artist) for artist in json_dict["artists"]
+        ]
         return s
 
     def save(self, filename):
@@ -159,11 +161,13 @@ class StereoNet:
         return cls.from_json(data)
 
     def init_figure(self):
-        self.fig = plt.figure(0, figsize=apsg_conf["figsize"],
-                              dpi=apsg_conf["dpi"],
-                              facecolor=apsg_conf["facecolor"]
-                              )
-        if hasattr(self.fig.canvas.manager, 'set_window_title'):
+        self.fig = plt.figure(
+            0,
+            figsize=apsg_conf["figsize"],
+            dpi=apsg_conf["dpi"],
+            facecolor=apsg_conf["facecolor"],
+        )
+        if hasattr(self.fig.canvas.manager, "set_window_title"):
             self.fig.canvas.manager.set_window_title(self.proj.netname)
 
     def _render(self):
@@ -191,7 +195,7 @@ class StereoNet:
         self.fig.tight_layout()
 
     def render(self):
-        if not hasattr(self, 'fig'):
+        if not hasattr(self, "fig"):
             self.init_figure()
         else:
             self.fig.clear()
@@ -410,20 +414,18 @@ class StereoNet:
     def _scatter(self, *args, **kwargs):
         legend = kwargs.pop("legend")
         num = kwargs.pop("num")
-        x_lower, y_lower, mask_lower = self.proj.project_data(
-            *np.vstack(args).T, return_mask=True
-        )
-        x_upper, y_upper, mask_upper = self.proj.project_data(
-            *(-np.vstack(args).T), return_mask=True
-        )
-        prop = 'sizes'
+        x_lower, y_lower = self.proj.project_data(*np.vstack(args).T)
+        mask_lower = ~np.isnan(x_lower)
+        x_upper, y_upper, mask_upper = self.proj.project_data(*(-np.vstack(args).T))
+        mask_upper = ~np.isnan(x_upper)
+        prop = "sizes"
         if kwargs["s"] is not None:
             s = np.atleast_1d(kwargs["s"])
             kwargs["s"] = np.hstack((s[mask_lower], s[mask_upper]))
         if kwargs["c"] is not None:
             c = np.atleast_1d(kwargs["c"])
             kwargs["c"] = np.hstack((c[mask_lower], c[mask_upper]))
-            prop = 'colors'
+            prop = "colors"
         sc = self.ax.scatter(
             np.hstack((x_lower, x_upper)), np.hstack((y_lower, y_upper)), **kwargs,
         )
@@ -433,36 +435,64 @@ class StereoNet:
                 bbox_to_anchor=(1.05, 1),
                 prop={"size": 11},
                 loc="upper left",
-                borderaxespad=0)
+                borderaxespad=0,
+            )
         sc.set_clip_path(self.primitive)
+
+    # def _cone(self, *args, **kwargs):
+    #     X, Y = [], []
+    #     # get scalar arguments from kwargs
+    #     angles = kwargs.pop("angle")
+    #     for axis, angle in zip(np.vstack(args), angles):
+    #         if self.proj.rotate_data:
+    #             lt = axis.transform(self.proj.R)
+    #             azi, dip = Vector3(lt).geo
+    #             cl_lower = Vector3(azi, dip + angle).transform(self.proj.Ri)
+    #             cl_upper = -Vector3(azi, dip - angle).transform(self.proj.Ri)
+    #         else:
+    #             lt = axis
+    #             azi, dip = Vector3(lt).geo
+    #             cl_lower = Vector3(azi, dip + angle)
+    #             cl_upper = -Vector3(azi, dip - angle)
+    #         # plot on lower
+    #         x, y = self.proj.project_data(
+    #             *np.array([cl_lower.rotate(lt, a) for a in self.angles_sc]).T
+    #         )
+    #         X.append(np.hstack((x, np.nan)))
+    #         Y.append(np.hstack((y, np.nan)))
+    #         # plot on upper
+    #         x, y = self.proj.project_data(
+    #             *np.array([cl_upper.rotate(-lt, a) for a in self.angles_sc]).T
+    #         )
+    #         X.append(np.hstack((x, np.nan)))
+    #         Y.append(np.hstack((y, np.nan)))
+    #     handles = self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
+    #     for h in handles:
+    #         h.set_clip_path(self.primitive)
+    #     return handles
 
     def _cone(self, *args, **kwargs):
         X, Y = [], []
         # get scalar arguments from kwargs
-        angles = kwargs.pop("angle")
-        for axis, angle in zip(np.vstack(args), angles):
-            if self.proj.rotate_data:
-                lt = axis.transform(self.proj.R)
-                azi, dip = Vector3(lt).geo
-                cl_lower = Vector3(azi, dip + angle).transform(self.proj.Ri)
-                cl_upper = -Vector3(azi, dip - angle).transform(self.proj.Ri)
+        for arg in args:
+            if issubclass(type(arg), Cone):
+                cones = [arg]
             else:
-                lt = axis
-                azi, dip = Vector3(lt).geo
-                cl_lower = Vector3(azi, dip + angle)
-                cl_upper = -Vector3(azi, dip - angle)
-            # plot on lower
-            x, y = self.proj.project_data(
-                *np.array([cl_lower.rotate(lt, a) for a in self.angles_sc]).T
-            )
-            X.append(np.hstack((x, np.nan)))
-            Y.append(np.hstack((y, np.nan)))
-            # plot on upper
-            x, y = self.proj.project_data(
-                *np.array([cl_upper.rotate(-lt, a) for a in self.angles_sc]).T
-            )
-            X.append(np.hstack((x, np.nan)))
-            Y.append(np.hstack((y, np.nan)))
+                cones = arg
+            for c in cones:
+                # plot on lower
+                angles = np.linspace(0, c.revangle, max(2, abs(int(c.revangle))))
+                x, y = self.proj.project_data(
+                    *np.array([c.secant.rotate(c.axis, a) for a in angles]).T
+                )
+                X.append(np.hstack((x, np.nan)))
+                Y.append(np.hstack((y, np.nan)))
+                # plot on upper
+                x, y = self.proj.project_data(
+                    *np.array([-c.secant.rotate(c.axis, a) for a in angles]).T
+                )
+                X.append(np.hstack((x, np.nan)))
+                Y.append(np.hstack((y, np.nan)))
         handles = self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
         for h in handles:
             h.set_clip_path(self.primitive)
@@ -558,14 +588,16 @@ class StereoNet:
 
 
 def stereonetartist_from_json(obj_json):
-    args=tuple([feature_from_json(arg_json) for arg_json in obj_json["args"]])
-    return getattr(StereoNetArtistFactory, obj_json["factory"])(*args, **obj_json["kwargs"])
+    args = tuple([feature_from_json(arg_json) for arg_json in obj_json["args"]])
+    return getattr(StereoNetArtistFactory, obj_json["factory"])(
+        *args, **obj_json["kwargs"]
+    )
 
 
 def quicknet(*args, **kwargs):
-    savefig = kwargs.get('savefig', False)
-    filename = kwargs.get('filename', 'stereonet.png')
-    savefig_kwargs = kwargs.get('savefig_kwargs', {})
+    savefig = kwargs.get("savefig", False)
+    filename = kwargs.get("filename", "stereonet.png")
+    savefig_kwargs = kwargs.get("savefig_kwargs", {})
     s = StereoNet(**kwargs)
     for arg in args:
         if isinstance(arg, FoliationSet):

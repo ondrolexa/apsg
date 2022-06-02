@@ -420,3 +420,147 @@ class Fault(Pair):
     def d(self):
         """Return dihedra plane as ``Fol``"""
         return Foliation(self.lvec.cross(self.fvec).cross(self.fvec))
+
+
+class Cone:
+    """
+    The class to store cone with given axis, secant line and revolution angle
+    in degrees.
+
+    There are different way to create ``Cone`` object:
+
+    cone()  - create default Cone with axis lin(0, 90), secant lin(0, 0) angle 180
+    cone(c) - c could be Cone
+            - c could be tuple of (aazi, ainc, sazi, sinc, revangle)
+            - c could be tuple of (ax, ay ,az, sx, sy, sz, revangle)
+    cone(a, s, revangle) - a and s could be Vector3 like objects, e.g. Lineation
+    pair(aazi, ainc, sazi, sinc, revangle) - five numerical arguments defining axis
+                                             lin(faazi, ainc), secant lin(sazi, sinc)
+                                             and angle of revolution
+
+    Example:
+        >>> c = cone(140, 30, 110, 26, 360)
+
+    """
+
+    __slots__ = ("axis", "secant", "revangle")
+    __shape__ = (7,)
+
+    def __init__(self, *args):
+        if len(args) == 0:
+            axis, secant, revangle = Vector3(0, 0, 1), Vector3(1, 0, 0), 360
+        elif len(args) == 1 and issubclass(type(args[0]), Cone):
+            axis, secant, revangle = args[0].axis, args[0].secant, args[0].revangle
+        elif len(args) == 1 and np.asarray(args[0]).shape == (5,):
+            aazi, ainc, sazi, sinc, revangle = (float(v) for v in args[0])
+            axis, secant = Lineation(aazi, ainc), Lineation(sazi, sinc)
+        elif len(args) == 1 and np.asarray(args[0]).shape == Cone.__shape__:
+            axis, secant, revangle = (
+                Vector3(args[0][:3]),
+                Vector3(args[0][3:6]),
+                args[0][-1],
+            )
+        elif len(args) == 2:
+            if issubclass(type(args[0]), Vector3) and issubclass(
+                type(args[1]), Vector3
+            ):
+                axis, secant = args
+                revangle = 360
+            elif issubclass(type(args[0]), Vector3) and np.isscalar(args[1]):
+                axis = args[0]
+                azi, inc = axis.geo
+                secant = Vector3(azi, inc + args[1])
+                revangle = 360
+            else:
+                raise TypeError("Not valid arguments for Cone")
+        elif len(args) == 3:
+            if issubclass(type(args[0]), Vector3) and issubclass(
+                type(args[1]), Vector3
+            ):
+                axis, secant, revangle = args
+            else:
+                raise TypeError("Not valid arguments for Cone")
+        elif len(args) == 4:
+            axis = Lineation(args[0], args[1])
+            secant = Lineation(args[2], args[3])
+            revangle = 360
+        elif len(args) == 5:
+            axis = Lineation(args[0], args[1])
+            secant = Lineation(args[2], args[3])
+            revangle = args[4]
+        else:
+            raise TypeError("Not valid arguments for Cone")
+
+        self.axis = Vector3(axis)
+        self.secant = Vector3(secant)
+        self.revangle = float(revangle)
+        if self.axis.angle(self.secant) > 90:
+            self.secant = -self.secant
+
+    def __repr__(self):
+        aazi, ainc = self.axis.geo
+        return f"C:{aazi:.0f}/{ainc:.0f} [{self.apical_angle():g}]"
+
+    @ensure_first_arg_same
+    def __eq__(self, other):
+        """
+        Return `True` if pairs are equal, otherwise `False`.
+        """
+        return (
+            (self.axis == other.axis)
+            and (self.secant == other.secant)
+            and (self.revangle == other.revangle)
+        )
+
+    def __ne__(self, other):
+        """
+        Return `True` if pairs are not equal, otherwise `False`.
+
+        """
+        return not self == other
+
+    def __array__(self, dtype=None):
+        return np.hstack((self.axis, self.secant, self.revangle)).astype(dtype)
+
+    def label(self):
+        return str(self)
+
+    def to_json(self):
+        aazi, ainc = vec2geo_linear_signed(self.axis)
+        sazi, sinc = vec2geo_linear_signed(self.secant)
+        return {
+            "datatype": type(self).__name__,
+            "args": (aazi, ainc, sazi, sinc, self.revangle),
+        }
+
+    @classmethod
+    def random(cls):
+        """
+        Random Cone
+        """
+
+        axis, secant = Vector3.random(), Vector3.random()
+        return cls(axis, secant, 360)
+
+    @ensure_arguments(Vector3)
+    def rotate(self, axis, phi):
+        """Rotates ``Cone`` by angle `phi` about `axis`.
+
+        Args:
+            axis (``Vector3``): axis of rotation
+            phi (float): angle of rotation in degrees
+
+        Example:
+            >>> c = cone(lin(140, 30), lin(110, 26), 360)
+            >>> c.rotate(lin(40, 50), 120)
+            C:210/83-287/60
+
+        """
+        return type(self)(self.fvec.rotate(axis, phi), self.lvec.rotate(axis, phi))
+
+    def apical_angle(self):
+        return self.axis.angle(self.secant)
+
+    @property
+    def rotated_secant(self):
+        return self.secant.rotate(self.axis, self.revangle)

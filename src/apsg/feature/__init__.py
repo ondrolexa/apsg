@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
-from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
+from apsg.feature._geodata import Lineation, Foliation, Pair, Fault, Cone
 from apsg.feature._container import (
     FeatureSet,
     Vector2Set,
@@ -9,6 +9,7 @@ from apsg.feature._container import (
     FoliationSet,
     PairSet,
     FaultSet,
+    ConeSet,
     EllipsoidSet,
     OrientationTensor3Set,
     G,
@@ -34,12 +35,14 @@ __all__ = (
     "Foliation",
     "Pair",
     "Fault",
+    "Cone",
     "FeatureSet",
     "Vector3Set",
     "LineationSet",
     "FoliationSet",
     "PairSet",
     "FaultSet",
+    "ConeSet",
     "EllipsoidSet",
     "G",
     "DeformationGradient3",

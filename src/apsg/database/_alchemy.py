@@ -101,26 +101,26 @@ class Site(Base):
     __tablename__ = "sites"
 
     id = Column(Integer, primary_key=True)
-    id_units = Column(ForeignKey(u"units.id"), nullable=False, index=True)
+    id_units = Column(ForeignKey("units.id"), nullable=False, index=True)
     name = Column(String(16), nullable=False, server_default=text("''"))
     x_coord = Column(Float, server_default=text("NULL"))
     y_coord = Column(Float, server_default=text("NULL"))
     description = Column(Text)
 
-    unit = relationship(u"Unit", back_populates="sites")
+    unit = relationship("Unit", back_populates="sites")
 
-    structdata = relationship(u"Structdata", back_populates="site")
+    structdata = relationship("Structdata", back_populates="site")
 
     def __repr__(self):
         return "Site:{} ({})".format(self.name, self.unit.name)
 
 
 tagged = Table(
-    u"tagged",
+    "tagged",
     metadata,
-    Column(u"id", Integer, autoincrement=True),
-    Column(u"id_tags", Integer, ForeignKey(u"tags.id"), primary_key=True),
-    Column(u"id_structdata", Integer, ForeignKey(u"structdata.id"), primary_key=True),
+    Column("id", Integer, autoincrement=True),
+    Column("id_tags", Integer, ForeignKey("tags.id"), primary_key=True),
+    Column("id_structdata", Integer, ForeignKey("structdata.id"), primary_key=True),
 )
 
 
@@ -129,10 +129,10 @@ class Attached(Base):
 
     id = Column(Integer, primary_key=True)
     id_structdata_planar = Column(
-        ForeignKey(u"structdata.id"), nullable=False, index=True
+        ForeignKey("structdata.id"), nullable=False, index=True
     )
     id_structdata_linear = Column(
-        ForeignKey(u"structdata.id"), nullable=False, index=True
+        ForeignKey("structdata.id"), nullable=False, index=True
     )
 
     def __repr__(self):
@@ -143,22 +143,22 @@ class Structdata(Base):
     __tablename__ = "structdata"
 
     id = Column(Integer, primary_key=True)
-    id_sites = Column(ForeignKey(u"sites.id"), nullable=False, index=True)
-    id_structype = Column(ForeignKey(u"structype.id"), nullable=False, index=True)
+    id_sites = Column(ForeignKey("sites.id"), nullable=False, index=True)
+    id_structype = Column(ForeignKey("structype.id"), nullable=False, index=True)
     azimuth = Column(Float, nullable=False, server_default=text("0"))
     inclination = Column(Float, nullable=False, server_default=text("0"))
     description = Column(Text)
 
-    site = relationship(u"Site", back_populates="structdata")
-    structype = relationship(u"Structype", back_populates="structdata")
+    site = relationship("Site", back_populates="structdata")
+    structype = relationship("Structype", back_populates="structdata")
 
-    tags = relationship(u"Tag", secondary=tagged, back_populates="structdata")
+    tags = relationship("Tag", secondary=tagged, back_populates="structdata")
 
     attach_planar = relationship(
-        u"Attached", backref="planar", primaryjoin=id == Attached.id_structdata_planar
+        "Attached", backref="planar", primaryjoin=id == Attached.id_structdata_planar
     )
     attach_linear = relationship(
-        u"Attached", backref="linear", primaryjoin=id == Attached.id_structdata_linear
+        "Attached", backref="linear", primaryjoin=id == Attached.id_structdata_linear
     )
 
     def __repr__(self):
@@ -178,7 +178,7 @@ class Structype(Base):
     groupcode = Column(Integer, server_default=text("0"))
     planar = Column(Integer, server_default=text("1"))
 
-    structdata = relationship(u"Structdata", back_populates="structype")
+    structdata = relationship("Structdata", back_populates="structype")
 
     def __repr__(self):
         return "Type:{}".format(self.structure)
@@ -192,7 +192,7 @@ class Tag(Base):
     name = Column(String(16), nullable=False)
     description = Column(Text)
 
-    structdata = relationship(u"Structdata", secondary=tagged, back_populates="tags")
+    structdata = relationship("Structdata", secondary=tagged, back_populates="tags")
 
     def __repr__(self):
         return "Tag:{}".format(self.name)
@@ -206,7 +206,7 @@ class Unit(Base):
     name = Column(String(60), nullable=False)
     description = Column(Text)
 
-    sites = relationship(u"Site", back_populates="unit")
+    sites = relationship("Site", back_populates="unit")
 
     def __repr__(self):
         return "Unit:{}".format(self.name)
@@ -415,12 +415,24 @@ class SDBSession:
 
     def getset(self, structype, **kwargs):
         if isinstance(structype, str):
-            structypes = self.session.query(Structype).filter_by(structure=structype).all()
-            assert len(structypes) == 1, f'There is no structure {structype} in db'
+            structypes = (
+                self.session.query(Structype).filter_by(structure=structype).all()
+            )
+            assert len(structypes) == 1, f"There is no structure {structype} in db"
             structype = structypes[0]
-        data = self.session.query(Structdata).filter_by(structype=structype, **kwargs).all()
+        data = (
+            self.session.query(Structdata)
+            .filter_by(structype=structype, **kwargs)
+            .all()
+        )
         if structype.planar:
-            res = FoliationSet([Foliation(v.azimuth, v.inclination) for v in data], name=structype.structure)
+            res = FoliationSet(
+                [Foliation(v.azimuth, v.inclination) for v in data],
+                name=structype.structure,
+            )
         else:
-            res = LineationSet([Lineation(v.azimuth, v.inclination) for v in data], name=structype.structure)
+            res = LineationSet(
+                [Lineation(v.azimuth, v.inclination) for v in data],
+                name=structype.structure,
+            )
         return res

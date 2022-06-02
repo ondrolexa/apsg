@@ -125,12 +125,11 @@ class DeformationGradient3(Matrix3):
             L:31/30
 
         """
-        n = v1.cross(v2).cross(v1 + v2)
+        n = v1.cross(v2).cross(v1.slerp(v2, 0.5))
         a_fix = a.reject(n).normalized()
         v1p = v1.reject(a_fix)
         v2p = v2.reject(a_fix)
-        return cls.from_axisangle(v1p.cross(v2p), v1p.angle(v2p))
-
+        return cls.from_axisangle(a_fix, v1p.angle(v2p))
 
     @classmethod
     def from_two_pairs(cls, p1, p2, symmetry=False):
@@ -264,7 +263,6 @@ class VelocityGradient3(Matrix3):
 
 
 class Tensor3(Matrix3):
-
     @property
     def eigenlins(self):
         """
@@ -819,4 +817,7 @@ class OrientationTensor3(Ellipsoid):
           (λ1:0.98, λ2:0.978, λ3:0.0688)
 
         """
-        return cls(OrientationTensor3.from_features(p.lvec) - OrientationTensor3.from_features(p.fvec))
+        return cls(
+            OrientationTensor3.from_features(p.lvec)
+            - OrientationTensor3.from_features(p.fvec)
+        )
