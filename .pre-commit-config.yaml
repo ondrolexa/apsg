@@ -1,0 +1,18 @@
+default_stages: [commit, push]
+repos:
+  - repo: https://github.com/psf/black
+    rev: 22.3.0
+    hooks:
+    - id: black
+      exclude: ^(venv/|docs/)
+      types: ['python']
+  - repo: https://github.com/PyCQA/flake8
+    rev: 4.0.1
+    hooks:
+    - id: flake8
+      args: [
+        --max-line-length=88
+      ]
+      exclude: ^(venv/|docs/)
+      types: ['python']
+

@@ -282,8 +282,8 @@ class Fault(Pair):
              - p could be tuple of (fazi, finc, lazi, linc, sense)
              - p could be tuple of (fx, fy ,fz, lx, ly, lz)
     fault(f, l) - f and l could be Vector3 like objects, e.g. Foliation and Lineation
-    fault(fazi, finc, lazi, linc, sense) - four numerical arguments defining fol(fazi, finc)
-                                           lin(lazi, linc) and sense
+    fault(fazi, finc, lazi, linc, sense) - four numerical arguments defining
+                                           fol(fazi, finc), lin(lazi, linc) and sense
 
         fazi (float): dip azimuth of planar feature in degrees
         finc (float): dip of planar feature in degrees
@@ -339,7 +339,8 @@ class Fault(Pair):
     def __repr__(self):
         fazi, finc = self.fol.geo
         lazi, linc = self.lin.geo
-        return f'F:{fazi:.0f}/{finc:.0f}-{lazi:.0f}/{linc:.0f} {[" ", "+", "-"][self.sense]}'
+        schar = [" ", "+", "-"][self.sense]
+        return f"F:{fazi:.0f}/{finc:.0f}-{lazi:.0f}/{linc:.0f} {schar}"
 
     @ensure_first_arg_same
     def __eq__(self, other):
@@ -556,7 +557,9 @@ class Cone:
             C:210/83-287/60
 
         """
-        return type(self)(self.axis.rotate(axis, phi), self.secant.rotate(axis, phi), self.revangle)
+        return type(self)(
+            self.axis.rotate(axis, phi), self.secant.rotate(axis, phi), self.revangle
+        )
 
     def apical_angle(self):
         return self.axis.angle(self.secant)
