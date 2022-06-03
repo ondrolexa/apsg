@@ -498,8 +498,8 @@ class Cone:
             self.secant = -self.secant
 
     def __repr__(self):
-        aazi, ainc = self.axis.geo
-        return f"C:{aazi:.0f}/{ainc:.0f} [{self.apical_angle():g}]"
+        azi, inc = vec2geo_linear(self.axis)
+        return f"C:{azi:.0f}/{inc:.0f} [{self.apical_angle():g}]"
 
     @ensure_first_arg_same
     def __eq__(self, other):
@@ -556,7 +556,7 @@ class Cone:
             C:210/83-287/60
 
         """
-        return type(self)(self.fvec.rotate(axis, phi), self.lvec.rotate(axis, phi))
+        return type(self)(self.axis.rotate(axis, phi), self.secant.rotate(axis, phi), self.revangle)
 
     def apical_angle(self):
         return self.axis.angle(self.secant)

@@ -530,6 +530,22 @@ class Vector3Set(FeatureSet):
             stats["a95"] = acosd(1 - ((N - R) / R) * (20 ** (1 / (N - 1)) - 1))
         return stats
 
+    def fisher_cone_a95(self):
+        """Confidence limit cone based on Fisher's statistics
+
+        Cone axis is resultant and apical angle is a95 confidence limit
+        """
+        stats = self.fisher_statistics()
+        return Cone(self.normalized().R(), stats["a95"])
+
+    def fisher_cone_csd(self):
+        """Angular standard deviation cone based on Fisher's statistics
+
+        Cone axis is resultant and apical angle is angular standard deviation
+        """
+        stats = self.fisher_statistics()
+        return Cone(self.normalized().R(), stats["csd"])
+
     def var(self):
         """Spherical variance based on resultant length (Mardia 1972).
 
