@@ -138,7 +138,6 @@ class StereoNet:
             plot_method(*artist.args, **artist.kwargs)
 
     def to_json(self):
-        data = {}
         artists = [artist.to_json() for artist in self._artists]
         return dict(kwargs=self._kwargs, artists=artists)
 
@@ -233,7 +232,8 @@ class StereoNet:
             print(err)
 
     def vector(self, *args, **kwargs):
-        """Plot vector feature(s) as point(s), filled on lower and open on upper hemisphere."""
+        """Plot vector feature(s) as point(s),
+        filled on lower and open on upper hemisphere."""
         try:
             artist = StereoNetArtistFactory.create_vector(*args, **kwargs)
             self._artists.append(artist)
@@ -297,7 +297,8 @@ class StereoNet:
             print(err)
 
     def arrow(self, *args, **kwargs):
-        """Plot arrows at position of first argument and oriented in direction of second"""
+        """Plot arrows at position of first argument
+        and oriented in direction of second"""
         try:
             artist = StereoNetArtistFactory.create_arrow(*args, **kwargs)
             self._artists.append(artist)
@@ -427,7 +428,9 @@ class StereoNet:
             kwargs["c"] = np.hstack((c[mask_lower], c[mask_upper]))
             prop = "colors"
         sc = self.ax.scatter(
-            np.hstack((x_lower, x_upper)), np.hstack((y_lower, y_upper)), **kwargs,
+            np.hstack((x_lower, x_upper)),
+            np.hstack((y_lower, y_upper)),
+            **kwargs,
         )
         if legend:
             self.ax.legend(
@@ -531,7 +534,9 @@ class StereoNet:
             *(-np.vstack(np.atleast_2d(args[0])).T)
         )
         x = np.hstack((x_lower, x_upper))
+        x = x[~np.isnan(x)]
         y = np.hstack((y_lower, y_upper))
+        y = y[~np.isnan(y)]
         if len(args) > 1:
             x_lower, y_lower = self.proj.project_data(
                 *np.vstack(np.atleast_2d(args[1])).T
@@ -540,22 +545,22 @@ class StereoNet:
                 *(-np.vstack(np.atleast_2d(args[1])).T)
             )
             dx = np.hstack((x_lower, x_upper))
+            dx = dx[~np.isnan(dx)]
             dy = np.hstack((y_lower, y_upper))
+            dy = dy[~np.isnan(dy)]
         else:
             dx, dy = x, y
         mag = np.hypot(dx, dy)
         sense = np.atleast_1d(kwargs.pop("sense"))
         u, v = sense * dx / mag, sense * dy / mag
-        try:
-            self.ax.quiver(x, y, u, v, **kwargs)
-        except:
-            pass
+        h = self.ax.quiver(x, y, u, v, **kwargs)
+        h.set_clip_path(self.primitive)
 
     def _contour(self, *args, **kwargs):
         sigma = kwargs.pop("sigma")
         trim = kwargs.pop("trim")
         colorbar = kwargs.pop("colorbar")
-        label = kwargs.pop("label")
+        _ = kwargs.pop("label")
         clines = kwargs.pop("clines")
         linewidths = kwargs.pop("linewidths")
         linestyles = kwargs.pop("linestyles")
