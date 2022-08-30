@@ -83,11 +83,11 @@ class StereoGrid:
             k = estimate_k(features)
             sigma = np.sqrt(2 * n / (k - 2))
         else:
-            k = 2 * (1.0 + n / sigma ** 2)
+            k = 2 * (1.0 + n / sigma**2)
         # method = kwargs.get("method", "exp_kamb")
         trim = kwargs.get("trim", True)
         # do calc
-        scale = np.sqrt(n * (k / 2.0 - 1) / k ** 2)
+        scale = np.sqrt(n * (k / 2.0 - 1) / k**2)
         cnt = np.exp(k * (np.abs(np.dot(self.grid, np.asarray(features).T)) - 1))
         self.values = cnt.sum(axis=1) / scale / sigma
         if trim:
@@ -105,7 +105,7 @@ class StereoGrid:
         self.calculated = True
 
     def contourf(self, *args, **kwargs):
-        """ Show filled contours of values."""
+        """Show filled contours of values."""
         colorbar = kwargs.get("colorbar", False)
         parsed = {}
         parsed["alpha"] = kwargs.get("alpha", 1)
@@ -142,7 +142,7 @@ class StereoGrid:
         plt.show()
 
     def contour(self, *args, **kwargs):
-        """ Show contours of values."""
+        """Show contours of values."""
         colorbar = kwargs.get("colorbar", False)
         parsed = {}
         parsed["alpha"] = kwargs.get("alpha", 1)
@@ -178,7 +178,7 @@ class StereoGrid:
         plt.show()
 
     def plotcountgrid(self, **kwargs):
-        """ Show counting grid."""
+        """Show counting grid."""
 
         proj = EqualAreaProj(**kwargs)
 

@@ -343,7 +343,7 @@ class TestVector:
         lhs = vec3(1, 2, 3)
         rhs = 2
 
-        current = lhs ** rhs
+        current = lhs**rhs
         expects = vec3(1, 4, 9)
 
         assert current == expects
@@ -381,19 +381,19 @@ class Testlineation:
         assert str(x) == "L:0/0"
 
     def test_equality_for_oposite_dir(self):
-        l = lin.random()
-        assert l == -l
+        l1 = lin.random()
+        assert l1 == -l1
 
     def test_anlge_for_oposite_dir(self):
-        l = lin.random()
-        assert np.isclose(l.angle(-l), 0)
+        l1 = lin.random()
+        assert np.isclose(l1.angle(-l1), 0)
 
     def test_that_azimuth_0_is_same_as_360(self):
         assert lin(0, 20) == lin(360, 20)
 
     def test_scalar_product(self):
-        l = lin.random()
-        assert np.isclose(l.dot(l), 1)
+        l1 = lin.random()
+        assert np.isclose(l1.dot(l1), 1)
 
     def test_cross_product(self):
         l1 = lin.random()
@@ -435,8 +435,8 @@ class Testlineation:
         assert l1 - l2 == l2 - l1
 
     def test_geo_property(self):
-        l = lin(120, 30)
-        assert lin(*l.geo) == l
+        l1 = lin(120, 30)
+        assert lin(*l1.geo) == l1
 
 
 # ############################################################################
@@ -478,7 +478,7 @@ class Testfoliation:
     def test_cross_product(self):
         f1 = fol.random()
         f2 = fol.random()
-        p = f1 ** f2
+        p = f1**f2
 
         assert np.allclose([p.angle(f1), p.angle(f2)], [90, 90])
 
@@ -493,7 +493,7 @@ class Testfoliation:
         f1 = fol.random()
         f2 = fol.random()
 
-        assert f1.cross(f2) == f1 ** f2
+        assert f1.cross(f2) == f1**f2
 
     def test_mutual_rotation(self):
         f1 = fol.random()

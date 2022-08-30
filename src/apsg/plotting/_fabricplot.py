@@ -33,7 +33,6 @@ class FabricPlot(object):
             plot_method(*artist.args, **artist.kwargs)
 
     def to_json(self):
-        data = {}
         artists = [artist.to_json() for artist in self._artists]
         return dict(kwargs=self._kwargs, artists=artists)
 
@@ -102,8 +101,8 @@ class VollmerPlot(FabricPlot):
     """
 
     def __init__(self, *args, **kwargs):
-        self.A = np.array([0, 3 ** 0.5 / 2])
-        self.B = np.array([1, 3 ** 0.5 / 2])
+        self.A = np.array([0, 3**0.5 / 2])
+        self.B = np.array([1, 3**0.5 / 2])
         self.C = np.array([0.5, 0])
         self.Ti = np.linalg.inv(np.array([self.A - self.C, self.B - self.C]).T)
         self.window_title = "Vollmer fabric plot"
@@ -320,7 +319,7 @@ class RamsayPlot(FabricPlot):
 
     def format_coord(self, x, y):
         k = y / x if x > 0 else 0
-        d = x ** 2 + y ** 2
+        d = x**2 + y**2
         return "k:{:0.2f} d:{:0.2f}".format(k, d)
 
 

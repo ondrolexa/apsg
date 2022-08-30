@@ -100,7 +100,7 @@ class DeformationGradient3(Matrix3):
     def from_vectors_axis(cls, v1, v2, a):
         """
         Return ``DeformationGradient3`` representing rotation of vector v1 to v2 around
-        axis a. 
+        axis a.
 
         If v1.angle(a) is not equal to v2.angle(b), the minimum adjustment of rotation axis
         is done automatically.
@@ -364,7 +364,7 @@ class Stress3(Tensor3):
         Second invariant
         """
 
-        return float((self.I1 ** 2 - np.trace(self ** 2)) / 2)
+        return float((self.I1**2 - np.trace(self**2)) / 2)
 
     @property
     def I3(self):
@@ -620,7 +620,7 @@ class Ellipsoid(Tensor3):
         """
         return the strain intensity.
         """
-        return self.e12 ** 2 + self.e23 ** 2
+        return self.e12**2 + self.e23**2
 
     @property
     def r(self) -> float:
@@ -634,7 +634,7 @@ class Ellipsoid(Tensor3):
         """
         Return the natural octahedral unit shear (Nadai, 1963).
         """
-        return 2 * math.sqrt(self.e12 ** 2 + self.e23 ** 2 + self.e13 ** 2) / 3
+        return 2 * math.sqrt(self.e12**2 + self.e23**2 + self.e13**2) / 3
 
     @property
     def eoct(self) -> float:
@@ -647,7 +647,7 @@ class Ellipsoid(Tensor3):
     def lode(self) -> float:
         """
         Return Lode parameter (Lode, 1926).
-         """
+        """
         return (
             (2 * self.e2 - self.e1 - self.e3) / (self.e1 - self.e3)
             if (self.e1 - self.e3) > 0

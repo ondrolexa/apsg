@@ -128,15 +128,11 @@ class Vector2Set(FeatureSet):
         return np.asarray([e.direction for e in self]).T
 
     def proj(self, vec):
-        """Return projections of all features in ``FeatureSet`` onto vector.
-
-        """
+        """Return projections of all features in ``FeatureSet`` onto vector."""
         return type(self)([e.project() for e in self], name=self.name)
 
     def dot(self, vec):
-        """Return array of dot products of all features in ``FeatureSet`` with vector.
-
-        """
+        """Return array of dot products of all features in ``FeatureSet`` with vector."""
         return np.array([e.dot(vec) for e in self])
 
     def cross(self, other=None):
@@ -417,21 +413,15 @@ class Vector3Set(FeatureSet):
         return Vector3Set([Vector3(e) for e in self], name=self.name)
 
     def project(self, vec):
-        """Return projections of all features in ``FeatureSet`` onto vector.
-
-        """
+        """Return projections of all features in ``FeatureSet`` onto vector."""
         return type(self)([e.project(vec) for e in self], name=self.name)
 
     def reject(self, vec):
-        """Return rejections of all features in ``FeatureSet`` onto vector.
-
-        """
+        """Return rejections of all features in ``FeatureSet`` onto vector."""
         return type(self)([e.reject(vec) for e in self], name=self.name)
 
     def dot(self, vec):
-        """Return array of dot products of all features in ``FeatureSet`` with vector.
-
-        """
+        """Return array of dot products of all features in ``FeatureSet`` with vector."""
         return np.array([e.dot(vec) for e in self])
 
     def cross(self, other=None):
@@ -1375,7 +1365,7 @@ class EllipsoidSet(FeatureSet):
     def lode(self) -> float:
         """
         Return Lode parameter (Lode, 1926).
-         """
+        """
         return np.array([e.lode for e in self])
 
     @property

@@ -20,9 +20,9 @@ def vonMisesFisher(mu, kappa, num_samples):
         """Rejection sampling scheme for sampling distance from center on
         surface of the sphere.
         """
-        b = 2 / (np.sqrt(4.0 * kappa ** 2 + 4) + 2 * kappa)
+        b = 2 / (np.sqrt(4.0 * kappa**2 + 4) + 2 * kappa)
         x = (1.0 - b) / (1.0 + b)
-        c = kappa * x + 2 * np.log(1 - x ** 2)
+        c = kappa * x + 2 * np.log(1 - x**2)
 
         while True:
             z = np.random.beta(1, 1)
@@ -47,7 +47,7 @@ def vonMisesFisher(mu, kappa, num_samples):
         v = _sample_orthonormal_to(mu)
 
         # compute new point
-        result[nn, :] = v * np.sqrt(1.0 - w ** 2) + w * mu
+        result[nn, :] = v * np.sqrt(1.0 - w**2) + w * mu
 
     return result
 
@@ -187,11 +187,11 @@ class KentDistribution(object):
         (k, b) = (self.kappa, self.beta)
         if not (k, b) in cache:
             G = gamma_fun
-            I = modified_bessel_2ndkind
+            Imb2 = modified_bessel_2ndkind
             result = 0.0
             j = 0
             if b == 0.0:
-                result = (0.5 * k) ** (-2 * j - 0.5) * I(2 * j + 0.5, k)
+                result = (0.5 * k) ** (-2 * j - 0.5) * Imb2(2 * j + 0.5, k)
                 result /= G(j + 1)
                 result *= G(j + 0.5)
             else:
@@ -199,7 +199,7 @@ class KentDistribution(object):
                 while True:
                     a = np.exp(
                         np.log(b) * 2 * j + np.log(0.5 * k) * (-2 * j - 0.5)
-                    ) * I(2 * j + 0.5, k)
+                    ) * Imb2(2 * j + 0.5, k)
                     a /= G(j + 1)
                     a *= G(j + 0.5)
                     result += a
@@ -239,7 +239,7 @@ class KentDistribution(object):
             x = self.kappa * 1.0 / (2 * self.beta)
         if x > 1.0:
             x = 1
-        fmax = self.kappa * x + self.beta * (1 - x ** 2)
+        fmax = self.kappa * x + self.beta * (1 - x**2)
         if normalize:
             return fmax - self.log_normalize()
         else:
@@ -265,7 +265,7 @@ class KentDistribution(object):
         g3x = np.sum(self.gamma3 * xs, axis)
         (k, b) = (self.kappa, self.beta)
 
-        f = k * g1x + b * (g2x ** 2 - g3x ** 2)
+        f = k * g1x + b * (g2x**2 - g3x**2)
         if normalize:
             return f - self.log_normalize()
         else:
@@ -289,7 +289,7 @@ class KentDistribution(object):
         g3x = np.sum(self.gamma3 * xs, axis)
 
         dfdk = g1x
-        dfdb = g2x ** 2 - g3x ** 2
+        dfdb = g2x**2 - g3x**2
         df = np.array([dfdk, dfdb])
         if normalize:
             return np.transpose(np.transpose(df) - self.log_normalize_prime())
@@ -305,7 +305,7 @@ class KentDistribution(object):
         (k, b) = (self.kappa, self.beta)
         if not (k, b) in cache:
             G = gamma_fun
-            I = modified_bessel_2ndkind
+            Imb2 = modified_bessel_2ndkind
             dIdk = lambda v, z: modified_bessel_2ndkind_derivative(v, z, 1)
             (dcdk, dcdb) = (0.0, 0.0)
             j = 0
@@ -314,7 +314,7 @@ class KentDistribution(object):
                     G(j + 0.5)
                     / G(j + 1)
                     * ((-0.5 * j - 0.125) * k ** (-2 * j - 1.5))
-                    * I(2 * j + 0.5, k)
+                    * Imb2(2 * j + 0.5, k)
                 )
                 dcdk += (
                     G(j + 0.5)
@@ -329,7 +329,7 @@ class KentDistribution(object):
                     dk = (
                         (-1 * j - 0.25)
                         * np.exp(np.log(b) * 2 * j + np.og(0.5 * k) * (-2 * j - 1.5))
-                        * I(2 * j + 0.5, k)
+                        * Imb2(2 * j + 0.5, k)
                     )
                     dk += np.exp(
                         np.log(b) * 2 * j + np.log(0.5 * k) * (-2 * j - 0.5)
@@ -343,7 +343,7 @@ class KentDistribution(object):
                         * np.exp(
                             np.log(b) * (2 * j - 1) + np.log(0.5 * k) * (-2 * j - 0.5)
                         )
-                        * I(2 * j + 0.5, k)
+                        * Imb2(2 * j + 0.5, k)
                     )
                     db /= G(j + 1)
                     db *= G(j + 0.5)

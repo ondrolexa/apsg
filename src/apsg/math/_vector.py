@@ -341,7 +341,7 @@ class Vector3(Vector):
         return type(self)(-self.x, -self.y, -self.z)
 
     def __abs__(self):
-        return math.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
+        return math.sqrt(self.x**2 + self.y**2 + self.z**2)
 
     def normalized(self):
         d = self.magnitude()

@@ -238,7 +238,7 @@ class Stress2(Tensor2):
         Second invariant
         """
 
-        return float((self.I1 ** 2 - np.trace(self ** 2)) / 2)
+        return float((self.I1**2 - np.trace(self**2)) / 2)
 
     @property
     def I3(self):

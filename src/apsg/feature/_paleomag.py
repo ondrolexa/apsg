@@ -332,7 +332,13 @@ class Core(object):
     def datatable(self):
         tb = []
         for step, MAG, V, geo, tilt, a95, comment in zip(
-            self.steps, self.MAG, self.V, self.geo, self.tilt, self.a95, self.comments,
+            self.steps,
+            self.MAG,
+            self.V,
+            self.geo,
+            self.tilt,
+            self.a95,
+            self.comments,
         ):
             ln = "{:<4} {: 9.2E} {: 9.2E} {: 9.2E} {: 9.2E} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:4.1f} {}".format(
                 step,
