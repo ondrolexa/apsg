@@ -1,8 +1,9 @@
 ===========
-core module
+math module
 ===========
 
-.. automodule:: apsg.core
+.. automodule:: apsg.math
     :members:
     :undoc-members:
     :show-inheritance:
+

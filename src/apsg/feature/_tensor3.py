@@ -30,7 +30,8 @@ class DeformationGradient3(Matrix3):
         Default is identity tensor.
 
         Keyword Args:
-          Rxy, Ryz (float): strain ratios
+          Rxy (float): XY strain ratio
+          Ryz (float): YZ strain ratio
 
         Example:
           >>> F = defgrad.from_ratios(Rxy=2, Ryz=3)

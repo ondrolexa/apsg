@@ -12,11 +12,6 @@ from apsg.decorator._decorator import ensure_first_arg_same, ensure_arguments
 from apsg.math._vector import Vector3, Axial3
 
 
-"""
-to to
-"""
-
-
 class Lineation(Axial3):
     def __repr__(self):
         azi, inc = self.geo
@@ -114,13 +109,24 @@ class Pair:
 
     There are different way to create ``Pair`` object:
 
-    pair() - create default Pair with fol(0,0) and lin(0,0)
-    pair(p) - p could be Pair
-            - p could be tuple of (fazi, finc, lazi, linc)
-            - p could be tuple of (fx, fy ,fz, lx, ly, lz)
-    pair(f, l) - f and l could be Vector3 like objects, e.g. Foliation and Lineation
-    pair(fazi, finc, lazi, linc) - four numerical arguments defining fol(fazi, finc)
-                                   and lin(lazi, linc)
+    - without arguments create default Pair with fol(0,0) and lin(0,0)
+    - with single argument `p`, where
+        - p could be Pair
+        - p could be tuple of (fazi, finc, lazi, linc)
+        - p could be tuple of (fx, fy ,fz, lx, ly, lz)
+    - with 2 arguments f and l could be Vector3 like objects, e.g. Foliation and Lineation
+    - with four numerical arguments defining `fol(fazi, finc)` and `lin(lazi, linc)`
+
+    >>> pair()
+    >>> pair(p)
+    >>> pair(f, l)
+    >>> pair(fazi, finc, lazi, linc)
+
+    Args:
+        fazi (float): dip azimuth of planar feature in degrees
+        finc (float): dip of planar feature in degrees
+        lazi (float): plunge direction of linear feature in degrees
+        linc (float): plunge of linear feature in degrees
 
     Example:
         >>> p = pair(140, 30, 110, 26)
@@ -277,14 +283,20 @@ class Fault(Pair):
 
     There are different way to create ``Fault`` object:
 
-    fault() - create default Pair with fol(0,0) and lin(0,0)
-    fault(p) - p could be Fault
-             - p could be tuple of (fazi, finc, lazi, linc, sense)
-             - p could be tuple of (fx, fy ,fz, lx, ly, lz)
-    fault(f, l) - f and l could be Vector3 like objects, e.g. Foliation and Lineation
-    fault(fazi, finc, lazi, linc, sense) - four numerical arguments defining
-                                           fol(fazi, finc), lin(lazi, linc) and sense
+    - without arguments create default ``Fault`` with `fol(0,0)` and `lin(0,0)`
+    - with single argument `p`:
+        - p could be Fault
+        - p could be tuple of (fazi, finc, lazi, linc, sense)
+        - p could be tuple of (fx, fy ,fz, lx, ly, lz)
+    - with 2 arguments f and l could be Vector3 like objects, e.g. Foliation and Lineation
+    - with 5 numerical arguments defining `fol(fazi, finc)`, `lin(lazi, linc)` and sense
 
+    >>> fault()
+    >>> fault(p)
+    >>> fault(f, l)
+    >>> fault(fazi, finc, lazi, linc, sense)
+
+    Args:
         fazi (float): dip azimuth of planar feature in degrees
         finc (float): dip of planar feature in degrees
         lazi (float): plunge direction of linear feature in degrees
@@ -428,16 +440,23 @@ class Cone:
     The class to store cone with given axis, secant line and revolution angle
     in degrees.
 
-    There are different way to create ``Cone`` object:
+    There are different way to create ``Cone`` object according to number
+    of arguments:
 
-    cone()  - create default Cone with axis lin(0, 90), secant lin(0, 0) angle 180
-    cone(c) - c could be Cone
-            - c could be tuple of (aazi, ainc, sazi, sinc, revangle)
-            - c could be tuple of (ax, ay ,az, sx, sy, sz, revangle)
-    cone(a, s, revangle) - a and s could be Vector3 like objects, e.g. Lineation
-    pair(aazi, ainc, sazi, sinc, revangle) - five numerical arguments defining axis
-                                             lin(faazi, ainc), secant lin(sazi, sinc)
-                                             and angle of revolution
+    - without args, you can create default``Cone`` with axis ``lin(0, 90)``,
+      secant ``lin(0, 0)`` angle 180°
+    - with single argument `c`, where `c` could be ``Cone``, 5-tuple of
+      `(aazi, ainc, sazi, sinc, revangle)` or 7-tuple of
+      `(ax, ay ,az, sx, sy, sz, revangle)`
+    - with 3 arguments, where axis and secant line could be Vector3 like objects,
+      e.g. Lineation and third argument is revolution angle
+    - with 5 arguments defining axis `lin(aazi, ainc)`, secant line
+      `lin(sazi, sinc)` and angle of revolution
+
+    >>> cone()
+    >>> cone(c)
+    >>> cone(a, s, revangle)
+    >>> cone(aazi, ainc, sazi, sinc, revangle)
 
     Example:
         >>> c = cone(140, 30, 110, 26, 360)

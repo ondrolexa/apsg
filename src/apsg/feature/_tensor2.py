@@ -29,7 +29,7 @@ class DeformationGradient2(Matrix2):
         Default is identity tensor.
 
         Keyword Args:
-          Rxy, Ryz (float): strain ratios
+          R (float): strain ratio
 
         Example:
           >>> F = defgrad2.from_ratio(R=4)

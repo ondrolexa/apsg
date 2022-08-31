@@ -16,9 +16,9 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   automodules
-   tutorial
    installation
    usage
+   tutorials
+   automodules
    contributing
    authors

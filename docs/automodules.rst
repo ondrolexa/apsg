@@ -7,8 +7,8 @@ APSG provides following modules:
 .. toctree::
    :maxdepth: 3
 
-   apsg.core
+   apsg.feature
    apsg.plotting
-   apsg.tensors
-   apsg.db
-
+   apsg.database
+   apsg.math
+   apsg.helpers

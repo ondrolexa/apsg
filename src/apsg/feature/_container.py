@@ -227,7 +227,7 @@ class Vector2Set(FeatureSet):
     def var(self):
         """Spherical variance based on resultant length (Mardia 1972).
 
-        var = 1 - |R| / n
+        var = 1 - abs(R) / n
         """
         return 1 - abs(self.normalized().R(mean=True))
 
@@ -242,7 +242,7 @@ class Vector2Set(FeatureSet):
     def rdegree(self):
         """Degree of preffered orientation of vectors in ``FeatureSet``.
 
-        D = 100 * (2 * |R| - n) / n
+        D = 100 * (2 * abs(R) - n) / n
         """
         N = len(self)
         return 100 * (2 * abs(self.normalized().R()) - N) / N
@@ -539,7 +539,7 @@ class Vector3Set(FeatureSet):
     def var(self):
         """Spherical variance based on resultant length (Mardia 1972).
 
-        var = 1 - |R| / n
+        var = 1 - abs(R) / n
         """
         return 1 - abs(self.normalized().R(mean=True))
 
@@ -554,7 +554,7 @@ class Vector3Set(FeatureSet):
     def rdegree(self):
         """Degree of preffered orientation of vectors in ``FeatureSet``.
 
-        D = 100 * (2 * |R| - n) / n
+        D = 100 * (2 * abs(R) - n) / n
         """
         N = len(self)
         return 100 * (2 * abs(self.normalized().R()) - N) / N

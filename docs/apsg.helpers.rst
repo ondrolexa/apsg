@@ -1,8 +1,8 @@
 ==============
-tensors module
+helpers module
 ==============
 
-.. automodule:: apsg.tensors
+.. automodule:: apsg.helpers
     :members:
     :undoc-members:
     :show-inheritance:
