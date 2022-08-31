@@ -1,7 +1,9 @@
 import sys
 from itertools import combinations
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.stats import vonmises
+from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 
 from apsg.config import apsg_conf
 from apsg.helpers._math import sind, cosd, atan2d
@@ -26,7 +28,7 @@ class FeatureSet:
         self._cache = {}
 
     def __copy__(self):
-        return type(self).from_list(self.data, name=self.name)
+        return type(self)(list(self.data), name=self.name)
 
     copy = __copy__
 
@@ -1450,6 +1452,115 @@ class OrientationTensor3Set(EllipsoidSet):
     __feature_type__ = "OrientationTensor3"
 
 
+class Cluster(object):
+    """
+    Provides a hierarchical clustering using `scipy.cluster` routines.
+    The distance matrix is calculated as an angle between features, where ``Fol`` and
+    ``Lin`` use axial angles while ``Vec3`` uses direction angles.
+    """
+
+    def __init__(self, d, **kwargs):
+        assert isinstance(d, Vector2Set) or isinstance(
+            d, Vector3Set
+        ), "Only vec2set or vec3set could be clustered"
+        self.data = d.copy()
+        self.maxclust = kwargs.get("maxclust", 2)
+        self.angle = kwargs.get("angle", None)
+        self.method = kwargs.get("method", "average")
+        self.pdist = self.data.angle()
+        self.linkage()
+        self.cluster()
+
+    def __repr__(self):
+        info = f"Already {len(self.groups)} clusters created."
+        if self.angle is not None:
+            crit = "Criterion: Angle\nSettings: distance=%.4g\n" % (self.angle)
+        else:
+            crit = "Criterion: Maxclust\nSettings: muxclust=%.4g\n" % (self.maxclust)
+        return (
+            "Clustering object\n"
+            + "Number of data: %d\n" % len(self.data)
+            + "Linkage method: %s\n" % self.method
+            + crit
+            + info
+        )
+
+    def cluster(self, **kwargs):
+        """Do clustering on data
+
+        Result is stored as tuple of Groups in ``groups`` property.
+
+        Keyword Args:
+          maxclust: number of clusters
+          distance: maximum cophenetic distance in clusters
+        """
+
+        self.maxclust = kwargs.get("maxclust", self.maxclust)
+        self.angle = kwargs.get("angle", self.angle)
+
+        if self.angle is not None:
+            self.idx = fcluster(self.Z, self.angle, criterion="distance")
+        else:
+            self.idx = fcluster(self.Z, self.maxclust, criterion="maxclust")
+        self.groups = tuple(
+            self.data[np.flatnonzero(self.idx == c)] for c in np.unique(self.idx)
+        )
+
+    def linkage(self, **kwargs):
+        """Do linkage of distance matrix
+
+        Keyword Args:
+          method: The linkage algorithm to use
+        """
+
+        self.method = kwargs.get("method", self.method)
+        self.Z = linkage(self.pdist, method=self.method, metric=angle_metric)
+
+    def dendrogram(self, **kwargs):
+        """Show dendrogram
+
+        See ``scipy.cluster.hierarchy.dendrogram`` for possible kwargs.
+        """
+
+        fig, ax = plt.subplots(figsize=apsg_conf["figsize"])
+        dendrogram(self.Z, ax=ax, **kwargs)
+        plt.show()
+
+    def elbow(self, no_plot=False, n=None):
+        """Plot within groups variance vs. number of clusters.
+        Elbow criterion could be used to determine number of clusters.
+        """
+
+        if n is None:
+            idx = fcluster(self.Z, len(self.data), criterion="maxclust")
+            nclust = list(np.arange(1, np.sqrt(idx.max() / 2) + 1, dtype=int))
+        else:
+            nclust = list(np.arange(1, n + 1, dtype=int))
+        within_grp_var = []
+        mean_var = []
+        for n in nclust:
+            idx = fcluster(self.Z, n, criterion="maxclust")
+            grp = [np.flatnonzero(idx == c) for c in np.unique(idx)]
+            var = [100 * self.data[ix].var() for ix in grp]
+            within_grp_var.append(var)
+            mean_var.append(np.mean(var))
+        if not no_plot:
+            fig, ax = plt.subplots(figsize=apsg_conf["figsize"])
+            ax.boxplot(within_grp_var, positions=nclust)
+            ax.plot(nclust, mean_var, "k")
+            ax.set_xlabel("Number of clusters")
+            ax.set_ylabel("Variance")
+            ax.set_title("Within-groups variance vs. number of clusters")
+            plt.show()
+        else:
+            return nclust, within_grp_var
+
+    @property
+    def R(self):
+        """Return group of clusters resultants."""
+        return type(self.data)([group.R() for group in self.groups])
+
+
 def G(lst, name="Default"):
     if hasattr(lst, "__len__"):
         dtype_cls = type(lst[0])
@@ -1468,3 +1579,7 @@ def G(lst, name="Default"):
             return FaultSet(lst, name=name)
         else:
             raise TypeError("Wrong datatype to create FeatureSet")
+
+
+def angle_metric(u, v):
+    return np.degrees(np.arccos(np.abs(np.dot(u, v))))

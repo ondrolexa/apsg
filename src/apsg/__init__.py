@@ -19,6 +19,7 @@ from apsg.feature import (
     ConeSet as coneset,
     EllipsoidSet as ellipsoidset,
     OrientationTensor3Set as ortensorset,
+    Cluster as cluster,
 )
 from apsg.feature import (
     DeformationGradient3 as defgrad,
@@ -64,6 +65,7 @@ __all__ = (
     "coneset",
     "ellipsoidset",
     "ortensorset",
+    "cluster",
     "G",
     "defgrad",
     "velgrad",
