@@ -35,7 +35,7 @@ class StereoGrid:
         else:
             self.grid = Vector3Set.uniform_sfs(n=self.grid_n)
         # projection
-        kind = str(kwargs.get("kind", "Equal-area")).lower()
+        kind = str(kwargs.get("kind", "equal-area")).lower()
         if kind in ["equal-area", "schmidt", "earea"]:
             self.proj = EqualAreaProj(**kwargs)
         elif kind in ["equal-angle", "wulff", "eangle"]:

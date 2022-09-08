@@ -9,7 +9,7 @@ from apsg.feature._tensor3 import DeformationGradient3
 class Projection:
     def __init__(self, **kwargs):
         self.rotate_data = kwargs.get("rotate_data", False)
-        self.overlay_position = Pair(kwargs.get("overlay_position"))
+        self.overlay_position = Pair(kwargs.get("overlay_position", (0, 0, 0, 0)))
         self.clip_pole = kwargs.get("clip_pole", 15)
         self.hemisphere = kwargs.get("hemisphere", "lower")
         self.overlay_step = kwargs.get("overlay_step", 15)  # grid step
@@ -139,54 +139,54 @@ class Projection:
             polehole_n, polehole_s = {}, {}
 
         # Principal axis X
-        l = Vector3(1, 0, 0)
+        X = Vector3(1, 0, 0)
         X1, Y1 = self.project_overlay(
-            *np.array([l.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
+            *np.array([X.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
         )
         X2, Y2 = self.project_overlay(
-            *np.array([l.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
+            *np.array([X.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
         )
         X3, Y3 = self.project_overlay(
-            *np.array([-l.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
+            *np.array([-X.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
         )
         X4, Y4 = self.project_overlay(
-            *np.array([-l.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
+            *np.array([-X.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
         )
         main_x = dict(
             x=np.hstack((X1, np.nan, X2, np.nan, X3, np.nan, X4)),
             y=np.hstack((Y1, np.nan, Y2, np.nan, Y3, np.nan, Y4)),
         )
         # Principal axis Y
-        l = Vector3(0, 1, 0).transform(self.R).lower().transform(self.Ri)
+        Y = Vector3(0, 1, 0).transform(self.R).lower().transform(self.Ri)
         X1, Y1 = self.project_overlay(
-            *np.array([l.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
+            *np.array([Y.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
         )
         X2, Y2 = self.project_overlay(
-            *np.array([l.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
+            *np.array([Y.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
         )
         X3, Y3 = self.project_overlay(
-            *np.array([-l.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
+            *np.array([-Y.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
         )
         X4, Y4 = self.project_overlay(
-            *np.array([-l.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
+            *np.array([-Y.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
         )
         main_y = dict(
             x=np.hstack((X1, np.nan, X2, np.nan, X3, np.nan, X4)),
             y=np.hstack((Y1, np.nan, Y2, np.nan, Y3, np.nan, Y4)),
         )
         # Principal axis Z
-        l = Vector3(0, 0, 1).transform(self.R).lower().transform(self.Ri)
+        Z = Vector3(0, 0, 1).transform(self.R).lower().transform(self.Ri)
         X1, Y1 = self.project_overlay(
-            *np.array([l.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
+            *np.array([Z.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
         )
         X2, Y2 = self.project_overlay(
-            *np.array([l.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
+            *np.array([Z.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
         )
         X3, Y3 = self.project_overlay(
-            *np.array([-l.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
+            *np.array([-Z.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
         )
         X4, Y4 = self.project_overlay(
-            *np.array([-l.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
+            *np.array([-Z.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
         )
         main_z = dict(
             x=np.hstack((X1, np.nan, X2, np.nan, X3, np.nan, X4)),
