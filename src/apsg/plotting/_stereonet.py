@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import warnings
+# import warnings
 import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cbook as mcb
 from matplotlib.patches import Circle
+# from matplotlib import MatplotlibDeprecationWarning
 
 from apsg.config import apsg_conf
 from apsg.math._vector import Vector3
@@ -29,7 +29,7 @@ __all__ = ["StereoNet"]
 
 
 # Ignore `matplotlib`s deprecation warnings.
-warnings.filterwarnings("ignore", category=mcb.mplDeprecation)
+# warnings.filterwarnings("ignore", category=MatplotlibDeprecationWarning)
 
 
 class StereoNet:
