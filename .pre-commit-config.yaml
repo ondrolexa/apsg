@@ -1,13 +1,13 @@
 default_stages: [commit, push]
 repos:
   - repo: https://github.com/psf/black
-    rev: 22.3.0
+    rev: 22.8.0
     hooks:
     - id: black
       exclude: ^(venv/|docs/)
       types: ['python']
   - repo: https://github.com/PyCQA/flake8
-    rev: 4.0.1
+    rev: 5.0.4
     hooks:
     - id: flake8
       args:
@@ -19,9 +19,9 @@ repos:
     hooks:
     - id: pytest
       name: pytest
-      stages: [commit]
+      stages: ['commit']
       language: system
-      entry: pytest-3 -s -v .
-      types: [python]
+      entry: pytest -s -v .
+      types: ['python']
       pass_filenames: false
       always_run: true
