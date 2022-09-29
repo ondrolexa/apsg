@@ -80,8 +80,11 @@ class StereoGrid:
         sigma = kwargs.get("sigma", None)
         n = len(features)
         if sigma is None:
-            k = estimate_k(features)
-            sigma = np.sqrt(2 * n / (k - 2))
+            # k = estimate_k(features)
+            # sigma = np.sqrt(2 * n / (k - 2))
+            # Totally empirical as estimate_k is problematic
+            sigma = np.sqrt(2 * n / (np.log(n) - 2)) / 3
+            k = 2 * (1.0 + n / sigma**2)
         else:
             k = 2 * (1.0 + n / sigma**2)
         # method = kwargs.get("method", "exp_kamb")
