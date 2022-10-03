@@ -11,13 +11,24 @@ visualize orientational structural geology data. It is under active
 developement, so until documenation will be finished, you can go trough
 tutorial to see what APSG can do for you.
 
+Usage
+-----
+
+To use APSG in a project::
+
+    import apsg
+
+To use APSG interactively it is easier to import into current namespace::
+
+    from apsg import *
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
    installation
-   usage
+   classes
    tutorials
    automodules
    contributing

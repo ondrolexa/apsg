@@ -138,6 +138,10 @@ class Vector:
 
 
 class Vector2(Vector):
+    """
+    A class to represent a 2D vector.
+    """
+
     __shape__ = (2,)
 
     def __init__(self, *args):
@@ -295,6 +299,10 @@ class Axial2(Vector2):  # Do we need it?
 
 
 class Vector3(Vector):
+    """
+    A class to represent a 2D vector.
+    """
+
     __shape__ = (3,)
 
     def __init__(self, *args):
