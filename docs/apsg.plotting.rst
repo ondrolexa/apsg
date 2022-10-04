@@ -7,3 +7,7 @@ plotting module
     :undoc-members:
     :show-inheritance:
 
+plotting functions
+------------------
+
+.. autofunction:: apsg.plotting

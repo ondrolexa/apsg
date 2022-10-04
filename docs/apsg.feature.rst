@@ -8,3 +8,8 @@ This module provide basic classes to store and analyze varius type of structural
     :members:
     :undoc-members:
     :show-inheritance:
+
+feature functions
+-----------------
+
+.. autofunction:: apsg.feature
