@@ -6,6 +6,7 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
+
 # from matplotlib import MatplotlibDeprecationWarning
 
 from apsg.config import apsg_conf
@@ -600,17 +601,65 @@ def stereonetartist_from_json(obj_json):
 
 
 def quicknet(*args, **kwargs):
+    """
+    Function to quickly show or save StereoNet from args
+
+    Args:
+        args: any object(s) of Vector3, Foliation, Lineation, Pair,
+            Fault, Cone, Vector3Set, FoliationSet, LineationSet
+            PairSet or FaultSet
+
+    Kwargs:
+        savefig - boolean to save figure. Default False
+        filename - filename for figure. Default 'stereonet.png'
+        savefig_kwargs = dict passed to ``plt.savefig``
+        fol_as_pole - boolean to define how planar features
+            are plotted. Default True, i.e. plot as poles.
+
+
+    Example:
+        >>> l = linset.random_fisher(position=lin(120, 50))
+        >>> f = folset.random_fisher(position=lin(300, 40))
+        >>> quicknet(f, l, fol_as_pole=False)
+    """
     savefig = kwargs.get("savefig", False)
     filename = kwargs.get("filename", "stereonet.png")
     savefig_kwargs = kwargs.get("savefig_kwargs", {})
+    fol_as_pole = kwargs.get("fol_as_pole", True)
     s = StereoNet(**kwargs)
     for arg in args:
-        if isinstance(arg, FoliationSet):
-            s.pole(arg)
-        elif isinstance(arg, LineationSet):
-            s.line(arg)
+        if isinstance(arg, Vector3):
+            if isinstance(arg, Foliation):
+                if fol_as_pole:
+                    s.pole(arg)
+                else:
+                    s.great_circle(arg)
+            elif isinstance(arg, Lineation):
+                s.line(arg)
+            else:
+                s.vector(arg)
+        elif isinstance(arg, Pair):
+            s.pair(arg)
+        elif isinstance(arg, Fault):
+            s.fault(arg)
+        elif isinstance(arg, Cone):
+            s.cone(arg)
+        elif isinstance(arg, Vector3Set):
+            if isinstance(arg, FoliationSet):
+                if fol_as_pole:
+                    s.pole(arg)
+                else:
+                    s.great_circle(arg)
+            elif isinstance(arg, LineationSet):
+                s.line(arg)
+            else:
+                s.vector(arg)
+        elif isinstance(arg, PairSet):
+            s.pair(arg)
+        elif isinstance(arg, FaultSet):
+            s.fault(arg)
         else:
-            pass
+            print(f"{type(arg)} not supported.")
     if savefig:
         s.savefig(filename, **savefig_kwargs)
     else:

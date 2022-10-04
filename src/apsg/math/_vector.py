@@ -142,15 +142,38 @@ class Vector:
 class Vector2(Vector):
     """
     A class to represent a 2D vector.
+
+    There are different way to create ``Vector2`` object:
+
+    - without arguments create default ``Vector2`` (0, 0, 1)
+    - with single argument `v`, where
+        - v could be Vector2-like object
+        - v could be string 'x' or 'y' - principal axes of coordinate system
+        - v could be tuple of (x, y) - vector components
+        - v could be float - unit vector with given angle to 'x' axis
+    - with 2 numerical arguments defining vector components
+
+    >>> vec2()
+    >>> vec2(1, -1)
+    >>> vec2('y')
+    >>> vec2(50)
+
+    Args:
+        ang (float): angle between 'x' axis and vector in degrees
+
+    Example:
+        >>> v = vec2(1, -2)
     """
 
     __shape__ = (2,)
 
     def __init__(self, *args):
-        if len(args) == 1 and np.asarray(args[0]).shape == Vector2.__shape__:
-            coords = args[0]
-        elif len(args) == 1:
-            if isinstance(args[0], str):
+        if len(args) == 0:
+            coords = (1, 0)
+        if len(args) == 1:
+            if np.asarray(args[0]).shape == Vector2.__shape__:
+                coords = args[0]
+            elif isinstance(args[0], str):
                 if args[0].lower() == "x":
                     coords = (1, 0)
                 elif args[0].lower() == "y":
@@ -302,14 +325,36 @@ class Axial2(Vector2):  # Do we need it?
 
 class Vector3(Vector):
     """
-    A class to represent a 2D vector.
+    A class to represent a 3D vector.
+
+    There are different way to create ``Vector3`` object:
+
+    - without arguments create default ``Vector3`` (1, 0, 0)
+    - with single argument `v`, where
+        - v could be Vector3-like object
+        - v could be string 'x', 'y' or 'z' - principal axes of coordinate system
+        - v could be tuple of (x, y, z) - vector components
+    - with 2 arguments plunge direction and plunge
+    - with 3 numerical arguments defining vector components
+
+    >>> vec3()
+    >>> vec3(1,2,-1)
+    >>> vec3('y')
+    >>> vec3(120, 30)
+
+    Args:
+        azi (float): plunge direction of linear feature in degrees
+        inc (float): plunge of linear feature in degrees
+
+    Example:
+        >>> v = vec3(1, -2, 1)
     """
 
     __shape__ = (3,)
 
     def __init__(self, *args):
         if len(args) == 0:
-            coords = (0, 0, 1)
+            coords = (1, 0, 0)
         elif len(args) == 1:
             if np.asarray(args[0]).shape == Vector3.__shape__:
                 coords = [float(v) for v in args[0]]

@@ -18,7 +18,7 @@ class Lineation(Axial3):
 
     There are different way to create ``Lineation`` object:
 
-    - without arguments create default Lineation lin(0,90)
+    - without arguments create default ``Lineation`` L:0/0
     - with single argument `l`, where
         - l could be Vector3-like object
         - l could be string 'x', 'y' or 'z' - principal axes of coordinate system
@@ -63,7 +63,7 @@ class Foliation(Axial3):
 
     There are different way to create ``Foliation`` object:
 
-    - without arguments create default Foliation fol(0,0)
+    - without arguments create default ``Foliation`` S:180/0
     - with single argument `f`, where
         - f could be Vector3-like object
         - f could be string 'x', 'y' or 'z' - principal planes of coordinate system

@@ -12,7 +12,7 @@ repos:
     - id: flake8
       args:
         - --max-line-length=88
-        - --ignore=F401,E501,W503,E731
+        - --ignore=F401,E501,W503,E731,E743,E741
       exclude: ^(venv/|docs/)
       types: ['python']
   - repo: local

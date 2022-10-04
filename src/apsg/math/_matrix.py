@@ -164,6 +164,24 @@ class Matrix:
 
 
 class Matrix2(Matrix):
+    """
+    A class to represent a 2x2 matrix.
+
+    There are different way to create ``Matrix2`` object:
+
+    - without arguments create default identity ``Matrix2``
+    - with single argument of Matrix2-like object
+
+    >>> Matrix2()
+    >>> Matrix2([[2, 1],[0, 0.5]])
+
+    Args:
+        v: 2-dimensional array-like object
+
+    Example:
+        >>> A = Matrix2([[2, 1],[0, 0.5]])
+    """
+
     __shape__ = (2, 2)
 
     def __init__(self, *args):
