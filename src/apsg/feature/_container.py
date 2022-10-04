@@ -1602,6 +1602,21 @@ class Cluster(object):
 
 
 def G(lst, name="Default"):
+    """
+    Function to create appropriate container (FeatueSet) from list of features.
+
+    Args:
+        lst (list): Homogeneous list of objects of ``Vector2``, ``Vector3``,
+            ``Lineation``, ``Foliation``, ``Pair``, ``Cone``, ``Ellipse``
+            or ``OrientationTensor3``.
+
+    Keyword Args:
+        name (str): name of feature set. Default `Default`
+
+    Example:
+        >>> fols = [fol(120,30), fol(130, 40), fol(126, 37)]
+        >>> f = G(fols)
+    """
     if hasattr(lst, "__len__"):
         dtype_cls = type(lst[0])
         assert all([isinstance(obj, dtype_cls) for obj in lst])
@@ -1617,6 +1632,12 @@ def G(lst, name="Default"):
             return PairSet(lst, name=name)
         elif dtype_cls is Fault:
             return FaultSet(lst, name=name)
+        elif dtype_cls is Cone:
+            return ConeSet(lst, name=name)
+        elif dtype_cls is Ellipsoid:
+            return EllipsoidSet(lst, name=name)
+        elif dtype_cls is OrientationTensor3:
+            return OrientationTensor3Set(lst, name=name)
         else:
             raise TypeError("Wrong datatype to create FeatureSet")
 

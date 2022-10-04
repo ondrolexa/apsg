@@ -602,20 +602,19 @@ def stereonetartist_from_json(obj_json):
 
 def quicknet(*args, **kwargs):
     """
-    Function to quickly show or save StereoNet from args
+    Function to quickly show or save ``StereoNet`` from args
 
     Args:
-        args: any object(s) of Vector3, Foliation, Lineation, Pair,
-            Fault, Cone, Vector3Set, FoliationSet, LineationSet
-            PairSet or FaultSet
+        args: object(s) to be plotted. Instaces of ``Vector3``, ``Foliation``,
+            ``Lineation``, ``Pair``, ``Fault``, ``Cone``, ``Vector3Set``,
+            ``FoliationSet``, ``LineationSet``, ``PairSet`` or ``FaultSet``.
 
-    Kwargs:
-        savefig - boolean to save figure. Default False
-        filename - filename for figure. Default 'stereonet.png'
-        savefig_kwargs = dict passed to ``plt.savefig``
-        fol_as_pole - boolean to define how planar features
-            are plotted. Default True, i.e. plot as poles.
-
+    Keyword Args:
+        savefig (bool): True to save figure. Default `False`
+        filename (str): filename for figure. Default `stereonet.png`
+        savefig_kwargs (dict): dict passed to ``plt.savefig``
+        fol_as_pole (bool): True to plot planar features as poles,
+            False for plotting as great circle. Default `True`
 
     Example:
         >>> l = linset.random_fisher(position=lin(120, 50))
