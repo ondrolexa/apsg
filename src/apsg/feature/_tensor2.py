@@ -10,7 +10,7 @@ from apsg.decorator._decorator import ensure_arguments
 
 class DeformationGradient2(Matrix2):
     """
-    ``DeformationGradient2`` store 2D deformation gradient tensor.
+    The class to represent 2D deformation gradient tensor.
 
     Args:
       a (2x2 array_like): Input data, that can be converted to
@@ -112,7 +112,7 @@ class DeformationGradient2(Matrix2):
 
 class VelocityGradient2(Matrix2):
     """
-    ``VelocityGradient2`` represents 2D velocity gradient tensor.
+    The class to represent 2D velocity gradient tensor.
 
     Args:
       a (2x2 array_like): Input data, that can be converted to
@@ -166,7 +166,7 @@ class Tensor2(Matrix2):
 
 class Stress2(Tensor2):
     """
-    ``Stress2`` store 2D stress tensor.
+    The class to represent 2D stress tensor.
 
     Args:
       a (2x2 array_like): Input data, that can be converted to
@@ -304,7 +304,7 @@ class Stress2(Tensor2):
 
 class Ellipse(Tensor2):
     """
-    Ellipse class
+    The class to represent 2D ellipse
 
     See following methods and properties for additional operations.
 
@@ -402,7 +402,7 @@ class Ellipse(Tensor2):
 
 class OrientationTensor2(Ellipse):
     """
-    Represents an orientation tensor, which characterize data distribution
+    Represents an 2D orientation tensor, which characterize data distribution
     using eigenvalue method. See (Watson 1966, Scheidegger 1965).
 
     See following methods and properties for additional operations.

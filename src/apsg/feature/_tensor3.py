@@ -11,7 +11,7 @@ from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
 
 class DeformationGradient3(Matrix3):
     """
-    ``DeformationGradient3`` store 3D deformation gradient tensor.
+    The class to represent 3D deformation gradient tensor.
 
     Args:
       a (3x3 array_like): Input data, that can be converted to
@@ -216,7 +216,7 @@ class DeformationGradient3(Matrix3):
 
 class VelocityGradient3(Matrix3):
     """
-    ``VelocityGradient3`` represents 3D velocity gradient tensor.
+    The class to represent 3D velocity gradient tensor.
 
     Args:
       a (3x3 array_like): Input data, that can be converted to
@@ -292,7 +292,7 @@ class Tensor3(Matrix3):
 
 class Stress3(Tensor3):
     """
-    ``Stress3`` store 3D stress tensor.
+    The class to represent 3D stress tensor.
 
     Args:
       a (3x3 array_like): Input data, that can be converted to
@@ -448,7 +448,7 @@ class Stress3(Tensor3):
 
 class Ellipsoid(Tensor3):
     """
-    Ellipsoid class
+    The class to represent 3D ellipsoid.
 
     See following methods and properties for additional operations.
 
@@ -746,7 +746,7 @@ class Ellipsoid(Tensor3):
 
 class OrientationTensor3(Ellipsoid):
     """
-    Represents an orientation tensor, which characterize data distribution
+    Represents an 3D orientation tensor, which characterize data distribution
     using eigenvalue method. See (Watson 1966, Scheidegger 1965).
 
     See following methods and properties for additional operations.

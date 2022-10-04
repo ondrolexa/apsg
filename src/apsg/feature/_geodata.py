@@ -13,6 +13,32 @@ from apsg.math._vector import Vector3, Axial3
 
 
 class Lineation(Axial3):
+    """
+    A class to represent axial (non-oriented) linear feature (lineation).
+
+    There are different way to create ``Lineation`` object:
+
+    - without arguments create default Lineation lin(0,90)
+    - with single argument `l`, where
+        - l could be Vector3-like object
+        - l could be string 'x', 'y' or 'z' - principal axes of coordinate system
+        - l could be tuple of (x, y, z) - vector components
+    - with 2 arguments plunge direction and plunge
+    - with 3 numerical arguments defining vector components
+
+    >>> lin()
+    >>> lin(120, 30)
+    >>> lin('y')
+    >>> lin(1,2,-1)
+
+    Args:
+        azi (float): plunge direction of linear feature in degrees
+        inc (float): plunge of linear feature in degrees
+
+    Example:
+        >>> l = lin(110, 26)
+    """
+
     def __repr__(self):
         azi, inc = self.geo
         return f"L:{azi:.0f}/{inc:.0f}"
@@ -32,11 +58,51 @@ class Lineation(Axial3):
 
 
 class Foliation(Axial3):
+    """
+    A class to represent non-oriented planar feature (foliation).
+
+    There are different way to create ``Foliation`` object:
+
+    - without arguments create default Foliation fol(0,0)
+    - with single argument `f`, where
+        - f could be Vector3-like object
+        - f could be string 'x', 'y' or 'z' - principal planes of coordinate system
+        - f could be tuple of (x, y, z) - vector components
+    - with 2 arguments follows active notation. See apsg_conf["notation"]
+            'dd': dip direction and dip
+            'rhr': strike and dip
+    - with 3 numerical arguments defining vector components of plane normal
+
+    >>> fol()
+    >>> fol(120, 30)
+    >>> fol('y')
+    >>> fol(1,2,-1)
+
+    Args:
+        azi (float): dip direction (or strike) of planar feature in degrees.
+        inc (float): dip of planar feature in degrees
+
+    Example:
+        >>> f = fol(250, 30)
+    """
+
     def __init__(self, *args):
         if len(args) == 0:
             coords = (0, 0, 1)
-        elif len(args) == 1 and np.asarray(args[0]).shape == Foliation.__shape__:
-            coords = [float(v) for v in args[0]]
+        elif len(args) == 1:
+            if np.asarray(args[0]).shape == Foliation.__shape__:
+                coords = [float(v) for v in args[0]]
+            elif isinstance(args[0], str):
+                if args[0].lower() == "x":
+                    coords = (1, 0, 0)
+                elif args[0].lower() == "y":
+                    coords = (0, 1, 0)
+                elif args[0].lower() == "z":
+                    coords = (0, 0, 1)
+                else:
+                    raise TypeError(f"Not valid arguments for {type(self).__name__}")
+            else:
+                raise TypeError(f"Not valid arguments for {type(self).__name__}")
         elif len(args) == 2:
             coords = geo2vec_planar(*args)
         elif len(args) == 3:
@@ -274,8 +340,8 @@ class Pair:
 
 
 class Fault(Pair):
-    """Fault class for related ``Foliation`` and ``Lineation`` instances with
-    sense of movement.
+    """
+    The class to store ``Pair`` with associated sense of movement.
 
     When ``Fault`` object is created, both planar and linear feature are
     adjusted, so linear feature perfectly fit onto planar one. Warning

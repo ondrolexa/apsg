@@ -16,7 +16,9 @@ TO BE ADDED
 
 
 class Vector:
-    """Base class for Vector2 and Vector3"""
+    """
+    Base class for Vector2 and Vector3
+    """
 
     __slots__ = ("_coords",)
 
@@ -310,7 +312,7 @@ class Vector3(Vector):
             coords = (0, 0, 1)
         elif len(args) == 1:
             if np.asarray(args[0]).shape == Vector3.__shape__:
-                coords = args[0]
+                coords = [float(v) for v in args[0]]
             elif isinstance(args[0], str):
                 if args[0].lower() == "x":
                     coords = (1, 0, 0)

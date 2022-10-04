@@ -15,6 +15,10 @@ from apsg.feature._statistics import KentDistribution, vonMisesFisher
 
 
 class FeatureSet:
+    """
+    Base class for containers
+    """
+
     __slots__ = ("data", "name")
 
     def __init__(self, data, name="Default"):
@@ -107,6 +111,10 @@ class FeatureSet:
 
 
 class Vector2Set(FeatureSet):
+    """
+    Class to store set of ``Vector2`` features
+    """
+
     __feature_type__ = "Vector2"
 
     def __repr__(self):
@@ -375,6 +383,10 @@ class Vector2Set(FeatureSet):
 
 
 class Vector3Set(FeatureSet):
+    """
+    Class to store set of ``Vector3`` features
+    """
+
     __feature_type__ = "Vector3"
 
     def __repr__(self):
@@ -871,6 +883,10 @@ class Vector3Set(FeatureSet):
 
 
 class LineationSet(Vector3Set):
+    """
+    Class to store set of ``Lineation`` features
+    """
+
     __feature_type__ = "Lineation"
 
     def __repr__(self):
@@ -878,6 +894,10 @@ class LineationSet(Vector3Set):
 
 
 class FoliationSet(Vector3Set):
+    """
+    Class to store set of ``Foliation`` features
+    """
+
     __feature_type__ = "Foliation"
 
     def __repr__(self):
@@ -889,6 +909,10 @@ class FoliationSet(Vector3Set):
 
 
 class PairSet(FeatureSet):
+    """
+    Class to store set of ``Pair`` features
+    """
+
     __feature_type__ = "Pair"
 
     def __repr__(self):
@@ -1059,6 +1083,10 @@ class PairSet(FeatureSet):
 
 
 class FaultSet(PairSet):
+    """
+    Class to store set of ``Fault`` features
+    """
+
     __feature_type__ = "Fault"
 
     def __repr__(self):
@@ -1229,6 +1257,10 @@ class FaultSet(PairSet):
 
 
 class ConeSet(FeatureSet):
+    """
+    Class to store set of ``Cone`` features
+    """
+
     __feature_type__ = "Cone"
 
     def __repr__(self):
@@ -1236,6 +1268,10 @@ class ConeSet(FeatureSet):
 
 
 class EllipsoidSet(FeatureSet):
+    """
+    Class to store set of ``Ellipsoid`` features
+    """
+
     __feature_type__ = "Ellipsoid"
 
     @property
@@ -1449,6 +1485,10 @@ class EllipsoidSet(FeatureSet):
 
 
 class OrientationTensor3Set(EllipsoidSet):
+    """
+    Class to store set of ``OrientationTensor3`` features
+    """
+
     __feature_type__ = "OrientationTensor3"
 
 
