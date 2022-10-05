@@ -86,7 +86,8 @@ class StereoNet(object):
         self.active = 0
         self.artists = []
         self.fig, self.ax = plt.subplots(ncols=self.ncols, figsize=figsize)
-        self.fig.canvas.set_window_title("StereoNet - Schmidt projection")
+        if hasattr(self.fig.canvas.manager, "set_window_title"):
+            self.fig.canvas.set_window_title("StereoNet - Schmidt projection")
         # self.fig.set_size_inches(8 * self.ncols, 6)
         self._axtitle = self.ncols * [None]
         self.artist_collection = []
@@ -241,10 +242,15 @@ class StereoNet(object):
             ax.plot(
                 [-0.02, 0.02, np.nan, 0, 0], [0, 0, np.nan, -0.02, 0.02], "k", zorder=4
             )
-            annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
-                                arrowprops=dict(arrowstyle="->"), zorder=10,
-                                bbox=dict(boxstyle="round", fc="w")
-                                )
+            annot = ax.annotate(
+                "",
+                xy=(0, 0),
+                xytext=(20, 20),
+                textcoords="offset points",
+                arrowprops=dict(arrowstyle="->"),
+                zorder=10,
+                bbox=dict(boxstyle="round", fc="w"),
+            )
             annot.set_visible(False)
             self.annot.append(annot)
         self._title = self.fig.suptitle(self._title_text)
@@ -332,13 +338,13 @@ class StereoNet(object):
             g.type, Vec3
         ), "Only Vec3-like instances could be plotted as polygon."
         if g.type is Fol:
-            g = Group([f1 ** f2 for f1, f2 in zip(g, g[1:] + g[:1])])
+            g = Group([f1**f2 for f1, f2 in zip(g, g[1:] + g[:1])])
         for l1, l2 in zip(g, g[1:] + g[:1]):
             ax, phi = l1.H(l2).axisangle
             steps = abs(int(phi / angstep))
             angles = np.linspace(0, phi, steps)
             rv = [l1.rotate(ax, angle) for angle in angles]
-            lh = [vv.flip if vv.upper else vv for vv in rv] # what about Vec3?
+            lh = [vv.flip if vv.upper else vv for vv in rv]  # what about Vec3?
             coords.extend(np.transpose(l2xy(*np.array([v.dd for v in lh]).T)))
         bg = plt.Polygon(coords, **kwargs)
         h = self.ax.add_patch(bg)
@@ -399,7 +405,11 @@ class StereoNet(object):
 
     def scatter(self, obj, *args, **kwargs):
         """Draw Lin as point with varying marker size and/or color."""
-        assert obj.type in [Lin, Fol, Vec3], "Only Vec3, Lin or Fol type instance could be plotted with scatter."
+        assert obj.type in [
+            Lin,
+            Fol,
+            Vec3,
+        ], "Only Vec3, Lin or Fol type instance could be plotted with scatter."
         if "zorder" not in kwargs:
             kwargs["zorder"] = 5
         if "legend" in kwargs:
@@ -414,11 +424,15 @@ class StereoNet(object):
         x, y = l2xy(*obj.aslin.dd)
         h = self.fig.axes[self.active].scatter(x, y, *args, **kwargs)
         if labels:
-            assert len(h.get_offsets()) == len(labels), "Number of labels is not the same as the number of data."
+            assert len(h.get_offsets()) == len(
+                labels
+            ), "Number of labels is not the same as the number of data."
             self.artist_collection.append(h)
             self.artist_labels.append(labels)
             if self.cid is None:
-                self.cid = self.fig.canvas.mpl_connect("motion_notify_event", self.hover)
+                self.cid = self.fig.canvas.mpl_connect(
+                    "motion_notify_event", self.hover
+                )
         if legend:
             self.fig.colorbar(h)
         if animate:
@@ -426,7 +440,7 @@ class StereoNet(object):
         self.draw()
 
     def vector(self, obj, *args, **kwargs):
-        """ This mimics plotting on lower and upper hemisphere using
+        """This mimics plotting on lower and upper hemisphere using
         full and hollow symbols."""
         assert issubclass(
             obj.type, Vec3
@@ -512,7 +526,7 @@ class StereoNet(object):
         h = self.fig.axes[self.active].plot(x, y, *args, **kwargs)
         if upper_style:
             for hl in h:
-                hl.set_linestyle('--')
+                hl.set_linestyle("--")
         if animate:
             self.artists.append(tuple(h))
         self.draw()
@@ -595,8 +609,8 @@ class StereoNet(object):
                 args = (levels,)
         cs = self.fig.axes[self.active].tricontourf(d.triang, d.values, *args, **kwargs)
         if clines:
-            kwargs['cmap'] = None
-            kwargs['colors'] = "k"
+            kwargs["cmap"] = None
+            kwargs["colors"] = "k"
             self.fig.axes[self.active].tricontour(d.triang, d.values, *args, **kwargs)
         if legend:
             if self.ncols > 1:
@@ -609,7 +623,7 @@ class StereoNet(object):
                         0.03,
                     ]
                 )
-                self.fig.colorbar(cs, cax=cbaxes, orientation='horizontal')
+                self.fig.colorbar(cs, cax=cbaxes, orientation="horizontal")
                 # add horizontal, calculate positions (divide bars and spaces)
             else:
                 ab = self.fig.axes[self.active].get_position().bounds
@@ -659,7 +673,7 @@ class StereoNet(object):
                         0.03,
                     ]
                 )
-                self.fig.colorbar(cs, cax=cbaxes, orientation='horizontal')
+                self.fig.colorbar(cs, cax=cbaxes, orientation="horizontal")
                 # add horizontal, calculate positions (divide bars and spaces)
             else:
                 ab = self.fig.axes[self.active].get_position().bounds
@@ -689,7 +703,7 @@ class StereoNet(object):
         self._axtitle[self.active] = self.fig.axes[self.active].set_title(title)
         self._axtitle[self.active].set_y(-0.09)
 
-    def title(self, title=''):
+    def title(self, title=""):
         """Set figure title."""
         self._title_text = title
         self._title = self.fig.suptitle(self._title_text)
@@ -725,7 +739,7 @@ class StereoNet(object):
                 cont, ind = collection.contains(event)
                 if cont:
                     self.annot[self.active].xy = collection.get_offsets()[ind["ind"][0]]
-                    text = ' '.join([labels[n] for n in ind["ind"]])
+                    text = " ".join([labels[n] for n in ind["ind"]])
                     self.annot[self.active].set_text(text)
                     self.annot[self.active].set_visible(True)
                     self.fig.canvas.draw_idle()
@@ -775,12 +789,12 @@ class RosePlot(object):
         self.fig.canvas.set_window_title("Rose plot")
         self.bins = kwargs.get("bins", 36)
         self.axial = kwargs.get("axial", True)
-        self.pdf = kwargs.get('pdf', False)
-        self.kappa = kwargs.get('kappa', 250)
-        self.density = kwargs.get('density', False)
-        self.arrow = kwargs.get('arrow', 0.95)
-        self.rwidth = kwargs.get('rwidth', 1)
-        self.scaled = kwargs.get('scaled', False)
+        self.pdf = kwargs.get("pdf", False)
+        self.kappa = kwargs.get("kappa", 250)
+        self.density = kwargs.get("density", False)
+        self.arrow = kwargs.get("arrow", 0.95)
+        self.rwidth = kwargs.get("rwidth", 1)
+        self.scaled = kwargs.get("scaled", False)
         self.title_text = kwargs.get("title", "")
         self.grid = kwargs.get("grid", True)
         self.grid_kw = kwargs.get("grid_kw", {})
@@ -811,8 +825,8 @@ class RosePlot(object):
         else:
             ang = np.array(obj)
             weights = None
-        if 'weights' in kwargs:
-            weights = kwargs.pop('weights')
+        if "weights" in kwargs:
+            weights = kwargs.pop("weights")
 
         if self.axial:
             ang = np.concatenate((ang % 360, (ang + 180) % 360))
@@ -828,22 +842,33 @@ class RosePlot(object):
         else:
             width = 360 / self.bins
             if weights is not None:
-                num, bin_edges = np.histogram(ang,
-                                              bins=self.bins + 1,
-                                              range=(-width / 2, 360 + width / 2),
-                                              weights=weights,
-                                              density=self.density)
+                num, bin_edges = np.histogram(
+                    ang,
+                    bins=self.bins + 1,
+                    range=(-width / 2, 360 + width / 2),
+                    weights=weights,
+                    density=self.density,
+                )
             else:
-                num, bin_edges = np.histogram(ang,
-                                              bins=self.bins + 1,
-                                              range=(-width / 2, 360 + width / 2),
-                                              density=self.density)
+                num, bin_edges = np.histogram(
+                    ang,
+                    bins=self.bins + 1,
+                    range=(-width / 2, 360 + width / 2),
+                    density=self.density,
+                )
             num[0] += num[-1]
             num = num[:-1]
             theta, radii = [], []
             for cc, val in zip(np.arange(0, 360, width), num):
-                theta.extend([cc - width / 2, cc - self.rwidth * width / 2, cc,
-                              cc + self.rwidth * width / 2, cc + width / 2, ])
+                theta.extend(
+                    [
+                        cc - width / 2,
+                        cc - self.rwidth * width / 2,
+                        cc,
+                        cc + self.rwidth * width / 2,
+                        cc + width / 2,
+                    ]
+                )
                 radii.extend([0, val * self.arrow, val, val * self.arrow, 0])
             theta = np.deg2rad(theta)
         if self.scaled:
@@ -889,7 +914,7 @@ class _FabricPlot(object):
                     lbls,
                     prop={"size": 11},
                     borderaxespad=0,
-                    loc='center left',
+                    loc="center left",
                     bbox_to_anchor=(1.1, 0.5),
                     scatterpoints=1,
                     numpoints=1,
@@ -929,8 +954,8 @@ class VollmerPlot(_FabricPlot):
         self.grid = kwargs.get("grid", True)
         self.grid_style = kwargs.get("grid_style", "k:")
         self._lgd = None
-        self.A = np.asarray(kwargs.get("A", [0, 3 ** 0.5 / 2]))
-        self.B = np.asarray(kwargs.get("B", [1, 3 ** 0.5 / 2]))
+        self.A = np.asarray(kwargs.get("A", [0, 3**0.5 / 2]))
+        self.B = np.asarray(kwargs.get("B", [1, 3**0.5 / 2]))
         self.C = np.asarray(kwargs.get("C", [0.5, 0]))
         self.Ti = np.linalg.inv(np.array([self.A - self.C, self.B - self.C]).T)
         self.cla()
@@ -1097,12 +1122,12 @@ class RamsayPlot(_FabricPlot):
         self.fig.clear()
         self.ax = self.fig.add_subplot(111)
         self.ax.format_coord = self.format_coord
-        self.ax.set_aspect('equal')
+        self.ax.set_aspect("equal")
         self.ax.set_autoscale_on(True)
-        self.ax.spines['top'].set_color('none')
-        self.ax.spines['right'].set_color('none')
-        self.ax.set_xlabel(r'$\varepsilon_2-\varepsilon_3$')
-        self.ax.set_ylabel(r'$\varepsilon_1-\varepsilon_2$')
+        self.ax.spines["top"].set_color("none")
+        self.ax.spines["right"].set_color("none")
+        self.ax.set_xlabel(r"$\varepsilon_2-\varepsilon_3$")
+        self.ax.set_ylabel(r"$\varepsilon_1-\varepsilon_2$")
         self.ax.grid(self.grid)
 
         self.ax.set_title("Ramsay plot")
@@ -1159,7 +1184,7 @@ class RamsayPlot(_FabricPlot):
 
     def format_coord(self, x, y):
         k = y / x if x > 0 else 0
-        d = x ** 2 + y ** 2
+        d = x**2 + y**2
         return "k:{:0.2f} d:{:0.2f}".format(k, d)
 
 
@@ -1189,12 +1214,12 @@ class FlinnPlot(_FabricPlot):
         self.fig.clear()
         self.ax = self.fig.add_subplot(111)
         self.ax.format_coord = self.format_coord
-        self.ax.set_aspect('equal')
+        self.ax.set_aspect("equal")
         self.ax.set_autoscale_on(True)
-        self.ax.spines['top'].set_color('none')
-        self.ax.spines['right'].set_color('none')
-        self.ax.set_xlabel(r'$R_{YZ}$')
-        self.ax.set_ylabel(r'$R_{XY}$')
+        self.ax.spines["top"].set_color("none")
+        self.ax.spines["right"].set_color("none")
+        self.ax.set_xlabel(r"$R_{YZ}$")
+        self.ax.set_ylabel(r"$R_{XY}$")
         self.ax.grid(self.grid)
 
         self.ax.set_title("Flinn's plot")
@@ -1281,14 +1306,14 @@ class HsuPlot(_FabricPlot):
         self.fig.clear()
         self.ax = self.fig.add_subplot(111, polar=True)
         # self.ax.format_coord = self.format_coord
-        self.ax.set_theta_zero_location('N')
+        self.ax.set_theta_zero_location("N")
         self.ax.set_theta_direction(-1)
         self.ax.set_thetamin(-30)
         self.ax.set_thetamax(30)
         self.ax.set_xticks([-np.pi / 6, -np.pi / 12, 0, np.pi / 12, np.pi / 6])
         self.ax.set_xticklabels([-1, -0.5, 0, 0.5, 1])
-        self.ax.set_title(r'$\nu$')
-        self.ax.set_ylabel(r'$\bar{\varepsilon}_s$')
+        self.ax.set_title(r"$\nu$")
+        self.ax.set_ylabel(r"$\bar{\varepsilon}_s$")
         self.ax.grid(self.grid)
 
         self.draw()
