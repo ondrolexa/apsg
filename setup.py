@@ -17,7 +17,7 @@ with open(path.join(CURRENT_PATH, "HISTORY.md")) as file:
 
 setup(
     name="apsg",
-    version="0.7.0",
+    version="0.7.1b",
     description="APSG - The package for structural geologists",
     long_description=readme + "\n\n" + history,
     long_description_content_type="text/markdown",
@@ -47,9 +47,9 @@ setup(
         "jupyter": ["jupyterlab"],
     },
     project_urls={
-        'Documentation': 'https://apsg.readthedocs.io/',
-        'Source Code': 'https://github.com/ondrolexa/apsg/',
-        'Bug Tracker': 'https://github.com/ondrolexa/apsg/issues/',
+        "Documentation": "https://apsg.readthedocs.io/",
+        "Source Code": "https://github.com/ondrolexa/apsg/",
+        "Bug Tracker": "https://github.com/ondrolexa/apsg/issues/",
     },
     entry_points="""
     [console_scripts]
