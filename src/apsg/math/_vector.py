@@ -147,22 +147,23 @@ class Vector2(Vector):
 
     - without arguments create default ``Vector2`` (0, 0, 1)
     - with single argument `v`, where
-        - v could be Vector2-like object
-        - v could be string 'x' or 'y' - principal axes of coordinate system
-        - v could be tuple of (x, y) - vector components
-        - v could be float - unit vector with given angle to 'x' axis
-    - with 2 numerical arguments defining vector components
 
-    >>> vec2()
-    >>> vec2(1, -1)
-    >>> vec2('y')
-    >>> vec2(50)
+        - `v` could be Vector2-like object
+        - `v` could be string 'x' or 'y' - principal axes of coordinate system
+        - `v` could be tuple of (x, y) - vector components
+        - `v` could be float - unit vector with given angle to 'x' axis
+    - with 2 numerical arguments defining vector components
 
     Args:
         ang (float): angle between 'x' axis and vector in degrees
 
     Example:
+        >>> vec2()
+        >>> vec2(1, -1)
+        >>> vec2('y')
+        >>> vec2(50)
         >>> v = vec2(1, -2)
+
     """
 
     __shape__ = (2,)
@@ -283,7 +284,7 @@ class Vector2(Vector):
         Example:
             # Reflexion of `y` axis.
             >>> F = [[1, 0], [0, -1]]
-            >>> u = Vector2([1, 1])
+            >>> u = vec2([1, 1])
             >>> u.transform(F)
             Vector2(1, -1)
 
@@ -331,23 +332,24 @@ class Vector3(Vector):
 
     - without arguments create default ``Vector3`` (1, 0, 0)
     - with single argument `v`, where
-        - v could be Vector3-like object
-        - v could be string 'x', 'y' or 'z' - principal axes of coordinate system
-        - v could be tuple of (x, y, z) - vector components
+
+        - `v` could be Vector3-like object
+        - `v` could be string 'x', 'y' or 'z' - principal axes of coordinate system
+        - `v` could be tuple of (x, y, z) - vector components
     - with 2 arguments plunge direction and plunge
     - with 3 numerical arguments defining vector components
-
-    >>> vec()
-    >>> vec(1,2,-1)
-    >>> vec('y')
-    >>> vec(120, 30)
 
     Args:
         azi (float): plunge direction of linear feature in degrees
         inc (float): plunge of linear feature in degrees
 
     Example:
+        >>> vec()
+        >>> vec(1,2,-1)
+        >>> vec('y')
+        >>> vec(120, 30)
         >>> v = vec(1, -2, 1)
+
     """
 
     __shape__ = (3,)

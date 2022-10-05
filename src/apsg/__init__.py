@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from apsg.math import Vector3 as vec, Vector2 as vec2
+from apsg.math import (
+    Vector3 as vec,
+    Vector2 as vec2,
+    Matrix2 as matrix2,
+    Matrix3 as matrix,
+)
 from apsg.config import apsg_conf
 from apsg.feature import (
     Lineation as lin,
@@ -53,6 +58,8 @@ __all__ = (
     "apsg_conf",
     "vec",
     "vec2",
+    "matrix",
+    "matrix2",
     "lin",
     "fol",
     "pair",

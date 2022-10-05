@@ -172,14 +172,16 @@ class Matrix2(Matrix):
     - without arguments create default identity ``Matrix2``
     - with single argument of Matrix2-like object
 
-    >>> Matrix2()
-    >>> Matrix2([[2, 1],[0, 0.5]])
-
     Args:
         v: 2-dimensional array-like object
 
     Example:
+        >>> Matrix2()
+        Matrix2
+        [[1 0]
+         [0 1]]
         >>> A = Matrix2([[2, 1],[0, 0.5]])
+
     """
 
     __shape__ = (2, 2)
@@ -199,13 +201,16 @@ class Matrix2(Matrix):
         """Return ``Matrix2`` defined by individual components. Default is identity tensor.
 
         Keyword Args:
-          xx, xy, yx, yy (float): tensor components
+            xx (float): tensor component M_xx
+            xy (float): tensor component M_xy
+            yx (float): tensor component M_yx
+            yy (float): tensor component M_yy
 
         Example:
-          >>> F = Matrix2.from_comp(xy=2)
-          >>> F
-          [[1. 2.]
-           [0. 1.]]
+            >>> F = Matrix2.from_comp(xy=2)
+            >>> F
+            [[1. 2.]
+             [0. 1.]]
 
         """
 
@@ -244,6 +249,27 @@ class Matrix2(Matrix):
 
 
 class Matrix3(Matrix):
+    """
+    A class to represent a 3x3 matrix.
+
+    There are different way to create ``Matrix3`` object:
+
+    - without arguments create default identity ``Matrix3``
+    - with single argument of Matrix3-like object
+
+    Args:
+        v: 2-dimensional array-like object
+
+    Example:
+        >>> Matrix3()
+        Matrix3
+        [[1 0 0]
+         [0 1 0]
+         [0 0 1]]
+        >>> A = Matrix3([[2, 1, 0], [0, 0.5, 0], [0, -0.5, 1]])
+
+    """
+
     __shape__ = (3, 3)
 
     def __init__(self, *args):
@@ -261,14 +287,22 @@ class Matrix3(Matrix):
         """Return ``Matrix3`` defined by individual components. Default is identity tensor.
 
         Keyword Args:
-          xx, xy, xz, yx, yy, yz, zx, zy, zz (float): tensor components
+            xx (float): tensor component M_xx
+            xy (float): tensor component M_xy
+            xz (float): tensor component M_xz
+            yx (float): tensor component M_yx
+            yy (float): tensor component M_yy
+            yz (float): tensor component M_yz
+            zx (float): tensor component M_zx
+            zy (float): tensor component M_zy
+            zz (float): tensor component M_zz
 
         Example:
-          >>> F = Matrix3.from_comp(xy=1, zy=-0.5)
-          >>> F
-          [[ 1.   1.   0. ]
-           [ 0.   1.   0. ]
-           [ 0.  -0.5  1. ]]
+            >>> F = Matrix3.from_comp(xy=1, zy=-0.5)
+            >>> F
+            [[ 1.   1.   0. ]
+             [ 0.   1.   0. ]
+             [ 0.  -0.5  1. ]]
 
         """
 

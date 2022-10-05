@@ -19,23 +19,22 @@ class Lineation(Axial3):
     There are different way to create ``Lineation`` object:
 
     - without arguments create default ``Lineation`` L:0/0
-    - with single argument `l`, where
-        - l could be Vector3-like object
-        - l could be string 'x', 'y' or 'z' - principal axes of coordinate system
-        - l could be tuple of (x, y, z) - vector components
+    - with single argument `l`, where:
+
+        - `l` could be Vector3-like object
+        - `l` could be string 'x', 'y' or 'z' - principal axes of coordinate system
+        - `l` could be tuple of (x, y, z) - vector components
     - with 2 arguments plunge direction and plunge
     - with 3 numerical arguments defining vector components
-
-    >>> lin()
-    >>> lin(120, 30)
-    >>> lin('y')
-    >>> lin(1,2,-1)
 
     Args:
         azi (float): plunge direction of linear feature in degrees
         inc (float): plunge of linear feature in degrees
 
     Example:
+        >>> lin()
+        >>> lin('y')
+        >>> lin(1,2,-1)
         >>> l = lin(110, 26)
     """
 
@@ -64,26 +63,24 @@ class Foliation(Axial3):
     There are different way to create ``Foliation`` object:
 
     - without arguments create default ``Foliation`` S:180/0
-    - with single argument `f`, where
-        - f could be Vector3-like object
-        - f could be string 'x', 'y' or 'z' - principal planes of coordinate system
-        - f could be tuple of (x, y, z) - vector components
-    - with 2 arguments follows active notation. See apsg_conf["notation"]
-            'dd': dip direction and dip
-            'rhr': strike and dip
-    - with 3 numerical arguments defining vector components of plane normal
+    - with single argument `f`, where:
 
-    >>> fol()
-    >>> fol(120, 30)
-    >>> fol('y')
-    >>> fol(1,2,-1)
+        - `f` could be Vector3-like object
+        - `f` could be string 'x', 'y' or 'z' - principal planes of coordinate system
+        - `f` could be tuple of (x, y, z) - vector components
+    - with 2 arguments follows active notation. See apsg_conf["notation"]
+    - with 3 numerical arguments defining vector components of plane normal
 
     Args:
         azi (float): dip direction (or strike) of planar feature in degrees.
         inc (float): dip of planar feature in degrees
 
     Example:
+        >>> fol()
+        >>> fol('y')
+        >>> fol(1,2,-1)
         >>> f = fol(250, 30)
+
     """
 
     def __init__(self, *args):
@@ -139,25 +136,24 @@ class Foliation(Axial3):
 
     def transform(self, F, **kwargs):
         """
-        Return affine transformation of vector `u` by matrix `F`.
+        Return affine transformation by matrix `F`.
 
         Args:
             F: transformation matrix
 
         Keyword Args:
-            norm: normalize transformed vectors. [True or False] Default False
+            norm: normalize transformed ``Foliation``. [True or False] Default False
 
         Returns:
             vector representation of affine transformation (dot product)
             of `self` by `F`
 
         Example:
-            # Reflexion of `y` axis.
+            >>> # Reflexion of `y` axis.
             >>> F = [[1, 0, 0], [0, -1, 0], [0, 0, 1]]
-            >>> u = Vector3([1, 1, 1])
-            >>> u.transform(F)
-            V(1.000, -1.000, 1.000)
-
+            >>> f = fol(45, 20)
+            >>> f.transform(F)
+            S:315/20
         """
         r = np.dot(self, np.linalg.inv(F))
         if kwargs.get("norm", False):
@@ -176,17 +172,13 @@ class Pair:
     There are different way to create ``Pair`` object:
 
     - without arguments create default Pair with fol(0,0) and lin(0,0)
-    - with single argument `p`, where
-        - p could be Pair
-        - p could be tuple of (fazi, finc, lazi, linc)
-        - p could be tuple of (fx, fy ,fz, lx, ly, lz)
+    - with single argument `p`, where:
+
+        - `p` could be Pair
+        - `p` could be tuple of (fazi, finc, lazi, linc)
+        - `p` could be tuple of (fx, fy ,fz, lx, ly, lz)
     - with 2 arguments f and l could be Vector3 like objects, e.g. Foliation and Lineation
     - with four numerical arguments defining `fol(fazi, finc)` and `lin(lazi, linc)`
-
-    >>> pair()
-    >>> pair(p)
-    >>> pair(f, l)
-    >>> pair(fazi, finc, lazi, linc)
 
     Args:
         fazi (float): dip azimuth of planar feature in degrees
@@ -195,6 +187,10 @@ class Pair:
         linc (float): plunge of linear feature in degrees
 
     Example:
+        >>> pair()
+        >>> pair(p)
+        >>> pair(f, l)
+        >>> pair(fazi, finc, lazi, linc)
         >>> p = pair(140, 30, 110, 26)
 
     """
@@ -314,7 +310,7 @@ class Pair:
         """Return an affine transformation of ``Pair`` by matrix `F`.
 
         Args:
-            F (``DefGrad`` or ``numpy.array``): transformation matrix
+            F: transformation matrix
 
         Keyword Args:
             norm: normalize transformed vectors. True or False. Default False
@@ -324,10 +320,10 @@ class Pair:
             by `F`
 
         Example:
-          >>> F = [[1, 0, 0], [0, 1, 1], [0, 0, 1]]
+          >>> F = defgrad.from_axisangle(lin(0,0), 60)
           >>> p = pair(90, 90, 0, 50)
           >>> p.transform(F)
-          P:90/45-50/37
+          P:270/30-314/23
 
         """
 
@@ -351,16 +347,12 @@ class Fault(Pair):
 
     - without arguments create default ``Fault`` with `fol(0,0)` and `lin(0,0)`
     - with single argument `p`:
-        - p could be Fault
-        - p could be tuple of (fazi, finc, lazi, linc, sense)
-        - p could be tuple of (fx, fy ,fz, lx, ly, lz)
-    - with 2 arguments f and l could be Vector3 like objects, e.g. Foliation and Lineation
-    - with 5 numerical arguments defining `fol(fazi, finc)`, `lin(lazi, linc)` and sense
 
-    >>> fault()
-    >>> fault(p)
-    >>> fault(f, l)
-    >>> fault(fazi, finc, lazi, linc, sense)
+        - `p` could be Fault
+        - `p` could be tuple of (fazi, finc, lazi, linc, sense)
+        - `p` could be tuple of (fx, fy ,fz, lx, ly, lz)
+    - with 2 arguments f and l could be Vector3 like objects, e.g. ``Foliation`` and ``Lineation``
+    - with 5 numerical arguments defining `fol(fazi, finc)`, `lin(lazi, linc)` and sense
 
     Args:
         fazi (float): dip azimuth of planar feature in degrees
@@ -370,7 +362,11 @@ class Fault(Pair):
         sense (float): sense of movement -/+1 hanging-wall up/down reverse/normal
 
     Example:
-        >>> p = fault(140, 30, 110, 26, -1)
+        >>> fault()
+        >>> fault(p)
+        >>> fault(f, l)
+        >>> fault(fazi, finc, lazi, linc, sense)
+        >>> f = fault(140, 30, 110, 26, -1)
 
     """
 
@@ -519,12 +515,11 @@ class Cone:
     - with 5 arguments defining axis `lin(aazi, ainc)`, secant line
       `lin(sazi, sinc)` and angle of revolution
 
-    >>> cone()
-    >>> cone(c)
-    >>> cone(a, s, revangle)
-    >>> cone(aazi, ainc, sazi, sinc, revangle)
-
     Example:
+        >>> cone()
+        >>> cone(c)
+        >>> cone(a, s, revangle)
+        >>> cone(aazi, ainc, sazi, sinc, revangle)
         >>> c = cone(140, 30, 110, 26, 360)
 
     """
