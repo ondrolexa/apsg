@@ -16,7 +16,7 @@ interface for users.
    * - vec2
      - Vector2
      - A class to represent a 2D vector
-   * - vec3
+   * - vec
      - Vector3
      - A class to represent a 3D vector
    * - lin
@@ -37,7 +37,7 @@ interface for users.
    * - vec2set
      - Vector2Set
      - Class to store set of ``Vector2`` features
-   * - vec3set
+   * - vecset
      - Vector3Set
      - Class to store set of ``Vector3`` features
    * - linset
@@ -85,6 +85,12 @@ interface for users.
    * - ortensor
      - OrientationTensor3
      - Represents an 3D orientation tensor
+   * - ellipseset
+     - EllipseSet
+     - Class to store set of ``Ellipse`` features
+   * - ortensor2set
+     - OrientationTensor2Set
+     - Class to store set of ``OrientationTensor2`` features
    * - ellipsoidset
      - EllipsoidSet
      - Class to store set of ``Ellipsoid`` features

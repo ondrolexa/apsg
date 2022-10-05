@@ -7,8 +7,8 @@ Test the tensor classes.
 import numpy as np
 
 from apsg.math import Matrix3
-from apsg import vec3
-from apsg import lin, fol, vec3set
+from apsg import vec
+from apsg import lin, fol, vecset
 from apsg import defgrad, velgrad, stress, ortensor
 
 # Matrix3 type is value object => structural equality
@@ -39,7 +39,7 @@ def test_tensor_repr_and_str():
 
 def test_ortensor_uniform():
     f = fol.random()
-    g = vec3set([f.pole(), f.rake(-45), f.rake(45)])
+    g = vecset([f.pole(), f.rake(-45), f.rake(45)])
     ot = ortensor.from_features(g)
     assert np.allclose(ot.eigenvalues(), np.ones(3) / 3)
 
@@ -74,7 +74,7 @@ def test_velgrad_integration():
 
 def test_stress_component():
     S = stress.from_comp(xx=2, yy=2, zz=1, xy=1, xz=3, yz=-2)
-    n = vec3(1, 2, -2).uv()
+    n = vec(1, 2, -2).uv()
     sn, tau = S.stress_comp(n)
     assert np.allclose(
         [abs(sn), abs(tau)], [abs(S.normal_stress(n)), S.shear_stress(n)]

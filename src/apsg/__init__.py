@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from apsg.math import Vector3 as vec3, Vector2 as vec2
+from apsg.math import Vector3 as vec, Vector2 as vec2
 from apsg.config import apsg_conf
 from apsg.feature import (
     Lineation as lin,
@@ -10,14 +10,16 @@ from apsg.feature import (
     Cone as cone,
 )
 from apsg.feature import (
-    Vector3Set as vec3set,
+    Vector3Set as vecset,
     Vector2Set as vec2set,
     LineationSet as linset,
     FoliationSet as folset,
     PairSet as pairset,
     FaultSet as faultset,
     ConeSet as coneset,
+    EllipseSet as ellipseset,
     EllipsoidSet as ellipsoidset,
+    OrientationTensor2Set as ortensor2set,
     OrientationTensor3Set as ortensorset,
     Cluster as cluster,
 )
@@ -49,21 +51,23 @@ from apsg.plotting import (
 
 __all__ = (
     "apsg_conf",
-    "vec3",
+    "vec",
     "vec2",
     "lin",
     "fol",
     "pair",
     "fault",
     "cone",
-    "vec3set",
+    "vecset",
     "vec2set",
     "linset",
     "folset",
     "pairset",
     "faultset",
     "coneset",
+    "ellipseset",
     "ellipsoidset",
+    "ortensor2set",
     "ortensorset",
     "cluster",
     "G",

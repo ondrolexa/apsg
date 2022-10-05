@@ -366,7 +366,7 @@ class Ellipse(Tensor2):
     @property
     def lambda2(self) -> float:
         """
-        Return the square root of middle eigenvalue.
+        Return the square root of minimum eigenvalue.
         """
         return math.sqrt(self.E2)
 
@@ -380,23 +380,29 @@ class Ellipse(Tensor2):
     @property
     def e2(self) -> float:
         """
-        Return the middle natural principal strain.
+        Return the minimum natural principal strain.
         """
         return math.log(self.lambda2)
 
     @property
     def ar(self) -> float:
-        if self.lambda1 > self.lambda2:
-            return self.lambda1 / self.lambda2
-        else:
-            return self.lambda2 / self.lambda1
+        """
+        Return the lambda1/lambda2 ratio.
+        """
+        return self.lambda1 / self.lambda2
 
     @property
     def orientation(self):
+        """
+        Return the orientation of the maximum eigenvector.
+        """
         return self.eigenvectors()[np.argmax(self.eigenvalues())].direction % 180
 
     @property
     def e12(self) -> float:
+        """
+        Return the difference between natural principal strains.
+        """
         return self.e1 - self.e2
 
 

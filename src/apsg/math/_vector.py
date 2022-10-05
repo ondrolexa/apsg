@@ -337,17 +337,17 @@ class Vector3(Vector):
     - with 2 arguments plunge direction and plunge
     - with 3 numerical arguments defining vector components
 
-    >>> vec3()
-    >>> vec3(1,2,-1)
-    >>> vec3('y')
-    >>> vec3(120, 30)
+    >>> vec()
+    >>> vec(1,2,-1)
+    >>> vec('y')
+    >>> vec(120, 30)
 
     Args:
         azi (float): plunge direction of linear feature in degrees
         inc (float): plunge of linear feature in degrees
 
     Example:
-        >>> v = vec3(1, -2, 1)
+        >>> v = vec(1, -2, 1)
     """
 
     __shape__ = (3,)

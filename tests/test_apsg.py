@@ -19,8 +19,8 @@ import pytest
 import numpy as np
 
 from apsg.config import apsg_conf
-from apsg import vec3, fol, lin, fault, pair
-from apsg import vec3set, linset, folset
+from apsg import vec, fol, lin, fault, pair
+from apsg import vecset, linset, folset
 from apsg import defgrad
 
 
@@ -32,41 +32,41 @@ from apsg import defgrad
 class TestVector:
     @pytest.fixture
     def x(self):
-        return vec3(1, 0, 0)
+        return vec(1, 0, 0)
 
     @pytest.fixture
     def y(self):
-        return vec3(0, 1, 0)
+        return vec(0, 1, 0)
 
     @pytest.fixture
     def z(self):
-        return vec3(0, 0, 1)
+        return vec(0, 0, 1)
 
-    def test_that_vec3_could_be_instatiated_from_single_ot_three_args(self):
-        lhs = vec3([1, 2, 3])
-        rhs = vec3(1, 2, 3)
+    def test_that_vec_could_be_instatiated_from_single_ot_three_args(self):
+        lhs = vec([1, 2, 3])
+        rhs = vec(1, 2, 3)
 
         current = lhs == rhs
         expects = True
 
         assert current == expects
 
-    def test_that_vec3_string_gets_three_digits_when_vec2dd_settings_is_false(self):
+    def test_that_vec_string_gets_three_digits_when_vec2dd_settings_is_false(self):
         apsg_conf["vec2geo"] = False
 
-        vec = vec3(1, 2, 3)
+        v = vec(1, 2, 3)
 
-        current = str(vec)
+        current = str(v)
         expects = "Vector3(1, 2, 3)"
 
         assert current == expects
 
-    def test_that_vec3_string_gets_dip_and_dir_when_vec2dd_settings_is_true(self):
+    def test_that_vec_string_gets_dip_and_dir_when_vec2dd_settings_is_true(self):
         apsg_conf["vec2geo"] = True
 
-        vec = vec3(1, 2, 3)
+        v = vec(1, 2, 3)
 
-        current = str(vec)
+        current = str(v)
         expects = "V:63/53"
 
         assert current == expects
@@ -76,20 +76,20 @@ class TestVector:
     # ``==`` operator
 
     def test_that_equality_operator_is_reflexive(self):
-        u = vec3(1, 2, 3)
+        u = vec(1, 2, 3)
 
         assert u == u
 
     def test_that_equality_operator_is_symetric(self):
-        u = vec3(1, 2, 3)
-        v = vec3(1, 2, 3)
+        u = vec(1, 2, 3)
+        v = vec(1, 2, 3)
 
         assert u == v and v == u
 
     def test_that_equality_operator_is_transitive(self):
-        u = vec3(1, 2, 3)
-        v = vec3(1, 2, 3)
-        w = vec3(1, 2, 3)
+        u = vec(1, 2, 3)
+        v = vec(1, 2, 3)
+        w = vec(1, 2, 3)
 
         assert u == v and v == w and u == w
 
@@ -98,49 +98,49 @@ class TestVector:
         This is not the best method how to test a floating point precision limits,
         but I will keep it here for a future work.
         """
-        lhs = vec3([1.00000000000000001] * 3)
-        rhs = vec3([1.00000000000000009] * 3)
+        lhs = vec([1.00000000000000001] * 3)
+        rhs = vec([1.00000000000000009] * 3)
 
         assert lhs == rhs
 
     # ``!=`` operator
 
     def test_inequality_operator(self):
-        lhs = vec3(1, 2, 3)
-        rhs = vec3(3, 2, 1)
+        lhs = vec(1, 2, 3)
+        rhs = vec(3, 2, 1)
 
         assert lhs != rhs
 
     # ``hash`` method
 
     def test_that_hash_is_same_for_identical_vectors(self):
-        lhs = vec3(1, 2, 3)
-        rhs = vec3(1, 2, 3)
+        lhs = vec(1, 2, 3)
+        rhs = vec(1, 2, 3)
 
         assert hash(lhs) == hash(rhs)
 
     def test_that_hash_is_not_same_for_different_vectors(self):
-        lhs = vec3(1, 2, 3)
-        rhs = vec3(3, 2, 1)
+        lhs = vec(1, 2, 3)
+        rhs = vec(3, 2, 1)
 
         assert not hash(lhs) == hash(rhs)
 
     # ``upper`` property
 
     def test_that_vector_is_upper(self):
-        vec = vec3(0, 0, -1)
+        v = vec(0, 0, -1)
 
-        assert vec.is_upper()
+        assert v.is_upper()
 
     def test_that_vector_is_not_upper(self):
-        vec = vec3(0, 0, 1)
+        v = vec(0, 0, 1)
 
-        assert not vec.is_upper()
+        assert not v.is_upper()
 
     # ``abs`` operator
 
     def test_absolute_value(self):
-        current = abs(vec3(1, 2, 3))
+        current = abs(vec(1, 2, 3))
         expects = 3.7416573867739413
 
         assert current == expects
@@ -148,16 +148,16 @@ class TestVector:
     # ``uv`` property
 
     def test_that_vector_is_normalized(self):
-        current = vec3(1, 2, 3).normalized()
-        current_alias = vec3(1, 2, 3).uv()
-        expects = vec3(0.26726124191242442, 0.5345224838248488, 0.8017837257372732)
+        current = vec(1, 2, 3).normalized()
+        current_alias = vec(1, 2, 3).uv()
+        expects = vec(0.26726124191242442, 0.5345224838248488, 0.8017837257372732)
 
         assert current == current_alias == expects
 
     # ``geo`` property
 
     def test_geo_property(self):
-        v = vec3(1, 0, 0)
+        v = vec(1, 0, 0)
 
         current = v.geo
         expects = (0.0, 0.0)
@@ -167,31 +167,31 @@ class TestVector:
     # ``aslin`` property
 
     def test_lin_conversion(self):
-        assert str(lin(vec3(1, 1, 1))) == str(lin(45, 35))  # `Vec` to `lin`
-        assert str(lin(vec3(lin(110, 37)))) == str(
+        assert str(lin(vec(1, 1, 1))) == str(lin(45, 35))  # `Vec` to `lin`
+        assert str(lin(vec(lin(110, 37)))) == str(
             lin(110, 37)
         )  # `lin` to `Vec` to `lin`
 
     # ``asfol`` property
 
     def test_fol_conversion(self):
-        assert str(fol(vec3(1, 1, 1))) == str(fol(225, 55))  # `Vec` to `fol`
-        assert str(fol(vec3(fol(213, 52)))) == str(
+        assert str(fol(vec(1, 1, 1))) == str(fol(225, 55))  # `Vec` to `fol`
+        assert str(fol(vec(fol(213, 52)))) == str(
             fol(213, 52)
         )  # `fol` to `Vec` to `fol`
 
     # ``asvec`` property
 
     def test_vec_geo_conversion(self):
-        assert str(vec3(lin(120, 10))) == str(vec3(120, 10))
+        assert str(vec(lin(120, 10))) == str(vec(120, 10))
 
     def test_vec_scalar_multiplication(self):
-        assert abs(vec3(10 * vec3(120, 50))) == 10
+        assert abs(vec(10 * vec(120, 50))) == 10
 
     # ``angle`` property
     def test_that_angle_between_vectors_is_0_degrees_when_they_are_collinear(self):
-        lhs = vec3(1, 0, 0)
-        rhs = vec3(2, 0, 0)
+        lhs = vec(1, 0, 0)
+        rhs = vec(2, 0, 0)
 
         current = lhs.angle(rhs)
         expects = 0
@@ -199,8 +199,8 @@ class TestVector:
         assert current == expects
 
     def test_that_angle_between_vectors_is_90_degrees_when_they_are_perpendicular(self):
-        lhs = vec3(1, 0, 0)
-        rhs = vec3(0, 1, 1)
+        lhs = vec(1, 0, 0)
+        rhs = vec(0, 1, 1)
 
         current = lhs.angle(rhs)
         expects = 90  # degrees
@@ -208,8 +208,8 @@ class TestVector:
         assert current == expects
 
     def test_that_angle_between_vectors_is_180_degrees_when_they_are_opposite(self):
-        lhs = vec3(1, 0, 0)
-        rhs = vec3(-1, 0, 0)
+        lhs = vec(1, 0, 0)
+        rhs = vec(-1, 0, 0)
 
         current = lhs.angle(rhs)
         expects = 180  # degrees
@@ -219,88 +219,88 @@ class TestVector:
     # ``cross`` method
 
     def test_that_vector_product_is_anticommutative(self):
-        lhs = vec3(1, 0, 0)
-        rhs = vec3(0, 1, 0)
+        lhs = vec(1, 0, 0)
+        rhs = vec(0, 1, 0)
 
         assert lhs.cross(rhs) == -rhs.cross(lhs)
 
     def test_that_vector_product_is_distributive_over_addition(self):
-        x = vec3("X")
-        y = vec3("Y")
-        z = vec3("Z")
+        x = vec("X")
+        y = vec("Y")
+        z = vec("Z")
 
         assert x.cross(y + z) == x.cross(y) + x.cross(z)
 
     def test_that_vector_product_is_zero_vector_when_they_are_collinear(self):
-        lhs = vec3(1, 0, 0)
-        rhs = vec3(2, 0, 0)
+        lhs = vec(1, 0, 0)
+        rhs = vec(2, 0, 0)
 
         current = lhs.cross(rhs)
-        expects = vec3(0, 0, 0)
+        expects = vec(0, 0, 0)
 
         assert current == expects
 
     def test_that_vector_product_is_zero_vector_when_they_are_opposite(self):
 
-        lhs = vec3(1, 0, 0)
-        rhs = vec3(-1, 0, 0)
+        lhs = vec(1, 0, 0)
+        rhs = vec(-1, 0, 0)
 
         current = lhs.cross(rhs)
-        expects = vec3(0, 0, 0)
+        expects = vec(0, 0, 0)
 
         assert current == expects
 
     def test_vector_product_of_orthonormal_vectors(self):
-        e1 = vec3(1, 0, 0)
-        e2 = vec3(0, 1, 0)
+        e1 = vec(1, 0, 0)
+        e2 = vec(0, 1, 0)
 
         current = e1.cross(e2)
-        expects = vec3(0, 0, 1)
+        expects = vec(0, 0, 1)
 
         assert current == expects
 
     # ``dot`` method
 
     def test_scalar_product_of_same_vectors(self):
-        i = vec3(1, 2, 3)
+        i = vec(1, 2, 3)
 
         assert np.isclose(i.dot(i), abs(i) ** 2)
 
     def test_scalar_product_of_orthonornal_vectors(self):
-        i = vec3(1, 0, 0)
-        j = vec3(0, 1, 0)
+        i = vec(1, 0, 0)
+        j = vec(0, 1, 0)
 
         assert np.isclose(i.dot(j), 0)
 
     # ``rotate`` method
 
     def test_rotation_by_90_degrees_around_axis(self, z):
-        v = vec3(1, 1, 1)
+        v = vec(1, 1, 1)
         current = v.rotate(z, 90)
-        expects = vec3(-1, 1, 1)
+        expects = vec(-1, 1, 1)
 
         assert current == expects
 
     def test_rotation_by_180_degrees_around_axis(self, z):
-        v = vec3(1, 1, 1)
+        v = vec(1, 1, 1)
         current = v.rotate(z, 180)
-        expects = vec3(-1, -1, 1)
+        expects = vec(-1, -1, 1)
 
         assert current == expects
 
     def test_rotation_by_360_degrees_around_axis(self, z):
-        v = vec3(1, 1, 1)
+        v = vec(1, 1, 1)
         current = v.rotate(z, 360)
-        expects = vec3(1, 1, 1)
+        expects = vec(1, 1, 1)
 
         assert current == expects
 
     # ``proj`` method
 
     def test_projection_of_xy_onto(self, z):
-        xz = vec3(1, 0, 1)
+        xz = vec(1, 0, 1)
         current = xz.proj(z)
-        expects = vec3(0, 0, 1)
+        expects = vec(0, 0, 1)
 
         assert current == expects
 
@@ -322,39 +322,39 @@ class TestVector:
         assert current == expects
 
     def test_add_operator(self):
-        lhs = vec3(1, 1, 1)
-        rhs = vec3(1, 1, 1)
+        lhs = vec(1, 1, 1)
+        rhs = vec(1, 1, 1)
 
         current = lhs + rhs
-        expects = vec3(2, 2, 2)
+        expects = vec(2, 2, 2)
 
         assert current == expects
 
     def test_sub_operator(self):
-        lhs = vec3(1, 2, 3)
-        rhs = vec3(3, 1, 2)
+        lhs = vec(1, 2, 3)
+        rhs = vec(3, 1, 2)
 
         current = lhs - rhs
-        expects = vec3(-2, 1, 1)
+        expects = vec(-2, 1, 1)
 
         assert current == expects
 
     def test_pow_operator_with_scalar(self):
-        lhs = vec3(1, 2, 3)
+        lhs = vec(1, 2, 3)
         rhs = 2
 
         current = lhs**rhs
-        expects = vec3(1, 4, 9)
+        expects = vec(1, 4, 9)
 
         assert current == expects
 
     def test_length_method(self):
-        w = vec3(1, 2, 3)
+        w = vec(1, 2, 3)
 
         assert len(w) == 3
 
     def test_getitem_operator(self):
-        v = vec3(1, 2, 3)
+        v = vec(1, 2, 3)
 
         assert all((v[0] == 1, v[1] == 2, v[2] == 3))
 
@@ -540,26 +540,26 @@ class Testfoliation:
 
 class TestVector3Set:
     def test_rdegree_under_rotation(self):
-        g = vec3set.random_fisher()
+        g = vecset.random_fisher()
         assert np.isclose(g.rotate(lin(45, 45), 90).rdegree(), g.rdegree())
 
     def test_resultant_rdegree(self):
-        g = vec3set.from_array([45, 135, 225, 315], [45, 45, 45, 45])
-        c1 = g.R().uv() == vec3(0, 90)
+        g = vecset.from_array([45, 135, 225, 315], [45, 45, 45, 45])
+        c1 = g.R().uv() == vec(0, 90)
         c2 = np.isclose(abs(g.R()), np.sqrt(8))
         c3 = np.isclose((g.rdegree() / 100 + 1) ** 2, 2)
         assert c1 and c2 and c3
 
     def test_group_type_error(self):
         with pytest.raises(Exception) as exc:
-            vec3set([1, 2, 3])
+            vecset([1, 2, 3])
             assert "Data must be instances of Vector3" == str(exc.exception)
 
     def test_centered_group(self):
-        g = vec3set.random_fisher(position=lin(40, 50))
+        g = vecset.random_fisher(position=lin(40, 50))
         gc = g.centered()
         el = gc.ortensor().eigenlins
-        assert el[0] == vec3("x") and el[1] == vec3("y") and el[2] == vec3("z")
+        assert el[0] == vec("x") and el[1] == vec("y") and el[2] == vec("z")
 
 
 class TestLineationSet:
@@ -588,7 +588,7 @@ class TestLineationSet:
         g = linset.random_fisher(position=lin(40, 50))
         gc = g.centered()
         el = gc.ortensor().eigenlins
-        assert el[0] == vec3("x") and el[1] == vec3("y") and el[2] == vec3("z")
+        assert el[0] == vec("x") and el[1] == vec("y") and el[2] == vec("z")
 
 
 # ############################################################################

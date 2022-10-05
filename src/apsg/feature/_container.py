@@ -422,7 +422,7 @@ class Vector3Set(FeatureSet):
         """Return ``FoliationSet`` object with all data converted to ``Foliation``."""
         return FoliationSet([Foliation(e) for e in self], name=self.name)
 
-    def to_vec3(self):
+    def to_vec(self):
         """Return ``Vector3Set`` object with all data converted to ``Vector3``."""
         return Vector3Set([Vector3(e) for e in self], name=self.name)
 
@@ -724,7 +724,7 @@ class Vector3Set(FeatureSet):
           name: name of ``FeatureSet`` object. Default is 'Default'
 
         Example:
-          >>> v = vec3set.from_xyz([-0.4330127, -0.4330127, -0.66793414],
+          >>> v = vecset.from_xyz([-0.4330127, -0.4330127, -0.66793414],
                                   [0.75, 0.25, 0.60141061],
                                   [0.5, 0.8660254, 0.43837115])
         """
@@ -842,7 +842,7 @@ class Vector3Set(FeatureSet):
           name: name of dataset. Default is 'Default'
 
         Example:
-          >>> v = vec3set.uniform_sfs(300)
+          >>> v = vecset.uniform_sfs(300)
           >>> v.ortensor().eigenvalues()
           (0.3334645347163635, 0.33333474915201167, 0.33320071613162483)
         """
@@ -867,7 +867,7 @@ class Vector3Set(FeatureSet):
           name: name of dataset. Default is 'Default'
 
         Example:
-          >>> v = vec3set.uniform_gss(300)
+          >>> v = vecset.uniform_gss(300)
           >>> v.ortensor().eigenvalues()
           (0.33335688569571587, 0.33332315115436933, 0.33331996314991513)
         """
@@ -1267,6 +1267,68 @@ class ConeSet(FeatureSet):
         return f"C({len(self)}) {self.name}"
 
 
+class EllipseSet(FeatureSet):
+    """
+    Class to store set of ``Ellipse`` features
+    """
+
+    __feature_type__ = "Ellipse"
+
+    @property
+    def lambda1(self) -> np.ndarray:
+        """
+        Return the array of square root of maximum eigenvalues.
+        """
+        return np.array([e.lambda1 for e in self])
+
+    @property
+    def lambda2(self) -> np.ndarray:
+        """
+        Return the array of square root of minimum eigenvalues.
+        """
+        return np.array([e.lambda2 for e in self])
+
+    @property
+    def e1(self) -> np.ndarray:
+        """
+        Return the maximum natural principal strains.
+        """
+        return np.array([e.e1 for e in self])
+
+    @property
+    def e2(self) -> np.ndarray:
+        """
+        Return the array of minimum natural principal strains.
+        """
+        return np.array([e.e2 for e in self])
+
+    @property
+    def ar(self) -> np.ndarray:
+        """
+        Return the array of orientations of the maximum eigenvector.
+        """
+        return np.array([e.ar for e in self])
+
+    @property
+    def orientation(self) -> np.ndarray:
+        return np.array([e.orientation for e in self])
+
+    @property
+    def e12(self) -> np.ndarray:
+        """
+        Return the array of differences between natural principal strains.
+        """
+        return np.array([e.e12 for e in self])
+
+
+class OrientationTensor2Set(EllipseSet):
+    """
+    Class to store set of ``OrientationTensor2`` features
+    """
+
+    __feature_type__ = "OrientationTensor2"
+
+
 class EllipsoidSet(FeatureSet):
     """
     Class to store set of ``Ellipsoid`` features
@@ -1275,209 +1337,209 @@ class EllipsoidSet(FeatureSet):
     __feature_type__ = "Ellipsoid"
 
     @property
-    def strength(self) -> float:
+    def strength(self) -> np.ndarray:
         """
         Return the Woodcock strength.
         """
         return np.array([e.strength for e in self])
 
     @property
-    def shape(self) -> float:
+    def shape(self) -> np.ndarray:
         """
         return the Woodcock shape.
         """
         return np.array([e.shape for e in self])
 
     @property
-    def lambda1(self) -> float:
+    def lambda1(self) -> np.ndarray:
         """
         Return the square root of maximum eigenvalue.
         """
         return np.array([e.lambda1 for e in self])
 
     @property
-    def lambda2(self) -> float:
+    def lambda2(self) -> np.ndarray:
         """
         Return the square root of middle eigenvalue.
         """
         return np.array([e.lambda2 for e in self])
 
     @property
-    def lambda3(self) -> float:
+    def lambda3(self) -> np.ndarray:
         """
         Return the square root of minimum eigenvalue.
         """
         return np.array([e.lambda3 for e in self])
 
     @property
-    def e1(self) -> float:
+    def e1(self) -> np.ndarray:
         """
         Return the maximum natural principal strain.
         """
         return np.array([e.e1 for e in self])
 
     @property
-    def e2(self) -> float:
+    def e2(self) -> np.ndarray:
         """
         Return the middle natural principal strain.
         """
         return np.array([e.e2 for e in self])
 
     @property
-    def e3(self) -> float:
+    def e3(self) -> np.ndarray:
         """
         Return the minimum natural principal strain.
         """
         return np.array([e.e3 for e in self])
 
     @property
-    def Rxy(self) -> float:
+    def Rxy(self) -> np.ndarray:
         return np.array([e.Rxy for e in self])
 
     @property
-    def Ryz(self) -> float:
+    def Ryz(self) -> np.ndarray:
         return np.array([e.Ryz for e in self])
 
     @property
-    def e12(self) -> float:
+    def e12(self) -> np.ndarray:
         return np.array([e.e12 for e in self])
 
     @property
-    def e13(self) -> float:
+    def e13(self) -> np.ndarray:
         return np.array([e.e13 for e in self])
 
     @property
-    def e23(self) -> float:
+    def e23(self) -> np.ndarray:
         return np.array([e.e23 for e in self])
 
     @property
-    def k(self) -> float:
+    def k(self) -> np.ndarray:
         """
         Return the strain symmetry.
         """
         return np.array([e.k for e in self])
 
     @property
-    def d(self) -> float:
+    def d(self) -> np.ndarray:
         """
         Return the strain intensity.
         """
         return np.array([e.d for e in self])
 
     @property
-    def K(self) -> float:
+    def K(self) -> np.ndarray:
         """
         Return the strain symmetry (Ramsay, 1983).
         """
         return np.array([e.K for e in self])
 
     @property
-    def D(self) -> float:
+    def D(self) -> np.ndarray:
         """
         return the strain intensity.
         """
         return np.array([e.D for e in self])
 
     @property
-    def r(self) -> float:
+    def r(self) -> np.ndarray:
         """
         Return the strain intensity (Watterson, 1968).
         """
         return np.array([e.r for e in self])
 
     @property
-    def goct(self) -> float:
+    def goct(self) -> np.ndarray:
         """
         Return the natural octahedral unit shear (Nadai, 1963).
         """
         return np.array([e.goct for e in self])
 
     @property
-    def eoct(self) -> float:
+    def eoct(self) -> np.ndarray:
         """
         Return the natural octahedral unit strain (Nadai, 1963).
         """
         return np.array([e.eoct for e in self])
 
     @property
-    def lode(self) -> float:
+    def lode(self) -> np.ndarray:
         """
         Return Lode parameter (Lode, 1926).
         """
         return np.array([e.lode for e in self])
 
     @property
-    def P(self) -> float:
+    def P(self) -> np.ndarray:
         """
         Point index (Vollmer, 1990).
         """
         return np.array([e.P for e in self])
 
     @property
-    def G(self) -> float:
+    def G(self) -> np.ndarray:
         """
         Girdle index (Vollmer, 1990).
         """
         return np.array([e.G for e in self])
 
     @property
-    def R(self) -> float:
+    def R(self) -> np.ndarray:
         """
         Random index (Vollmer, 1990).
         """
         return np.array([e.R for e in self])
 
     @property
-    def B(self) -> float:
+    def B(self) -> np.ndarray:
         """
         Cylindricity index (Vollmer, 1990).
         """
         return np.array([e.B for e in self])
 
     @property
-    def Intensity(self) -> float:
+    def Intensity(self) -> np.ndarray:
         """
         Intensity index (Lisle, 1985).
         """
         return np.array([e.Intensity for e in self])
 
     @property
-    def aMAD_l(self) -> float:
+    def aMAD_l(self) -> np.ndarray:
         """
         Return approximate angular deviation from the major axis along E1.
         """
         return np.array([e.aMAD_l for e in self])
 
     @property
-    def aMAD_p(self) -> float:
+    def aMAD_p(self) -> np.ndarray:
         """
         Return approximate deviation from the plane normal to E3.
         """
         return np.array([e.aMAD_p for e in self])
 
     @property
-    def aMAD(self) -> float:
+    def aMAD(self) -> np.ndarray:
         """
         Return approximate deviation according to shape
         """
         return np.array([e.aMAD for e in self])
 
     @property
-    def MAD_l(self) -> float:
+    def MAD_l(self) -> np.ndarray:
         """
         Return maximum angular deviation (MAD) of linearly distributed vectors. Kirschvink 1980
         """
         return np.array([e.MAD_l for e in self])
 
     @property
-    def MAD_p(self) -> float:
+    def MAD_p(self) -> np.ndarray:
         """
         Return maximum angular deviation (MAD) of planarly distributed vectors. Kirschvink 1980
         """
         return np.array([e.MAD_p for e in self])
 
     @property
-    def MAD(self) -> float:
+    def MAD(self) -> np.ndarray:
         """
         Return approximate deviation according to shape
         """
@@ -1502,7 +1564,7 @@ class Cluster(object):
     def __init__(self, d, **kwargs):
         assert isinstance(d, Vector2Set) or isinstance(
             d, Vector3Set
-        ), "Only vec2set or vec3set could be clustered"
+        ), "Only vec2set or vecset could be clustered"
         self.data = d.copy()
         self.maxclust = kwargs.get("maxclust", 2)
         self.angle = kwargs.get("angle", None)
