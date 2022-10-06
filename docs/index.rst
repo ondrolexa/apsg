@@ -23,14 +23,16 @@ To use APSG interactively it is easier to import into current namespace::
     from apsg import *
 
 
-Major changes from version 1.0
-------------------------------
+Changes in classnames and API
+-----------------------------
 
-APSG have been significantly refactored and there are several changes breaking
-backward compatibility. The main APSG namespace provide often used classes in
-lowercase names as aliases to PascalCase convention used in modules to provides
-simplified interface for users. The PascalCase names of classes using plain
-English names instead acronyms for better readibility.
+.. note::
+   APSG v1.0.0 have been significantly refactored and there are several changes breaking
+   backward compatibility. The main APSG namespace provide often used classes in
+   lowercase names as aliases to PascalCase convention used in modules to provides
+   simplified interface for users. The PascalCase names of classes use longer and plain
+   English names instead acronyms for better readability.
+
 
 If you already used older versions of APSG, check following table for new
 names and aliases of most commonly used classes.
@@ -50,19 +52,21 @@ names and aliases of most commonly used classes.
      - A class to represent a 3D vector
    * - lin
      - Lineation
-     - A class to represent axial (non-oriented) linear feature (lineation)
+     - A class to represent non-oriented (axial) linear feature
    * - fol
      - Foliation
-     - A class to represent non-oriented planar feature (foliation)
+     - A class to represent non-oriented planar feature
    * - pair
      - Pair
-     - The class to store pair of planar and linear feature
+     - The class to store pair of planar and linear features
    * - fault
      - Fault
-     - The class to store ``Pair`` with associated sense of movement
+     - The class to store pair of planar and linear features
+       together with sense of movement
    * - cone
      - Cone
-     - The class to store cone with given axis, secant line and revolution angle in degrees
+     - The class to store cone with given axis, secant line and
+       revolution angle in degrees
    * - vec2set
      - Vector2Set
      - Class to store set of ``Vector2`` features
