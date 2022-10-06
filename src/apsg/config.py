@@ -20,6 +20,7 @@ apsg_conf = dict(
         hemisphere="lower",
         grid_type="gss",
         grid_n=3000,
+        tight_layout=False,
     ),
     stereonet_default_point_kwargs=dict(
         alpha=None,

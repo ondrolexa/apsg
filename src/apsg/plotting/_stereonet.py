@@ -192,7 +192,8 @@ class StereoNet:
             )
         if self._kwargs["title"] is not None:
             self.fig.suptitle(self._kwargs["title"])
-        self.fig.tight_layout()
+        if self._kwargs["tight_layout"]:
+            self.fig.tight_layout()
 
     def render(self):
         if not hasattr(self, "fig"):
