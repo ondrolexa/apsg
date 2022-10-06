@@ -64,6 +64,6 @@ __all__ = (
     "RosePlot",
 )
 
-__version__ = "0.7.1b"
+__version__ = "0.7.2"
 __author__ = "Ondrej Lexa"
 __email__ = "lexa.ondrej@gmail.com"

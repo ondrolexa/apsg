@@ -17,7 +17,7 @@ with open(path.join(CURRENT_PATH, "HISTORY.md")) as file:
 
 setup(
     name="apsg",
-    version="0.7.1b",
+    version="0.7.2",
     description="APSG - The package for structural geologists",
     long_description=readme + "\n\n" + history,
     long_description_content_type="text/markdown",
