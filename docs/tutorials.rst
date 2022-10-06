@@ -2,13 +2,12 @@
 Tutorials
 =========
 
-**APSG** defines several new python classes to easily manage, analyze
-and visualize orientation structural geology data.
+.. toctree::
+    :maxdepth: 2
+    
+    notebooks/01_apsg_basics
+    notebooks/02_apsg_tensors
+    notebooks/03_apsg_stereonet
+    notebooks/04_apsg_fabricplots
+    notebooks/05_apsg_various
 
-You can check following tutorials:
-
-- `Basic usage <https://nbviewer.org/github/ondrolexa/apsg/blob/develop/examples/01_apsg_basics.ipynb>`_
-- `Matrix like classes and tensors <https://nbviewer.org/github/ondrolexa/apsg/blob/develop/examples/02_apsg_tensors.ipynb>`_
-- `StereoNet class <https://nbviewer.org/github/ondrolexa/apsg/blob/develop/examples/03_apsg_stereonet.ipynb>`_
-- `Fabric plots <https://nbviewer.org/github/ondrolexa/apsg/blob/develop/examples/04_apsg_fabricplots.ipynb>`_
-- `Various <https://nbviewer.org/github/ondrolexa/apsg/blob/develop/examples/05_apsg_various.ipynb>`_
