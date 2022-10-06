@@ -23,6 +23,7 @@ from apsg import vec, fol, lin, fault, pair
 from apsg import vecset, linset, folset
 from apsg import defgrad
 
+atol = 1e-06  # safe tests
 
 # ############################################################################
 # Vectors
@@ -264,13 +265,13 @@ class TestVector:
     def test_scalar_product_of_same_vectors(self):
         i = vec(1, 2, 3)
 
-        assert np.isclose(i.dot(i), abs(i) ** 2)
+        assert np.isclose(i.dot(i), abs(i) ** 2, atol=atol)
 
     def test_scalar_product_of_orthonornal_vectors(self):
         i = vec(1, 0, 0)
         j = vec(0, 1, 0)
 
-        assert np.isclose(i.dot(j), 0)
+        assert np.isclose(i.dot(j), 0, atol=atol)
 
     # ``rotate`` method
 
@@ -386,14 +387,14 @@ class Testlineation:
 
     def test_anlge_for_oposite_dir(self):
         l1 = lin.random()
-        assert np.isclose(l1.angle(-l1), 0)
+        assert np.isclose(l1.angle(-l1), 0, atol=atol)
 
     def test_that_azimuth_0_is_same_as_360(self):
         assert lin(0, 20) == lin(360, 20)
 
     def test_scalar_product(self):
         l1 = lin.random()
-        assert np.isclose(l1.dot(l1), 1)
+        assert np.isclose(l1.dot(l1), 1, atol=atol)
 
     def test_cross_product(self):
         l1 = lin.random()
@@ -414,7 +415,9 @@ class Testlineation:
         l2 = lin.random()
         D = defgrad.from_axisangle(lin(45, 45), 60)
 
-        assert np.isclose(l1.angle(l2), l1.transform(D).angle(l2.transform(D)))
+        assert np.isclose(
+            l1.angle(l2), l1.transform(D).angle(l2.transform(D)), atol=atol
+        )
 
     def test_add_operator__simple(self):
         l1 = lin.random()
@@ -466,14 +469,14 @@ class Testfoliation:
 
     def test_anlge_for_oposite_dir(self):
         f = fol.random()
-        assert np.isclose(f.angle(-f), 0)
+        assert np.isclose(f.angle(-f), 0, atol=atol)
 
     def test_that_azimuth_0_is_same_as_360(self):
         assert fol(0, 20) == fol(360, 20)
 
     def test_scalar_product(self):
         f = fol.random()
-        assert np.isclose(f.dot(f), 1)
+        assert np.isclose(f.dot(f), 1, atol=atol)
 
     def test_cross_product(self):
         f1 = fol.random()
@@ -507,7 +510,9 @@ class Testfoliation:
         f2 = fol.random()
         D = defgrad.from_axisangle(lin(45, 45), 60)
 
-        assert np.isclose(f1.angle(f2), f1.transform(D).angle(f2.transform(D)))
+        assert np.isclose(
+            f1.angle(f2), f1.transform(D).angle(f2.transform(D)), atol=atol
+        )
 
     def test_add_operator__simple(self):
         f1 = fol.random()
@@ -541,13 +546,13 @@ class Testfoliation:
 class TestVector3Set:
     def test_rdegree_under_rotation(self):
         g = vecset.random_fisher()
-        assert np.isclose(g.rotate(lin(45, 45), 90).rdegree(), g.rdegree())
+        assert np.isclose(g.rotate(lin(45, 45), 90).rdegree(), g.rdegree(), atol=atol)
 
     def test_resultant_rdegree(self):
         g = vecset.from_array([45, 135, 225, 315], [45, 45, 45, 45])
         c1 = g.R().uv() == vec(0, 90)
-        c2 = np.isclose(abs(g.R()), np.sqrt(8))
-        c3 = np.isclose((g.rdegree() / 100 + 1) ** 2, 2)
+        c2 = np.isclose(abs(g.R()), np.sqrt(8), atol=atol)
+        c3 = np.isclose((g.rdegree() / 100 + 1) ** 2, 2, atol=atol)
         assert c1 and c2 and c3
 
     def test_group_type_error(self):
@@ -570,8 +575,8 @@ class TestLineationSet:
     def test_resultant_rdegree(self):
         g = linset.from_array([45, 135, 225, 315], [45, 45, 45, 45])
         c1 = g.R().uv() == lin(0, 90)
-        c2 = np.isclose(abs(g.R()), np.sqrt(8))
-        c3 = np.isclose((g.rdegree() / 100 + 1) ** 2, 2)
+        c2 = np.isclose(abs(g.R()), np.sqrt(8), atol=atol)
+        c3 = np.isclose((g.rdegree() / 100 + 1) ** 2, 2, atol=atol)
         assert c1 and c2 and c3
 
     def test_group_type_error(self):
@@ -599,7 +604,7 @@ class TestLineationSet:
 class Testpair:
     def test_pair_misfit(self):
         p = pair.random()
-        assert np.isclose(p.misfit, 0)
+        assert np.isclose(p.misfit, 0, atol=atol)
 
     def test_pair_rotate(self):
         p = pair.random()
