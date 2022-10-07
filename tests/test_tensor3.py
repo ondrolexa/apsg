@@ -48,9 +48,9 @@ def test_ortensor_uniform():
 
 
 def test_orthogonality_rotation_matrix():
-    l = lin.random()
+    k = lin.random()
     a = np.random.randint(180)
-    R = defgrad.from_axisangle(l, a)
+    R = defgrad.from_axisangle(k, a)
     assert np.allclose(R @ R.T, np.eye(3))
 
 
@@ -88,8 +88,8 @@ def test_stress_invariants_calculation():
 
 def test_stress_invariants_under_rotation():
     S = stress.from_comp(xx=4, yy=6, zz=8, xy=1, xz=2)
-    l = lin.random()
+    k = lin.random()
     a = np.random.randint(180)
-    R = defgrad.from_axisangle(l, a)
+    R = defgrad.from_axisangle(k, a)
     Sr = S.transform(R)
     assert np.allclose([S.I1, S.I2, S.I3], [Sr.I1, Sr.I2, Sr.I3])

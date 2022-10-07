@@ -39,9 +39,9 @@ setup(
     package_dir={"": "src"},
     install_requires=["numpy", "matplotlib", "scipy"],
     extras_require={
-        "docs": ["sphinx"],
-        "test": ["pytest", "radon"],
-        "lint": ["black", "pylint"],
+        "docs": ["sphinx", "ipykernel", "nbsphinx"],
+        "test": ["pytest"],
+        "lint": ["black"],
         "jupyter": ["jupyterlab"],
     },
     project_urls={

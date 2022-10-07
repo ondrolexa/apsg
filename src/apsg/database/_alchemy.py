@@ -1,75 +1,7 @@
+# -*- coding: utf-8 -*-
+
 """
-SqlAlchemy interface to PySDB database
-
-Create example:
-
-    >>> from apsg.database import SDBSession
-
-    >>> db = SDBSession('database.sdb', create=True)
-    >>> unit = db.unit(name='DMU', description='Deamonic Magmatic Unit')
-    >>> site1 = db.site(unit=unit, name='LX001', x_coord=25487.54, y_coord=563788.2, description='granite sheet')
-    >>> site2 = db.site(unit=unit, name='LX002', x_coord=25934.36, y_coord=564122.5, description='diorite dyke')
-    >>> S2 = db.structype(structure='S2', description='Solid-state foliation', planar=1)
-    >>> L2 = db.structype(structure='L2', description='Solid-state lineation', planar=0)
-    >>> fol = db.add_structdata(site=site2, structype=S2, azimuth=150, inclination=36)
-    >>> db.close()
-
-Update example:
-
-    >>> db = SDBSession('database.sdb')
-    >>> unit = db.unit(name='DMU')
-    >>> site3 = db.site(unit=unit, name='LX003', x_coord=25713.7, y_coord=563977.1, description='massive gabbro')
-    >>> db.close()
-
-Tags example:
-
-    >>> db = SDBSession('database.sdb')
-    >>> unit = db.unit(name='DMU')
-    >>> site1 = db.site(name='LX001')
-    >>> struct = db.structype(structure='S2')
-    >>> tag_plot = db.tag(name='plot')
-    >>> tag_ap = db.tag(name='AP')
-    >>> fol = db.add_structdata(site=site1, structype=struct, azimuth=324, inclination=78, tags=[tag_plot, tag_ap])
-    >>> db.close()
-
-Attach example:
-
-    >>> db = SDBSession('database.sdb')
-    >>> unit = db.unit(name='DMU')
-    >>> site = db.site(name='LX001')
-    >>> S = db.structype(structure='S')
-    >>> L = db.structype(structure='L')
-    >>> fol = db.add_structdata(site=site, structype=S, azimuth=220, inclination=28)
-    >>> lin = db.add_structdata(site=site, structype=L, azimuth=212, inclination=26)
-    >>> pair = db.attach(fol, lin)
-    >>> db.close()
-
-APSG classes example:
-
-    >>> db = SDBSession('database.sdb')
-    >>> unit = db.unit(name='DMU')
-    >>> site = db.site(name='LX003')
-
-    >>> S2 = db.structype(structure='S2')
-    >>> L2 = db.structype(structure='L2')
-
-    >>> f = fol(196, 39)
-    >>> l = lin(210, 37)
-    >>> db.add_fol(f, site=site, structype=S2)
-    >>> db.add_lin(l, site=site, structype=L2)
-
-    >>> p = Pair(258, 42, 220, 30)
-    >>> db.add_pair(p, S2, L2, site=site)
-    >>> db.close()
-
-Read data
-
-    >>> db = SDBSession('/home/ondro/Documents/MyData/databases/pysdb/datalx_new.sdb')
-    >>> S2 = db.structype(structure='S2')
-    >>> g = db.getset(structype=S2)
-or directly
-    >>> g = db.getset('S2')
-
+SQLAlchemy API to access PySDB database
 """
 
 import os
@@ -261,6 +193,21 @@ def before_insert_pos_update(mapper, connection, target):
 
 
 class SDBSession:
+    """
+    SqlAlchemy interface to PySDB database
+
+    Args:
+        sdbfile (str): filename of PySDB database
+
+    Keyword Args:
+        create (bool): if True existing sdbfile will be deleted
+            and new database will be created
+
+    Example:
+        >>> db = SDBSession('database.sdb', create=True)
+
+    """
+
     def __init__(self, sdb_file, **kwargs):
         if kwargs.get("create", False):
             with contextlib.suppress(FileNotFoundError):
@@ -287,6 +234,9 @@ class SDBSession:
         self.session.commit()
 
     def site(self, **kwargs):
+        """
+        Insert or retrieve Site
+        """
         assert "name" in kwargs, "name must be provided for site"
         site = self.session.query(Site).filter_by(name=kwargs["name"]).first()
         if site is None:
@@ -297,6 +247,9 @@ class SDBSession:
         return site
 
     def unit(self, **kwargs):
+        """
+        Insert or retrieve Unit
+        """
         assert "name" in kwargs, "name must be provided for unit"
         unit = self.session.query(Unit).filter_by(name=kwargs["name"]).first()
         if unit is None:
@@ -306,6 +259,9 @@ class SDBSession:
         return unit
 
     def tag(self, **kwargs):
+        """
+        Insert or retrieve Tag
+        """
         assert "name" in kwargs, "name must be provided for tag"
         tag = self.session.query(Tag).filter_by(name=kwargs["name"]).first()
         if tag is None:
@@ -315,6 +271,9 @@ class SDBSession:
         return tag
 
     def structype(self, **kwargs):
+        """
+        Insert or retrieve Structype
+        """
         assert "structure" in kwargs, "structure must be provided for structype"
         structype = (
             self.session.query(Structype)
@@ -328,6 +287,19 @@ class SDBSession:
         return structype
 
     def add_structdata(self, **kwargs):
+        """
+        Add measurement to site
+
+        Keyword Args:
+            site(Site): site instance
+            structype(Structype): structype instance
+            azimuth(float): dip direction or plunge direction
+            inclination(float): dip or plunge
+
+        Returns:
+            Structdata
+
+        """
         assert "site" in kwargs, "site must be provided for structdata"
         assert "structype" in kwargs, "structype must be provided for structdata"
         data = Structdata(**kwargs)
@@ -336,6 +308,20 @@ class SDBSession:
         return data
 
     def add_fol(self, fol, **kwargs):
+        """
+        Add Foliation to site
+
+        Args:
+            fol (Foliation): foliation instance
+
+        Keyword Args:
+            site(Site): site instance
+            structype(Structype): structype instance
+
+        Returns:
+            Structdata
+
+        """
         assert isinstance(
             fol, Foliation
         ), "fol argument must be instance of Foliation class"
@@ -348,6 +334,20 @@ class SDBSession:
         return self.add_structdata(**kwargs)
 
     def add_lin(self, lin, **kwargs):
+        """
+        Add Lineation to site
+
+        Args:
+            lin (Lineation): lineation instance
+
+        Keyword Args:
+            site(Site): site instance
+            structype(Structype): structype instance
+
+        Returns:
+            Structdata
+
+        """
         assert isinstance(
             lin, Lineation
         ), "lin argument must be instance of Lineation class"
@@ -360,12 +360,35 @@ class SDBSession:
         return self.add_structdata(**kwargs)
 
     def attach(self, fol, lin):
+        """
+        Add Lineation to site
+
+        Args:
+            fol (Foliation): foliation instance
+            lin (Lineation): lineation instance
+
+        Returns:
+            Attached
+
+        """
         pair = Attached(planar=fol, linear=lin)
         self.session.add(pair)
         self.commit()
         return pair
 
     def add_pair(self, pair, foltype, lintype, **kwargs):
+        """
+        Add attached foliation and lineation to database
+
+        Args:
+            pair (Pair): pair instance
+            foltype (Structype): structype instance
+            lintype (Structype): structype instance
+
+        Returns:
+            Attached
+
+        """
         assert isinstance(pair, Pair), "pair argument must be instance of Pair class"
         kwargs["structype"] = foltype
         fol = self.add_fol(pair.fol, **kwargs)
@@ -374,6 +397,11 @@ class SDBSession:
         return self.attach(fol, lin)
 
     def sites(self, **kwargs):
+        """
+        Retrieve Site or list of Sites based on criteria in kwargs
+
+        Keyword arguments are passed to sqlalchemy filter_by method
+        """
         if kwargs:
             sites = self.session.query(Site).filter_by(**kwargs).all()
         else:
@@ -384,6 +412,11 @@ class SDBSession:
             return sites
 
     def units(self, **kwargs):
+        """
+        Retrieve Unit or list of Units based on criteria in kwargs
+
+        Keyword arguments are passed to sqlalchemy filter_by method
+        """
         if kwargs:
             units = self.session.query(Unit).filter_by(**kwargs).all()
         else:
@@ -394,6 +427,11 @@ class SDBSession:
             return units
 
     def structypes(self, **kwargs):
+        """
+        Retrieve Structype or list of Structypes based on criteria in kwargs
+
+        Keyword arguments are passed to sqlalchemy filter_by method
+        """
         if kwargs:
             structypes = self.session.query(Structype).filter_by(**kwargs).all()
         else:
@@ -404,6 +442,11 @@ class SDBSession:
             return structypes
 
     def tags(self, **kwargs):
+        """
+        Retrieve Tag or list of Tags based on criteria in kwargs
+
+        Keyword arguments are passed to sqlalchemy filter_by method
+        """
         if kwargs:
             tags = self.session.query(Tag).filter_by(**kwargs).all()
         else:
@@ -414,6 +457,14 @@ class SDBSession:
             return tags
 
     def getset(self, structype, **kwargs):
+        """Method to retrieve data from SDB database to ``FeatureSet``.
+
+        Args:
+          structype (str, Structype):  structure or list of structures to retrieve
+
+        Keyword arguments are passed to sqlalchemy filter_by method
+
+        """
         if isinstance(structype, str):
             structypes = (
                 self.session.query(Structype).filter_by(structure=structype).all()

@@ -374,10 +374,6 @@ class Testlineation:
     def x(self):
         return lin.unit_x()
 
-    @pytest.mark.skip
-    def test_repr(self, x):
-        assert repr(x) == "lin(1.0,0,0)"
-
     def test_str(self, x):
         assert str(x) == "L:0/0"
 
@@ -455,10 +451,6 @@ class Testfoliation:
     @pytest.fixture
     def x(self):
         return fol(0, 0)
-
-    @pytest.mark.skip
-    def test_repr(self, x):
-        assert repr(x) == "lin(1.0,0,0)"
 
     def test_str(self, x):
         assert str(x) == "S:0/0"

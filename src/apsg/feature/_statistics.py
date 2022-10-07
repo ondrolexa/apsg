@@ -306,7 +306,6 @@ class KentDistribution(object):
         if not (k, b) in cache:
             G = gamma_fun
             Imb2 = modified_bessel_2ndkind
-            dIdk = lambda v, z: modified_bessel_2ndkind_derivative(v, z, 1)
             (dcdk, dcdb) = (0.0, 0.0)
             j = 0
             if b == 0:
@@ -320,7 +319,7 @@ class KentDistribution(object):
                     G(j + 0.5)
                     / G(j + 1)
                     * (0.5 * k) ** (-2 * j - 0.5)
-                    * dIdk(2 * j + 0.5, k)
+                    * modified_bessel_2ndkind_derivative(2 * j + 0.5, k, 1)
                 )
 
                 dcdb = 0.0
@@ -333,7 +332,7 @@ class KentDistribution(object):
                     )
                     dk += np.exp(
                         np.log(b) * 2 * j + np.log(0.5 * k) * (-2 * j - 0.5)
-                    ) * dIdk(2 * j + 0.5, k)
+                    ) * modified_bessel_2ndkind_derivative(2 * j + 0.5, k, 1)
                     dk /= G(j + 1)
                     dk *= G(j + 0.5)
 

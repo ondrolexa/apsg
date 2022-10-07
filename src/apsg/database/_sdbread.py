@@ -11,7 +11,16 @@ from apsg.feature._container import LineationSet, FoliationSet
 
 
 class SDB(object):
-    """PySDB database access class"""
+    """
+    sqlite3 based read-only interface to PySDB database
+
+    Args:
+        sdbfile (str): filename of PySDB database
+
+    Example:
+        >>> db = SDB('database.sdb')
+
+    """
 
     _SELECT = """SELECT sites.name as name, sites.x_coord as x,
     sites.y_coord as y, units.name as unit, structdata.azimuth as azimuth,
@@ -165,7 +174,11 @@ class SDB(object):
         return self.conn.execute(sql).fetchall()
 
     def structures(self, **kwargs):
-        """Return list of structures in data. For kwargs see group method."""
+        """
+        Return list of structures in database.
+
+        For kwargs see getset method
+        """
         if kwargs:
             dtsel = self._make_select(**kwargs)
             res = set([el["structure"] for el in self.execsql(dtsel)])
@@ -175,7 +188,11 @@ class SDB(object):
             return [el["structure"] for el in self.execsql(dtsel)]
 
     def sites(self, **kwargs):
-        """Return list of sites in data. For kwargs see group method."""
+        """
+        Return list of sites in database.
+
+        For kwargs see getset method.
+        """
         if kwargs:
             dtsel = self._make_select(**kwargs)
             res = set([el["name"] for el in self.execsql(dtsel)])
@@ -185,7 +202,11 @@ class SDB(object):
             return [el["name"] for el in self.execsql(dtsel)]
 
     def units(self, **kwargs):
-        """Return list of units in data. For kwargs see group method."""
+        """
+        Return list of units in database.
+
+        For kwargs see getset method.
+        """
         if kwargs:
             dtsel = self._make_select(**kwargs)
             res = set([el["unit"] for el in self.execsql(dtsel)])
@@ -195,7 +216,11 @@ class SDB(object):
             return [el["name"] for el in self.execsql(dtsel)]
 
     def tags(self, **kwargs):
-        """Return list of tags in data. For kwargs see group method."""
+        """
+        Return list of tags in database.
+
+        For kwargs see getset method.
+        """
         if kwargs:
             dtsel = self._make_select(**kwargs)
             tags = [el["tags"] for el in self.execsql(dtsel) if el["tags"] is not None]
@@ -221,16 +246,16 @@ class SDB(object):
             raise ValueError("Keyword structs must be list or string.")
 
     def getset(self, structs, **kwargs):
-        """Method to retrieve data from SDB database to apsg.Group
+        """Method to retrieve data from SDB database to ``FeatureSet``.
 
         Args:
-          structs:  structure or list of structures to retrieve
+          structs (str):  structure or list of structures to retrieve
 
         Keyword Args:
-          sites: name or list of names of sites to retrieve from
-          units: name or list of names of units to retrieve from
-          tags:  tag or list of tags to retrieve
-          labels: if True return also list of sites. Default False
+          sites (str): name or list of names of sites to retrieve from
+          units (str): name or list of names of units to retrieve from
+          tags (str):  tag or list of tags to retrieve
+          labels (bool): if True return also list of sites. Default False
 
         """
         labels = kwargs.pop("labels", False)
