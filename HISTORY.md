@@ -3,13 +3,18 @@
 ## 1.0.0 (7 Oct 2022)
 New major release
 
-APSG v1.0.0 have been significantly refactored and there are several changes
-breaking backward compatibility. The main APSG namespace provide often used
-classes in lowercase names as aliases to PascalCase convention used in modules
-to provides simplified interface for users. The PascalCase names of classes
-use longer and plain English names instead acronyms for better readability.
+APSG has been significantly refactored from version 1.0 and several changes are
+breaking backward compatibility. The main APSG namespace provides often-used
+classes in lowercase names as aliases to `PascalCase` convention used in
+modules to provide a simplified interface for users. The `PascalCase` names of
+classes use longer and plain English names instead acronyms for better
+readability.
 
 See documentation for further details.
+
+### 0.7.3
+ * figure window title removed from StereoNet
+ * for future only bugfixes planned, foo further development see versions >=1.0
 
 ### 0.7.1 (master)
  * paleomag rs3 input/output improved
