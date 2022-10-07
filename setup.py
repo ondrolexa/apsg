@@ -17,7 +17,7 @@ with open(path.join(CURRENT_PATH, "HISTORY.md")) as file:
 
 setup(
     name="apsg",
-    version="0.7.3",
+    version="1.0.0",
     description="APSG - The package for structural geologists",
     long_description=readme + "\n\n" + history,
     long_description_content_type="text/markdown",
@@ -26,15 +26,13 @@ setup(
     url="https://github.com/ondrolexa/apsg",
     license="MIT",
     keywords="apsg",
-    python_requires=">=3.6",
+    python_requires=">=3.8",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
     ],
     packages=find_packages(where="src"),

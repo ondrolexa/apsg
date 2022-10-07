@@ -1,8 +1,9 @@
 ===============
-plotting module
+database module
 ===============
 
-.. automodule:: apsg.plotting
+.. automodule:: apsg.database
     :members:
     :undoc-members:
     :show-inheritance:
+
