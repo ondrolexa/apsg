@@ -8,12 +8,23 @@
 
 ## What is APSG?
 
-APSG is package for structural geologists. It defines several new python classes to easily manage, analyze and
-visualize orientational structural geology data.
+APSG is the package for structural geologists. It defines several new python classes to easily manage, analyze and visualize orientational structural geology data.
+
+## Major changes in class names and API from version 1.0.0
+
+APSG has been significantly refactored from version 1.0 and several changes are
+breaking backward compatibility. The main APSG namespace provides often-used
+classes in lowercase names as aliases to `PascalCase` convention used in
+modules to provide a simplified interface for users. The `PascalCase` names of
+classes use longer and plain English names instead acronyms for better
+readability.
+
+Check [documentation](https://apsg.readthedocs.org) for more details.
+
 
 ## Requirements
 
-You need Python 3.6 or later to run APSG. The package requires [NumPy](https://numpy.org/) and [SciPy](https://www.scipy.org/), and the plotting routines require [Matplotlib](https://matplotlib.org/).
+You need Python 3.8 or later to run APSG. The package requires [NumPy](https://numpy.org/) and [SciPy](https://www.scipy.org/), and [Matplotlib](https://matplotlib.org/).
 
 ## Quick start
 
@@ -21,14 +32,19 @@ APSG can be installed using pip:
 ```
 pip install apsg
 ```
-If you want tu run the latest version of code, you can install it from git:
+If you want to run the latest version of the code, you can install it from git:
 ```
-pip install git+git://github.com/ondrolexa/apsg.git
+pip install git+https://github.com/ondrolexa/apsg.git
 ```
 Alternatively, you can download the package manually from the GitHub repository [https://github.com/ondrolexa/apsg](https://github.com/ondrolexa/apsg), unzip it, navigate into the package, and use the command:
 ```
 python setup.py install
 ```
+or
+```
+pip install .
+```
+
 #### Upgrading via pip
 
 To upgrade an existing version of APSG from PyPI, execute
@@ -37,17 +53,9 @@ pip install apsg --upgrade --no-deps
 ```
 Please note that the dependencies (Matplotlib, NumPy and SciPy) will also be upgraded if you omit the `--no-deps` flag; use the `--no-deps` ("no dependencies") flag if you don't want this.
 
-#### Installing APSG from the source distribution
-
-In rare cases, users reported problems on certain systems with the default pip installation command, which installs APSG from the binary distribution ("wheels") on PyPI. If you should encounter similar problems, you could try to install APSG from the source distribution instead via
-```
-pip install --no-binary :all: apsg
-```
-Also, I would appreciate it if you could report any issues that occur when using `pip install apsg` in hope that we can fix these in future releases.
-
 ### Conda
 
-The APSG package is also available through `conda-forge`.
+The APSG package is also available on `conda-forge` channel.
 
 #### Current release info
 
@@ -74,13 +82,6 @@ It is possible to list all of the versions of `apsg` available on your platform 
 ```
 conda search apsg --channel conda-forge
 ```
-
-## Getting started
-
-You can see APSG in action in accompanied Jupyter notebook [http://nbviewer.jupyter.org/github/ondrolexa/apsg/blob/master/examples/apsg_tutorial.ipynb](http://nbviewer.jupyter.org/github/ondrolexa/apsg/blob/master/examples/apsg_tutorial.ipynb)
-
-And for fun check how simply you can animate stereonets
-[http://nbviewer.jupyter.org/github/ondrolexa/apsg/blob/master/examples/animation_example.ipynb](http://nbviewer.jupyter.org/github/ondrolexa/apsg/blob/master/examples/animation_example.ipynb)
 
 ## Documentation
 
