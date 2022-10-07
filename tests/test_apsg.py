@@ -23,7 +23,7 @@ from apsg import vec, fol, lin, fault, pair
 from apsg import vecset, linset, folset
 from apsg import defgrad
 
-atol = 1e-06  # safe tests
+atol = 1e-05  # safe tests
 
 # ############################################################################
 # Vectors
