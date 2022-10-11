@@ -98,6 +98,23 @@ class VollmerPlot(FabricPlot):
 
     """
     Represents the triangular fabric plot (Vollmer, 1989).
+
+    Keyword Args:
+        title (str): figure title. Default None.
+        ticks (bool): Show ticks. Default True
+        n_ticks (int): Number of ticks. Default 10
+        tick_size (float): Size of ticks. Default 0.2
+        margin (float): Size of margin. Default 0.05
+        grid (bool): Show grid. Default is True
+        grid_color (str): Matplotlib color of the grid. Default "k"
+        grid_style (str): Matplotlib style of the grid. Default ":"
+
+    Examples:
+        >>> l = linset.random_fisher(position=lin(120, 40))
+        >>> ot = l.ortensor()
+        >>> s = VollmerPlot(title="Point distribution")
+        >>> s.point(ot)
+        >>> s.show()
     """
 
     def __init__(self, *args, **kwargs):

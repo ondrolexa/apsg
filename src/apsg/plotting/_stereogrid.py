@@ -19,9 +19,19 @@ class StereoGrid:
     defined function, which accept unit vector as argument.
 
     Keyword Args:
-        kind (str): "equal-area" or "equal-angle". "schmidt", "earea" or "wulff", "eangle" is
-            also valid. Default is "equal-area"
+        kind (str): Equal area ("equal-area", "schmidt" or "earea") or equal angle ("equal-angle",
+          "wulff" or "eangle") projection. Default is "equal-area"
         hemisphere (str): "lower" or "upper". Default is "lower"
+        overlay_position (tuple or Pair): Position of overlay X, Y, Z given by Pair. X is direction
+          of linear element, Z is normal to planar. Default is (0, 0, 0, 0)
+        rotate_data (bool): Whether plotted data should be rotated together with overlay.
+          Default False
+        minor_ticks (None or float): Default None
+        major_ticks (None or float): Default None
+        overlay (bool): Whether to show overlay. Default is True
+        overlay_step (float): Grid step of overlay. Default 15
+        overlay_resolution (float): Resolution of overlay. Default 181
+        clip_pole (float): Clipped cone around poles. Default 15
         grid_type (str): Type of contouring grid "gss" or "sfs". Default "gss"
         grid_n (int): Number of counting points in grid. Default 3000
 

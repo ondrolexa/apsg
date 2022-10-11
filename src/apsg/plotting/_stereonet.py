@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 
-# import warnings
 import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
-
-# from matplotlib import MatplotlibDeprecationWarning
 
 from apsg.config import apsg_conf
 from apsg.math._vector import Vector3
@@ -29,18 +26,15 @@ from apsg.plotting._plot_artists import StereoNetArtistFactory
 __all__ = ["StereoNet"]
 
 
-# Ignore `matplotlib`s deprecation warnings.
-# warnings.filterwarnings("ignore", category=MatplotlibDeprecationWarning)
-
-
 class StereoNet:
     """
     Plot features on stereographic projection
 
     Keyword Args:
         title (str): figure title. Default None.
-        kind (str): "equal-area" or "equal-angle". "schmidt", "earea" or "wulff", "eangle" is
-          also valid. Default is "equal-area"
+        tight_layout (bool): Matplotlib figure tight_layout. Default False
+        kind (str): Equal area ("equal-area", "schmidt" or "earea") or equal angle ("equal-angle",
+          "wulff" or "eangle") projection. Default is "equal-area"
         hemisphere (str): "lower" or "upper". Default is "lower"
         overlay_position (tuple or Pair): Position of overlay X, Y, Z given by Pair. X is direction
           of linear element, Z is normal to planar. Default is (0, 0, 0, 0)
@@ -54,26 +48,29 @@ class StereoNet:
         clip_pole (float): Clipped cone around poles. Default 15
         grid_type (str): Type of contouring grid "gss" or "sfs". Default "gss"
         grid_n (int): Number of counting points in grid. Default 3000
-        tight_layout (bool): Matplotlib figure tight_layout. Default False
+
+    Examples:
+        >>> l = linset.random_fisher(position=lin(120, 40))
+        >>> s = StereoNet(title="Random linear features")
+        >>> s.contour(l)
+        >>> s.line(l)
+        >>> s.show()
     """
 
     def __init__(self, **kwargs):
         self._kwargs = apsg_conf["stereonet_default_kwargs"].copy()
         self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
         self._kwargs["title"] = kwargs.get("title", None)
-        if self._kwargs["kind"].lower() in ["equal-area", "schmidt", "earea"]:
-            self.proj = EqualAreaProj(**self._kwargs)
-        elif self._kwargs["kind"].lower() in ["equal-angle", "wulff", "eangle"]:
-            self.proj = EqualAngleProj(**self._kwargs)
-        else:
-            raise TypeError("Only 'Equal-area' and 'Equal-angle' implemented")
+        self.grid = StereoGrid(**self._kwargs)
+        # alias for Projection instance
+        self.proj = self.grid.proj
         self.angles_gc = np.linspace(
             -90 + 1e-7, 90 - 1e-7, int(self.proj.overlay_resolution / 2)
         )
         self.angles_sc = np.linspace(
             -180 + 1e-7, 180 - 1e-7, self.proj.overlay_resolution
         )
-        self.grid = StereoGrid(**self._kwargs)
+
         self.clear()
 
     def clear(self):

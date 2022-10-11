@@ -19,22 +19,18 @@ class RosePlot(object):
     """
     ``RosePlot`` class for rose histogram plotting.
 
-    Args:
-        any plottable APSG class (most of data classes and tensors)
-
     Keyword Args:
-        title: figure title. Default ''
-        figsize: Figure size. Default from settings ()
-        axial: Directional data are axial. Defaut True
-        density: Use density instead of counts. Default False
-        pdf: Plot Von Mises density function instead histogram. Default False
-        kappa; Shape parameter of Von Mises pdf. Default 250
-        scaled: Bins scaled by area instead value. Default False
-        arrow: Bar arrowness. (0-1) Default 0.95
-        rwidth: Bar width (0-1). Default 1
-        ticks: show ticks. Default True
-        grid: show grid lines. Default False
-        grid_kw: Dict passed to Axes.grid. Default {}
+        title (str): figure title. Default None
+        bins (int): Number of bins. Default 36
+        axial (bool): Directional data are axial. Defaut True
+        density (bool): Use density instead of counts. Default False
+        pdf (bool): Plot Von Mises density function instead histogram. Default False
+        pdf_res (int): Resolution of pdf. Default 901
+        kappa (float): Shape parameter of Von Mises pdf. Default 250
+        scaled (bool): Bins scaled by area instead value. Default False
+        ticks (bool): show ticks. Default True
+        grid (bool): show grid lines. Default False
+        grid_kw (dict): Dict passed to Axes.grid. Default {}
 
         Other keyword arguments are passed to matplotlib plot.
 
@@ -68,7 +64,6 @@ class RosePlot(object):
             plot_method(*artist.args, **artist.kwargs)
 
     def to_json(self):
-        data = {}
         artists = [artist.to_json() for artist in self._artists]
         return dict(kwargs=self._kwargs, artists=artists)
 
@@ -203,7 +198,7 @@ class RosePlot(object):
         theta = np.linspace(-np.pi, np.pi, self._kwargs["pdf_res"])
         for arg in args:
             ang = arg.direction % 360
-            weights = abs(arg)
+            # weights = abs(arg)
             radii = np.zeros_like(theta)
             if self._kwargs["axial"]:
                 for a in ang:
