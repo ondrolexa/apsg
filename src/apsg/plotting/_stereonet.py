@@ -37,15 +37,24 @@ class StereoNet:
     """
     Plot features on stereographic projection
 
-    Args:
-        hemisphere: which hemisphere Default 'lower'
-        rotate_data: whether data should be rotated with overlay Default False
-        grid_position: orientation of overlay given as ``Pair`` Default pair(0, 0, 0, 0)
-        clip_pole: Default 20)
-        gridstep: grid step Default 15
-        resolution: number of grid lines points Default 361
-        n: number of contouring grid points Default 2000
-        grid_type: type of contouring grid 'gss' or 'sfs'. Default 'gss'
+    Keyword Args:
+        title (str): figure title. Default None.
+        kind (str): "equal-area" or "equal-angle". "schmidt", "earea" or "wulff", "eangle" is
+          also valid. Default is "equal-area"
+        hemisphere (str): "lower" or "upper". Default is "lower"
+        overlay_position (tuple or Pair): Position of overlay X, Y, Z given by Pair. X is direction
+          of linear element, Z is normal to planar. Default is (0, 0, 0, 0)
+        rotate_data (bool): Whether plotted data should be rotated together with overlay.
+          Default False
+        minor_ticks (None or float): Default None
+        major_ticks (None or float): Default None
+        overlay (bool): Whether to show overlay. Default is True
+        overlay_step (float): Grid step of overlay. Default 15
+        overlay_resolution (float): Resolution of overlay. Default 181
+        clip_pole (float): Clipped cone around poles. Default 15
+        grid_type (str): Type of contouring grid "gss" or "sfs". Default "gss"
+        grid_n (int): Number of counting points in grid. Default 3000
+        tight_layout (bool): Matplotlib figure tight_layout. Default False
     """
 
     def __init__(self, **kwargs):

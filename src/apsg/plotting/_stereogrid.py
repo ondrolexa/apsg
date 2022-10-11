@@ -18,9 +18,12 @@ class StereoGrid:
     ``StereoGrid`` object could be calculated from ``Group`` object or by user-
     defined function, which accept unit vector as argument.
 
-    Args:
-        n: number of grid points Default 2000
-        grid_type: type of grid 'gss' or 'sfs'. Default 'gss'
+    Keyword Args:
+        kind (str): "equal-area" or "equal-angle". "schmidt", "earea" or "wulff", "eangle" is
+            also valid. Default is "equal-area"
+        hemisphere (str): "lower" or "upper". Default is "lower"
+        grid_type (str): Type of contouring grid "gss" or "sfs". Default "gss"
+        grid_n (int): Number of counting points in grid. Default 3000
 
     Note: Euclidean norms are used as weights. Normalize data if you dont want to use weigths.
 
