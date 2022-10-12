@@ -85,8 +85,11 @@ class StereoGrid:
         """Calculate density of elements from ``FeatureSet`` object.
 
         Args:
-            sigma: if none k is calculated automatically. Default None
-            trim: if True, values < 0 are clipped to zero. . Default True
+            sigma (float): if none sigma is calculated automatically.
+              Default None
+            sigmanorm (bool): If True counting is normalized to sigma
+              multiples. Default True
+            trimzero: if True, zero contour is not drawn. Default True
 
         """
         # parse options
@@ -101,13 +104,16 @@ class StereoGrid:
         else:
             k = 2 * (1.0 + n / sigma**2)
         # method = kwargs.get("method", "exp_kamb")
-        trim = kwargs.get("trim", True)
+        trim = kwargs.get("trimzero", True)
         # do calc
         scale = np.sqrt(n * (k / 2.0 - 1) / k**2)
         cnt = np.exp(k * (np.abs(np.dot(self.grid, np.asarray(features).T)) - 1))
-        self.values = cnt.sum(axis=1) / scale / sigma
+        self.values = cnt.sum(axis=1) / scale
+        if kwargs.get("sigmanorm", True):
+            self.values /= sigma
+        self.values[self.values < 0] = 0
         if trim:
-            self.values[self.values < 0] = np.finfo(float).tiny
+            self.values[self.values == 0] = np.finfo(float).tiny
         self.calculated = True
 
     def apply_func(self, func, *args, **kwargs):

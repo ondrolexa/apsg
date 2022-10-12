@@ -320,7 +320,10 @@ class StereoNet:
             # ad-hoc density calculation needed to access correct grid properties
             if len(args) > 0:
                 self.grid.calculate_density(
-                    args[0], sigma=kwargs.get("sigma"), trim=kwargs.get("trim")
+                    args[0],
+                    sigma=artist.kwargs.get("sigma"),
+                    sigmanorm=artist.kwargs.get("sigmanorm"),
+                    trimzero=artist.kwargs.get("trimzero"),
                 )
             self._artists.append(artist)
         except TypeError as err:
@@ -566,7 +569,8 @@ class StereoNet:
 
     def _contour(self, *args, **kwargs):
         sigma = kwargs.pop("sigma")
-        trim = kwargs.pop("trim")
+        trimzero = kwargs.pop("trimzero")
+        sigmanorm = (kwargs.pop("sigmanorm"),)
         colorbar = kwargs.pop("colorbar")
         _ = kwargs.pop("label")
         clines = kwargs.pop("clines")
@@ -576,7 +580,9 @@ class StereoNet:
         data_kwargs = kwargs.pop("data_kwargs")
         if not self.grid.calculated:
             if len(args) > 0:
-                self.grid.calculate_density(args[0], sigma=sigma, trim=trim)
+                self.grid.calculate_density(
+                    args[0], sigma=sigma, sigmanorm=sigmanorm, trimzero=trimzero
+                )
             else:
                 return None
         dcgrid = np.asarray(self.grid.grid).T
