@@ -74,7 +74,7 @@ class StereoNet:
         self.clear()
 
     def clear(self):
-        """Clear stereonet"""
+        """Clear plot"""
         self._artists = []
 
     def _draw_layout(self):

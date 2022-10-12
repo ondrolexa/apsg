@@ -13,10 +13,9 @@ from apsg.plotting._projection import EqualAreaProj, EqualAngleProj
 
 class StereoGrid:
     """
-    The class to store regular grid of values to be contoured on ``StereoNet``.
+    The class to store values with associated uniformly positions.
 
-    ``StereoGrid`` object could be calculated from ``Group`` object or by user-
-    defined function, which accept unit vector as argument.
+    ``StereoGrid`` is used to calculate continous functions on sphere e.g. density distribution.
 
     Keyword Args:
         kind (str): Equal area ("equal-area", "schmidt" or "earea") or equal angle ("equal-angle",
@@ -58,6 +57,7 @@ class StereoGrid:
         # initial values
         self.values = np.zeros(self.grid_n, dtype=float)
         self.calculated = False
+        self.calculated_params = None
 
     def __repr__(self):
         if self.calculated:
@@ -86,7 +86,9 @@ class StereoGrid:
         return Lineation(self.grid[self.values.argmax()])
 
     def calculate_density(self, features, **kwargs):
-        """Calculate density of elements from ``FeatureSet`` object.
+        """Calculate density distribution of vectors from ``FeatureSet`` object.
+
+        The modified Kamb contouring technique with exponential smoothing is used.
 
         Args:
             sigma (float): if none sigma is calculated automatically.
@@ -109,21 +111,53 @@ class StereoGrid:
             k = 2 * (1.0 + n / sigma**2)
         # method = kwargs.get("method", "exp_kamb")
         trim = kwargs.get("trimzero", True)
+        sigmanorm = kwargs.get("sigmanorm", True)
         # do calc
         scale = np.sqrt(n * (k / 2.0 - 1) / k**2)
         cnt = np.exp(k * (np.abs(np.dot(self.grid, np.asarray(features).T)) - 1))
         self.values = cnt.sum(axis=1) / scale
-        if kwargs.get("sigmanorm", True):
+        if sigmanorm:
             self.values /= sigma
         self.values[self.values < 0] = 0
         if trim:
             self.values[self.values == 0] = np.finfo(float).tiny
         self.calculated = True
+        self.calculated_params = features, k, scale, sigma, sigmanorm
+
+    def density_lookup(self, v):
+        """
+        Calculate density distribution value at position given by vector
+
+        Note: you need to calculate density before using this method
+
+        Args:
+            v: Vector3 like object
+
+        Keyword Args:
+            p (int): power. Default 2
+        """
+        if self.calculated_params is not None:
+            features, k, scale, sigma, sigmanorm = self.calculated_params
+            cnt = np.exp(
+                k * (np.abs(np.dot(v.normalized(), np.asarray(features).T)) - 1)
+            )
+            val = cnt.sum() / scale
+            if sigmanorm:
+                val /= sigma
+            return val
+        else:
+            raise ValueError("No density distribution calculated")
 
     def apply_func(self, func, *args, **kwargs):
-        """Calculate values using function passed as argument.
+        """Calculate values of user-defined function on sphere.
+
         Function must accept Vector3 like (or 3 elements array)
-        as argument and return scalar value.
+        as first argument and return scalar value.
+
+        Args:
+            func (function): function used to calculate values
+            *args: passed to function func as args
+            **kwargs: passed to function func as kwargs
 
         """
         for i in range(self.grid_n):
