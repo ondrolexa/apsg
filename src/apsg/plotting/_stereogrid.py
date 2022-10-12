@@ -70,15 +70,19 @@ class StereoGrid:
         return f"StereoGrid {self.proj.__class__.__name__} {self.grid_n} points." + info
 
     def min(self):
+        """Returns minimum value of the grid"""
         return self.values.min()
 
     def max(self):
+        """Returns maximum value of the grid"""
         return self.values.max()
 
     def min_at(self):
+        """Returns position of minimum value of the grid as ``Lineation``"""
         return Lineation(self.grid[self.values.argmin()])
 
     def max_at(self):
+        """Returns position of maximum value of the grid as ``Lineation``"""
         return Lineation(self.grid[self.values.argmax()])
 
     def calculate_density(self, features, **kwargs):
@@ -127,7 +131,16 @@ class StereoGrid:
         self.calculated = True
 
     def contourf(self, *args, **kwargs):
-        """Show filled contours of values."""
+        """
+        Draw filled contours of values using tricontourf.
+
+        Keyword Args:
+            levels (int or list): number or values of contours. Default 6
+            cmap: matplotlib colormap used for filled contours. Default "Greys"
+            colorbar (bool): Show colorbar. Default False
+            alpha (float): transparency. Default None
+            antialiased (bool): Default True
+        """
         colorbar = kwargs.get("colorbar", False)
         parsed = {}
         parsed["alpha"] = kwargs.get("alpha", 1)
@@ -164,12 +177,24 @@ class StereoGrid:
         plt.show()
 
     def contour(self, *args, **kwargs):
-        """Show contours of values."""
+        """
+        Draw contour lines of values using tricontour.
+
+        Keyword Args:
+            levels (int or list): number or values of contours. Default 6
+            cmap: matplotlib colormap used for filled contours. Default "Greys"
+            colorbar (bool): Show colorbar. Default False
+            alpha (float): transparency. Default None
+            antialiased (bool): Default True
+            linewidths (float): contour lines width
+            linestyles (str): contour lines style
+        """
         colorbar = kwargs.get("colorbar", False)
         parsed = {}
         parsed["alpha"] = kwargs.get("alpha", 1)
         parsed["antialiased"] = kwargs.get("antialiased", True)
         parsed["cmap"] = kwargs.get("cmap", "Greys")
+        parsed["linewidths"] = kwargs.get("linewidths", 1)
         parsed["linestyles"] = kwargs.get("linestyles", "-")
         parsed["levels"] = kwargs.get("levels", 6)
 

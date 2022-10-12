@@ -74,6 +74,7 @@ class StereoNet:
         self.clear()
 
     def clear(self):
+        """Clear stereonet"""
         self._artists = []
 
     def _draw_layout(self):
@@ -145,11 +146,13 @@ class StereoNet:
             plot_method(*artist.args, **artist.kwargs)
 
     def to_json(self):
+        """Return stereonet as JSON dict"""
         artists = [artist.to_json() for artist in self._artists]
         return dict(kwargs=self._kwargs, artists=artists)
 
     @classmethod
     def from_json(cls, json_dict):
+        """Create stereonet from JSON dict"""
         s = cls(**json_dict["kwargs"])
         s._artists = [
             stereonetartist_from_json(artist) for artist in json_dict["artists"]
@@ -157,11 +160,23 @@ class StereoNet:
         return s
 
     def save(self, filename):
+        """
+        Save stereonet to pickle file
+
+        Args:
+            filename (str): name of picke file
+        """
         with open(filename, "wb") as f:
             pickle.dump(self.to_json(), f, pickle.HIGHEST_PROTOCOL)
 
     @classmethod
     def load(cls, filename):
+        """
+        Load stereonet from pickle file
+
+        Args:
+            filename (str): name of picke file
+        """
         with open(filename, "rb") as f:
             data = pickle.load(f)
         return cls.from_json(data)
@@ -209,12 +224,21 @@ class StereoNet:
         self._render()
 
     def show(self):
+        """Show stereonet"""
         plt.close(0)  # close previously rendered figure
         self.init_figure()
         self._render()
         plt.show()
 
     def savefig(self, filename="stereonet.png", **kwargs):
+        """
+        Save stereonet figure to graphics file
+
+        Keyword Args:
+            filename (str): filename
+
+        All others kwargs are passed to matplotlib `Figure.savefig`
+        """
         self.render()
         self.fig.savefig(filename, **kwargs)
         plt.close(0)
@@ -314,7 +338,24 @@ class StereoNet:
             print(err)
 
     def contour(self, *args, **kwargs):
-        """Plot filled contours."""
+        """
+        Plot filled contours using modified Kamb contouring technique with exponential smoothing
+
+        Keyword Args:
+            levels (int or list): number or values of contours. Default 6
+            cmap: matplotlib colormap used for filled contours. Default "Greys"
+            colorbar (bool): Show colorbar. Default False
+            alpha (float): transparency. Default None
+            antialiased (bool): Default True
+            sigma (float): If None it is automatically calculated
+            sigmanorm (bool): If True scaled counts are normalized by sigma. Default True
+            trimzero (bool): Remove values equal to 0. Default True
+            clines (bool): Show contour lines instead filled contours. Default False
+            linewidths (float): contour lines width
+            linestyles (str): contour lines style
+            show_data (bool): Show data as points. Default False
+            data_kwargs (dict): arguments passed to point factory
+        """
         try:
             artist = StereoNetArtistFactory.create_contour(*args, **kwargs)
             # ad-hoc density calculation needed to access correct grid properties

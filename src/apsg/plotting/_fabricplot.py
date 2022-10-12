@@ -25,6 +25,7 @@ class FabricPlot(object):
         self._artists = []
 
     def clear(self):
+        """Clear fabric plot"""
         self._artists = []
 
     def _plot_artists(self):
@@ -33,21 +34,35 @@ class FabricPlot(object):
             plot_method(*artist.args, **artist.kwargs)
 
     def to_json(self):
+        """Return fabric plot as JSON dict"""
         artists = [artist.to_json() for artist in self._artists]
         return dict(kwargs=self._kwargs, artists=artists)
 
     @classmethod
     def from_json(cls, json_dict):
+        """Create fabric plot from JSON dict"""
         s = cls(**json_dict["kwargs"])
         s._artists = [fabricartist_from_json(artist) for artist in json_dict["artists"]]
         return s
 
     def save(self, filename):
+        """
+        Save fabric plot to pickle file
+
+        Args:
+            filename (str): name of picke file
+        """
         with open(filename, "wb") as f:
             pickle.dump(self.to_json(), f, pickle.HIGHEST_PROTOCOL)
 
     @classmethod
     def load(cls, filename):
+        """
+        Load fabric plot from pickle file
+
+        Args:
+            filename (str): name of picke file
+        """
         with open(filename, "rb") as f:
             data = pickle.load(f)
         return cls.from_json(data)
@@ -89,6 +104,14 @@ class FabricPlot(object):
         self._render()
 
     def savefig(self, filename="fabricplot.png", **kwargs):
+        """
+        Save fabric plot figure to graphics file
+
+        Keyword Args:
+            filename (str): filename
+
+        All others kwargs are passed to matplotlib `Figure.savefig`
+        """
         self.render()
         self.fig.savefig(filename, **kwargs)
         plt.close(0)
@@ -204,6 +227,7 @@ class VollmerPlot(FabricPlot):
             self.ax.plot(x, y, "k", lw=1)
 
     def show(self):
+        """Show fabric plot"""
         plt.close(0)  # close previously rendered figure
         self.init_figure()
         self._render()
@@ -214,7 +238,7 @@ class VollmerPlot(FabricPlot):
     ########################################
 
     def point(self, *args, **kwargs):
-        """Plot rose histogram of angles"""
+        """Plot ellipsoid as point"""
         try:
             artist = FabricPlotArtistFactory.create_point(*args, **kwargs)
             self._artists.append(artist)
@@ -222,7 +246,7 @@ class VollmerPlot(FabricPlot):
             print(err)
 
     def path(self, *args, **kwargs):
-        """Plot rose histogram of angles"""
+        """Plot EllipsoidSet as path"""
         try:
             artist = FabricPlotArtistFactory.create_path(*args, **kwargs)
             self._artists.append(artist)
@@ -286,6 +310,7 @@ class RamsayPlot(FabricPlot):
             self.ax.grid(True)
 
     def show(self):
+        """Show deformation plot"""
         plt.close(0)  # close previously rendered figure
         self.init_figure()
         self._render()
@@ -305,7 +330,7 @@ class RamsayPlot(FabricPlot):
     ########################################
 
     def point(self, *args, **kwargs):
-        """Plot rose histogram of angles"""
+        """Plot ellipsoid as point"""
         try:
             artist = FabricPlotArtistFactory.create_point(*args, **kwargs)
             self._artists.append(artist)
@@ -313,7 +338,7 @@ class RamsayPlot(FabricPlot):
             print(err)
 
     def path(self, *args, **kwargs):
-        """Plot rose histogram of angles"""
+        """Plot EllipsoidSet as path"""
         try:
             artist = FabricPlotArtistFactory.create_path(*args, **kwargs)
             self._artists.append(artist)
@@ -364,6 +389,7 @@ class FlinnPlot(FabricPlot):
             self.ax.grid(True)
 
     def show(self):
+        """Show deformation plot"""
         plt.close(0)  # close previously rendered figure
         self.init_figure()
         self._render()
@@ -383,7 +409,7 @@ class FlinnPlot(FabricPlot):
     ########################################
 
     def point(self, *args, **kwargs):
-        """Plot rose histogram of angles"""
+        """Plot Ellipsoid as point"""
         try:
             artist = FabricPlotArtistFactory.create_point(*args, **kwargs)
             self._artists.append(artist)
@@ -391,7 +417,7 @@ class FlinnPlot(FabricPlot):
             print(err)
 
     def path(self, *args, **kwargs):
-        """Plot rose histogram of angles"""
+        """Plot EllipsoidSet as path"""
         try:
             artist = FabricPlotArtistFactory.create_path(*args, **kwargs)
             self._artists.append(artist)
@@ -444,6 +470,7 @@ class HsuPlot(FabricPlot):
             self.ax.grid(True)
 
     def show(self):
+        """Show fabric plot"""
         plt.close(0)  # close previously rendered figure
         self.init_figure()
         self._render()
@@ -454,7 +481,7 @@ class HsuPlot(FabricPlot):
     ########################################
 
     def point(self, *args, **kwargs):
-        """Plot rose histogram of angles"""
+        """Plot Ellipsoid as point"""
         try:
             artist = FabricPlotArtistFactory.create_point(*args, **kwargs)
             self._artists.append(artist)
@@ -462,7 +489,7 @@ class HsuPlot(FabricPlot):
             print(err)
 
     def path(self, *args, **kwargs):
-        """Plot rose histogram of angles"""
+        """Plot EllipsoidSet as path"""
         try:
             artist = FabricPlotArtistFactory.create_path(*args, **kwargs)
             self._artists.append(artist)

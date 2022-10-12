@@ -13,6 +13,15 @@ def fol2vec_rhr(strike, dip):
 
 
 def geo2vec_planar(*args):
+    """
+    Function to transform geological measurement of plane to normal vector
+
+    Conversion is done according to `notation` configuration
+
+    Args:
+        azi (float): dip direction or strike
+        inc (float): dip
+    """
     return {"dd": fol2vec_dd, "rhr": fol2vec_rhr}[apsg_conf["notation"]](*args)
 
 
@@ -24,7 +33,14 @@ def lin2vec_dd(azi, inc):
 
 
 def geo2vec_linear(*args):
-    return {"dd": lin2vec_dd, "rhr": lin2vec_dd}[apsg_conf["notation"]](*args)
+    """
+    Function to transform geological measurement of line to vector
+
+    Args:
+        azi (float): plunge direction
+        inc (float): plunge
+    """
+    return lin2vec_dd(*args)
 
 
 ##############################
@@ -61,6 +77,14 @@ def vec2geo_planar_signed(arg):
 
 
 def vec2geo_planar(arg):
+    """
+    Function to transform normal vector to geological measurement of plane
+
+    Conversion is done according to `notation` configuration
+
+    Args:
+        v (Vector3): ``Vector3`` like object
+    """
     return {"dd": vec2fol_dd, "rhr": vec2fol_rhr}[apsg_conf["notation"]](arg)
 
 
@@ -86,4 +110,10 @@ def vec2geo_linear_signed(arg):
 
 
 def vec2geo_linear(arg):
-    return {"dd": vec2lin_dd, "rhr": vec2lin_dd}[apsg_conf["notation"]](arg)
+    """
+    Function to transform vector to geological measurement of line
+
+    Args:
+        v (Vector3): ``Vector3`` like object
+    """
+    return vec2lin_dd(arg)
