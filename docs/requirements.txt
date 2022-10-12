@@ -1,3 +1,4 @@
 ipykernel
 nbsphinx
+autodocsumm
 git+https://github.com/ondrolexa/apsg.git

@@ -42,6 +42,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autodoc",
     "nbsphinx",
+    "autodocsumm",
 ]
 
 autodoc_mock_imports = ['sqlalchemy']

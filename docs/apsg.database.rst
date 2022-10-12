@@ -77,6 +77,7 @@ or directly
     >>> g = db.getset('S2')
 
 .. automodule:: apsg.database
+    :autosummary:
     :members:
     :undoc-members:
     :show-inheritance:
