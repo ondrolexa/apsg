@@ -9,3 +9,4 @@ This module provide basic classes to store and analyze various type of structura
     :members:
     :undoc-members:
     :show-inheritance:
+    :autosummary-no-nesting:

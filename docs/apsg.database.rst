@@ -81,4 +81,5 @@ or directly
     :members:
     :undoc-members:
     :show-inheritance:
+    :autosummary-no-nesting:
 
