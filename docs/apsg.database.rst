@@ -2,10 +2,14 @@
 database module
 ===============
 
-SqlAlchemy interface to PySDB database
+sqlalchemy interface to PySDB database
 
-Usage
------
+PySDB database is a simple sqlite3-based relational database to store structural data from the field. You can use
+**apsg** to manipulate the data or you can use the GUI application `pysdb <https://github.com/ondrolexa/pysdb>`_. There
+is also the QGIS plugin `readsdb <https://github.com/ondrolexa/readsdb>`_ to plot data on a map or use map-based
+select to plot stereonets.
+
+The following snippet demonstrate how to create database programmatically
 
     >>> # Create database
     >>> from apsg.database import SDBSession
@@ -22,11 +26,9 @@ Usage
     >>> # Close database
     >>> db.close()
 
-Tags example
-------------
+You can tag individual data
 
     >>> db = SDBSession('database.sdb')
-    >>> unit = db.unit(name='DMU')
     >>> site = db.site(name='LX001')
     >>> struct = db.structype(structure='S2')
     >>> tag_plot = db.tag(name='plot')
@@ -34,8 +36,7 @@ Tags example
     >>> fol = db.add_structdata(site=site, structype=struct, azimuth=324, inclination=78, tags=[tag_plot, tag_ap])
     >>> db.close()
 
-Attach example
---------------
+or you can attach linear and planar features (e.g. fault data)
 
     >>> db = SDBSession('database.sdb')
     >>> unit = db.unit(name='DMU')
@@ -47,16 +48,14 @@ Attach example
     >>> pair = db.attach(fol, lin)
     >>> db.close()
 
-Using apsg interface
---------------------
+You can open existing database and select existing site and type of structure
 
     >>> db = SDBSession('database.sdb')
-    >>> unit = db.unit(name='DMU')
     >>> site = db.site(name='LX003')
     >>> S2 = db.structype(structure='S2')
     >>> L2 = db.structype(structure='L2')
 
-You can directly insert ``Foliation``, ``Lineation`` or ``Pair``
+and insert ``Foliation``, ``Lineation`` or ``Pair`` directly
 
     >>> f = fol(196, 39)
     >>> l = lin(210, 37)
@@ -79,7 +78,6 @@ or directly
 .. automodule:: apsg.database
     :autosummary:
     :members:
-    :undoc-members:
     :show-inheritance:
     :autosummary-no-nesting:
 

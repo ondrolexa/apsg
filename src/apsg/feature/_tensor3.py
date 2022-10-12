@@ -52,6 +52,17 @@ class DeformationGradient3(Matrix3):
     @classmethod
     @ensure_arguments(Pair)
     def from_pair(cls, p):
+        """Return ``DeformationGradient3`` representing rotation defined by ``Pair``.
+
+        Rotation bring x-axis to lineation and z-axis to normal to plane
+
+        Args:
+          p (``Pair``): Pair object
+
+        Example:
+          >>> p = pair(40, 20, 75, 16)
+          >>> F = defgrad.from_pair(p)
+        """
         return cls(np.array([p.lvec, p.fvec.cross(p.lvec), p.fvec]).T)
 
     @classmethod
@@ -208,7 +219,27 @@ class DeformationGradient3(Matrix3):
         return axis, angle
 
     def velgrad(self, time=1):
-        """Return ``VelocityGradient3`` for given time"""
+        """
+        Return ``VelocityGradient3`` calculated as matrix logarithm divided by given time.
+
+        Keyword Args:
+            time (float): total time. Default 1
+
+        Example:
+            >>> F = defgrad.from_comp(xx=2, xy=1, zz=0.5)
+            >>> L = F.velgrad(time=10)
+            >>> L
+            VelocityGradient3
+            [[ 0.069  0.069  0.   ]
+             [ 0.     0.     0.   ]
+             [ 0.     0.    -0.069]]
+            >>> L.defgrad(time=10)
+            DeformationGradient3
+            [[2.  1.  0. ]
+             [0.  1.  0. ]
+             [0.  0.  0.5]]
+
+        """
         from scipy.linalg import logm
 
         return VelocityGradient3(logm(np.asarray(self)) / time)
@@ -223,7 +254,7 @@ class VelocityGradient3(Matrix3):
           3x3 2D array. This includes lists, tuples and ndarrays.
 
     Returns:
-      ``VelocityGradient3`` object
+      ``VelocityGradient3`` matrix
 
     Example:
       >>> L = velgrad(np.diag([0.1, 0, -0.1]))
@@ -577,22 +608,37 @@ class Ellipsoid(Tensor3):
 
     @property
     def Rxy(self) -> float:
+        """
+        Return the Rxy ratio.
+        """
         return self.lambda1 / self.lambda2 if self.lambda2 != 0 else np.inf
 
     @property
     def Ryz(self) -> float:
+        """
+        Return the Ryz ratio.
+        """
         return self.lambda2 / self.lambda3 if self.lambda3 != 0 else np.inf
 
     @property
     def e12(self) -> float:
+        """
+        Return the e1 - e2.
+        """
         return self.e1 - self.e2
 
     @property
     def e13(self) -> float:
+        """
+        Return the e1 - e3.
+        """
         return self.e1 - self.e3
 
     @property
     def e23(self) -> float:
+        """
+        Return the e2 - e3.
+        """
         return self.e2 - self.e3
 
     @property
@@ -619,7 +665,7 @@ class Ellipsoid(Tensor3):
     @property
     def D(self) -> float:
         """
-        return the strain intensity.
+        Return the strain intensity.
         """
         return self.e12**2 + self.e23**2
 

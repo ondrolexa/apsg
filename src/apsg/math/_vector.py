@@ -10,10 +10,6 @@ from apsg.helpers._notation import (
 )
 from apsg.decorator._decorator import ensure_first_arg_same
 
-"""
-TO BE ADDED
-"""
-
 
 class Vector:
     """
@@ -97,9 +93,11 @@ class Vector:
     magnitude = __abs__
 
     def label(self):
+        """Return label"""
         return str(self)
 
     def is_unit(self):
+        """Return true if the magnitude is 1"""
         return math.isclose(self.magnitude(), 1)
 
     @ensure_first_arg_same
@@ -132,10 +130,12 @@ class Vector:
 
     @property
     def x(self):
+        """Return x-component of the vector"""
         return self._coords[0]
 
     @property
     def y(self):
+        """Return y-component of the vector"""
         return self._coords[1]
 
 
@@ -200,6 +200,7 @@ class Vector2(Vector):
         return type(self)(-self.x, -self.y)
 
     def normalized(self):
+        """Returns normalized (unit length) vector"""
         d = self.magnitude()
         if d:
             return type(self)(self.x / d, self.y / d)
@@ -211,10 +212,17 @@ class Vector2(Vector):
 
     @property
     def direction(self):
+        """Returns direction of the vector in degrees"""
         return atan2d(self.x, self.y)
 
     @ensure_first_arg_same
     def dot(self, other):
+        """
+        Calculate dot product with other vector.
+
+        Args:
+            other (Vector2): other vector
+        """
         return self.x * other.x + self.y * other.y
 
     def __matmul__(self, other):
@@ -261,10 +269,12 @@ class Vector2(Vector):
 
     @classmethod
     def unit_x(cls):
+        """Create unit length vector in x-direction"""
         return cls(1, 0)
 
     @classmethod
     def unit_y(cls):
+        """Create unit length vector in y-direction"""
         return cls(0, 1)
 
     def transform(self, *args, **kwargs):
@@ -296,6 +306,12 @@ class Vector2(Vector):
 
 
 class Axial2(Vector2):  # Do we need it?
+    """
+    A class to represent a 2D axial vector.
+
+    Note: the angle between axial data cannot be more than 90°
+    """
+
     @ensure_first_arg_same
     def __eq__(self, other):
         return np.allclose(self, other) or np.allclose(self, -other)
@@ -381,6 +397,7 @@ class Vector3(Vector):
 
     @property
     def z(self):
+        """Return z-component of the vector"""
         return self._coords[2]
 
     def __repr__(self):
@@ -401,6 +418,7 @@ class Vector3(Vector):
         return math.sqrt(self.x**2 + self.y**2 + self.z**2)
 
     def normalized(self):
+        """Returns normalized (unit length) vector"""
         d = self.magnitude()
         if d:
             return type(self)(self.x / d, self.y / d, self.z / d)
@@ -412,6 +430,12 @@ class Vector3(Vector):
 
     @ensure_first_arg_same
     def dot(self, other):
+        """
+        Calculate dot product with other vector.
+
+        Args:
+            other (Vector3): other vector
+        """
         return self.x * other.x + self.y * other.y + self.z * other.z
 
     def __matmul__(self, other):
@@ -430,6 +454,12 @@ class Vector3(Vector):
 
     @ensure_first_arg_same
     def cross(self, other):
+        """
+        Calculate cross product with other vector.
+
+        Args:
+            other (Vector3): other vector
+        """
         return type(self)(
             self.y * other.z - self.z * other.y,
             -self.x * other.z + self.z * other.x,
@@ -449,24 +479,30 @@ class Vector3(Vector):
 
     @property
     def geo(self):
+        """
+        Return tuple of plunge direction and signed plunge
+        """
         return vec2geo_linear_signed(self)
 
     @classmethod
     def unit_x(cls):
+        """Create unit length vector in x-direction"""
         return cls(1, 0, 0)
 
     @classmethod
     def unit_y(cls):
+        """Create unit length vector in y-direction"""
         return cls(0, 1, 0)
 
     @classmethod
     def unit_z(cls):
+        """Create unit length vector in z-direction"""
         return cls(0, 0, 1)
 
     @classmethod
     def random(cls):
         """
-        Random 3D vector
+        Create random 3D vector
         """
         return cls(np.random.randn(3)).normalized()
 
@@ -515,6 +551,12 @@ class Vector3(Vector):
 
 
 class Axial3(Vector3):
+    """
+    A class to represent a 3D axial vector.
+
+    Note: the angle between axial data cannot be more than 90°
+    """
+
     @ensure_first_arg_same
     def __eq__(self, other):
         return np.allclose(self, other) or np.allclose(self, -other)

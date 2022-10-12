@@ -43,15 +43,18 @@ class Lineation(Axial3):
         return f"L:{azi:.0f}/{inc:.0f}"
 
     def cross(self, other):
+        """Return Foliation defined by two linear features"""
         return Foliation(super().cross(other))
 
     __pow__ = cross
 
     @property
     def geo(self):
+        """Return tuple of plunge direction and plunge"""
         return vec2geo_linear(self)
 
     def to_json(self):
+        """Return as JSON dict"""
         azi, inc = vec2geo_linear_signed(self)
         return {"datatype": type(self).__name__, "args": (azi, inc)}
 
@@ -113,25 +116,31 @@ class Foliation(Axial3):
         return f"S:{azi:.0f}/{inc:.0f}"
 
     def cross(self, other):
+        """Return Lineation defined by intersection of planar features"""
         return Lineation(super().cross(other))
 
     __pow__ = cross
 
     @property
     def geo(self):
+        """Return tuple of dip direction and dip"""
         return vec2geo_planar(self)
 
     def to_json(self):
+        """Return as JSON dict"""
         azi, inc = vec2geo_planar_signed(self)
         return {"datatype": type(self).__name__, "args": (azi, inc)}
 
     def dipvec(self):
+        """Return dip vector"""
         return Vector3(*vec2geo_planar(self))
 
     def pole(self):
+        """Return plane normal as vector"""
         return Vector3(self)
 
     def rake(self, rake):
+        """Return rake vector"""
         return Vector3(self.dipvec().rotate(self, rake - 90))
 
     def transform(self, F, **kwargs):
@@ -185,6 +194,10 @@ class Pair:
         finc (float): dip of planar feature in degrees
         lazi (float): plunge direction of linear feature in degrees
         linc (float): plunge of linear feature in degrees
+
+    Attributes:
+        fvec (Vector3): corrected vector normal to plane
+        lvec (Vector3): corrected vector of linear feature
 
     Example:
         >>> pair()
@@ -255,9 +268,11 @@ class Pair:
         return np.hstack((self.fvec, self.lvec)).astype(dtype)
 
     def label(self):
+        """Return label"""
         return str(self)
 
     def to_json(self):
+        """Return as JSON dict"""
         fazi, finc = vec2geo_planar_signed(self.fvec)
         lazi, linc = vec2geo_linear_signed(self.lvec)
         return {"datatype": type(self).__name__, "args": (fazi, finc, lazi, linc)}
@@ -361,6 +376,11 @@ class Fault(Pair):
         linc (float): plunge of linear feature in degrees
         sense (float): sense of movement -/+1 hanging-wall up/down reverse/normal
 
+    Attributes:
+        fvec (Vector3): corrected vector normal to plane
+        lvec (Vector3): corrected vector of linear feature
+        sense (int): sense of movement
+
     Example:
         >>> fault()
         >>> fault(p)
@@ -438,6 +458,7 @@ class Fault(Pair):
         return np.hstack((self.fvec, self.lvec, self.sense)).astype(dtype)
 
     def to_json(self):
+        """Return as JSON dict"""
         fazi, finc = vec2geo_planar_signed(self.fvec)
         lazi, linc = vec2geo_linear_signed(self.lvec)
         return {
@@ -506,7 +527,7 @@ class Cone:
     of arguments:
 
     - without args, you can create default``Cone`` with axis ``lin(0, 90)``,
-      secant ``lin(0, 0)`` angle 180°
+      secant ``lin(0, 0)`` angle 360°
     - with single argument `c`, where `c` could be ``Cone``, 5-tuple of
       `(aazi, ainc, sazi, sinc, revangle)` or 7-tuple of
       `(ax, ay ,az, sx, sy, sz, revangle)`
@@ -514,6 +535,11 @@ class Cone:
       e.g. Lineation and third argument is revolution angle
     - with 5 arguments defining axis `lin(aazi, ainc)`, secant line
       `lin(sazi, sinc)` and angle of revolution
+
+    Attributes:
+        axis (Vector3): axis of the cone
+        secant (Vector3): secant line
+        revangle (float): revolution angle
 
     Example:
         >>> cone()
@@ -584,9 +610,6 @@ class Cone:
 
     @ensure_first_arg_same
     def __eq__(self, other):
-        """
-        Return `True` if pairs are equal, otherwise `False`.
-        """
         return (
             (self.axis == other.axis)
             and (self.secant == other.secant)
@@ -594,19 +617,17 @@ class Cone:
         )
 
     def __ne__(self, other):
-        """
-        Return `True` if pairs are not equal, otherwise `False`.
-
-        """
         return not self == other
 
     def __array__(self, dtype=None):
         return np.hstack((self.axis, self.secant, self.revangle)).astype(dtype)
 
     def label(self):
+        """Return label"""
         return str(self)
 
     def to_json(self):
+        """Return as JSON dict"""
         aazi, ainc = vec2geo_linear_signed(self.axis)
         sazi, sinc = vec2geo_linear_signed(self.secant)
         return {
@@ -642,8 +663,10 @@ class Cone:
         )
 
     def apical_angle(self):
+        """Return apical angle"""
         return self.axis.angle(self.secant)
 
     @property
     def rotated_secant(self):
+        """Return revangle rotated secant vector"""
         return self.secant.rotate(self.axis, self.revangle)

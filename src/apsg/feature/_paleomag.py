@@ -18,7 +18,8 @@ __all__ = ("Core",)
 
 
 class Core(object):
-    """``Core`` store palemomagnetic analysis data
+    """
+    ``Core`` class to store palemomagnetic analysis data
 
     Keyword Args:
       info:
@@ -68,7 +69,6 @@ class Core(object):
         return f"Core {self.site} {self.specimen}"
 
     def __getitem__(self, key):
-        """Group fancy indexing"""
         if np.issubdtype(type(key), np.integer):
             key = self.steps[key]
         if isinstance(key, slice):
@@ -330,6 +330,7 @@ class Core(object):
 
     @property
     def datatable(self):
+        """Return data list of strings"""
         tb = []
         for step, MAG, V, geo, tilt, a95, comment in zip(
             self.steps,
@@ -357,6 +358,7 @@ class Core(object):
         return tb
 
     def show(self):
+        """Show data"""
         print(
             "site:{} specimen:{} file:{}\nbedding:{} volume:{}m3  {}".format(
                 self.site,
@@ -374,33 +376,41 @@ class Core(object):
 
     @property
     def MAG(self):
+        """Returns numpy array of MAG values"""
         return np.array([abs(v) / self.volume for v in self._vectors])
 
     @property
     def nsteps(self):
-        "Retruns steps as array of numbers"
+        """Returns steps as numpy array of numbers"""
         pp = [re.findall(r"\d+", str(s)) for s in self.steps]
         return np.array([int(s[0]) if s else 0 for s in pp])
 
     @property
     def V(self):
-        "Returns `Vector3Set` of vectors in sample (or core) coordinates system"
+        """Returns ``Vector3Set`` of vectors in sample (or core) coordinates system"""
         return Vector3Set([v / self.volume for v in self._vectors], name=self.specimen)
 
     @property
     def geo(self):
-        "Returns `Vector3Set` of vectors in in-situ coordinates system"
+        """Returns ``Vector3Set`` of vectors in in-situ coordinates system"""
         H = DeformationGradient3.from_two_pairs(self.sref, self.gref)
         return self.V.transform(H)
 
     @property
     def tilt(self):
-        "Returns `Vector3Set` of vectors in tilt‐corrected coordinates system"
+        """Returns ``Vector3Set`` of vectors in tilt‐corrected coordinates system"""
         return self.geo.rotate(
             Lineation(self.bedding.dd[0] - 90, 0), -self.bedding.dd[1]
         )
 
     def pca(self, kind="geo", origin=False):
+        """
+        PCA analysis to calculate principal component and MAD
+
+        Keyword Args:
+            kind (str): "V", "geo" or "tilt". Default "geo"
+            origin (bool): Whether to include origin. Default False
+        """
         data = getattr(self, kind)
         if not origin:
             r = data.R(mean=True) / len(data)

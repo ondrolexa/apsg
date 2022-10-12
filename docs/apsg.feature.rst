@@ -7,6 +7,5 @@ This module provide basic classes to store and analyze various type of structura
 .. automodule:: apsg.feature
     :autosummary:
     :members:
-    :undoc-members:
     :show-inheritance:
     :autosummary-no-nesting:
