@@ -57,7 +57,8 @@ class StereoGrid:
         # initial values
         self.values = np.zeros(self.grid_n, dtype=float)
         self.calculated = False
-        self.calculated_params = None
+        self.density_params = None
+        self.features = None
 
     def __repr__(self):
         if self.calculated:
@@ -100,7 +101,8 @@ class StereoGrid:
         """
         # parse options
         sigma = kwargs.get("sigma", None)
-        n = len(features)
+        self.features = np.atleast_2d(features)
+        n = len(self.features)
         if sigma is None:
             # k = estimate_k(features)
             # sigma = np.sqrt(2 * n / (k - 2))
@@ -114,7 +116,7 @@ class StereoGrid:
         sigmanorm = kwargs.get("sigmanorm", True)
         # do calc
         scale = np.sqrt(n * (k / 2.0 - 1) / k**2)
-        cnt = np.exp(k * (np.abs(np.dot(self.grid, np.asarray(features).T)) - 1))
+        cnt = np.exp(k * (np.abs(np.dot(self.grid, self.features.T)) - 1))
         self.values = cnt.sum(axis=1) / scale
         if sigmanorm:
             self.values /= sigma
@@ -122,7 +124,7 @@ class StereoGrid:
         if trim:
             self.values[self.values == 0] = np.finfo(float).tiny
         self.calculated = True
-        self.calculated_params = features, k, scale, sigma, sigmanorm
+        self.density_params = k, scale, sigma, sigmanorm
 
     def density_lookup(self, v):
         """
@@ -136,17 +138,17 @@ class StereoGrid:
         Keyword Args:
             p (int): power. Default 2
         """
-        if self.calculated_params is not None:
-            features, k, scale, sigma, sigmanorm = self.calculated_params
-            cnt = np.exp(
-                k * (np.abs(np.dot(v.normalized(), np.asarray(features).T)) - 1)
-            )
+        if self.density_params is not None:
+            k, scale, sigma, sigmanorm = self.density_params
+            cnt = np.exp(k * (np.abs(np.dot(v.normalized(), self.features.T)) - 1))
             val = cnt.sum() / scale
             if sigmanorm:
                 val /= sigma
             return val
         else:
-            raise ValueError("No density distribution calculated")
+            raise ValueError(
+                "No density distribution calculated. Use calculate_density method."
+            )
 
     def apply_func(self, func, *args, **kwargs):
         """Calculate values of user-defined function on sphere.
