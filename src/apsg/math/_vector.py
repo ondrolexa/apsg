@@ -182,7 +182,7 @@ class Vector2(Vector):
                 else:
                     raise TypeError(f"Not valid arguments for {type(self).__name__}")
             else:
-                coords = sind(args[0]), cosd(args[0])
+                coords = cosd(args[0]), sind(args[0])
         elif len(args) == 2:
             coords = args
         else:
@@ -213,7 +213,7 @@ class Vector2(Vector):
     @property
     def direction(self):
         """Returns direction of the vector in degrees"""
-        return atan2d(self.x, self.y)
+        return atan2d(self.y, self.x)
 
     @ensure_first_arg_same
     def dot(self, other):

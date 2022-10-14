@@ -302,6 +302,13 @@ class Stress2(Tensor2):
         sn, tau = self.stress_comp(n)
         return abs(tau)
 
+    def signed_shear_stress(self, n):
+        """
+        Return signed shear stress magnitude on plane given by normal vector.
+        """
+        R = DeformationGradient2.from_angle(n.direction)
+        return self.transform(R)[1, 0]
+
 
 class Ellipse(Tensor2):
     """
