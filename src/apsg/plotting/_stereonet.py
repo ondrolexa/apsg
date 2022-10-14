@@ -581,14 +581,18 @@ class StereoNet:
             self._arrow(arg.fol, arg.lin, sense=arg.sense, **quiver_kwargs)
 
     def _arrow(self, *args, **kwargs):
+        sense = np.atleast_1d(kwargs.pop("sense"))
         x_lower, y_lower = self.proj.project_data(*np.vstack(np.atleast_2d(args[0])).T)
         x_upper, y_upper = self.proj.project_data(
             *(-np.vstack(np.atleast_2d(args[0])).T)
         )
         x = np.hstack((x_lower, x_upper))
-        x = x[~np.isnan(x)]
         y = np.hstack((y_lower, y_upper))
-        y = y[~np.isnan(y)]
+        sense = np.hstack((sense, sense))
+        inside = ~np.isnan(x)
+        x = x[inside]
+        y = y[inside]
+        sense = sense[inside]
         if len(args) > 1:
             x_lower, y_lower = self.proj.project_data(
                 *np.vstack(np.atleast_2d(args[1])).T
@@ -597,13 +601,12 @@ class StereoNet:
                 *(-np.vstack(np.atleast_2d(args[1])).T)
             )
             dx = np.hstack((x_lower, x_upper))
-            dx = dx[~np.isnan(dx)]
             dy = np.hstack((y_lower, y_upper))
+            dx = dx[~np.isnan(dx)]
             dy = dy[~np.isnan(dy)]
         else:
             dx, dy = x, y
         mag = np.hypot(dx, dy)
-        sense = np.atleast_1d(kwargs.pop("sense"))
         u, v = sense * dx / mag, sense * dy / mag
         h = self.ax.quiver(x, y, u, v, **kwargs)
         h.set_clip_path(self.primitive)
