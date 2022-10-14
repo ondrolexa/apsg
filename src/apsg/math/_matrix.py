@@ -123,14 +123,18 @@ class Matrix:
         return type(self)(other @ self @ other.T)
 
     @property
-    def _svd(self):
-        if "svd" not in self._cache:
-            self._cache["svd"] = np.linalg.svd(self._coefs)
-        return self._cache["svd"]
+    def _eigh(self):
+        if "eigh" not in self._cache:
+            evals, evecs = np.linalg.eigh(self._coefs)
+            idx = evals.argsort()[::-1]
+            evals = evals[idx]
+            evecs = evecs[:, idx]
+            self._cache["eigh"] = evals, evecs
+        return self._cache["eigh"]
 
     def eigenvalues(self):
         """Return sorted tuple of principal eigenvalues"""
-        return tuple(self._svd[1])
+        return tuple(self._eigh[0])
 
     @property
     def det(self):
@@ -238,13 +242,13 @@ class Matrix2(Matrix):
 
     def eigenvectors(self):
         """Return tuple of principal eigenvectors as ``Vector3`` objects."""
-        U = self._svd[0].T
+        U = self._eigh[1].T
         return Vector2(U[0]), Vector2(U[1])
 
     def scaled_eigenvectors(self):
         """Return tuple of principal eigenvectors as ``Vector3`` objects with
         magnitudes of eigenvalues"""
-        U = self._svd[0].T
+        U = self._eigh[1].T
         return self.E1 * Vector2(U[0]), self.E2 * Vector2(U[1])
 
 
@@ -342,11 +346,11 @@ class Matrix3(Matrix):
 
     def eigenvectors(self):
         """Return tuple of principal eigenvectors as ``Vector3`` objects."""
-        U = self._svd[0].T
+        U = self._eigh[1].T
         return Vector3(U[0]), Vector3(U[1]), Vector3(U[2])
 
     def scaled_eigenvectors(self):
         """Return tuple of principal eigenvectors as ``Vector3`` objects with
         magnitudes of eigenvalues"""
-        U = self._svd[0].T
+        U = self._eigh[1].T
         return self.E1 * Vector2(U[0]), self.E2 * Vector2(U[1]), self.E3 * Vector3(U[2])

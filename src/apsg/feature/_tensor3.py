@@ -325,6 +325,9 @@ class Stress3(Tensor3):
     """
     The class to represent 3D stress tensor.
 
+    Note: Tensile normal stresses have positive values,
+    and compressive normal stresses have negative values.
+
     Args:
       a (3x3 array_like): Input data, that can be converted to
           3x3 2D array. This includes lists, tuples and ndarrays.
@@ -381,6 +384,81 @@ class Stress3(Tensor3):
         """
 
         return type(self)(self - self.hydrostatic)
+
+    @property
+    def sigma1(self):
+        """
+        A maximum principal stress (max compressive)
+        """
+
+        return self.E3
+
+    @property
+    def sigma2(self):
+        """
+        A intermediate principal stress
+        """
+
+        return self.E2
+
+    @property
+    def sigma3(self):
+        """
+        A minimum principal stress (max tensile)
+        """
+
+        return self.E1
+
+    @property
+    def sigma1dir(self):
+        """
+        Return unit length vector in direction of maximum
+        principal stress (max compressive)
+        """
+
+        return self.V3
+
+    @property
+    def sigma2dir(self):
+        """
+        Return unit length vector in direction of intermediate
+        principal stress
+        """
+
+        return self.V2
+
+    @property
+    def sigma3dir(self):
+        """
+        Return unit length vector in direction of minimum
+        principal stress (max tensile)
+        """
+
+        return self.V1
+
+    @property
+    def sigma1vec(self):
+        """
+        Return maximum principal stress vector (max compressive)
+        """
+
+        return self.E3 * self.V3
+
+    @property
+    def sigma2vec(self):
+        """
+        Return intermediate principal stress vector
+        """
+
+        return self.E2 * self.V2
+
+    @property
+    def sigma3vec(self):
+        """
+        Return minimum principal stress vector (max tensile)
+        """
+
+        return self.E1 * self.V1
 
     @property
     def I1(self):
@@ -475,6 +553,13 @@ class Stress3(Tensor3):
 
         sn, tau = self.stress_comp(n)
         return abs(tau)
+
+    @property
+    def shape_ratio(self):
+        """
+        Return shape ratio R (Gephart & Forsyth 1984)
+        """
+        return float((self.sigma1 - self.sigma2) / (self.sigma1 - self.sigma3))
 
 
 class Ellipsoid(Tensor3):
