@@ -2,7 +2,7 @@ import math
 import numpy as np
 from scipy import linalg as spla
 
-from apsg.helpers._math import sind, cosd, atand
+from apsg.helpers._math import sind, cosd, atan2d
 from apsg.math._vector import Vector2
 from apsg.math._matrix import Matrix2
 from apsg.decorator._decorator import ensure_arguments
@@ -100,8 +100,9 @@ class DeformationGradient2(Matrix2):
         return type(self)(V)
 
     def angle(self):
-        """Return rotation part of ``DeformationGradient2`` axis, angle tuple."""
-        return NotImplemented
+        """Return rotation part of ``DeformationGradient2`` as angle."""
+        R, _ = spla.polar(self)
+        return atan2d(R[1, 0], R[0, 0])
 
     def velgrad(self, time=1):
         """Return ``VelocityGradient2`` for given time"""

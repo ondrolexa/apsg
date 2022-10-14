@@ -200,7 +200,7 @@ class DeformationGradient3(Matrix3):
         return type(self)(V)
 
     def axisangle(self):
-        """Return rotation part of ``DeformationGradient3`` axis, angle tuple."""
+        """Return rotation part of ``DeformationGradient3`` as axis, angle tuple."""
         R = self.R
         w, W = np.linalg.eig(R.T)
         i = np.where(abs(np.real(w) - 1.0) < 1e-8)[0]
@@ -855,18 +855,26 @@ class Ellipsoid(Tensor3):
 
     @property
     def MAD_l(self) -> float:
-        """Return maximum angular deviation (MAD) of linearly distributed vectors. Kirschvink 1980"""
+        """
+        Return maximum angular deviation (MAD) of linearly distributed vectors.
+
+        Kirschvink 1980
+        """
         return atand(np.sqrt((self.E2 + self.E3) / self.E1))
 
     @property
     def MAD_p(self) -> float:
-        """Return maximum angular deviation (MAD) of planarly distributed vectors. Kirschvink 1980"""
+        """
+        Return maximum angular deviation (MAD) of planarly distributed vectors.
+
+        Kirschvink 1980
+        """
         return atand(np.sqrt(self.E3 / self.E2 + self.E3 / self.E1))
 
     @property
     def MAD(self) -> float:
         """
-        Return approximate deviation according to shape
+        Return maximum angular deviation (MAD)
         """
 
         if self.shape > 1:
@@ -928,7 +936,7 @@ class OrientationTensor3(Ellipsoid):
     @classmethod
     def from_pairs(cls, p) -> "OrientationTensor3":
         """
-        Return Lisle (19890``Ortensor`` of orthogonal data in ``PairSet``
+        Return Lisle (1989) ``Ortensor`` of orthogonal data in ``PairSet``
 
         Lisle, R. (1989). The Statistical Analysis of Orthogonal Orientation Data. The Journal of Geology, 97(3), 360-364.
 

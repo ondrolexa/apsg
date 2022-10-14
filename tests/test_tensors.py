@@ -10,6 +10,7 @@ from apsg.math import Matrix3
 from apsg import vec
 from apsg import lin, fol, vecset
 from apsg import defgrad, velgrad, stress, ortensor
+from apsg import defgrad2, velgrad2
 
 # Matrix3 type is value object => structural equality
 
@@ -58,6 +59,14 @@ def test_defgrad_derivation():
     F = defgrad.from_comp(xx=2, zz=0.5)
     L = velgrad.from_comp(xx=np.log(2), zz=-np.log(2))
     F.velgrad() == L
+
+
+# DefGrad2
+
+
+def test_rotation_decomposition2():
+    F = defgrad2.from_comp(xy=1)
+    assert defgrad2.from_angle(F.angle()) == F.R
 
 
 # VelGrad

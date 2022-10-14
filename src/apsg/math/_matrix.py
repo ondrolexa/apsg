@@ -83,8 +83,10 @@ class Matrix:
     pos__ = __copy__
 
     def __getitem__(self, key):
-        # need fix
-        return self._coefs[key]
+        if isinstance(key, tuple):
+            return self._coefs[key[0]][key[1]]
+        else:
+            return self._coefs[key]
 
     def __iter__(self):
         # what we want to iterate?
@@ -144,25 +146,25 @@ class Matrix:
 
     @property
     def E1(self):
-        """Max eigenvalue"""
+        """First eigenvalue"""
 
         return self.eigenvalues()[0]
 
     @property
     def E2(self):
-        """Middle eigenvalue"""
+        """Second eigenvalue"""
 
         return self.eigenvalues()[1]
 
     @property
     def V1(self):
-        """Max eigenvector"""
+        """First eigenvector"""
 
         return self.eigenvectors()[0]
 
     @property
     def V2(self):
-        """Middle eigenvector"""
+        """Second eigenvector"""
 
         return self.eigenvectors()[1]
 
@@ -334,13 +336,13 @@ class Matrix3(Matrix):
 
     @property
     def E3(self):
-        """Min eigenvalue"""
+        """Third eigenvalue"""
 
         return self.eigenvalues()[2]
 
     @property
     def V3(self):
-        """Min eigenvector"""
+        """Third eigenvector"""
 
         return self.eigenvectors()[2]
 
@@ -353,4 +355,4 @@ class Matrix3(Matrix):
         """Return tuple of principal eigenvectors as ``Vector3`` objects with
         magnitudes of eigenvalues"""
         U = self._eigh[1].T
-        return self.E1 * Vector2(U[0]), self.E2 * Vector2(U[1]), self.E3 * Vector3(U[2])
+        return self.E1 * Vector3(U[0]), self.E2 * Vector3(U[1]), self.E3 * Vector3(U[2])

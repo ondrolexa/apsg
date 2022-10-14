@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Unit tests for `apsg` core module.
+Unit tests for `apsg` module.
 
 Use this steps for unit test:
 
