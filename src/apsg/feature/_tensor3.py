@@ -526,7 +526,8 @@ class Stress3(Tensor3):
 
         """
 
-        return Fault(*self.stress_comp(n))
+        sn, tau = self.stress_comp(n)
+        return Fault(sn.normalized(), tau.normalized())
 
     def stress_comp(self, n):
         """
