@@ -157,6 +157,7 @@ apsg_conf = dict(
         title=None,
         grid=True,
         grid_kw=dict(),
+        tight_layout=False,
     ),
     roseplot_default_bar_kwargs=dict(
         alpha=None,
@@ -193,6 +194,7 @@ apsg_conf = dict(
         grid_color="k",
         grid_style=":",
         title=None,
+        tight_layout=False,
     ),
     fabricplot_default_point_kwargs=dict(
         alpha=None,

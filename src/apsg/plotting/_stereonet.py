@@ -190,9 +190,10 @@ class StereoNet:
         )
         if hasattr(self.fig.canvas.manager, "set_window_title"):
             self.fig.canvas.manager.set_window_title(self.proj.netname)
+        self.ax = self.fig.add_subplot()
 
     def _render(self):
-        self.ax = self.fig.add_subplot()
+        self.ax.clear()
         self.ax.set_aspect(1)
         self.ax.set_axis_off()
         self._draw_layout()
@@ -216,11 +217,8 @@ class StereoNet:
         if self._kwargs["tight_layout"]:
             self.fig.tight_layout()
 
-    def render(self):
-        if not hasattr(self, "fig"):
-            self.init_figure()
-        else:
-            self.fig.clear()
+    def render2ax(self, ax):
+        self.ax = ax
         self._render()
 
     def show(self):
@@ -239,7 +237,9 @@ class StereoNet:
 
         All others kwargs are passed to matplotlib `Figure.savefig`
         """
-        self.render()
+        plt.close(0)  # close previously rendered figure
+        self.init_figure()
+        self._render()
         self.fig.savefig(filename, **kwargs)
         plt.close(0)
 

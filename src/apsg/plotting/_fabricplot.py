@@ -94,14 +94,19 @@ class FabricPlot(object):
             )
         if self._kwargs["title"] is not None:
             self.fig.suptitle(self._kwargs["title"])
-        self.fig.tight_layout()
+        if self._kwargs["tight_layout"]:
+            self.fig.tight_layout()
 
-    def render(self):
-        if not hasattr(self, "fig"):
-            self.init_figure()
-        else:
-            self.fig.clear()
+    def render2ax(self, ax):
+        self.ax = ax
         self._render()
+
+    def show(self):
+        """Show deformation plot"""
+        plt.close(0)  # close previously rendered figure
+        self.init_figure()
+        self._render()
+        plt.show()
 
     def savefig(self, filename="fabricplot.png", **kwargs):
         """
@@ -112,7 +117,9 @@ class FabricPlot(object):
 
         All others kwargs are passed to matplotlib `Figure.savefig`
         """
-        self.render()
+        plt.close(0)  # close previously rendered figure
+        self.init_figure()
+        self._render()
         self.fig.savefig(filename, **kwargs)
         plt.close(0)
 
@@ -226,13 +233,6 @@ class VollmerPlot(FabricPlot):
             y = np.vstack((y, y + tick[1]))
             self.ax.plot(x, y, "k", lw=1)
 
-    def show(self):
-        """Show fabric plot"""
-        plt.close(0)  # close previously rendered figure
-        self.init_figure()
-        self._render()
-        plt.show()
-
     ########################################
     # PLOTTING METHODS                     #
     ########################################
@@ -309,11 +309,8 @@ class RamsayPlot(FabricPlot):
         if self._kwargs["grid"]:
             self.ax.grid(True)
 
-    def show(self):
-        """Show deformation plot"""
-        plt.close(0)  # close previously rendered figure
-        self.init_figure()
-        self._render()
+    def _render(self):
+        super()._render()
         if self.mx == "auto":
             mx = max(self.ax.get_xlim()[1], self.ax.get_ylim()[1])
         else:
@@ -323,7 +320,6 @@ class RamsayPlot(FabricPlot):
         self.ax.plot([0, mx], [0, mx], "k", lw=0.5)
         box = self.ax.get_position()
         self.ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        plt.show()
 
     ########################################
     # PLOTTING METHODS                     #
@@ -388,11 +384,8 @@ class FlinnPlot(FabricPlot):
         if self._kwargs["grid"]:
             self.ax.grid(True)
 
-    def show(self):
-        """Show deformation plot"""
-        plt.close(0)  # close previously rendered figure
-        self.init_figure()
-        self._render()
+    def _render(self):
+        super()._render()
         if self.mx == "auto":
             mx = max(self.ax.get_xlim()[1], self.ax.get_ylim()[1])
         else:
@@ -402,7 +395,6 @@ class FlinnPlot(FabricPlot):
         self.ax.plot([1, mx], [1, mx], "k", lw=0.5)
         box = self.ax.get_position()
         self.ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        plt.show()
 
     ########################################
     # PLOTTING METHODS                     #
@@ -468,13 +460,6 @@ class HsuPlot(FabricPlot):
         self.ax.set_ylabel(r"$\bar{\varepsilon}_s$")
         if self._kwargs["grid"]:
             self.ax.grid(True)
-
-    def show(self):
-        """Show fabric plot"""
-        plt.close(0)  # close previously rendered figure
-        self.init_figure()
-        self._render()
-        plt.show()
 
     ########################################
     # PLOTTING METHODS                     #
