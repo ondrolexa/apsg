@@ -97,8 +97,14 @@ class FabricPlot(object):
         if self._kwargs["tight_layout"]:
             self.fig.tight_layout()
 
-    def render2ax(self, ax):
-        self.ax = ax
+    def render2fig(self, fig):
+        """
+        Plot stereonet to already existing figure or subfigure
+
+        Args:
+            fig (Figure): A mtplotlib Figure artist
+        """
+        self.fig = fig
         self._render()
 
     def show(self):

@@ -190,10 +190,9 @@ class StereoNet:
         )
         if hasattr(self.fig.canvas.manager, "set_window_title"):
             self.fig.canvas.manager.set_window_title(self.proj.netname)
-        self.ax = self.fig.add_subplot()
 
     def _render(self):
-        self.ax.clear()
+        self.ax = self.fig.add_subplot()
         self.ax.set_aspect(1)
         self.ax.set_axis_off()
         self._draw_layout()
@@ -217,8 +216,14 @@ class StereoNet:
         if self._kwargs["tight_layout"]:
             self.fig.tight_layout()
 
-    def render2ax(self, ax):
-        self.ax = ax
+    def render2fig(self, fig):
+        """
+        Plot stereonet to already existing figure or subfigure
+
+        Args:
+            fig (Figure): A mtplotlib Figure artist
+        """
+        self.fig = fig
         self._render()
 
     def show(self):

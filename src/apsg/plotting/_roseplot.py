@@ -106,10 +106,9 @@ class RosePlot(object):
         )
         if hasattr(self.fig.canvas.manager, "set_window_title"):
             self.fig.canvas.manager.set_window_title("Rose diagram")
-        self.ax = self.fig.add_subplot(111, polar=True)
 
     def _render(self):
-        self.ax.clear()
+        self.ax = self.fig.add_subplot(111, polar=True)
         self._draw_layout()
         self._plot_artists()
         h, lbls = self.ax.get_legend_handles_labels()
@@ -129,8 +128,14 @@ class RosePlot(object):
         if self._kwargs["tight_layout"]:
             self.fig.tight_layout()
 
-    def render2ax(self, ax):
-        self.ax = ax
+    def render2fig(self, fig):
+        """
+        Plot stereonet to already existing figure or subfigure
+
+        Args:
+            fig (Figure): A mtplotlib Figure artist
+        """
+        self.fig = fig
         self._render()
 
     def show(self):
