@@ -42,11 +42,11 @@ class Vector:
     def __nonzero__(self):
         return any(self._coords)
 
-    def __getitem__(self, key):
-        return self._coords[key]
+    #    def __getitem__(self, key):
+    #        return self._coords[key]
 
-    def __iter__(self):
-        return iter(self._coords)
+    #    def __iter__(self):
+    #        return iter(self._coords)
 
     def __add__(self, other):
         return type(self)(np.add(self, other))
@@ -173,7 +173,7 @@ class Vector2(Vector):
             coords = (1, 0)
         if len(args) == 1:
             if np.asarray(args[0]).shape == Vector2.__shape__:
-                coords = args[0]
+                coords = np.asarray(args[0])
             elif isinstance(args[0], str):
                 if args[0].lower() == "x":
                     coords = (1, 0)
@@ -375,7 +375,7 @@ class Vector3(Vector):
             coords = (1, 0, 0)
         elif len(args) == 1:
             if np.asarray(args[0]).shape == Vector3.__shape__:
-                coords = [float(v) for v in args[0]]
+                coords = np.asarray(args[0])
             elif isinstance(args[0], str):
                 if args[0].lower() == "x":
                     coords = (1, 0, 0)

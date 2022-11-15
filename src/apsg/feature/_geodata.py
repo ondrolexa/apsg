@@ -91,7 +91,7 @@ class Foliation(Axial3):
             coords = (0, 0, 1)
         elif len(args) == 1:
             if np.asarray(args[0]).shape == Foliation.__shape__:
-                coords = [float(v) for v in args[0]]
+                coords = np.asarray(args[0])
             elif isinstance(args[0], str):
                 if args[0].lower() == "x":
                     coords = (1, 0, 0)

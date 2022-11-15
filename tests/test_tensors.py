@@ -30,7 +30,7 @@ def test_that_tensors_are_not_equal_and_has_different_hash(helpers):
 
 
 def test_tensor_repr_and_str():
-    assert "Matrix3\n[[2. 1. 1.]\n [1. 2. 1.]\n [1. 1. 2.]]" == str(
+    assert "Matrix3\n[[2 1 1]\n [1 2 1]\n [1 1 2]]" == str(
         Matrix3([[2, 1, 1], [1, 2, 1], [1, 1, 2]])
     )
 

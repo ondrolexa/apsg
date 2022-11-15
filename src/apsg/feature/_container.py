@@ -49,7 +49,7 @@ class FeatureSet:
         return self.name
 
     def __array__(self, dtype=None):
-        return np.array(self.data, dtype=dtype)
+        return np.array([np.array(p) for p in self.data], dtype=dtype)
 
     def __eq__(self, other):
         return NotImplemented

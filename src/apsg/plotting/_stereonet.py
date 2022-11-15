@@ -424,7 +424,10 @@ class StereoNet:
                 # plot on lower
                 x, y = self.proj.project_data(
                     *np.array(
-                        [Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]
+                        [
+                            np.asarray(Vector3(dv).rotate(Vector3(fol), a))
+                            for a in self.angles_gc
+                        ]
                     ).T
                 )
                 X.append(np.hstack((x, np.nan)))
@@ -432,7 +435,10 @@ class StereoNet:
                 # plot on upper
                 x, y = self.proj.project_data(
                     *np.array(
-                        [-Vector3(dv).rotate(Vector3(fol), a) for a in self.angles_gc]
+                        [
+                            -np.asarray(Vector3(dv).rotate(Vector3(fol), a))
+                            for a in self.angles_gc
+                        ]
                     ).T
                 )
                 X.append(np.hstack((x, np.nan)))
@@ -453,7 +459,9 @@ class StereoNet:
             steps = max(2, int(arg1.angle(arg2)))
             # plot on lower
             x_lower, y_lower, x_upper, y_upper = self.proj.project_data_antipodal(
-                *np.array([arg1.slerp(arg2, t) for t in np.linspace(0, 1, steps)]).T
+                *np.array(
+                    [np.asarray(arg1.slerp(arg2, t)) for t in np.linspace(0, 1, steps)]
+                ).T
             )
             X_lower.append(np.hstack((x_lower, np.nan)))
             Y_lower.append(np.hstack((y_lower, np.nan)))
@@ -543,13 +551,17 @@ class StereoNet:
                 # plot on lower
                 angles = np.linspace(0, c.revangle, max(2, abs(int(c.revangle))))
                 x, y = self.proj.project_data(
-                    *np.array([c.secant.rotate(c.axis, a) for a in angles]).T
+                    *np.array(
+                        [np.asarray(c.secant.rotate(c.axis, a)) for a in angles]
+                    ).T
                 )
                 X.append(np.hstack((x, np.nan)))
                 Y.append(np.hstack((y, np.nan)))
                 # plot on upper
                 x, y = self.proj.project_data(
-                    *np.array([-c.secant.rotate(c.axis, a) for a in angles]).T
+                    *np.array(
+                        [-np.asarray(c.secant.rotate(c.axis, a)) for a in angles]
+                    ).T
                 )
                 X.append(np.hstack((x, np.nan)))
                 Y.append(np.hstack((y, np.nan)))
@@ -586,10 +598,14 @@ class StereoNet:
             self._arrow(arg.fol, arg.lin, sense=arg.sense, **quiver_kwargs)
 
     def _arrow(self, *args, **kwargs):
-        sense = np.atleast_1d(kwargs.pop("sense"))
-        x_lower, y_lower = self.proj.project_data(*np.vstack(np.atleast_2d(args[0])).T)
+        sense = kwargs.pop("sense") * np.ones(
+            np.atleast_2d(np.asarray(args[0])).shape[0]
+        )
+        x_lower, y_lower = self.proj.project_data(
+            *np.vstack(np.atleast_2d(np.asarray(args[0]))).T
+        )
         x_upper, y_upper = self.proj.project_data(
-            *(-np.vstack(np.atleast_2d(args[0])).T)
+            *(-np.vstack(np.atleast_2d(np.asarray(args[0]))).T)
         )
         x = np.hstack((x_lower, x_upper))
         y = np.hstack((y_lower, y_upper))
@@ -600,10 +616,10 @@ class StereoNet:
         sense = sense[inside]
         if len(args) > 1:
             x_lower, y_lower = self.proj.project_data(
-                *np.vstack(np.atleast_2d(args[1])).T
+                *np.vstack(np.atleast_2d(np.asarray(args[1]))).T
             )
             x_upper, y_upper = self.proj.project_data(
-                *(-np.vstack(np.atleast_2d(args[1])).T)
+                *(-np.vstack(np.atleast_2d(np.asarray(args[1]))).T)
             )
             dx = np.hstack((x_lower, x_upper))
             dy = np.hstack((y_lower, y_upper))

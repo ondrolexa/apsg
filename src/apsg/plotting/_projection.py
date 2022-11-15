@@ -89,22 +89,30 @@ class Projection:
             if f.transform(self.R).angle(Foliation(0, 0)) > 0.1:
                 fdv = f.dipvec()
                 X, Y = self.project_overlay(
-                    *np.array([fdv.rotate(f, a) for a in angles_gc_clipped]).T
+                    *np.array(
+                        [np.asarray(fdv.rotate(f, a)) for a in angles_gc_clipped]
+                    ).T
                 )
                 lat_e[dip] = dict(x=X, y=Y)
                 X, Y = self.project_overlay(
-                    *np.array([-fdv.rotate(f, a) for a in angles_gc_clipped]).T
+                    *np.array(
+                        [-np.asarray(fdv.rotate(f, a)) for a in angles_gc_clipped]
+                    ).T
                 )
                 lat_e[-dip] = dict(x=X, y=Y)
             f = Foliation(270, dip)
             if f.transform(self.R).angle(Foliation(0, 0)) > 0.1:
                 fdv = f.dipvec()
                 X, Y = self.project_overlay(
-                    *np.array([fdv.rotate(f, a) for a in angles_gc_clipped]).T
+                    *np.array(
+                        [np.asarray(fdv.rotate(f, a)) for a in angles_gc_clipped]
+                    ).T
                 )
                 lat_w[dip] = dict(x=X, y=Y)
                 X, Y = self.project_overlay(
-                    *np.array([-fdv.rotate(f, a) for a in angles_gc_clipped]).T
+                    *np.array(
+                        [-np.asarray(fdv.rotate(f, a)) for a in angles_gc_clipped]
+                    ).T
                 )
                 lat_w[-dip] = dict(x=X, y=Y)
 
@@ -114,12 +122,19 @@ class Projection:
             if dip >= self.clip_pole:
                 lon = Vector3(0, dip)
                 X, Y = self.project_overlay(
-                    *np.array([lon.rotate(Lineation(0, 0), a) for a in angles_sc]).T
+                    *np.array(
+                        [np.asarray(lon.rotate(Lineation(0, 0), a)) for a in angles_sc]
+                    ).T
                 )
                 lon_n[dip] = dict(x=X, y=Y)
                 lon = Vector3(180, dip)
                 X, Y = self.project_overlay(
-                    *np.array([lon.rotate(Lineation(180, 0), a) for a in angles_sc]).T
+                    *np.array(
+                        [
+                            np.asarray(lon.rotate(Lineation(180, 0), a))
+                            for a in angles_sc
+                        ]
+                    ).T
                 )
                 lon_s[dip] = dict(x=X, y=Y)
 
@@ -127,12 +142,16 @@ class Projection:
         if self.clip_pole > 0:
             lon = Vector3(0, self.clip_pole)
             X, Y = self.project_overlay(
-                *np.array([lon.rotate(Vector3(0, 0), a) for a in angles_sc]).T
+                *np.array(
+                    [np.asarray(lon.rotate(Vector3(0, 0), a)) for a in angles_sc]
+                ).T
             )
             polehole_n = dict(x=X, y=Y)
             lon = Vector3(180, self.clip_pole)
             X, Y = self.project_overlay(
-                *np.array([lon.rotate(Vector3(180, 0), a) for a in angles_sc]).T
+                *np.array(
+                    [np.asarray(lon.rotate(Vector3(180, 0), a)) for a in angles_sc]
+                ).T
             )
             polehole_s = dict(x=X, y=Y)
         else:
@@ -141,16 +160,24 @@ class Projection:
         # Principal axis X
         X = Vector3(1, 0, 0)
         X1, Y1 = self.project_overlay(
-            *np.array([X.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
+            *np.array(
+                [np.asarray(X.rotate(Vector3(0, 1, 0), a)) for a in angles_cross]
+            ).T
         )
         X2, Y2 = self.project_overlay(
-            *np.array([X.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
+            *np.array(
+                [np.asarray(X.rotate(Vector3(0, 0, 1), a)) for a in angles_cross]
+            ).T
         )
         X3, Y3 = self.project_overlay(
-            *np.array([-X.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
+            *np.array(
+                [-np.asarray(X.rotate(Vector3(0, 1, 0), a)) for a in angles_cross]
+            ).T
         )
         X4, Y4 = self.project_overlay(
-            *np.array([-X.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
+            *np.array(
+                [-np.asarray(X.rotate(Vector3(0, 0, 1), a)) for a in angles_cross]
+            ).T
         )
         main_x = dict(
             x=np.hstack((X1, np.nan, X2, np.nan, X3, np.nan, X4)),
@@ -159,16 +186,24 @@ class Projection:
         # Principal axis Y
         Y = Vector3(0, 1, 0).transform(self.R).lower().transform(self.Ri)
         X1, Y1 = self.project_overlay(
-            *np.array([Y.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
+            *np.array(
+                [np.asarray(Y.rotate(Vector3(1, 0, 0), a)) for a in angles_cross]
+            ).T
         )
         X2, Y2 = self.project_overlay(
-            *np.array([Y.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
+            *np.array(
+                [np.asarray(Y.rotate(Vector3(0, 0, 1), a)) for a in angles_cross]
+            ).T
         )
         X3, Y3 = self.project_overlay(
-            *np.array([-Y.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
+            *np.array(
+                [-np.asarray(Y.rotate(Vector3(1, 0, 0), a)) for a in angles_cross]
+            ).T
         )
         X4, Y4 = self.project_overlay(
-            *np.array([-Y.rotate(Vector3(0, 0, 1), a) for a in angles_cross]).T
+            *np.array(
+                [-np.asarray(Y.rotate(Vector3(0, 0, 1), a)) for a in angles_cross]
+            ).T
         )
         main_y = dict(
             x=np.hstack((X1, np.nan, X2, np.nan, X3, np.nan, X4)),
@@ -177,16 +212,24 @@ class Projection:
         # Principal axis Z
         Z = Vector3(0, 0, 1).transform(self.R).lower().transform(self.Ri)
         X1, Y1 = self.project_overlay(
-            *np.array([Z.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
+            *np.array(
+                [np.asarray(Z.rotate(Vector3(1, 0, 0), a)) for a in angles_cross]
+            ).T
         )
         X2, Y2 = self.project_overlay(
-            *np.array([Z.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
+            *np.array(
+                [np.asarray(Z.rotate(Vector3(0, 1, 0), a)) for a in angles_cross]
+            ).T
         )
         X3, Y3 = self.project_overlay(
-            *np.array([-Z.rotate(Vector3(1, 0, 0), a) for a in angles_cross]).T
+            *np.array(
+                [-np.asarray(Z.rotate(Vector3(1, 0, 0), a)) for a in angles_cross]
+            ).T
         )
         X4, Y4 = self.project_overlay(
-            *np.array([-Z.rotate(Vector3(0, 1, 0), a) for a in angles_cross]).T
+            *np.array(
+                [-np.asarray(Z.rotate(Vector3(0, 1, 0), a)) for a in angles_cross]
+            ).T
         )
         main_z = dict(
             x=np.hstack((X1, np.nan, X2, np.nan, X3, np.nan, X4)),
@@ -198,7 +241,7 @@ class Projection:
         if f.transform(self.R).angle(Foliation(0, 0)) > 0.1:
             fdv = f.transform(self.R).dipvec().transform(self.Ri)
             X, Y = self.project_overlay(
-                *np.array([fdv.rotate(f, a) for a in angles_gc]).T
+                *np.array([np.asarray(fdv.rotate(f, a)) for a in angles_gc]).T
             )
             main_xz = dict(x=X, y=Y)
         else:
@@ -208,7 +251,7 @@ class Projection:
         if f.transform(self.R).angle(Foliation(0, 0)) > 0.1:
             fdv = f.transform(self.R).dipvec().transform(self.Ri)
             X, Y = self.project_overlay(
-                *np.array([fdv.rotate(f, a) for a in angles_gc]).T
+                *np.array([np.asarray(fdv.rotate(f, a)) for a in angles_gc]).T
             )
             main_yz = dict(x=X, y=Y)
         else:
@@ -218,7 +261,7 @@ class Projection:
         if f.transform(self.R).angle(Foliation(0, 0)) > 0.1:
             fdv = f.transform(self.R).dipvec().transform(self.Ri)
             X, Y = self.project_overlay(
-                *np.array([fdv.rotate(f, a) for a in angles_gc]).T
+                *np.array([np.asarray(fdv.rotate(f, a)) for a in angles_gc]).T
             )
             main_xy = dict(x=X, y=Y)
         else:

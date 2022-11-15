@@ -354,11 +354,6 @@ class TestVector:
 
         assert len(w) == 3
 
-    def test_getitem_operator(self):
-        v = vec(1, 2, 3)
-
-        assert all((v[0] == 1, v[1] == 2, v[2] == 3))
-
 
 # ############################################################################
 # lineation

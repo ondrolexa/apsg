@@ -108,6 +108,26 @@ class Matrix:
         return not self.__eq__(other)
 
     @property
+    def xx(self):
+        """Return xx-element of the matrix"""
+        return self._coefs[0][0]
+
+    @property
+    def xy(self):
+        """Return xy-element of the matrix"""
+        return self._coefs[0][1]
+
+    @property
+    def yx(self):
+        """Return yx-element of the matrix"""
+        return self._coefs[1][0]
+
+    @property
+    def yy(self):
+        """Return yy-element of the matrix"""
+        return self._coefs[1][1]
+
+    @property
     def I(self):
         return type(self)(np.linalg.inv(self))
 
@@ -283,7 +303,7 @@ class Matrix3(Matrix):
         if len(args) == 0:
             coefs = ((1, 0, 0), (0, 1, 0), (0, 0, 1))
         elif len(args) == 1 and np.asarray(args[0]).shape == Matrix3.__shape__:
-            coefs = [[float(v) for v in row] for row in args[0]]
+            coefs = np.asarray(args[0]).tolist()
         else:
             raise TypeError("Not valid arguments for Matrix3")
         self._coefs = tuple(coefs[0]), tuple(coefs[1]), tuple(coefs[2])
@@ -333,6 +353,31 @@ class Matrix3(Matrix):
             return type(self)(r)
         else:
             return Vector3(r)
+
+    @property
+    def xz(self):
+        """Return xz-element of the matrix"""
+        return self._coefs[0][2]
+
+    @property
+    def yz(self):
+        """Return yz-element of the matrix"""
+        return self._coefs[1][2]
+
+    @property
+    def zx(self):
+        """Return zx-element of the matrix"""
+        return self._coefs[2][0]
+
+    @property
+    def zy(self):
+        """Return zy-element of the matrix"""
+        return self._coefs[2][1]
+
+    @property
+    def zz(self):
+        """Return zz-element of the matrix"""
+        return self._coefs[2][2]
 
     @property
     def E3(self):

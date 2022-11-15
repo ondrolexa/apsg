@@ -63,7 +63,15 @@ class DeformationGradient3(Matrix3):
           >>> p = pair(40, 20, 75, 16)
           >>> F = defgrad.from_pair(p)
         """
-        return cls(np.array([p.lvec, p.fvec.cross(p.lvec), p.fvec]).T)
+        return cls(
+            np.asarray(
+                [
+                    np.asarray(p.lvec),
+                    np.asarray(p.fvec.cross(p.lvec)),
+                    np.asarray(p.fvec),
+                ]
+            ).T
+        )
 
     @classmethod
     @ensure_arguments(Vector3)
@@ -78,7 +86,7 @@ class DeformationGradient3(Matrix3):
           >>> F = defgrad.from_axisangle(lin(120, 30), 45)
         """
 
-        x, y, z = vector.uv()
+        x, y, z = vector.uv()._coords
         c, s = cosd(theta), sind(theta)
         xs, ys, zs = x * s, y * s, z * s
         xc, yc, zc = x * (1 - c), y * (1 - c), z * (1 - c)
@@ -209,12 +217,12 @@ class DeformationGradient3(Matrix3):
         axis = Vector3(np.real(W[:, i[-1]]).squeeze())
         # rotation angle depending on direction
         cosa = (np.trace(R) - 1.0) / 2.0
-        if abs(axis[2]) > 1e-8:
-            sina = (R[1][0] + (cosa - 1.0) * axis[0] * axis[1]) / axis[2]
-        elif abs(axis[1]) > 1e-8:
-            sina = (R[0][2] + (cosa - 1.0) * axis[0] * axis[2]) / axis[1]
+        if abs(axis.z) > 1e-8:
+            sina = (R[1][0] + (cosa - 1.0) * axis.x * axis.y) / axis.z
+        elif abs(axis.y) > 1e-8:
+            sina = (R[0][2] + (cosa - 1.0) * axis.x * axis.z) / axis.y
         else:
-            sina = (R[2][1] + (cosa - 1.0) * axis[1] * axis[2]) / axis[0]
+            sina = (R[2][1] + (cosa - 1.0) * axis.y * axis.z) / axis.x
         angle = np.rad2deg(np.arctan2(sina, cosa))
         return axis, angle
 
