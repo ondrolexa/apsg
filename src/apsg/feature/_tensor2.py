@@ -226,6 +226,56 @@ class Stress2(Tensor2):
         return type(self)(self - self.hydrostatic)
 
     @property
+    def sigma1(self):
+        """
+        A maximum principal stress (max compressive)
+        """
+
+        return self.E2
+
+    @property
+    def sigma2(self):
+        """
+        A minimum principal stress
+        """
+
+        return self.E1
+
+    @property
+    def sigma1dir(self):
+        """
+        Return unit length vector in direction of maximum
+        principal stress (max compressive)
+        """
+
+        return self.V2
+
+    @property
+    def sigma2dir(self):
+        """
+        Return unit length vector in direction of minimum
+        principal stress
+        """
+
+        return self.V1
+
+    @property
+    def sigma1vec(self):
+        """
+        Return maximum principal stress vector (max compressive)
+        """
+
+        return self.E2 * self.V2
+
+    @property
+    def sigma2vec(self):
+        """
+        Return minimum principal stress vector
+        """
+
+        return self.E1 * self.V1
+
+    @property
     def I1(self):
         """
         First invariant

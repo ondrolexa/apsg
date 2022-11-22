@@ -156,7 +156,7 @@ class Matrix:
 
     def eigenvalues(self):
         """Return sorted tuple of principal eigenvalues"""
-        return tuple(self._eigh[0])
+        return self._eigh[0]
 
     @property
     def det(self):
@@ -168,13 +168,13 @@ class Matrix:
     def E1(self):
         """First eigenvalue"""
 
-        return self.eigenvalues()[0]
+        return float(self.eigenvalues()[0])
 
     @property
     def E2(self):
         """Second eigenvalue"""
 
-        return self.eigenvalues()[1]
+        return float(self.eigenvalues()[1])
 
     @property
     def V1(self):
@@ -383,7 +383,7 @@ class Matrix3(Matrix):
     def E3(self):
         """Third eigenvalue"""
 
-        return self.eigenvalues()[2]
+        return float(self.eigenvalues()[2])
 
     @property
     def V3(self):
