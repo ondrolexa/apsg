@@ -1,5 +1,8 @@
 # Changes
 
+### master
+ * lambda properties of tensors renamed to S
+
 ### 1.0.1 (Nov 22 2022)
  * density_lookup method implemented for StereoNet.grid
  * Stress tensor sigma* properties using inverted order of eigenvalues

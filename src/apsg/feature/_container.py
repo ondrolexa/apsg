@@ -1279,18 +1279,18 @@ class EllipseSet(FeatureSet):
     __feature_type__ = "Ellipse"
 
     @property
-    def lambda1(self) -> np.ndarray:
+    def S1(self) -> np.ndarray:
         """
-        Return the array of square root of maximum eigenvalues.
+        Return the array of maximum principal stretches.
         """
-        return np.array([e.lambda1 for e in self])
+        return np.array([e.S1 for e in self])
 
     @property
-    def lambda2(self) -> np.ndarray:
+    def S2(self) -> np.ndarray:
         """
-        Return the array of square root of minimum eigenvalues.
+        Return the array of minimum principal stretches.
         """
-        return np.array([e.lambda2 for e in self])
+        return np.array([e.S2 for e in self])
 
     @property
     def e1(self) -> np.ndarray:
@@ -1358,25 +1358,25 @@ class EllipsoidSet(FeatureSet):
         return np.array([e.shape for e in self])
 
     @property
-    def lambda1(self) -> np.ndarray:
+    def S1(self) -> np.ndarray:
         """
-        Return the array of the square root of maximum eigenvalue.
+        Return the array of maximum principal stretches.
         """
-        return np.array([e.lambda1 for e in self])
+        return np.array([e.S1 for e in self])
 
     @property
-    def lambda2(self) -> np.ndarray:
+    def S2(self) -> np.ndarray:
         """
-        Return the array of the square root of middle eigenvalue.
+        Return the array of middle principal stretches.
         """
-        return np.array([e.lambda2 for e in self])
+        return np.array([e.S2 for e in self])
 
     @property
-    def lambda3(self) -> np.ndarray:
+    def S3(self) -> np.ndarray:
         """
-        Return the array of the square root of minimum eigenvalue.
+        Return the array of minimum principal stretches.
         """
-        return np.array([e.lambda3 for e in self])
+        return np.array([e.S3 for e in self])
 
     @property
     def e1(self) -> np.ndarray:

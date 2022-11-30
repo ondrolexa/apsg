@@ -415,16 +415,16 @@ class Ellipse(Tensor2):
         return cls([[x * x, 0], [0, y * y]], **kwargs)
 
     @property
-    def lambda1(self) -> float:
+    def S1(self) -> float:
         """
-        Return the square root of maximum eigenvalue.
+        Return the maximum  principal stretch.
         """
         return math.sqrt(self.E1)
 
     @property
-    def lambda2(self) -> float:
+    def S2(self) -> float:
         """
-        Return the square root of minimum eigenvalue.
+        Return the minimum principal stretch.
         """
         return math.sqrt(self.E2)
 
@@ -433,21 +433,21 @@ class Ellipse(Tensor2):
         """
         Return the maximum natural principal strain.
         """
-        return math.log(self.lambda1)
+        return math.log(self.S1)
 
     @property
     def e2(self) -> float:
         """
         Return the minimum natural principal strain.
         """
-        return math.log(self.lambda2)
+        return math.log(self.S2)
 
     @property
     def ar(self) -> float:
         """
-        Return the lambda1/lambda2 ratio.
+        Return the ellipse axial ratio.
         """
-        return self.lambda1 / self.lambda2
+        return self.S1 / self.S2
 
     @property
     def orientation(self):

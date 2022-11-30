@@ -224,7 +224,7 @@ class DeformationGradient3(Matrix3):
         else:
             sina = (R[2][1] + (cosa - 1.0) * axis.y * axis.z) / axis.x
         angle = np.rad2deg(np.arctan2(sina, cosa))
-        return axis, angle
+        return axis, float(angle)
 
     def velgrad(self, time=1):
         """
@@ -596,7 +596,7 @@ class Ellipsoid(Tensor3):
     """
 
     def __repr__(self) -> str:
-        return f"{Matrix3.__repr__(self)}\n(λ1:{self.lambda1:.3g}, λ2:{self.lambda2:.3g}, λ3:{self.lambda3:.3g})"
+        return f"{Matrix3.__repr__(self)}\n(S1:{self.S1:.3g}, S2:{self.S2:.3g}, S3:{self.S3:.3g})"
 
     @classmethod
     def from_defgrad(cls, F, form="left", **kwargs) -> "Ellipsoid":
@@ -659,23 +659,23 @@ class Ellipsoid(Tensor3):
         return self.K
 
     @property
-    def lambda1(self) -> float:
+    def S1(self) -> float:
         """
-        Return the square root of maximum eigenvalue.
+        Return the maximum principal stretch.
         """
         return math.sqrt(self.E1)
 
     @property
-    def lambda2(self) -> float:
+    def S2(self) -> float:
         """
-        Return the square root of middle eigenvalue.
+        Return the middle principal stretch.
         """
         return math.sqrt(self.E2)
 
     @property
-    def lambda3(self) -> float:
+    def S3(self) -> float:
         """
-        Return the square root of minimum eigenvalue.
+        Return the minimum principal stretch.
         """
         return math.sqrt(self.E3)
 
@@ -684,35 +684,35 @@ class Ellipsoid(Tensor3):
         """
         Return the maximum natural principal strain.
         """
-        return math.log(self.lambda1)
+        return math.log(self.S1)
 
     @property
     def e2(self) -> float:
         """
         Return the middle natural principal strain.
         """
-        return math.log(self.lambda2)
+        return math.log(self.S2)
 
     @property
     def e3(self) -> float:
         """
         Return the minimum natural principal strain.
         """
-        return math.log(self.lambda3)
+        return math.log(self.S3)
 
     @property
     def Rxy(self) -> float:
         """
         Return the Rxy ratio.
         """
-        return self.lambda1 / self.lambda2 if self.lambda2 != 0 else np.inf
+        return self.S1 / self.S2 if self.S2 != 0 else float("inf")
 
     @property
     def Ryz(self) -> float:
         """
         Return the Ryz ratio.
         """
-        return self.lambda2 / self.lambda3 if self.lambda3 != 0 else np.inf
+        return self.S2 / self.S3 if self.S3 != 0 else float("inf")
 
     @property
     def e12(self) -> float:
@@ -740,7 +740,7 @@ class Ellipsoid(Tensor3):
         """
         Return the strain symmetry.
         """
-        return (self.Rxy - 1) / (self.Ryz - 1) if self.Ryz > 1 else np.inf
+        return (self.Rxy - 1) / (self.Ryz - 1) if self.Ryz > 1 else float("inf")
 
     @property
     def d(self) -> float:
@@ -754,7 +754,7 @@ class Ellipsoid(Tensor3):
         """
         Return the strain symmetry (Ramsay, 1983).
         """
-        return self.e12 / self.e23 if self.e23 > 0 else np.inf
+        return self.e12 / self.e23 if self.e23 > 0 else float("inf")
 
     @property
     def D(self) -> float:
@@ -833,7 +833,7 @@ class Ellipsoid(Tensor3):
         Intensity index (Lisle, 1985).
         """
 
-        return 7.5 * np.sum((np.array(self.eigenvalues()) - 1 / 3) ** 2)
+        return 7.5 * float(np.sum((np.array(self.eigenvalues()) - 1 / 3) ** 2))
 
     @property
     def aMAD_l(self) -> float:
@@ -841,7 +841,7 @@ class Ellipsoid(Tensor3):
         Return approximate angular deviation from the major axis along E1.
         """
 
-        return atand(np.sqrt((1 - self.E1) / self.E1))
+        return float(atand(np.sqrt((1 - self.E1) / self.E1)))
 
     @property
     def aMAD_p(self) -> float:
@@ -849,7 +849,7 @@ class Ellipsoid(Tensor3):
         Return approximate deviation from the plane normal to E3.
         """
 
-        return atand(np.sqrt(self.E3 / (1 - self.E3)))
+        return float(atand(np.sqrt(self.E3 / (1 - self.E3))))
 
     @property
     def aMAD(self) -> float:
@@ -869,7 +869,7 @@ class Ellipsoid(Tensor3):
 
         Kirschvink 1980
         """
-        return atand(np.sqrt((self.E2 + self.E3) / self.E1))
+        return float(atand(np.sqrt((self.E2 + self.E3) / self.E1)))
 
     @property
     def MAD_p(self) -> float:
@@ -878,7 +878,7 @@ class Ellipsoid(Tensor3):
 
         Kirschvink 1980
         """
-        return atand(np.sqrt(self.E3 / self.E2 + self.E3 / self.E1))
+        return float(atand(np.sqrt(self.E3 / self.E2 + self.E3 / self.E1)))
 
     @property
     def MAD(self) -> float:
