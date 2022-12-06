@@ -480,19 +480,27 @@ class StereoNet:
     def _scatter(self, *args, **kwargs):
         legend = kwargs.pop("legend")
         num = kwargs.pop("num")
-        x_lower, y_lower = self.proj.project_data(*np.vstack(args).T)
-        mask_lower = ~np.isnan(x_lower)
-        x_upper, y_upper, mask_upper = self.proj.project_data(*(-np.vstack(args).T))
-        mask_upper = ~np.isnan(x_upper)
+        # x_lower, y_lower = self.proj.project_data(*np.vstack(args).T)
+        # mask_lower = ~np.isnan(x_lower)
+        # x_upper, y_upper = self.proj.project_data(*(-np.vstack(args).T))
+        # mask_upper = ~np.isnan(x_upper)
+        x_lower, y_lower, x_upper, y_upper = self.proj.project_data_antipodal(
+            *np.vstack(args).T
+        )
         prop = "sizes"
         if kwargs["s"] is not None:
             s = np.atleast_1d(kwargs["s"])
-            kwargs["s"] = np.hstack((s[mask_lower], s[mask_upper]))
+            # kwargs["s"] = np.hstack((s[mask_lower], s[mask_upper]))
+            kwargs["s"] = np.hstack((s, s))
         if kwargs["c"] is not None:
             c = np.atleast_1d(kwargs["c"])
-            kwargs["c"] = np.hstack((c[mask_lower], c[mask_upper]))
+            # kwargs["c"] = np.hstack((c[mask_lower], c[mask_upper]))
+            kwargs["c"] = np.hstack((c, c))
             prop = "colors"
         sc = self.ax.scatter(
+            # np.hstack((x_lower[mask_lower], x_upper[mask_upper])),
+            # np.hstack((y_lower[mask_lower], y_upper[mask_upper])),
+            # **kwargs,
             np.hstack((x_lower, x_upper)),
             np.hstack((y_lower, y_upper)),
             **kwargs,
