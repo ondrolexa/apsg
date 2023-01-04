@@ -14,7 +14,7 @@ def ensure_arguments(*datatypes):
                 try:
                     nargs[ix] = cls(nargs[ix])
                     ok.append(True)
-                except:
+                except Exception:
                     ok.append(False)
             if all(ok):
                 return method(self, *nargs, **kwargs)

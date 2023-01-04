@@ -185,7 +185,7 @@ class KentDistribution(object):
         """
 
         (k, b) = (self.kappa, self.beta)
-        if not (k, b) in cache:
+        if (k, b) not in cache:
             G = gamma_fun
             Imb2 = modified_bessel_2ndkind
             result = 0.0
@@ -303,7 +303,7 @@ class KentDistribution(object):
         """
 
         (k, b) = (self.kappa, self.beta)
-        if not (k, b) in cache:
+        if (k, b) not in cache:
             G = gamma_fun
             Imb2 = modified_bessel_2ndkind
             (dcdk, dcdb) = (0.0, 0.0)
