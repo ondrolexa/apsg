@@ -480,13 +480,13 @@ class StereoNet:
     def _scatter(self, *args, **kwargs):
         legend = kwargs.pop("legend")
         num = kwargs.pop("num")
-        # x_lower, y_lower = self.proj.project_data(*np.vstack(args).T)
+        x_lower, y_lower = self.proj.project_data(*np.vstack(args).T)
         # mask_lower = ~np.isnan(x_lower)
-        # x_upper, y_upper = self.proj.project_data(*(-np.vstack(args).T))
+        x_upper, y_upper = self.proj.project_data(*(-np.vstack(args).T))
         # mask_upper = ~np.isnan(x_upper)
-        x_lower, y_lower, x_upper, y_upper = self.proj.project_data_antipodal(
-            *np.vstack(args).T
-        )
+        # x_lower, y_lower, x_upper, y_upper = self.proj.project_data_antipodal(
+        #    *np.vstack(args).T
+        # )
         prop = "sizes"
         if kwargs["s"] is not None:
             s = np.atleast_1d(kwargs["s"])

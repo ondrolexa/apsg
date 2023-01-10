@@ -163,6 +163,9 @@ class DeformationGradient3(Matrix3):
             p1 (``Pair``): from
             p2 (``Pair``): to
 
+        Keyword Args:
+          symmetry (bool): If True, returns minimum angle rotation of axial pairs
+
         Returns:
             ``Defgrad3`` rotational matrix
 
