@@ -226,14 +226,21 @@ class StereoNet:
         self.fig = fig
         self._render()
 
+    def format_coord(self, x, y):
+        """Format stereonet coordinates"""
+        if x is not None and y is not None:
+            if (x**2 + y**2) <= 1:
+                l = Lineation(*self.proj.inverse_data(x, y))
+                f = Foliation(*self.proj.inverse_data(x, y))
+                return f"{l} {f}"
+        return ""
+
     def show(self):
         """Show stereonet"""
         plt.close(0)  # close previously rendered figure
         self.init_figure()
         self._render()
-        self.ax.format_coord = (
-            lambda x, y: f"{Lineation(*self.proj.inverse_data(x, y))} {Foliation(*self.proj.inverse_data(x, y))}"
-        )
+        self.ax.format_coord = self.format_coord
         plt.show()
 
     def savefig(self, filename="stereonet.png", **kwargs):
