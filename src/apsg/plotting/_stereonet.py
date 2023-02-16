@@ -231,6 +231,9 @@ class StereoNet:
         plt.close(0)  # close previously rendered figure
         self.init_figure()
         self._render()
+        self.ax.format_coord = (
+            lambda x, y: f"{Lineation(*self.proj.inverse_data(x, y))} {Foliation(*self.proj.inverse_data(x, y))}"
+        )
         plt.show()
 
     def savefig(self, filename="stereonet.png", **kwargs):
