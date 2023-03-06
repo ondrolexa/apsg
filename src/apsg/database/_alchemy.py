@@ -144,17 +144,17 @@ class Unit(Base):
         return "Unit:{}".format(self.name)
 
 
-def initial_meta():
-    return [
-        Meta(name="version", value="3.0.4"),
-        Meta(name="crs", value="EPSG:4326"),
-        Meta(name="created", value=datetime.now().strftime("%d.%m.%Y %H:%M")),
-        Meta(name="updated", value=datetime.now().strftime("%d.%m.%Y %H:%M")),
-        Meta(name="accessed", value=datetime.now().strftime("%d.%m.%Y %H:%M")),
-    ]
+def default_meta():
+    return dict(
+        version="3.0.4",
+        crs="EPSG:4326",
+        created=datetime.now().strftime("%d.%m.%Y %H:%M"),
+        updated=datetime.now().strftime("%d.%m.%Y %H:%M"),
+        accessed=datetime.now().strftime("%d.%m.%Y %H:%M"),
+    )
 
 
-def initial_values():
+def default_initial_values():
     return [
         Structype(
             pos=1,
@@ -219,8 +219,10 @@ class SDBSession:
         sdb_Session = sessionmaker(bind=self.sdb_engine)
         self.session = sdb_Session()
         if kwargs.get("create", False):
-            self.session.add_all(initial_values())
-            self.session.add_all(initial_meta())
+            meta = default_meta()
+            meta.update(kwargs.get("meta", {}))
+            self.session.add_all(default_initial_values())
+            self.session.add_all([Meta(name=n, value=v) for n, v in meta.items()])
             self.session.commit()
         self.autocommit = kwargs.get("autocommit", False)
         # add listeners
