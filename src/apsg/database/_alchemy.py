@@ -202,6 +202,7 @@ class SDBSession:
     Keyword Args:
         create (bool): if True existing sdbfile will be deleted
             and new database will be created
+        autocommit(bool): if True, each operation is autocommitted
 
     Example:
         >>> db = SDBSession('database.sdb', create=True)
@@ -221,6 +222,7 @@ class SDBSession:
             self.session.add_all(initial_values())
             self.session.add_all(initial_meta())
             self.session.commit()
+        self.autocommit = kwargs.get("autocommit", False)
         # add listeners
         event.listen(self.session, "before_commit", before_commit_meta_update)
         event.listen(Unit, "before_insert", before_insert_pos_update)
@@ -243,7 +245,8 @@ class SDBSession:
             assert "value" in kwargs, "value must be provided to create meta"
             meta = Meta(**kwargs)
             self.session.add(meta)
-            self.commit()
+            if self.autocommit:
+                self.commit()
         return meta
 
     def site(self, **kwargs):
@@ -256,7 +259,8 @@ class SDBSession:
             assert "unit" in kwargs, "unit must be provided to create site"
             site = Site(**kwargs)
             self.session.add(site)
-            self.commit()
+            if self.autocommit:
+                self.commit()
         return site
 
     def unit(self, **kwargs):
@@ -268,7 +272,8 @@ class SDBSession:
         if unit is None:
             unit = Unit(**kwargs)
             self.session.add(unit)
-            self.commit()
+            if self.autocommit:
+                self.commit()
         return unit
 
     def tag(self, **kwargs):
@@ -280,7 +285,8 @@ class SDBSession:
         if tag is None:
             tag = Tag(**kwargs)
             self.session.add(tag)
-            self.commit()
+            if self.autocommit:
+                self.commit()
         return tag
 
     def structype(self, **kwargs):
@@ -296,7 +302,8 @@ class SDBSession:
         if structype is None:
             structype = Structype(**kwargs)
             self.session.add(structype)
-            self.commit()
+            if self.autocommit:
+                self.commit()
         return structype
 
     def add_structdata(self, **kwargs):
@@ -317,7 +324,8 @@ class SDBSession:
         assert "structype" in kwargs, "structype must be provided for structdata"
         data = Structdata(**kwargs)
         self.session.add(data)
-        self.commit()
+        if self.autocommit:
+            self.commit()
         return data
 
     def add_fol(self, fol, **kwargs):
