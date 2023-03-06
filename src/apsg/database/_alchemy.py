@@ -233,6 +233,19 @@ class SDBSession:
     def commit(self):
         self.session.commit()
 
+    def meta(self, **kwargs):
+        """
+        Insert or retrieve Meta
+        """
+        assert "name" in kwargs, "name must be provided for meta"
+        meta = self.session.query(Meta).filter_by(name=kwargs["name"]).first()
+        if meta is None:
+            assert "value" in kwargs, "value must be provided to create meta"
+            meta = Meta(**kwargs)
+            self.session.add(meta)
+            self.commit()
+        return meta
+
     def site(self, **kwargs):
         """
         Insert or retrieve Site
