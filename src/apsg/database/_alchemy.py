@@ -146,7 +146,7 @@ class Unit(Base):
 
 def default_meta():
     return dict(
-        version="3.0.4",
+        version="3.1.0",
         crs="EPSG:4326",
         created=datetime.now().strftime("%d.%m.%Y %H:%M"),
         updated=datetime.now().strftime("%d.%m.%Y %H:%M"),
@@ -184,7 +184,8 @@ def before_commit_meta_update(session):
 def before_insert_pos_update(mapper, connection, target):
     if target.pos is None:
         t = str(mapper.persist_selectable)
-        maxpos = connection.execute("SELECT max({}.pos) FROM {}".format(t, t)).scalar()
+        query = "SELECT max({}.pos) FROM {}".format(t, t)
+        maxpos = connection.scalar(text(query))
         if maxpos is None:
             maxpos = 1
         else:
@@ -231,15 +232,52 @@ class SDBSession:
         event.listen(Structype, "before_insert", before_insert_pos_update)
         event.listen(Tag, "before_insert", before_insert_pos_update)
 
+    def __repr__(self):
+        return self.info()
+
+    def info(self, data=False):
+        lines = []
+        lines.append(f"PySDB database version: {self.meta('version').value}")
+        lines.append(f"PySDB database CRS: {self.meta('crs').value}")
+        lines.append(f"PySDB database created: {self.meta('created').value}")
+        lines.append(f"PySDB database updated: {self.meta('created').value}")
+        lines.append(f"Number of sites: {self.session.query(Site).count()}")
+        lines.append(f"Number of units: {self.session.query(Unit).count()}")
+        lines.append(f"Number of structures: {self.session.query(Structype).count()}")
+        lines.append(
+            f"Number of measurements: {self.session.query(Structdata).count()}"
+        )
+        if data:
+            for s in self.structypes():
+                n = self.session.query(Structdata).filter_by(structype=s).count()
+                if n > 0:
+                    lines.append(f"Number of {s.structure} measurements: {n}")
+        return "\n".join(lines)
+
     def close(self):
+        """
+        Close session
+
+        """
         self.session.close()
 
     def commit(self):
+        """
+        commit session
+
+        """
         self.session.commit()
+
+    def rollback(self):
+        """
+        rollback session
+
+        """
+        self.session.rollback()
 
     def meta(self, name, **kwargs):
         """
-        Upsert or retrieve (when kwargs empty) Meta
+        Insert, update or retrieve (when kwargs empty) Meta
 
         Args:
             name (str): meta name
@@ -250,18 +288,20 @@ class SDBSession:
         Returns:
             Meta
         """
+        meta = self.session.query(Meta).filter_by(name=name).first()
         if kwargs:
-            meta = Meta(name=name, **kwargs)
-            self.session.merge(meta)
+            if meta is None:
+                meta = Meta(name=name, **kwargs)
+                self.session.add(meta)
+            else:
+                self.session.query(Meta).filter_by(name=name).update(kwargs)
             if self.autocommit:
                 self.commit()
-        else:
-            meta = self.session.query(Meta).filter_by(name=name).first()
         return meta
 
     def site(self, name, **kwargs):
         """
-        Upsert or retrieve (when kwargs empty) Site
+        Insert, update or retrieve (when kwargs empty) Site
 
         Args:
             name (str): site name
@@ -275,18 +315,20 @@ class SDBSession:
         Returns:
             Site
         """
+        site = self.session.query(Site).filter_by(name=name).first()
         if kwargs:
-            site = Site(name=name, **kwargs)
-            self.session.merge(site)
+            if site is None:
+                site = Site(name=name, **kwargs)
+                self.session.add(site)
+            else:
+                self.session.query(Site).filter_by(name=name).update(kwargs)
             if self.autocommit:
                 self.commit()
-        else:
-            site = self.session.query(Site).filter_by(name=name).first()
         return site
 
     def unit(self, name, **kwargs):
         """
-        Upsert or retrieve (when kwargs empty) Unit
+        Insert, update or retrieve (when kwargs empty) Unit
 
         Args:
             name (str): unit name
@@ -297,18 +339,20 @@ class SDBSession:
         Returns:
             Unit
         """
+        unit = self.session.query(Unit).filter_by(name=name).first()
         if kwargs:
-            unit = Unit(name=name, **kwargs)
-            self.session.merge(unit)
+            if unit is None:
+                unit = Unit(name=name, **kwargs)
+                self.session.add(unit)
+            else:
+                self.session.query(Unit).filter_by(name=name).update(kwargs)
             if self.autocommit:
                 self.commit()
-        else:
-            unit = self.session.query(Unit).filter_by(name=name).first()
         return unit
 
     def tag(self, name, **kwargs):
         """
-        Upsert or retrieve (when kwargs empty) Tag
+        Insert, update or retrieve (when kwargs empty) Tag
 
         Args:
             name (str): tag name
@@ -319,42 +363,44 @@ class SDBSession:
         Returns:
             Tag
         """
+        tag = self.session.query(Tag).filter_by(name=name).first()
         if kwargs:
-            tag = Tag(name=name, **kwargs)
-            self.session.merge(tag)
+            if tag is None:
+                tag = Tag(name=name, **kwargs)
+                self.session.add(tag)
+            else:
+                self.session.query(Tag).filter_by(name=name).update(kwargs)
             if self.autocommit:
                 self.commit()
-        else:
-            tag = self.session.query(Tag).filter_by(name=name).first()
         return tag
 
     def structype(self, structure, **kwargs):
         """
-        Upsert or retrieve (when kwargs empty) Structype
+        Insert, update or retrieve (when kwargs empty) Structype
 
         Args:
             structure (str): label for structure
 
         Keyword Args:
             description (str): structype description
-            planar (bool): True for planar False for linear
+            planar (int): 1 for planar 0 for linear
             structcode (int): structcode (optional)
             groupcode (int): groupcode (optional)
 
         Returns:
             Structype
         """
+        structype = self.session.query(Structype).filter_by(structure=structure).first()
         if kwargs:
-            structype = Structype(structure=structure, **kwargs)
-            self.session.add(structype)
+            if structype is None:
+                structype = Structype(structure=structure, **kwargs)
+                self.session.add(structype)
+            else:
+                self.session.query(Structype).filter_by(structure=structure).update(
+                    kwargs
+                )
             if self.autocommit:
                 self.commit()
-        else:
-            structype = (
-                self.session.query(Structype)
-                .filter_by(structure=kwargs["structure"])
-                .first()
-            )
         return structype
 
     def add_structdata(self, site, structype, azimuth, inclination, **kwargs):
