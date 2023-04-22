@@ -237,109 +237,166 @@ class SDBSession:
     def commit(self):
         self.session.commit()
 
-    def meta(self, **kwargs):
+    def meta(self, name, **kwargs):
         """
-        Insert or retrieve Meta
+        Upsert or retrieve (when kwargs empty) Meta
+
+        Args:
+            name (str): meta name
+
+        Keyword Args:
+            value (str): meta value
+
+        Returns:
+            Meta
         """
-        assert "name" in kwargs, "name must be provided for meta"
-        meta = self.session.query(Meta).filter_by(name=kwargs["name"]).first()
-        if meta is None:
-            assert "value" in kwargs, "value must be provided to create meta"
-            meta = Meta(**kwargs)
-            self.session.add(meta)
+        if kwargs:
+            meta = Meta(name=name, **kwargs)
+            self.session.merge(meta)
             if self.autocommit:
                 self.commit()
+        else:
+            meta = self.session.query(Meta).filter_by(name=name).first()
         return meta
 
-    def site(self, **kwargs):
+    def site(self, name, **kwargs):
         """
-        Insert or retrieve Site
+        Upsert or retrieve (when kwargs empty) Site
+
+        Args:
+            name (str): site name
+
+        Keyword Args:
+            x_coord (float): x coord or longitude
+            y_coord (float): y coord or latitude
+            description (str): site description
+            unit (Unit): unit instance (mus be provided)
+
+        Returns:
+            Site
         """
-        assert "name" in kwargs, "name must be provided for site"
-        site = self.session.query(Site).filter_by(name=kwargs["name"]).first()
-        if site is None:
-            assert "unit" in kwargs, "unit must be provided to create site"
-            site = Site(**kwargs)
-            self.session.add(site)
+        if kwargs:
+            site = Site(name=name, **kwargs)
+            self.session.merge(site)
             if self.autocommit:
                 self.commit()
+        else:
+            site = self.session.query(Site).filter_by(name=name).first()
         return site
 
-    def unit(self, **kwargs):
+    def unit(self, name, **kwargs):
         """
-        Insert or retrieve Unit
+        Upsert or retrieve (when kwargs empty) Unit
+
+        Args:
+            name (str): unit name
+
+        Keyword Args:
+            description (str): unit description
+
+        Returns:
+            Unit
         """
-        assert "name" in kwargs, "name must be provided for unit"
-        unit = self.session.query(Unit).filter_by(name=kwargs["name"]).first()
-        if unit is None:
-            unit = Unit(**kwargs)
-            self.session.add(unit)
+        if kwargs:
+            unit = Unit(name=name, **kwargs)
+            self.session.merge(unit)
             if self.autocommit:
                 self.commit()
+        else:
+            unit = self.session.query(Unit).filter_by(name=name).first()
         return unit
 
-    def tag(self, **kwargs):
+    def tag(self, name, **kwargs):
         """
-        Insert or retrieve Tag
+        Upsert or retrieve (when kwargs empty) Tag
+
+        Args:
+            name (str): tag name
+
+        Keyword Args:
+            description (str): tag description
+
+        Returns:
+            Tag
         """
-        assert "name" in kwargs, "name must be provided for tag"
-        tag = self.session.query(Tag).filter_by(name=kwargs["name"]).first()
-        if tag is None:
-            tag = Tag(**kwargs)
-            self.session.add(tag)
+        if kwargs:
+            tag = Tag(name=name, **kwargs)
+            self.session.merge(tag)
             if self.autocommit:
                 self.commit()
+        else:
+            tag = self.session.query(Tag).filter_by(name=name).first()
         return tag
 
-    def structype(self, **kwargs):
+    def structype(self, structure, **kwargs):
         """
-        Insert or retrieve Structype
+        Upsert or retrieve (when kwargs empty) Structype
+
+        Args:
+            structure (str): label for structure
+
+        Keyword Args:
+            description (str): structype description
+            planar (bool): True for planar False for linear
+            structcode (int): structcode (optional)
+            groupcode (int): groupcode (optional)
+
+        Returns:
+            Structype
         """
-        assert "structure" in kwargs, "structure must be provided for structype"
-        structype = (
-            self.session.query(Structype)
-            .filter_by(structure=kwargs["structure"])
-            .first()
-        )
-        if structype is None:
-            structype = Structype(**kwargs)
+        if kwargs:
+            structype = Structype(structure=structure, **kwargs)
             self.session.add(structype)
             if self.autocommit:
                 self.commit()
+        else:
+            structype = (
+                self.session.query(Structype)
+                .filter_by(structure=kwargs["structure"])
+                .first()
+            )
         return structype
 
-    def add_structdata(self, **kwargs):
+    def add_structdata(self, site, structype, azimuth, inclination, **kwargs):
         """
-        Add measurement to site
+        Add structdata to site
+
+        Args:
+            site (Site): site instance
+            structype (Structype): structype instance
+            azimuth (float): dip direction or plunge direction
+            inclination (float): dip or plunge
 
         Keyword Args:
-            site(Site): site instance
-            structype(Structype): structype instance
-            azimuth(float): dip direction or plunge direction
-            inclination(float): dip or plunge
+            description (str): structdata description
 
         Returns:
             Structdata
 
         """
-        assert "site" in kwargs, "site must be provided for structdata"
-        assert "structype" in kwargs, "structype must be provided for structdata"
-        data = Structdata(**kwargs)
+        data = Structdata(
+            site=site,
+            structype=structype,
+            azimuth=azimuth,
+            inclination=inclination,
+            **kwargs,
+        )
         self.session.add(data)
         if self.autocommit:
             self.commit()
         return data
 
-    def add_fol(self, fol, **kwargs):
+    def add_fol(self, site, structype, fol, **kwargs):
         """
         Add Foliation to site
 
         Args:
+            site (Site): site instance
+            structype (Structype): structype instance
             fol (Foliation): foliation instance
 
         Keyword Args:
-            site(Site): site instance
-            structype(Structype): structype instance
+            description (str): structdata description
 
         Returns:
             Structdata
@@ -348,24 +405,21 @@ class SDBSession:
         assert isinstance(
             fol, Foliation
         ), "fol argument must be instance of Foliation class"
-        assert "site" in kwargs, "site must be provided for structdata"
-        assert "structype" in kwargs, "structype must be provided for structdata"
-        assert kwargs["structype"].planar, "structype must be planar"
-        azi, inc = fol.geo
-        kwargs["azimuth"] = azi
-        kwargs["inclination"] = inc
-        return self.add_structdata(**kwargs)
+        assert structype.planar, "structype must be planar"
+        azimuth, inclination = fol.geo
+        return self.add_structdata(site, structype, azimuth, inclination, **kwargs)
 
-    def add_lin(self, lin, **kwargs):
+    def add_lin(self, site, structype, lin, **kwargs):
         """
         Add Lineation to site
 
         Args:
+            site (Site): site instance
+            structype (Structype): structype instance
             lin (Lineation): lineation instance
 
         Keyword Args:
-            site(Site): site instance
-            structype(Structype): structype instance
+            description (str): structdata description
 
         Returns:
             Structdata
@@ -374,13 +428,9 @@ class SDBSession:
         assert isinstance(
             lin, Lineation
         ), "lin argument must be instance of Lineation class"
-        assert "site" in kwargs, "site must be provided for structdata"
-        assert "structype" in kwargs, "structype must be provided for structdata"
-        assert not kwargs["structype"].planar, "structype must be linear"
-        azi, inc = lin.geo
-        kwargs["azimuth"] = azi
-        kwargs["inclination"] = inc
-        return self.add_structdata(**kwargs)
+        assert not structype.planar, "structype must be linear"
+        azimuth, inclination = lin.geo
+        return self.add_structdata(site, structype, azimuth, inclination, **kwargs)
 
     def attach(self, fol, lin):
         """
@@ -396,7 +446,8 @@ class SDBSession:
         """
         pair = Attached(planar=fol, linear=lin)
         self.session.add(pair)
-        self.commit()
+        if self.autocommit:
+            self.commit()
         return pair
 
     def add_pair(self, pair, foltype, lintype, **kwargs):
