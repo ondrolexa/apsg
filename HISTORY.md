@@ -1,6 +1,6 @@
 # Changes
 
-### 1.0.2 (Apr 30 2023)
+### 1.0.3 (Apr 30 2023)
  * lambda properties of tensors renamed to S
  * cursor coordinates in stereonet show lin and fol
 
