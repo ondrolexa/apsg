@@ -379,7 +379,7 @@ class Ellipse(Tensor2):
       Ellipse
       [[8. 0.]
        [0. 2.]]
-      (ar:2, ori:90)
+      (ar:2, ori:0)
 
     """
 
@@ -480,12 +480,13 @@ class OrientationTensor2(Ellipse):
       ``OrientationTensor2`` object
 
     Example:
-      >>> ot = ortensor2([[8, 0], [0, 2]])
+      >>> v = vec2set.random(n=1000)
+      >>> ot = v.ortensor()
       >>> ot
       OrientationTensor2
-      [[8. 0.]
-       [0. 2.]]
-      (ar:2, ori:90)
+      [[ 0.502 -0.011]
+       [-0.011  0.498]]
+      (ar:1.02, ori:140)
 
     """
 
@@ -499,11 +500,12 @@ class OrientationTensor2(Ellipse):
 
         Example:
           >>> v = vec2set.random_vonmises(position=120)
-          >>> ortensor2.from_features(v)
+          >>> ot = v.ortensor()
+          >>> ot
           OrientationTensor2
-          [[ 0.684 -0.253]
-           [-0.253  0.316]]
-          (ar:2.09, ori:117)
+          [[ 0.377 -0.282]
+           [-0.282  0.623]]
+          (ar:2.05, ori:123)
 
         """
 

@@ -1,7 +1,8 @@
 # Changes
 
-### master
+### 1.0.2 (Apr 30 2023)
  * lambda properties of tensors renamed to S
+ * cursor coordinates in stereonet show lin and fol
 
 ### 1.0.1 (Nov 22 2022)
  * density_lookup method implemented for StereoNet.grid

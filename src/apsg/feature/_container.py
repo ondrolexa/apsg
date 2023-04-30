@@ -11,6 +11,7 @@ from apsg.math._vector import Vector2, Vector3
 from apsg.helpers._math import acosd
 from apsg.feature._geodata import Lineation, Foliation, Pair, Fault, Cone
 from apsg.feature._tensor3 import OrientationTensor3, Ellipsoid
+from apsg.feature._tensor2 import OrientationTensor2, Ellipse
 from apsg.feature._statistics import KentDistribution, vonMisesFisher
 
 
@@ -268,17 +269,15 @@ class Vector2Set(FeatureSet):
 
     @property
     def _ortensor(self):
-        # if "ortensor" not in self._cache:
-        #     self._cache["ortensor"] = OrientationTensor2.from_features(self)
-        # return self._cache["ortensor"]
-        return NotImplemented
+        if "ortensor" not in self._cache:
+            self._cache["ortensor"] = OrientationTensor2.from_features(self)
+        return self._cache["ortensor"]
 
     @property
     def _svd(self):
-        # if "svd" not in self._cache:
-        #     self._cache["svd"] = np.linalg.svd(self._ortensor)
-        # return self._cache["svd"]
-        return NotImplemented
+        if "svd" not in self._cache:
+            self._cache["svd"] = np.linalg.svd(self._ortensor)
+        return self._cache["svd"]
 
     def centered(self, max_vertical=False):
         """Rotate ``FeatureSet`` object to position that eigenvectors are parallel
@@ -1722,6 +1721,10 @@ def G(lst, name="Default"):
             return EllipsoidSet(lst, name=name)
         elif dtype_cls is OrientationTensor3:
             return OrientationTensor3Set(lst, name=name)
+        elif dtype_cls is Ellipse:
+            return EllipseSet(lst, name=name)
+        elif dtype_cls is OrientationTensor2:
+            return OrientationTensor2Set(lst, name=name)
         else:
             raise TypeError("Wrong datatype to create FeatureSet")
 

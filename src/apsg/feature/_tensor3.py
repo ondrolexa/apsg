@@ -591,10 +591,10 @@ class Ellipsoid(Tensor3):
       >>> E = ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
       >>> E
       Ellipsoid
-      [[8. 0. 0.]
-       [0. 2. 0.]
-       [0. 0. 1.]]
-      (λ1:2.83, λ2:1.41, λ3:1)
+      [[8 0 0]
+       [0 2 0]
+       [0 0 1]]
+      (S1:2.83, S2:1.41, S3:1)
 
     """
 
@@ -914,10 +914,10 @@ class OrientationTensor3(Ellipsoid):
       >>> ot = ortensor([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
       >>> ot
       OrientationTensor3
-      [[8. 0. 0.]
-       [0. 2. 0.]
-       [0. 0. 1.]]
-      (λ1:2.83, λ2:1.41, λ3:1)
+      [[8 0 0]
+       [0 2 0]
+       [0 0 1]]
+      (S1:2.83, S2:1.41, S3:1)
 
     """
 
@@ -934,26 +934,34 @@ class OrientationTensor3(Ellipsoid):
           >>> ot = ortensor.from_features(g)
           >>> ot
           OrientationTensor3
-          [[ 0.142 -0.151 -0.212]
-           [-0.151  0.326  0.37 ]
-           [-0.212  0.37   0.532]]
-          (λ1:0.95, λ2:0.241, λ3:0.2)
+          [[ 0.126 -0.149 -0.202]
+           [-0.149  0.308  0.373]
+           [-0.202  0.373  0.566]]
+          (S1:0.955, S2:0.219, S3:0.2)
           >>> ot.eigenlins
-          (L:120/49, L:216/5, L:310/40)
+          (L:119/51, L:341/31, L:237/21)
 
         """
 
         return cls(np.dot(np.array(g).T, np.array(g)) / len(g))
 
     @classmethod
-    def from_pairs(cls, p) -> "OrientationTensor3":
+    def from_pairs(cls, p, shift=True) -> "OrientationTensor3":
         """
         Return Lisle (1989) ``Ortensor`` of orthogonal data in ``PairSet``
 
-        Lisle, R. (1989). The Statistical Analysis of Orthogonal Orientation Data. The Journal of Geology, 97(3), 360-364.
+        Lisle, R. (1989). The Statistical Analysis of Orthogonal Orientation Data.
+            The Journal of Geology, 97(3), 360-364.
+
+        Note: Tensor is by default shifted towards positive eigenvalues, so it
+            could be used as Scheidegger orientation tensor for plotting. When
+            original Lisle tensor is needed, set shift to False.
 
         Args:
             p: ``PairSet``
+
+        Keyword Args:
+            shift (bool): When True the tensor is shifted. Default True
 
         Example:
           >>> p = pairset([pair(109, 82, 21, 10),
@@ -963,13 +971,23 @@ class OrientationTensor3(Ellipsoid):
           >>> ot = ortensor.from_pairs(p)
           >>> ot
           OrientationTensor3
-          [[ 0.731  0.575  0.086]
-           [ 0.575 -0.725  0.224]
-           [ 0.086  0.224 -0.005]]
-          (λ1:0.98, λ2:0.978, λ3:0.0688)
+          [[0.577 0.192 0.029]
+           [0.192 0.092 0.075]
+           [0.029 0.075 0.332]]
+          (S1:0.807, S2:0.579, S3:0.114)
 
         """
-        return cls(
-            OrientationTensor3.from_features(p.lvec)
-            - OrientationTensor3.from_features(p.fvec)
-        )
+        if shift:
+            return cls(
+                (
+                    OrientationTensor3.from_features(p.lvec)
+                    - OrientationTensor3.from_features(p.fvec)
+                    + np.eye(3)
+                )
+                / 3
+            )
+        else:
+            return cls(
+                OrientationTensor3.from_features(p.lvec)
+                - OrientationTensor3.from_features(p.fvec)
+            )
