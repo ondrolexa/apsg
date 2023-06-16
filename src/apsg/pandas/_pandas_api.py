@@ -126,10 +126,11 @@ class Vector3Array(ExtensionArray):
         """
         Concatenate multiple arrays of this dtype
         """
+        print(to_concat)
         res = to_concat[0]._obj
         for other in to_concat[1:]:
-            res += other
-        return res
+            res += other._obj
+        return cls(res)
 
     @property
     def nbytes(self):
