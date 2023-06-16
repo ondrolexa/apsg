@@ -1,5 +1,11 @@
 # Changes
 
+## 1.1.0 (Jun 17 2022)
+APSG offers covenient pandas integration via pandas namespaces.
+
+See documentation for further details.
+
+
 ### 1.0.3 (Apr 30 2023)
  * lambda properties of tensors renamed to S
  * cursor coordinates in stereonet show lin and fol
