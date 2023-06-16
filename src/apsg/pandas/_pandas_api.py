@@ -126,7 +126,6 @@ class Vector3Array(ExtensionArray):
         """
         Concatenate multiple arrays of this dtype
         """
-        print(to_concat)
         res = to_concat[0]._obj
         for other in to_concat[1:]:
             res += other._obj
@@ -234,6 +233,10 @@ class LinArray(Vector3Array):
 
 @pd.api.extensions.register_dataframe_accessor("apsg")
 class APSGAccessor:
+    """
+    `apsg` DataFrame accessor to create aspg columns from data
+    """
+
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
 
@@ -277,6 +280,10 @@ class FeatureSetAccessor:
 
 @pd.api.extensions.register_dataframe_accessor("vec")
 class Vec3Accessor(FeatureSetAccessor):
+    """
+    `vec` DataFrame accessor provides methods for Vector3Set
+    """
+
     @staticmethod
     def _validate(obj):
         # verify there is a vec type column
@@ -302,6 +309,10 @@ class Vec3Accessor(FeatureSetAccessor):
 
 @pd.api.extensions.register_dataframe_accessor("fol")
 class FolAccessor(FeatureSetAccessor):
+    """
+    `fol` DataFrame accessor provides methods for FoliationSet
+    """
+
     @staticmethod
     def _validate(obj):
         # verify there is a fol type column
@@ -336,6 +347,10 @@ class FolAccessor(FeatureSetAccessor):
 
 @pd.api.extensions.register_dataframe_accessor("lin")
 class LinAccessor(FeatureSetAccessor):
+    """
+    `lin` DataFrame accessor provides methods for LineationSet
+    """
+
     @staticmethod
     def _validate(obj):
         # verify there is a fol type column

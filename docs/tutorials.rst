@@ -9,5 +9,6 @@ Tutorials
     notebooks/02_apsg_tensors
     notebooks/03_apsg_stereonet
     notebooks/04_apsg_fabricplots
-    notebooks/05_apsg_various
+    notebooks/05_apsg_pandas
+    notebooks/06_apsg_various
 

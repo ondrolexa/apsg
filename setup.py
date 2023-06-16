@@ -37,7 +37,7 @@ setup(
     ],
     packages=find_packages(where="src"),
     package_dir={"": "src"},
-    install_requires=["numpy", "matplotlib", "scipy"],
+    install_requires=["numpy", "matplotlib", "scipy", "pandas"],
     extras_require={
         "docs": ["sphinx", "ipykernel", "nbsphinx"],
         "test": ["pytest"],

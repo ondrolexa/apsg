@@ -9,6 +9,7 @@ APSG provides following modules:
 
    apsg.feature
    apsg.plotting
+   apsg.pandas
    apsg.database
    apsg.math
    apsg.helpers
