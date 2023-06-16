@@ -37,12 +37,11 @@ setup(
     ],
     packages=find_packages(where="src"),
     package_dir={"": "src"},
-    install_requires=["numpy", "matplotlib", "scipy", "pandas"],
+    install_requires=["numpy", "matplotlib", "scipy"],
     extras_require={
         "docs": ["sphinx", "ipykernel", "nbsphinx"],
-        "test": ["pytest"],
-        "lint": ["black"],
-        "jupyter": ["jupyterlab"],
+        "test": ["pytest", "black"],
+        "extra": ["jupyterlab", "pandas"],
     },
     project_urls={
         "Documentation": "https://apsg.readthedocs.io/",
