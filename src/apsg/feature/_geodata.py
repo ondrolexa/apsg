@@ -379,7 +379,7 @@ class Fault(Pair):
     Attributes:
         fvec (Vector3): corrected vector normal to plane
         lvec (Vector3): corrected vector of linear feature
-        sense (int): sense of movement
+        sense (int): sense of movement (+/-1)
 
     Example:
         >>> fault()
@@ -483,7 +483,6 @@ class Fault(Pair):
 
     @property
     def sense(self):
-        """Return sense of movement (+/-1)"""
         if self.rax == self.georax:
             return 1
         else:

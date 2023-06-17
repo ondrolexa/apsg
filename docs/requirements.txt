@@ -1,4 +1,5 @@
 ipykernel
 nbsphinx
 autodocsumm
+pandas
 git+https://github.com/ondrolexa/apsg.git
