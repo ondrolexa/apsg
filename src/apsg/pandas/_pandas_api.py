@@ -267,7 +267,9 @@ class FeatureSetAccessor:
 
     @property
     def getset(self):
-        return self._obj[self._col].array._obj
+        res = self._obj[self._col].array._obj
+        res.name = self._col
+        return res
 
     def R(self):
         # return resultant foliation of fols in DataFrame
@@ -276,6 +278,15 @@ class FeatureSetAccessor:
     def ortensor(self):
         # return orientation tensor of fols in DataFrame
         return self.getset.ortensor()
+
+    def contour(self, snet=None, **kwargs):
+        # plot data contours on StereoNet
+        if snet is None:
+            s = StereoNet()
+            s.contour(self.getset, **kwargs)
+            s.show()
+        else:
+            snet.contour(self.getset, **kwargs)
 
 
 @pd.api.extensions.register_dataframe_accessor("vec")
