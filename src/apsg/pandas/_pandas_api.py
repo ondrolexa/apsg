@@ -3,8 +3,8 @@ import pandas as pd
 from pandas.core.dtypes.dtypes import PandasExtensionDtype
 from pandas.api.extensions import ExtensionArray
 from apsg.math import Vector3
-from apsg.feature import Foliation, Lineation
-from apsg.feature import FoliationSet, LineationSet, Vector3Set
+from apsg.feature import Foliation, Lineation, Fault
+from apsg.feature import FoliationSet, LineationSet, Vector3Set, FaultSet
 from apsg.plotting import StereoNet
 
 """
@@ -88,6 +88,23 @@ class LinDtype(Vec3Dtype):
         return LinArray
 
 
+@pd.api.extensions.register_extension_dtype
+class FaultDtype(Vec3Dtype):
+    """
+    Class to describe the custom Fault data type
+    """
+
+    type = Fault  # Scalar type for data
+    name = "fault"  # String identifying the data type name
+
+    @classmethod
+    def construct_array_type(cls):
+        """
+        Return array type associated with this dtype
+        """
+        return FaultArray
+
+
 class Vector3Array(ExtensionArray):
     """
     Custom Extension Array type for an array of Vector3
@@ -98,7 +115,7 @@ class Vector3Array(ExtensionArray):
         Initialise array of vecs
 
         Args:
-            vecs (Vector3Set): set of vectors
+            vecs (Vector3Setor list of Vector3): set of vectors
         """
         self._obj = Vector3Set(vecs)
 
@@ -197,7 +214,7 @@ class FolArray(Vector3Array):
         Initialise array of fols
 
         Args:
-            fols (FoliationSet): set of fols
+            fols (FoliationSetor list of Foliation): set of fols
         """
         self._obj = FoliationSet(fols)
 
@@ -219,7 +236,7 @@ class LinArray(Vector3Array):
         Initialise array of lins
 
         Args:
-            lins (LineationSet): set of lins
+            lins (LineationSetor list of Lineation): set of lins
         """
         self._obj = LineationSet(lins)
 
@@ -229,6 +246,28 @@ class LinArray(Vector3Array):
         Return Dtype instance (not class) associated with this Array
         """
         return LinDtype()
+
+
+class FaultArray(Vector3Array):
+    """
+    Custom Extension Array type for an array of faults
+    """
+
+    def __init__(self, faults):
+        """
+        Initialise array of faults
+
+        Args:
+            faults (FaultSet or list of Fault): set of faults
+        """
+        self._obj = FaultSet(faults)
+
+    @property
+    def dtype(self):
+        """
+        Return Dtype instance (not class) associated with this Array
+        """
+        return FaultDtype()
 
 
 @pd.api.extensions.register_dataframe_accessor("apsg")
@@ -241,21 +280,57 @@ class APSGAccessor:
         self._obj = pandas_obj
 
     def create_vecs(self, columns=["x", "y", "z"], name="vecs"):
+        """Create column with `Vector3` features
+
+        Keyword Args:
+            columns (list): Columns containing either x, y and z components
+              or azi and inc. Default ["x", "y", "z"]
+            name (str): Name of created column. Default 'vecs'
+        """
         res = self._obj.copy()
         seq = [Vector3(*row.values) for _, row in self._obj[columns].iterrows()]
         res[name] = Vector3Array(seq)
         return res
 
     def create_fols(self, columns=["azi", "inc"], name="fols"):
+        """Create column with `Foliation` features
+
+        Keyword Args:
+            columns (list): Columns containing azi and inc.
+              Default ["azi", "inc"]
+            name (str): Name of created column. Default 'fols'
+        """
         res = self._obj.copy()
         seq = [Foliation(*row.values) for _, row in self._obj[columns].iterrows()]
         res[name] = FolArray(seq)
         return res
 
     def create_lins(self, columns=["azi", "inc"], name="lins"):
+        """Create column with `Lineation` features
+
+        Keyword Args:
+            columns (list): Columns containing azi and inc.
+              Default ["azi", "inc"]
+            name (str): Name of created column. Default 'lins'
+        """
         res = self._obj.copy()
         seq = [Lineation(*row.values) for _, row in self._obj[columns].iterrows()]
         res[name] = LinArray(seq)
+        return res
+
+    def create_faults(
+        self, columns=["fazi", "finc", "lazi", "linc", "sense"], name="faults"
+    ):
+        """Create column with `Fault` features
+
+        Keyword Args:
+            columns (list): Columns containing azi and inc.
+              Default ['fazi', 'finc', 'lazi', 'linc', 'sense']
+            name (str): Name of created column. Default 'lins'
+        """
+        res = self._obj.copy()
+        seq = [Fault(*row.values) for _, row in self._obj[columns].iterrows()]
+        res[name] = FaultArray(seq)
         return res
 
 
@@ -267,20 +342,58 @@ class FeatureSetAccessor:
 
     @property
     def getset(self):
+        """Get ``FeatureSet``"""
         res = self._obj[self._col].array._obj
         res.name = self._col
         return res
 
     def R(self):
-        # return resultant foliation of fols in DataFrame
+        """Return resultant of data in ``FeatureSet``."""
         return self.getset.R()
 
+    def fisher_k(self):
+        """Precision parameter based on Fisher's statistics"""
+        stats = self.getset.fisher_statistics()
+        return stats["k"]
+
+    def fisher_csd(self):
+        """Angular standard deviation based on Fisher's statistics"""
+        stats = self.getset.fisher_statistics()
+        return stats["csd"]
+
+    def fisher_a95(self):
+        """95% confidence limit based on Fisher's statistics"""
+        stats = self.getset.fisher_statistics()
+        return stats["a95"]
+
+    def var(self):
+        """Spherical variance based on resultant length (Mardia 1972).
+
+        var = 1 - abs(R) / n
+        """
+        return self.getset.var()
+
+    def delta(self):
+        """Cone angle containing ~63% of the data in degrees.
+
+        For enough large sample it approach angular standard deviation (csd)
+        of Fisher statistics
+        """
+        return self.getset.delta()
+
+    def rdegree(self):
+        """Degree of preffered orientation of vectors in ``FeatureSet``.
+
+        D = 100 * (2 * abs(R) - n) / n
+        """
+        return self.getset.rdegree()
+
     def ortensor(self):
-        # return orientation tensor of fols in DataFrame
+        """Return orientation tensor ``Ortensor`` of vectors in ``FeatureSet``."""
         return self.getset.ortensor()
 
     def contour(self, snet=None, **kwargs):
-        # plot data contours on StereoNet
+        """Plot data contours on StereoNet"""
         if snet is None:
             s = StereoNet()
             s.contour(self.getset, **kwargs)
@@ -297,7 +410,6 @@ class Vec3Accessor(FeatureSetAccessor):
 
     @staticmethod
     def _validate(obj):
-        # verify there is a vec type column
         ok = False
         for c, dtype in zip(obj.columns, obj.dtypes):
             if dtype == "vec":
@@ -309,7 +421,7 @@ class Vec3Accessor(FeatureSetAccessor):
             return c
 
     def vector(self, snet=None, **kwargs):
-        # plot vecs as vectors on StereoNet
+        """Plot vecs as vectors on StereoNet"""
         if snet is None:
             s = StereoNet()
             s.vector(self.getset, **kwargs)
@@ -326,7 +438,6 @@ class FolAccessor(FeatureSetAccessor):
 
     @staticmethod
     def _validate(obj):
-        # verify there is a fol type column
         ok = False
         for c, dtype in zip(obj.columns, obj.dtypes):
             if dtype == "fol":
@@ -338,7 +449,7 @@ class FolAccessor(FeatureSetAccessor):
             return c
 
     def great_circle(self, snet=None, **kwargs):
-        # plot fols as great circles on StereoNet
+        """Plot fols as great circles on StereoNet"""
         if snet is None:
             s = StereoNet()
             s.great_circle(self.getset, **kwargs)
@@ -364,7 +475,6 @@ class LinAccessor(FeatureSetAccessor):
 
     @staticmethod
     def _validate(obj):
-        # verify there is a fol type column
         ok = False
         for c, dtype in zip(obj.columns, obj.dtypes):
             if dtype == "lin":
@@ -376,10 +486,38 @@ class LinAccessor(FeatureSetAccessor):
             return c
 
     def line(self, snet=None, **kwargs):
-        # plot lins as line on StereoNet
+        """Plot lins as line on StereoNet"""
         if snet is None:
             s = StereoNet()
             s.line(self.getset, **kwargs)
             s.show()
         else:
             snet.line(self.getset, **kwargs)
+
+
+@pd.api.extensions.register_dataframe_accessor("fault")
+class FaultAccessor(FeatureSetAccessor):
+    """
+    `fault` DataFrame accessor provides methods for FaultSet
+    """
+
+    @staticmethod
+    def _validate(obj):
+        ok = False
+        for c, dtype in zip(obj.columns, obj.dtypes):
+            if dtype == "fault":
+                ok = True
+                break
+        if not ok:
+            raise AttributeError("Must have column with 'fault' dtype.")
+        else:
+            return c
+
+    def fault(self, snet=None, **kwargs):
+        """Plot vecs as vectors on StereoNet"""
+        if snet is None:
+            s = StereoNet()
+            s.fault(self.getset, **kwargs)
+            s.show()
+        else:
+            snet.fault(self.getset, **kwargs)
