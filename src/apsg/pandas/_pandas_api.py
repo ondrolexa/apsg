@@ -335,6 +335,10 @@ class APSGAccessor:
 
 
 class FeatureSetAccessor:
+    """
+    Base class of DataFrame accessors provides methods for FeatureSet
+    """
+
     def __init__(self, pandas_obj):
         c = self._validate(pandas_obj)
         self._obj = pandas_obj
