@@ -334,7 +334,7 @@ class APSGAccessor:
         return res
 
 
-class FeatureSetAccessor:
+class VectorSetBaseAccessor:
     """
     Base class of DataFrame accessors provides methods for FeatureSet
     """
@@ -407,7 +407,7 @@ class FeatureSetAccessor:
 
 
 @pd.api.extensions.register_dataframe_accessor("vec")
-class Vec3Accessor(FeatureSetAccessor):
+class Vec3Accessor(VectorSetBaseAccessor):
     """
     `vec` DataFrame accessor provides methods for Vector3Set
     """
@@ -424,7 +424,7 @@ class Vec3Accessor(FeatureSetAccessor):
         else:
             return c
 
-    def vector(self, snet=None, **kwargs):
+    def plot(self, snet=None, **kwargs):
         """Plot vecs as vectors on StereoNet"""
         if snet is None:
             s = StereoNet()
@@ -435,7 +435,7 @@ class Vec3Accessor(FeatureSetAccessor):
 
 
 @pd.api.extensions.register_dataframe_accessor("fol")
-class FolAccessor(FeatureSetAccessor):
+class FolAccessor(VectorSetBaseAccessor):
     """
     `fol` DataFrame accessor provides methods for FoliationSet
     """
@@ -452,27 +452,24 @@ class FolAccessor(FeatureSetAccessor):
         else:
             return c
 
-    def great_circle(self, snet=None, **kwargs):
+    def plot(self, snet=None, aspole=False, **kwargs):
         """Plot fols as great circles on StereoNet"""
         if snet is None:
             s = StereoNet()
-            s.great_circle(self.getset, **kwargs)
+            if aspole:
+                s.pole(self.getset, **kwargs)
+            else:
+                s.great_circle(self.getset, **kwargs)
             s.show()
         else:
-            snet.great_circle(self.getset, **kwargs)
-
-    def pole(self, snet=None, **kwargs):
-        # plot fols as poles on StereoNet
-        if snet is None:
-            s = StereoNet()
-            s.pole(self.getset, **kwargs)
-            s.show()
-        else:
-            snet.pole(self.getset, **kwargs)
+            if aspole:
+                snet.pole(self.getset, **kwargs)
+            else:
+                snet.great_circle(self.getset, **kwargs)
 
 
 @pd.api.extensions.register_dataframe_accessor("lin")
-class LinAccessor(FeatureSetAccessor):
+class LinAccessor(VectorSetBaseAccessor):
     """
     `lin` DataFrame accessor provides methods for LineationSet
     """
@@ -489,7 +486,7 @@ class LinAccessor(FeatureSetAccessor):
         else:
             return c
 
-    def line(self, snet=None, **kwargs):
+    def plot(self, snet=None, **kwargs):
         """Plot lins as line on StereoNet"""
         if snet is None:
             s = StereoNet()
@@ -500,10 +497,22 @@ class LinAccessor(FeatureSetAccessor):
 
 
 @pd.api.extensions.register_dataframe_accessor("fault")
-class FaultAccessor(FeatureSetAccessor):
+class FaultAccessor:
     """
     `fault` DataFrame accessor provides methods for FaultSet
     """
+
+    def __init__(self, pandas_obj):
+        c = self._validate(pandas_obj)
+        self._obj = pandas_obj
+        self._col = c
+
+    @property
+    def getset(self):
+        """Get ``FeatureSet``"""
+        res = self._obj[self._col].array._obj
+        res.name = self._col
+        return res
 
     @staticmethod
     def _validate(obj):
@@ -517,7 +526,7 @@ class FaultAccessor(FeatureSetAccessor):
         else:
             return c
 
-    def fault(self, snet=None, **kwargs):
+    def plot(self, snet=None, **kwargs):
         """Plot vecs as vectors on StereoNet"""
         if snet is None:
             s = StereoNet()

@@ -1,5 +1,4 @@
-sphinx<7
-sphinx_rtd_theme
+furo
 ipykernel
 nbsphinx
 autodocsumm
