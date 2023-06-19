@@ -26,7 +26,7 @@ from apsg.feature import (
     EllipsoidSet as ellipsoidset,
     OrientationTensor2Set as ortensor2set,
     OrientationTensor3Set as ortensorset,
-    Cluster as cluster,
+    ClusterSet as cluster,
 )
 from apsg.feature import (
     DeformationGradient3 as defgrad,

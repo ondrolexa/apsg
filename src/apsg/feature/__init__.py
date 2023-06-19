@@ -14,8 +14,8 @@ from apsg.feature._container import (
     EllipsoidSet,
     OrientationTensor2Set,
     OrientationTensor3Set,
-    Cluster,
     G,
+    ClusterSet,
 )
 from apsg.feature._tensor3 import (
     DeformationGradient3,
@@ -60,8 +60,8 @@ __all__ = (
     "EllipsoidSet",
     "OrientationTensor2Set",
     "OrientationTensor3Set",
-    "Cluster",
     "G",
+    "ClusterSet",
     "Core",
 )
 

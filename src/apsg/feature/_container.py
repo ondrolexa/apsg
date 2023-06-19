@@ -279,21 +279,6 @@ class Vector2Set(FeatureSet):
             self._cache["svd"] = np.linalg.svd(self._ortensor)
         return self._cache["svd"]
 
-    def centered(self, max_vertical=False):
-        """Rotate ``FeatureSet`` object to position that eigenvectors are parallel
-        to axes of coordinate system: E1||X (north-south), E2||X(east-west),
-        E3||X(vertical)
-
-        Args:
-            max_vertical: If True E1 is rotated to vertical. Default False
-
-        """
-        # if max_vertical:
-        #     return self.transform(self._svd[2]).rotate(Vector3(0, -1, 0), 90)
-        # else:
-        #     return self.transform(self._svd[2])
-        return NotImplemented
-
     def halfspace(self):
         """Change orientation of vectors in ``FeatureSet``, so all have angle<=90 with
         resultant.
@@ -311,9 +296,6 @@ class Vector2Set(FeatureSet):
                 v = Vector3Set(v_data)
                 alldone = np.all(v.angle(v.R()) <= 90)
         return type(self)([dtype_cls(vec) for vec in v], name=self.name)
-
-    def cluster(self):
-        return NotImplemented
 
     @classmethod
     def from_direction(cls, angles, name="Default"):
@@ -625,9 +607,6 @@ class Vector3Set(FeatureSet):
                 v = Vector3Set(v_data)
                 alldone = np.all(v.angle(v.R()) <= 90)
         return type(self)([dtype_cls(vec) for vec in v], name=self.name)
-
-    def cluster(self):
-        return NotImplemented
 
     @classmethod
     def from_csv(cls, filename, acol=0, icol=1):
@@ -1575,7 +1554,7 @@ class OrientationTensor3Set(EllipsoidSet):
     __feature_type__ = "OrientationTensor3"
 
 
-class Cluster(object):
+class ClusterSet(object):
     """
     Provides a hierarchical clustering using `scipy.cluster` routines.
     The distance matrix is calculated as an angle between features, where ``Fol`` and
@@ -1601,7 +1580,7 @@ class Cluster(object):
         else:
             crit = "Criterion: Maxclust\nSettings: muxclust=%.4g\n" % (self.maxclust)
         return (
-            "Clustering object\n"
+            "ClusterSet\n"
             + "Number of data: %d\n" % len(self.data)
             + "Linkage method: %s\n" % self.method
             + crit
