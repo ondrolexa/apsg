@@ -1557,8 +1557,8 @@ class OrientationTensor3Set(EllipsoidSet):
 class ClusterSet(object):
     """
     Provides a hierarchical clustering using `scipy.cluster` routines.
-    The distance matrix is calculated as an angle between features, where ``Fol`` and
-    ``Lin`` use axial angles while ``Vec3`` uses direction angles.
+    The distance matrix is calculated as an angle between features, where ``Foliation``
+    and ``Lineation`` use axial angles while ``Vector3`` uses direction angles.
     """
 
     def __init__(self, d, **kwargs):
