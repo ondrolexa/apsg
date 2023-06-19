@@ -1,13 +1,13 @@
 default_stages: [commit, push]
 repos:
   - repo: https://github.com/psf/black
-    rev: 22.8.0
+    rev: 23.3.0
     hooks:
     - id: black
       exclude: ^(venv/|docs/)
       types: ['python']
   - repo: https://github.com/PyCQA/flake8
-    rev: 5.0.4
+    rev: 6.0.0
     hooks:
     - id: flake8
       args:
@@ -21,7 +21,7 @@ repos:
       name: pytest
       stages: ['commit']
       language: system
-      entry: pytest -s -v .
+      entry: /home/ondro/miniforge3/envs/apsg/bin/python -m pytest -s -v .
       types: ['python']
       pass_filenames: false
       always_run: true
