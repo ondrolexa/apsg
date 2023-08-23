@@ -246,9 +246,9 @@ class RosePlot(object):
                         theta, self._kwargs["kappa"], loc=np.radians(a)
                     )
             radii /= len(ang)
+            radii *= weight
             if self._kwargs["scaled"]:
                 radii = np.sqrt(radii)
-            radii *= weight
             if legend:
                 kwargs["label"] = arg.label()
                 self.ax.fill_between(theta, bottom + radii, y2=bottom, **kwargs)
