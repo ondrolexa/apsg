@@ -4,8 +4,6 @@ from matplotlib.patches import Circle
 import matplotlib.pyplot as plt
 
 from apsg.config import apsg_conf
-from apsg.feature._statistics import estimate_k
-from apsg.math._vector import Vector3
 from apsg.feature._geodata import Lineation
 from apsg.feature._container import Vector3Set
 from apsg.plotting._projection import EqualAreaProj, EqualAngleProj
@@ -15,16 +13,18 @@ class StereoGrid:
     """
     The class to store values with associated uniformly positions.
 
-    ``StereoGrid`` is used to calculate continous functions on sphere e.g. density distribution.
+    ``StereoGrid`` is used to calculate continous functions on sphere e.g. density
+    distribution.
 
     Keyword Args:
-        kind (str): Equal area ("equal-area", "schmidt" or "earea") or equal angle ("equal-angle",
-          "wulff" or "eangle") projection. Default is "equal-area"
+        kind (str): Equal area ("equal-area", "schmidt" or "earea") or equal angle
+            ("equal-angle", "wulff" or "eangle") projection. Default is "equal-area"
         hemisphere (str): "lower" or "upper". Default is "lower"
-        overlay_position (tuple or Pair): Position of overlay X, Y, Z given by Pair. X is direction
-          of linear element, Z is normal to planar. Default is (0, 0, 0, 0)
-        rotate_data (bool): Whether plotted data should be rotated together with overlay.
-          Default False
+        overlay_position (tuple or Pair): Position of overlay X, Y, Z given by Pair.
+            X is direction of linear element, Z is normal to planar.
+            Default is (0, 0, 0, 0)
+        rotate_data (bool): Whether data should be rotated together with overlay.
+            Default False
         minor_ticks (None or float): Default None
         major_ticks (None or float): Default None
         overlay (bool): Whether to show overlay. Default is True
@@ -34,7 +34,8 @@ class StereoGrid:
         grid_type (str): Type of contouring grid "gss" or "sfs". Default "gss"
         grid_n (int): Number of counting points in grid. Default 3000
 
-    Note: Euclidean norms are used as weights. Normalize data if you dont want to use weigths.
+    Note: Euclidean norms are used as weights. Normalize data if you dont want to use
+    weigths.
 
     """
 

@@ -5,8 +5,6 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 
 from apsg.config import apsg_conf
-from apsg.feature._tensor3 import Ellipsoid
-from apsg.feature._container import EllipsoidSet
 from apsg.plotting._plot_artists import FabricPlotArtistFactory
 from apsg.feature import feature_from_json
 
@@ -264,7 +262,6 @@ class VollmerPlot(FabricPlot):
     ########################################
 
     def _triplot(self, a, b, c, **kwargs):
-
         a = np.atleast_1d(a)
         b = np.atleast_1d(b)
         c = np.atleast_1d(c)

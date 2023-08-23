@@ -10,7 +10,6 @@ from apsg.config import apsg_conf
 from apsg.math._vector import Vector3
 from apsg.feature._geodata import Lineation, Foliation, Pair, Fault, Cone
 from apsg.feature._container import (
-    FeatureSet,
     Vector3Set,
     LineationSet,
     FoliationSet,
@@ -19,8 +18,6 @@ from apsg.feature._container import (
 )
 from apsg.feature import feature_from_json
 from apsg.plotting._stereogrid import StereoGrid
-from apsg.feature._tensor3 import OrientationTensor3
-from apsg.plotting._projection import EqualAreaProj, EqualAngleProj
 from apsg.plotting._plot_artists import StereoNetArtistFactory
 
 __all__ = ["StereoNet"]
@@ -33,13 +30,14 @@ class StereoNet:
     Keyword Args:
         title (str): figure title. Default None.
         tight_layout (bool): Matplotlib figure tight_layout. Default False
-        kind (str): Equal area ("equal-area", "schmidt" or "earea") or equal angle ("equal-angle",
-          "wulff" or "eangle") projection. Default is "equal-area"
+        kind (str): Equal area ("equal-area", "schmidt" or "earea") or equal angle
+            ("equal-angle", "wulff" or "eangle") projection. Default is "equal-area"
         hemisphere (str): "lower" or "upper". Default is "lower"
-        overlay_position (tuple or Pair): Position of overlay X, Y, Z given by Pair. X is direction
-          of linear element, Z is normal to planar. Default is (0, 0, 0, 0)
-        rotate_data (bool): Whether plotted data should be rotated together with overlay.
-          Default False
+        overlay_position (tuple or Pair): Position of overlay X, Y, Z given by Pair.
+            X is direction of linear element, Z is normal to planar.
+            Default is (0, 0, 0, 0)
+        rotate_data (bool): Whether data should be rotated together with overlay.
+            Default False
         minor_ticks (None or float): Default None
         major_ticks (None or float): Default None
         overlay (bool): Whether to show overlay. Default is True
@@ -230,9 +228,9 @@ class StereoNet:
         """Format stereonet coordinates"""
         if x is not None and y is not None:
             if (x**2 + y**2) <= 1:
-                l = Lineation(*self.proj.inverse_data(x, y))
-                f = Foliation(*self.proj.inverse_data(x, y))
-                return f"{l} {f}"
+                lcoord = Lineation(*self.proj.inverse_data(x, y))
+                fcoord = Foliation(*self.proj.inverse_data(x, y))
+                return f"{lcoord} {fcoord}"
         return ""
 
     def show(self):
@@ -354,7 +352,8 @@ class StereoNet:
 
     def contour(self, *args, **kwargs):
         """
-        Plot filled contours using modified Kamb contouring technique with exponential smoothing
+        Plot filled contours using modified Kamb contouring technique with exponential
+        smoothing.
 
         Keyword Args:
             levels (int or list): number or values of contours. Default 6
@@ -363,7 +362,8 @@ class StereoNet:
             alpha (float): transparency. Default None
             antialiased (bool): Default True
             sigma (float): If None it is automatically calculated
-            sigmanorm (bool): If True scaled counts are normalized by sigma. Default True
+            sigmanorm (bool): If True scaled counts are normalized by sigma.
+                Default True
             trimzero (bool): Remove values equal to 0. Default True
             clines (bool): Show contour lines instead filled contours. Default False
             linewidths (float): contour lines width

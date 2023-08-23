@@ -1,4 +1,3 @@
-import sys
 import pickle
 
 import numpy as np
@@ -6,8 +5,6 @@ import matplotlib.pyplot as plt
 from scipy.stats import vonmises, circmean
 
 from apsg.config import apsg_conf
-from apsg.math._vector import Vector2
-from apsg.feature._container import Vector2Set
 from apsg.plotting._plot_artists import RosePlotArtistFactory
 from apsg.feature import feature_from_json
 
@@ -225,6 +222,7 @@ class RosePlot(object):
     def _pdf(self, *args, **kwargs):
         bottom = np.zeros_like(self._kwargs["pdf_res"])
         legend = kwargs.pop("legend")
+        weight = kwargs.pop("weight")
         theta = np.linspace(-np.pi, np.pi, self._kwargs["pdf_res"])
         for arg in args:
             ang = arg.direction % 360
@@ -250,6 +248,7 @@ class RosePlot(object):
             radii /= len(ang)
             if self._kwargs["scaled"]:
                 radii = np.sqrt(radii)
+            radii *= weight
             if legend:
                 kwargs["label"] = arg.label()
                 self.ax.fill_between(theta, bottom + radii, y2=bottom, **kwargs)

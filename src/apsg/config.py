@@ -176,6 +176,7 @@ apsg_conf = dict(
         ls="-",
         lw=1.5,
         legend=False,
+        weight=1,
     ),
     roseplot_default_muci_kwargs=dict(
         confidence_level=95,

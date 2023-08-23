@@ -1,20 +1,17 @@
 import numpy as np
 
 from apsg.config import apsg_conf
-from apsg.math._vector import Vector2, Vector3
-from apsg.feature._geodata import Lineation, Foliation, Pair, Fault, Cone
-from apsg.feature._tensor3 import Ellipsoid, OrientationTensor3
+from apsg.math._vector import Vector3
+from apsg.feature._geodata import Foliation, Pair, Fault, Cone
+from apsg.feature._tensor3 import Ellipsoid
 from apsg.feature._container import (
-    FeatureSet,
     Vector3Set,
     Vector2Set,
-    LineationSet,
     FoliationSet,
     PairSet,
     FaultSet,
     ConeSet,
     EllipsoidSet,
-    OrientationTensor3Set,
 )
 
 # StereoNet
