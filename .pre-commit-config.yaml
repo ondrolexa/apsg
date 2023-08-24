@@ -21,7 +21,7 @@ repos:
       name: pytest
       stages: ['commit']
       language: system
-      entry: /home/ondro/miniforge3/envs/apsg/bin/python -m pytest -s -v .
+      entry: /home/ondro/mambaforge/envs/apsg/bin/python -m pytest -s -v .
       types: ['python']
       pass_filenames: false
       always_run: true

@@ -261,7 +261,24 @@ class StereoNet:
     ########################################
 
     def line(self, *args, **kwargs):
-        """Plot linear feature(s) as point(s)"""
+        """
+        Plot linear feature(s) as point(s)
+
+        Args:
+            Vector3 or Vector3Set like feature(s)
+
+        Keyword Args:
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color of the point. Default None
+            mec (color): Set the edge color. Default None
+            mfc (color): Set the face color. Default None
+            mew (float): Set the marker edge width. Default 1
+            ms (float): Set the marker size. Default 6
+            marker (str): Marker style string. Default "o"
+            ls (str): Line style string (only for multiple features).
+                Default None
+
+        """
         try:
             artist = StereoNetArtistFactory.create_point(*args, **kwargs)
             self._artists.append(artist)
@@ -269,7 +286,24 @@ class StereoNet:
             print(err)
 
     def pole(self, *args, **kwargs):
-        """Plot pole of planar feature(s) as point(s)"""
+        """
+        Plot pole of planar feature(s) as point(s)
+
+        Args:
+            Foliation or FoliationSet feature(s)
+
+        Keyword Args:
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color of the point. Default None
+            mec (color): Set the edge color. Default None
+            mfc (color): Set the face color. Default None
+            mew (float): Set the marker edge width. Default 1
+            ms (float): Set the marker size. Default 6
+            marker (str): Marker style string. Default "o"
+            ls (str): Line style string (only for multiple features).
+                Default None
+
+        """
         try:
             artist = StereoNetArtistFactory.create_pole(*args, **kwargs)
             self._artists.append(artist)
@@ -277,8 +311,26 @@ class StereoNet:
             print(err)
 
     def vector(self, *args, **kwargs):
-        """Plot vector feature(s) as point(s),
-        filled on lower and open on upper hemisphere."""
+        """
+        Plot vector feature(s) as point(s)
+
+        Note: Markers are filled on lower and open on upper hemisphere.
+
+        Args:
+            Vector3 or Vector3Set like feature(s)
+
+        Keyword Args:
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color of the point. Default None
+            mec (color): Set the edge color. Default None
+            mfc (color): Set the face color. Default None
+            mew (float): Set the marker edge width. Default 1
+            ms (float): Set the marker size. Default 6
+            marker (str): Marker style string. Default "o"
+            ls (str): Line style string (only for multiple features).
+                Default None
+
+        """
         try:
             artist = StereoNetArtistFactory.create_vector(*args, **kwargs)
             self._artists.append(artist)
@@ -286,7 +338,26 @@ class StereoNet:
             print(err)
 
     def scatter(self, *args, **kwargs):
-        """Plot vector-like feature(s) as point(s) using scatter"""
+        """
+        Plot vector-like feature(s) as point(s)
+
+        Note: This method is using scatter plot to allow variable colors
+            or sizes of points
+
+        Args:
+            Vector3 or Vector3Set like feature(s)
+
+        Keyword Args:
+            s (list or array):
+            c (list or array)
+            alpha (scalar): Set the alpha value. Default None
+            linewidths (float): The linewidth of the marker edges. Default 1.5
+            marker (str): Marker style string. Default "o"
+            cmap (str): Mtplotlib colormap. Default None
+            legend (bool): Whether to show legend. Default False
+            num (int): NUmber of legend items. Default "auto"
+
+        """
         try:
             artist = StereoNetArtistFactory.create_scatter(*args, **kwargs)
             self._artists.append(artist)
@@ -294,7 +365,20 @@ class StereoNet:
             print(err)
 
     def great_circle(self, *args, **kwargs):
-        """Plot planar feature(s) as great circle(s)"""
+        """
+        Plot planar feature(s) as great circle(s)
+
+        Args:
+            Foliation or FoliationSet feature(s)
+
+        Keyword Args:
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color of the point. Default None
+            ls (str): Line style string (only for multiple features).
+                Default "-"
+            lw (float): Set line width. Default 1.5
+
+        """
         try:
             artist = StereoNetArtistFactory.create_great_circle(*args, **kwargs)
             self._artists.append(artist)
@@ -302,7 +386,22 @@ class StereoNet:
             print(err)
 
     def arc(self, *args, **kwargs):
-        """Plot arc bewtween two vectors along great circle(s)"""
+        """
+        Plot arc bewtween vectors along great circle(s)
+
+        Note: You should pass several features in connection order
+
+        Args:
+            Vector3 or Vector3Set like feature(s)
+
+        Keyword Args:
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color of the point. Default None
+            ls (str): Line style string (only for multiple features).
+                Default "-"
+            lw (float): Set line width. Default 1.5
+
+        """
         try:
             artist = StereoNetArtistFactory.create_arc(*args, **kwargs)
             self._artists.append(artist)
@@ -310,7 +409,21 @@ class StereoNet:
             print(err)
 
     def cone(self, *args, **kwargs):
-        """Plot small circle(s) with given angle(s)"""
+        """"""
+        """
+        Plot cone(s) as small circle(s) with given apical angle(s)
+
+        Args:
+            Cone or ConeSet feature(s)
+
+        Keyword Args:
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color of the point. Default None
+            ls (str): Line style string (only for multiple features).
+                Default "-"
+            lw (float): Set line width. Default 1.5
+
+        """
         try:
             artist = StereoNetArtistFactory.create_cone(*args, **kwargs)
             self._artists.append(artist)
