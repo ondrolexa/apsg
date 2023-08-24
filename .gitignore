@@ -54,3 +54,6 @@ docs/notebooks/.ipynb_checkpoints/
 # virtual environment
 .venv
 
+# pre-commit
+.pre-commit-config.yaml
+
