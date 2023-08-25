@@ -258,7 +258,7 @@ class StereoNet_Arrow(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_quiver_kwargs")
+        super().update_kwargs("stereonet_default_arrow_kwargs")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:

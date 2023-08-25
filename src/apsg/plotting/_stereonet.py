@@ -431,7 +431,21 @@ class StereoNet:
             print(err)
 
     def pair(self, *args, **kwargs):
-        """Plot pair feature(s) as great circle and point"""
+        """
+        Plot pair feature(s) as great circle and point
+
+        Args:
+            Pair or PairSet feature(s)
+
+        Keyword Args:
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color of the point. Default None
+            ls (str): Line style string (only for multiple features).
+                Default "-"
+            lw (float): Set line width. Default 1.5
+            line_marker (str): Marker style string for point. Default "o"
+
+        """
         try:
             artist = StereoNetArtistFactory.create_pair(*args, **kwargs)
             self._artists.append(artist)
@@ -439,7 +453,22 @@ class StereoNet:
             print(err)
 
     def fault(self, *args, **kwargs):
-        """Plot fault feature(s) as great circle and point"""
+        """
+        Plot fault feature(s) as great circle and arrow
+
+        Note: Arrow is styled according to default arrow config
+
+        Args:
+            Fault or FaultSet feature(s)
+
+        Keyword Args:
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color of the point. Default None
+            ls (str): Line style string (only for multiple features).
+                Default "-"
+            lw (float): Set line width. Default 1.5
+
+        """
         try:
             artist = StereoNetArtistFactory.create_fault(*args, **kwargs)
             self._artists.append(artist)
@@ -447,7 +476,22 @@ class StereoNet:
             print(err)
 
     def hoeppner(self, *args, **kwargs):
-        """Plot a fault-and-striae as in tangent lineation plot - Hoeppner plot."""
+        """
+        Plot fault feature(s) on Hoeppner (tangent lineation) plot
+
+        Note: Arrow is styled according to default arrow config
+
+        Args:
+            Fault or FaultSet feature(s)
+
+        Keyword Args:
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color of the point. Default None
+            ls (str): Line style string (only for multiple features).
+                Default "-"
+            lw (float): Set line width. Default 1.5
+
+        """
         try:
             artist = StereoNetArtistFactory.create_hoeppner(*args, **kwargs)
             self._artists.append(artist)
@@ -455,8 +499,23 @@ class StereoNet:
             print(err)
 
     def arrow(self, *args, **kwargs):
-        """Plot arrows at position of first argument
-        and oriented in direction of second"""
+        """
+        Plot arrow at position of first argument
+        and oriented in direction of second
+
+        Note: You should pass two features
+
+        Args:
+            Vector3 or Vector3Set like feature(s)
+
+        Keyword Args:
+            color (color): Set the color of the arrow. Default None
+            width (int): Width of arrow. Default 2
+            headwidth (int): Width of arrow head. Default 5
+            pivot (str): Arrow pivot. Default "mid"
+            units (str): Arrow size units. Default "dots"
+
+        """
         try:
             artist = StereoNetArtistFactory.create_arrow(*args, **kwargs)
             self._artists.append(artist)
@@ -467,6 +526,9 @@ class StereoNet:
         """
         Plot filled contours using modified Kamb contouring technique with exponential
         smoothing.
+
+        Args:
+            Vector3Set like feature
 
         Keyword Args:
             levels (int or list): number or values of contours. Default 6
@@ -482,7 +544,7 @@ class StereoNet:
             linewidths (float): contour lines width
             linestyles (str): contour lines style
             show_data (bool): Show data as points. Default False
-            data_kwargs (dict): arguments passed to point factory
+            data_kwargs (dict): arguments passed to point factory when `show_data` True
         """
         try:
             artist = StereoNetArtistFactory.create_contour(*args, **kwargs)
@@ -715,7 +777,7 @@ class StereoNet:
 
     def _fault(self, *args, **kwargs):
         h = self._great_circle(*[arg.fol for arg in args], **kwargs)
-        quiver_kwargs = apsg_conf["stereonet_default_quiver_kwargs"]
+        quiver_kwargs = apsg_conf["stereonet_default_arrow_kwargs"]
         quiver_kwargs["pivot"] = "tail"
         quiver_kwargs["color"] = h[0].get_color()
         for arg in args:
@@ -723,7 +785,7 @@ class StereoNet:
 
     def _hoeppner(self, *args, **kwargs):
         h = self._line(*[arg.fol for arg in args], **kwargs)
-        quiver_kwargs = apsg_conf["stereonet_default_quiver_kwargs"]
+        quiver_kwargs = apsg_conf["stereonet_default_arrow_kwargs"]
         quiver_kwargs["color"] = h[0].get_color()
         for arg in args:
             self._arrow(arg.fol, arg.lin, sense=arg.sense, **quiver_kwargs)

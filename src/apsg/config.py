@@ -85,10 +85,6 @@ apsg_conf = dict(
         color=None,
         ls="-",
         lw=1.5,
-        mec=None,
-        mew=1,
-        mfc=None,
-        ms=4,
         line_marker="o",
     ),
     stereonet_default_fault_kwargs=dict(
@@ -96,10 +92,6 @@ apsg_conf = dict(
         color=None,
         ls="-",
         lw=1.5,
-        mec=None,
-        mew=1,
-        mfc=None,
-        ms=2,
     ),
     stereonet_default_hoeppner_kwargs=dict(
         alpha=None,
@@ -111,7 +103,7 @@ apsg_conf = dict(
         mew=1,
         ms=5,
     ),
-    stereonet_default_quiver_kwargs=dict(
+    stereonet_default_arrow_kwargs=dict(
         color=None,
         width=2,
         headwidth=5,

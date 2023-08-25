@@ -162,7 +162,23 @@ class RosePlot(object):
     ########################################
 
     def bar(self, *args, **kwargs):
-        """Plot rose histogram of angles"""
+        """
+        Plot rose histogram of angles
+
+        Args:
+            Vector2Set feature(s)
+
+        Keyword Args:
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color of the point. Default None
+            ec (color): Patch edge color. Default None
+            fc (color): Patch face color. Default None
+            ls (str): Line style string (only for multiple features).
+                Default "-"
+            lw (float): Set line width. Default 1.5
+            legend (bool): Whether to show legend. Default False
+
+        """
         try:
             artist = RosePlotArtistFactory.create_bar(*args, **kwargs)
             self._artists.append(artist)
@@ -170,7 +186,25 @@ class RosePlot(object):
             print(err)
 
     def pdf(self, *args, **kwargs):
-        """Plot rose histogram of angles"""
+        """
+        Plot Von Mises probability density function from angles
+
+        Args:
+            Vector2Set feature(s)
+
+        Keyword Args:
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color of the point. Default None
+            ec (color): Patch edge color. Default None
+            fc (color): Patch face color. Default None
+            ls (str): Line style string (only for multiple features).
+                Default "-"
+            lw (float): Set line width. Default 1.5
+            legend (bool): Whether to show legend. Default False
+            weight (float): Factor to scale probability density function
+                Default 1
+
+        """
         try:
             artist = RosePlotArtistFactory.create_pdf(*args, **kwargs)
             self._artists.append(artist)
@@ -178,7 +212,23 @@ class RosePlot(object):
             print(err)
 
     def muci(self, *args, **kwargs):
-        """Plot circular mean with confidence interval"""
+        """
+        Plot circular mean with bootstrapped confidence interval
+
+        Args:
+            Vector2Set feature(s)
+
+        Keyword Args:
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color of the point. Default None
+            ls (str): Line style string (only for multiple features).
+                Default "-"
+            lw (float): Set line width. Default 1.5
+            confidence_level (float): Confidence interval. Default 95
+            n_resamples (int): Number of bootstrapped samples.
+                Default 9999
+
+        """
         try:
             artist = RosePlotArtistFactory.create_muci(*args, **kwargs)
             self._artists.append(artist)
