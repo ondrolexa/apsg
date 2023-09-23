@@ -133,7 +133,6 @@ class StereoNet:
             radius=1,
             edgecolor="black",
             fill=False,
-            clip_box="None",
             label="_nolegend_",
         )
         self.ax.add_patch(self.primitive)
@@ -368,6 +367,8 @@ class StereoNet:
         """
         Plot planar feature(s) as great circle(s)
 
+        Note: ``great_circle`` has also alias ``gc``
+
         Args:
             Foliation or FoliationSet feature(s)
 
@@ -384,6 +385,8 @@ class StereoNet:
             self._artists.append(artist)
         except TypeError as err:
             print(err)
+
+    gc = great_circle
 
     def arc(self, *args, **kwargs):
         """
@@ -518,6 +521,32 @@ class StereoNet:
         """
         try:
             artist = StereoNetArtistFactory.create_arrow(*args, **kwargs)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
+    def tensor(self, *args, **kwargs):
+        """
+        Plot principal planes or principal directions of tensor
+
+        Args:
+            OrientationTensor3 like feature(s)
+
+        Keyword Args:
+            planes (bool): When True, plot principal planes, otherwise principal
+                directions. Default True
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color. Default is red, green, blue for s1, s2, s3
+            ls (str): Line style string (only for multiple features).
+                Default "-"
+            lw (float): Set line width. Default 1.5
+            mew (float): Set the marker edge width. Default 1
+            ms (float): Set the marker size. Default 9
+            marker (str): Marker style string. Default "o"
+
+        """
+        try:
+            artist = StereoNetArtistFactory.create_tensor(*args, **kwargs)
             self._artists.append(artist)
         except TypeError as err:
             print(err)
@@ -824,6 +853,30 @@ class StereoNet:
         u, v = sense * dx / mag, sense * dy / mag
         h = self.ax.quiver(x, y, u, v, **kwargs)
         h.set_clip_path(self.primitive)
+
+    def _tensor(self, *args, **kwargs):
+        if kwargs.get("planes"):
+            selkw = {
+                key: kwargs[key]
+                for key in kwargs.keys() & {"alpha", "ls", "lw", "label"}
+            }
+            fols = args[0].eigenfols
+            if kwargs["color"] is None:
+                del kwargs["color"]
+            self._great_circle(fols[0], color=kwargs.get("color", "red"), **selkw)
+            self._great_circle(fols[1], color=kwargs.get("color", "green"), **selkw)
+            self._great_circle(fols[2], color=kwargs.get("color", "blue"), **selkw)
+        else:
+            selkw = {
+                key: kwargs[key]
+                for key in kwargs.keys() & {"alpha", "marker", "mew", "ms", "label"}
+            }
+            lins = args[0].eigenfols
+            if kwargs["color"] is None:
+                del kwargs["color"]
+            self._line(lins[0], color=kwargs.get("color", "red"), **selkw)
+            self._line(lins[1], color=kwargs.get("color", "green"), **selkw)
+            self._line(lins[2], color=kwargs.get("color", "blue"), **selkw)
 
     def _contour(self, *args, **kwargs):
         sigma = kwargs.pop("sigma")

@@ -49,6 +49,7 @@ __all__ = (
     "Stress2",
     "Ellipse",
     "OrientationTensor2",
+    "Vector2Set",
     "FeatureSet",
     "Vector3Set",
     "LineationSet",

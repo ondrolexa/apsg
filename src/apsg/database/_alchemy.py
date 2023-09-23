@@ -8,7 +8,7 @@ import os
 from datetime import datetime
 import contextlib
 
-from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
+from apsg.feature._geodata import Lineation, Foliation, Pair
 from apsg.feature._container import LineationSet, FoliationSet
 
 from sqlalchemy import create_engine, event

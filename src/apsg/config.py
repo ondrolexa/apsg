@@ -110,6 +110,16 @@ apsg_conf = dict(
         pivot="mid",
         units="dots",
     ),
+    stereonet_default_tensor_kwargs=dict(
+        planes=True,
+        alpha=None,
+        color=None,
+        ls="-",
+        lw=1.5,
+        marker="o",
+        mew=1,
+        ms=9,
+    ),
     stereonet_default_contour_kwargs=dict(
         alpha=None,
         antialiased=True,

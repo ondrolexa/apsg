@@ -20,7 +20,8 @@ def ensure_arguments(*datatypes):
                 return method(self, *nargs, **kwargs)
             else:
                 raise TypeError(
-                    f'Unsupported arguments for {method.__name__}. Must be {" or ".join([dt.__name__ for dt in datatypes])}'
+                    f'Unsupported arguments for {method.__name__}. \
+                      Must be {" or ".join([dt.__name__ for dt in datatypes])}'
                 )
 
         return wrapper

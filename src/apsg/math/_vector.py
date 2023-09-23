@@ -508,7 +508,9 @@ class Vector3(Vector):
 
     @ensure_first_arg_same
     def rotate(self, axis, theta):
-        """Return the vector rotated around axis through angle theta. Right hand rule applies"""
+        """Return the vector rotated around axis through angle theta. Right-hand rule
+        applies
+        """
         v = Vector3(self)  # ensure vector
         k = Vector3(axis.uv())
         return type(self)(

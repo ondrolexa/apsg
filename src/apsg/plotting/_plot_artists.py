@@ -3,7 +3,7 @@ import numpy as np
 from apsg.config import apsg_conf
 from apsg.math._vector import Vector3
 from apsg.feature._geodata import Foliation, Pair, Fault, Cone
-from apsg.feature._tensor3 import Ellipsoid
+from apsg.feature._tensor3 import Tensor3, Ellipsoid
 from apsg.feature._container import (
     Vector3Set,
     Vector2Set,
@@ -270,6 +270,20 @@ class StereoNet_Arrow(StereoNet_Artists):
         )
 
 
+class StereoNet_Tensor(StereoNet_Artists):
+    def __init__(self, factory, *args, **kwargs):
+        super().__init__(factory, *args, **kwargs)
+        self.stereonet_method = "_tensor"
+        self.args = args[:1]  # take max 1 args
+        self.parse_kwargs(kwargs)
+
+    def parse_kwargs(self, kwargs):
+        super().update_kwargs("stereonet_default_tensor_kwargs")
+        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        if not isinstance(self.kwargs["label"], str):
+            self.kwargs["label"] = self.args[0].label()
+
+
 class StereoNet_Contour(StereoNet_Artists):
     def __init__(self, factory, *args, **kwargs):
         super().__init__(factory, *args, **kwargs)
@@ -374,6 +388,13 @@ class StereoNetArtistFactory:
     def create_arrow(*args, **kwargs):
         if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args[:2]]):
             return StereoNet_Arrow("create_arrow", *args, **kwargs)
+        else:
+            raise TypeError("Not valid arguments for Stereonet arrow")
+
+    @staticmethod
+    def create_tensor(*args, **kwargs):
+        if all([issubclass(type(arg), Tensor3) for arg in args[:1]]):
+            return StereoNet_Tensor("create_tensor", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet arrow")
 

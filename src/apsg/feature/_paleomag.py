@@ -7,7 +7,6 @@ from datetime import datetime
 
 import numpy as np
 
-from apsg.config import apsg_conf
 from apsg.helpers._helper import eformat
 from apsg.math._vector import Vector3
 from apsg.feature._geodata import Lineation, Foliation, Pair

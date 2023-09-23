@@ -26,8 +26,8 @@ class DeformationGradient3(Matrix3):
 
     @classmethod
     def from_ratios(cls, Rxy=1, Ryz=1):
-        """Return isochoric ``DeformationGradient3`` tensor with axial stretches defined by strain ratios.
-        Default is identity tensor.
+        """Return isochoric ``DeformationGradient3`` tensor with axial stretches
+        defined by strain ratios. Default is identity tensor.
 
         Keyword Args:
           Rxy (float): XY strain ratio
@@ -122,8 +122,8 @@ class DeformationGradient3(Matrix3):
         Return ``DeformationGradient3`` representing rotation of vector v1 to v2 around
         axis a.
 
-        If v1.angle(a) is not equal to v2.angle(b), the minimum adjustment of rotation axis
-        is done automatically.
+        If v1.angle(a) is not equal to v2.angle(b), the minimum adjustment of rotation
+        axis is done automatically.
 
         Args:
           v1: ``Vector3`` like object
@@ -200,13 +200,15 @@ class DeformationGradient3(Matrix3):
 
     @property
     def U(self):
-        """Return stretching part of ``DeformationGradient3`` from right polar decomposition."""
+        """Return stretching part of ``DeformationGradient3`` from right polar
+        decomposition."""
         _, U = spla.polar(self, "right")
         return type(self)(U)
 
     @property
     def V(self):
-        """Return stretching part of ``DeformationGradient3`` from left polar decomposition."""
+        """Return stretching part of ``DeformationGradient3`` from left polar
+        decomposition."""
         _, V = spla.polar(self, "left")
         return type(self)(V)
 
@@ -231,7 +233,8 @@ class DeformationGradient3(Matrix3):
 
     def velgrad(self, time=1):
         """
-        Return ``VelocityGradient3`` calculated as matrix logarithm divided by given time.
+        Return ``VelocityGradient3`` calculated as matrix logarithm divided by given
+        time.
 
         Keyword Args:
             time (float): total time. Default 1
@@ -498,8 +501,8 @@ class Stress3(Tensor3):
     @property
     def diagonalized(self):
         """
-        Returns diagonalized Stress tensor and orthogonal matrix R, which transforms actual
-        coordinate system to the principal one.
+        Returns diagonalized Stress tensor and orthogonal matrix R, which transforms
+        actual coordinate system to the principal one.
 
         """
         return (
@@ -599,7 +602,8 @@ class Ellipsoid(Tensor3):
     """
 
     def __repr__(self) -> str:
-        return f"{Matrix3.__repr__(self)}\n(S1:{self.S1:.3g}, S2:{self.S2:.3g}, S3:{self.S3:.3g})"
+        return f"{Matrix3.__repr__(self)}\n\
+                 (S1:{self.S1:.3g}, S2:{self.S2:.3g}, S3:{self.S3:.3g})"
 
     @classmethod
     def from_defgrad(cls, F, form="left", **kwargs) -> "Ellipsoid":

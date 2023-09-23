@@ -7,29 +7,6 @@ from apsg.feature import Foliation, Lineation, Fault
 from apsg.feature import FoliationSet, LineationSet, Vector3Set, FaultSet
 from apsg.plotting import StereoNet
 
-"""
-import pandas as pd
-from apsg import *
-from apsg.pandas import *
-df = pd.DataFrame({
-    'name':['A', 'B', 'C'],
-    'azi':[120, 140, 135],
-    'inc':[30, 28, 42]
-})
-
-df.apsg.create_fols().fol.R()
-
-df = pd.DataFrame({
-    'name':['A', 'B', 'C'],
-    'fazi':[120, 140, 135],
-    'finc':[30, 28, 42],
-    'lazi':[170, 120, 95],
-    'linc':[20, 26, 22]
-})
-
-df.apsg.create_fols(columns=['fazi', 'finc']).apsg.create_lins(columns=['lazi', 'linc'])
-"""
-
 
 @pd.api.extensions.register_extension_dtype
 class Vec3Dtype(PandasExtensionDtype):

@@ -224,7 +224,8 @@ class Matrix2(Matrix):
 
     @classmethod
     def from_comp(cls, xx=1, xy=0, yx=0, yy=1):
-        """Return ``Matrix2`` defined by individual components. Default is identity tensor.
+        """Return ``Matrix2`` defined by individual components. Default is identity
+        tensor.
 
         Keyword Args:
             xx (float): tensor component M_xx
@@ -310,7 +311,8 @@ class Matrix3(Matrix):
 
     @classmethod
     def from_comp(cls, xx=1, xy=0, xz=0, yx=0, yy=1, yz=0, zx=0, zy=0, zz=1):
-        """Return ``Matrix3`` defined by individual components. Default is identity tensor.
+        """Return ``Matrix3`` defined by individual components. Default is identity
+        tensor.
 
         Keyword Args:
             xx (float): tensor component M_xx

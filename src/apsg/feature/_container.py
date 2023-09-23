@@ -6,7 +6,6 @@ from scipy.stats import vonmises
 from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 
 from apsg.config import apsg_conf
-from apsg.helpers._math import sind, cosd, atan2d
 from apsg.math._vector import Vector2, Vector3
 from apsg.helpers._math import acosd
 from apsg.feature._geodata import Lineation, Foliation, Pair, Fault, Cone
@@ -75,7 +74,7 @@ class FeatureSet:
             return type(self)([self.data[ix] for ix in idxs])
         else:
             raise TypeError(
-                "Wrong index. Only slice, int and numpy array for fancy indexing are allowed."
+                "Wrong index. Only slice, int and np.array are allowed for indexing."
             )
 
     def __iter__(self):
@@ -103,9 +102,9 @@ class FeatureSet:
           >>> l = Vector3Set.random_fisher(n=100, position=lin(120,40))
           >>> sm = [lb.R() for lb in l.bootstrap()]
           >>> l.fisher_statistics()
-          {'k': 19.912361106049794, 'a95': 3.2490273703993973, 'csd': 18.151964734256303}
+          {'k': 19.91236110604979, 'a95': 3.249027370399397, 'csd': 18.15196473425630}
           >>> Vector3Set(sm).fisher_statistics()
-          {'k': 1735.3602067018592, 'a95': 0.33932243564473413, 'csd': 1.9444205467798013}
+          {'k': 1735.360206701859, 'a95': 0.3393224356447341, 'csd': 1.944420546779801}
         """
         if size is None:
             size = len(self)
@@ -198,7 +197,7 @@ class Vector2Set(FeatureSet):
         """Return affine transformation of all features ``FeatureSet`` by matrix 'F'.
 
         Args:
-          F: Transformation matrix. Should be array-like value e.g. ``DeformationGradient3``
+          F: Transformation matrix. Array-like value e.g. ``DeformationGradient3``
 
         Keyword Args:
           norm: normalize transformed features. True or False. Default False
@@ -333,7 +332,8 @@ class Vector2Set(FeatureSet):
 
     @classmethod
     def random(cls, n=100, name="Default"):
-        """Method to create ``FeatureSet`` of features with uniformly distributed random orientation.
+        """Method to create ``FeatureSet`` of features with uniformly distributed
+        random orientation.
 
         Keyword Args:
           n: number of objects to be generated
@@ -473,7 +473,7 @@ class Vector3Set(FeatureSet):
         """Return affine transformation of all features ``FeatureSet`` by matrix 'F'.
 
         Args:
-          F: Transformation matrix. Should be array-like value e.g. ``DeformationGradient3``
+          F: Transformation matrix. Array-like value e.g. ``DeformationGradient3``
 
         Keyword Args:
           norm: normalize transformed features. True or False. Default False
@@ -745,8 +745,8 @@ class Vector3Set(FeatureSet):
 
     @classmethod
     def random_fisher(cls, n=100, position=Vector3(0, 0, 1), kappa=20, name="Default"):
-        """Return ``FeatureSet`` of random vectors sampled from von Mises Fisher distribution
-        around center position with concentration kappa.
+        """Return ``FeatureSet`` of random vectors sampled from von Mises Fisher
+        distribution around center position with concentration kappa.
 
         Args:
           n: number of objects to be generated
@@ -766,8 +766,8 @@ class Vector3Set(FeatureSet):
         """Method to create ``FeatureSet`` of vectors distributed according to
         Fisher distribution.
 
-        Note: For proper von Mises Fisher distrinbution implementation use ``random.fisher``
-        method.
+        Note: For proper von Mises Fisher distrinbution implementation use
+        ``random.fisher`` method.
 
         Args:
           n: number of objects to be generated
@@ -1527,14 +1527,16 @@ class EllipsoidSet(FeatureSet):
     @property
     def MAD_l(self) -> np.ndarray:
         """
-        Return maximum angular deviation (MAD) of linearly distributed vectors. Kirschvink 1980
+        Return maximum angular deviation (MAD) of linearly distributed vectors.
+        Kirschvink 1980
         """
         return np.array([e.MAD_l for e in self])
 
     @property
     def MAD_p(self) -> np.ndarray:
         """
-        Return maximum angular deviation (MAD) of planarly distributed vectors. Kirschvink 1980
+        Return maximum angular deviation (MAD) of planarly distributed vectors.
+        Kirschvink 1980
         """
         return np.array([e.MAD_p for e in self])
 
