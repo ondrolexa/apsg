@@ -1,7 +1,7 @@
 <img src="https://ondrolexa.github.io/apsg/apsg_banner.svg" alt="APSG logo" width="300px"/>
 
 [![PyPI - Version](https://img.shields.io/pypi/v/apsg)](https://pypi.org/project/apsg)
-[![Conda](https://img.shields.io/conda/v/:channel/:package)](https://anaconda.org/conda-forge/apsg)
+[![Conda](https://img.shields.io/conda/v/conda-forge/apsg)](https://anaconda.org/conda-forge/apsg)
 [![Documentation Status](https://readthedocs.org/projects/apsg/badge/?version=stable)](https://apsg.readthedocs.io/en/stable/?badge=stable)
 [![DOI](https://zenodo.org/badge/24879346.svg)](https://zenodo.org/badge/latestdoi/24879346)
 
