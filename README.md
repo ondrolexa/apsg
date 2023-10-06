@@ -1,8 +1,7 @@
 <img src="https://ondrolexa.github.io/apsg/apsg_banner.svg" alt="APSG logo" width="300px"/>
 
-[![GitHub version](https://badge.fury.io/gh/ondrolexa%2Fapsg.svg)](https://badge.fury.io/gh/ondrolexa%2Fapsg)
-[![Python testing](https://github.com/ondrolexa/apsg/actions/workflows/pythontest.yml/badge.svg)](https://github.com/ondrolexa/apsg/actions/workflows/pythontest.yml)
-[![Upload Python Package](https://github.com/ondrolexa/apsg/actions/workflows/release.yml/badge.svg)](https://github.com/ondrolexa/apsg/actions/workflows/release.yml)
+[![PyPI - Version](https://img.shields.io/pypi/v/apsg)](https://pypi.org/project/apsg)
+[![Conda](https://img.shields.io/conda/v/:channel/:package)](https://anaconda.org/conda-forge/apsg)
 [![Documentation Status](https://readthedocs.org/projects/apsg/badge/?version=stable)](https://apsg.readthedocs.io/en/stable/?badge=stable)
 [![DOI](https://zenodo.org/badge/24879346.svg)](https://zenodo.org/badge/latestdoi/24879346)
 
