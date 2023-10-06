@@ -1,5 +1,8 @@
 # Changes
 
+### 1.1.1 (Oct 06 2023)
+ * sigma estimate contour fix
+
 ## 1.1.0 (Oct 04 2023)
 APSG offers convenient pandas integration via pandas accessors.
 
