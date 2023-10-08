@@ -91,7 +91,7 @@ class FabricPlot(object):
                 numpoints=1,
             )
         if self._kwargs["title"] is not None:
-            self.fig.suptitle(self._kwargs["title"])
+            self.fig.suptitle(self._kwargs["title"], **self._kwargs["title_kws"])
         if self._kwargs["tight_layout"]:
             self.fig.tight_layout()
 
@@ -135,6 +135,8 @@ class VollmerPlot(FabricPlot):
 
     Keyword Args:
         title (str): figure title. Default None.
+        title_kws (dict): dictionary of keyword arguments passed to matplotlib suptitle
+            method.
         ticks (bool): Show ticks. Default True
         n_ticks (int): Number of ticks. Default 10
         tick_size (float): Size of ticks. Default 0.2
@@ -293,6 +295,25 @@ class RamsayPlot(FabricPlot):
 
     """
     Represents the Ramsay deformation plot.
+
+    Keyword Args:
+        title (str): figure title. Default None.
+        title_kws (dict): dictionary of keyword arguments passed to matplotlib suptitle
+            method.
+        ticks (bool): Show ticks. Default True
+        n_ticks (int): Number of ticks. Default 10
+        tick_size (float): Size of ticks. Default 0.2
+        margin (float): Size of margin. Default 0.05
+        grid (bool): Show grid. Default is True
+        grid_color (str): Matplotlib color of the grid. Default "k"
+        grid_style (str): Matplotlib style of the grid. Default ":"
+
+    Examples:
+        >>> l = linset.random_fisher(position=lin(120, 40))
+        >>> ot = l.ortensor()
+        >>> s = RamsayPlot(title="Point distribution")
+        >>> s.point(ot)
+        >>> s.show()
     """
 
     def __init__(self, *args, **kwargs):
@@ -368,6 +389,25 @@ class FlinnPlot(FabricPlot):
 
     """
     Represents the Ramsay deformation plot.
+
+    Keyword Args:
+        title (str): figure title. Default None.
+        title_kws (dict): dictionary of keyword arguments passed to matplotlib suptitle
+            method.
+        ticks (bool): Show ticks. Default True
+        n_ticks (int): Number of ticks. Default 10
+        tick_size (float): Size of ticks. Default 0.2
+        margin (float): Size of margin. Default 0.05
+        grid (bool): Show grid. Default is True
+        grid_color (str): Matplotlib color of the grid. Default "k"
+        grid_style (str): Matplotlib style of the grid. Default ":"
+
+    Examples:
+        >>> l = linset.random_fisher(position=lin(120, 40))
+        >>> ot = l.ortensor()
+        >>> s = FlinnPlot(title="Point distribution")
+        >>> s.point(ot)
+        >>> s.show()
     """
 
     def __init__(self, *args, **kwargs):
@@ -443,6 +483,25 @@ class HsuPlot(FabricPlot):
 
     """
     Represents the Hsu fabric plot.
+
+    Keyword Args:
+        title (str): figure title. Default None.
+        title_kws (dict): dictionary of keyword arguments passed to matplotlib suptitle
+            method.
+        ticks (bool): Show ticks. Default True
+        n_ticks (int): Number of ticks. Default 10
+        tick_size (float): Size of ticks. Default 0.2
+        margin (float): Size of margin. Default 0.05
+        grid (bool): Show grid. Default is True
+        grid_color (str): Matplotlib color of the grid. Default "k"
+        grid_style (str): Matplotlib style of the grid. Default ":"
+
+    Examples:
+        >>> l = linset.random_fisher(position=lin(120, 40))
+        >>> ot = l.ortensor()
+        >>> s = HsuPlot(title="Point distribution")
+        >>> s.point(ot)
+        >>> s.show()
     """
 
     def __init__(self, *args, **kwargs):

@@ -18,6 +18,8 @@ class RosePlot(object):
 
     Keyword Args:
         title (str): figure title. Default None
+        title_kws (dict): dictionary of keyword arguments passed to matplotlib suptitle
+            method.
         bins (int): Number of bins. Default 36
         axial (bool): Directional data are axial. Defaut True
         density (bool): Use density instead of counts. Default False
@@ -27,7 +29,7 @@ class RosePlot(object):
         scaled (bool): Bins scaled by area instead value. Default False
         ticks (bool): show ticks. Default True
         grid (bool): show grid lines. Default False
-        grid_kw (dict): Dict passed to Axes.grid. Default {}
+        grid_kws (dict): Dict passed to Axes.grid. Default {}
 
         Other keyword arguments are passed to matplotlib plot.
 
@@ -53,7 +55,7 @@ class RosePlot(object):
         # self.ax.format_coord = self.format_coord
         self.ax.set_theta_direction(-1)
         self.ax.set_theta_zero_location("N")
-        self.ax.grid(self._kwargs["grid"], **self._kwargs["grid_kw"])
+        self.ax.grid(self._kwargs["grid"], **self._kwargs["grid_kws"])
 
     def _plot_artists(self):
         for artist in self._artists:
@@ -121,7 +123,7 @@ class RosePlot(object):
                 numpoints=1,
             )
         if self._kwargs["title"] is not None:
-            self.fig.suptitle(self._kwargs["title"])
+            self.fig.suptitle(self._kwargs["title"], **self._kwargs["title_kws"])
         if self._kwargs["tight_layout"]:
             self.fig.tight_layout()
 

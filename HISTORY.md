@@ -1,5 +1,8 @@
 # Changes
 
+### 1.1.2 (master)
+ * added title_kws argument of plotting routines
+
 ### 1.1.1 (Oct 06 2023)
  * sigma estimate contour fix
 

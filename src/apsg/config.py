@@ -21,6 +21,7 @@ apsg_conf = dict(
         grid_type="gss",
         grid_n=3000,
         tight_layout=False,
+        title_kws=dict(),
     ),
     stereonet_default_point_kwargs=dict(
         alpha=None,
@@ -146,8 +147,9 @@ apsg_conf = dict(
         pdf_res=901,
         title=None,
         grid=True,
-        grid_kw=dict(),
+        grid_kws=dict(),
         tight_layout=False,
+        title_kws=dict(),
     ),
     roseplot_default_bar_kwargs=dict(
         alpha=None,
@@ -186,6 +188,7 @@ apsg_conf = dict(
         grid_style=":",
         title=None,
         tight_layout=False,
+        title_kws=dict(),
     ),
     fabricplot_default_point_kwargs=dict(
         alpha=None,

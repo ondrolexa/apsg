@@ -29,6 +29,8 @@ class StereoNet:
 
     Keyword Args:
         title (str): figure title. Default None.
+        title_kws (dict): dictionary of keyword arguments passed to matplotlib suptitle
+            method.
         tight_layout (bool): Matplotlib figure tight_layout. Default False
         kind (str): Equal area ("equal-area", "schmidt" or "earea") or equal angle
             ("equal-angle", "wulff" or "eangle") projection. Default is "equal-area"
@@ -209,7 +211,7 @@ class StereoNet:
                 numpoints=1,
             )
         if self._kwargs["title"] is not None:
-            self.fig.suptitle(self._kwargs["title"])
+            self.fig.suptitle(self._kwargs["title"], **self._kwargs["title_kws"])
         if self._kwargs["tight_layout"]:
             self.fig.tight_layout()
 
@@ -573,7 +575,7 @@ class StereoNet:
             linewidths (float): contour lines width
             linestyles (str): contour lines style
             show_data (bool): Show data as points. Default False
-            data_kwargs (dict): arguments passed to point factory when `show_data` True
+            data_kws (dict): arguments passed to point factory when `show_data` True
         """
         try:
             artist = StereoNetArtistFactory.create_contour(*args, **kwargs)
@@ -888,7 +890,7 @@ class StereoNet:
         linewidths = kwargs.pop("linewidths")
         linestyles = kwargs.pop("linestyles")
         show_data = kwargs.pop("show_data")
-        data_kwargs = kwargs.pop("data_kwargs")
+        data_kws = kwargs.pop("data_kws")
         if not self.grid.calculated:
             if len(args) > 0:
                 self.grid.calculate_density(
@@ -910,7 +912,7 @@ class StereoNet:
             for collection in cl.collections:
                 collection.set_clip_path(self.primitive)
         if show_data:
-            artist = StereoNetArtistFactory.create_point(*args[0], **data_kwargs)
+            artist = StereoNetArtistFactory.create_point(*args[0], **data_kws)
             self._line(*artist.args, **artist.kwargs)
         if colorbar:
             self.fig.colorbar(cf, ax=self.ax, shrink=0.5, anchor=(0.0, 0.3))
