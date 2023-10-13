@@ -399,6 +399,16 @@ class Stress3(Tensor3):
 
         return type(self)(self - self.hydrostatic)
 
+    def effective(self, fp):
+        """
+        A effective stress tensor reduced by fluid pressure
+
+        Args:
+            fp (flot): fluid pressure
+        """
+
+        return type(self)(self + fp * Stress3())
+
     @property
     def sigma1(self):
         """
@@ -568,6 +578,40 @@ class Stress3(Tensor3):
 
         sn, tau = self.stress_comp(n)
         return abs(tau)
+
+    def slip_tendency(self, n, fp=0, log=False):
+        """
+        Return slip tendency calculated as the ratio of shear stress
+        to normal stress acting on the plane.
+
+        Note: Providing fluid pressure effective normal stress is calculated
+
+        Keyword Args:
+          fp (float): fluid pressure. Default 0
+          log (bool): when True, returns logarithm of slip tendency
+
+        """
+
+        Se = self.effective(fp)
+        sn, tau = Se.stress_comp(n)
+        if log:
+            return np.log(abs(tau) / abs(sn))
+        else:
+            return abs(tau) / abs(sn)
+
+    def dilation_tendency(self, n, fp=0):
+        """
+        Return dilation tendency of the plane.
+
+        Note: Providing fluid pressure effective stress is used
+
+        Keyword Args:
+          fp (float): fluid pressure. Default 0
+
+        """
+        Se = self.effective(fp)
+        sn, tau = Se.stress_comp(n)
+        return (Se.sigma1 - abs(sn)) / (Se.sigma1 - Se.sigma3)
 
     @property
     def shape_ratio(self):

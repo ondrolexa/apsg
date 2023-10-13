@@ -134,7 +134,7 @@ apsg_conf = dict(
         sigma=None,
         sigmanorm=True,
         show_data=False,
-        data_kwargs=dict(),
+        data_kws=dict(),
     ),
     roseplot_default_kwargs=dict(
         bins=36,
