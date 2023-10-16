@@ -186,7 +186,8 @@ class Pair:
         - `p` could be Pair
         - `p` could be tuple of (fazi, finc, lazi, linc)
         - `p` could be tuple of (fx, fy ,fz, lx, ly, lz)
-    - with 2 arguments f and l could be Vector3 like objects, e.g. Foliation and Lineation
+    - with 2 arguments f and l could be Vector3 like objects,
+      e.g. Foliation and Lineation
     - with four numerical arguments defining `fol(fazi, finc)` and `lin(lazi, linc)`
 
     Args:
@@ -366,7 +367,8 @@ class Fault(Pair):
         - `p` could be Fault
         - `p` could be tuple of (fazi, finc, lazi, linc, sense)
         - `p` could be tuple of (fx, fy ,fz, lx, ly, lz)
-    - with 2 arguments f and l could be Vector3 like objects, e.g. ``Foliation`` and ``Lineation``
+    - with 2 arguments f and l could be Vector3 like objects,
+      e.g. ``Foliation`` and ``Lineation``
     - with 5 numerical arguments defining `fol(fazi, finc)`, `lin(lazi, linc)` and sense
 
     Args:

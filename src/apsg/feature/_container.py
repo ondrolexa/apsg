@@ -417,6 +417,8 @@ class Vector3Set(FeatureSet):
         """Return projections of all features in ``FeatureSet`` onto vector."""
         return type(self)([e.project(vec) for e in self], name=self.name)
 
+    proj = project
+
     def reject(self, vec):
         """Return rejections of all features in ``FeatureSet`` onto vector."""
         return type(self)([e.reject(vec) for e in self], name=self.name)
