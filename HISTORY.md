@@ -1,5 +1,10 @@
 # Changes
 
+### 1.1.3 (Oct 23 2023)
+Bugfix release
+ * slip and dilatation tendency methods added to stress
+ * proj alias of project for FeatureSet added
+
 ### 1.1.2 (Oct 09 2023)
  * added title_kws argument for plotting routines
 
