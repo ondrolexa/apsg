@@ -173,7 +173,7 @@ class Vector2(Vector):
             coords = (1, 0)
         if len(args) == 1:
             if np.asarray(args[0]).shape == Vector2.__shape__:
-                coords = np.asarray(args[0])
+                coords = tuple(c.item() for c in np.asarray(args[0]))
             elif isinstance(args[0], str):
                 if args[0].lower() == "x":
                     coords = (1, 0)
@@ -375,7 +375,7 @@ class Vector3(Vector):
             coords = (1, 0, 0)
         elif len(args) == 1:
             if np.asarray(args[0]).shape == Vector3.__shape__:
-                coords = np.asarray(args[0])
+                coords = tuple(c.item() for c in np.asarray(args[0]))
             elif isinstance(args[0], str):
                 if args[0].lower() == "x":
                     coords = (1, 0, 0)
