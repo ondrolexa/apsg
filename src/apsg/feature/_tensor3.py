@@ -339,8 +339,23 @@ class Stress3(Tensor3):
     """
     The class to represent 3D stress tensor.
 
-    Note: Tensile normal stresses have positive values,
-    and compressive normal stresses have negative values.
+    The real eigenvalues of the stress tensor are what we call
+    the principal stresses. There are 3 of these in 3D, available
+    as properties E1, E2, and E3 in descending order of magnitude
+    (max, intermediate, and minimum principal stresses) with orientations
+    available as properties V1, V2 and V3. The minimum principal stress
+    is simply the eigenvalue that has the lowest magnitude. Therefore,
+    the maximum principal stress is the most tensile (least compressive)
+    and the minimum principal stress is the least tensile (most compressive).
+    Tensile normal stresses have positive values, and compressive normal
+    stresses have negative values. If the maximum principal stress is <=0 and the minimum principal stress
+    is negative then the stresses are completely compressive.
+
+    Note: Stress tensor has a special properties sigma1, sigma2 and sigma3
+    to follow common geological terminology. sigma1 is most compressive
+    (least tensile) while sigma3 is most tensile (least compressive).
+    Their orientation could be accessed with properties sigma1dir,
+    sigma2dir and sigma3dir.
 
     Args:
       a (3x3 array_like): Input data, that can be converted to
