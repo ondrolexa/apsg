@@ -454,7 +454,7 @@ class Ellipse(Tensor2):
         """
         Return the orientation of the maximum eigenvector.
         """
-        return self.eigenvectors()[np.argmax(self.eigenvalues())].direction % 180
+        return self.V1.direction % 180
 
     @property
     def e12(self) -> float:
@@ -493,10 +493,10 @@ class OrientationTensor2(Ellipse):
     @classmethod
     def from_features(cls, g) -> "OrientationTensor2":
         """
-        Return ``Ortensor`` of data in ``Group``
+        Return ``Ortensor`` of data in Vector2Set features
 
         Args:
-            g: ``Group`` of ``Vector2``, ``Lin`` or ``Foliation``
+            g (Vector2Set): Set of features
 
         Example:
           >>> v = vec2set.random_vonmises(position=120)

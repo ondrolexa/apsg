@@ -661,8 +661,10 @@ class Ellipsoid(Tensor3):
     """
 
     def __repr__(self) -> str:
-        return f"{Matrix3.__repr__(self)}\n\
-                 (S1:{self.S1:.3g}, S2:{self.S2:.3g}, S3:{self.S3:.3g})"
+        return (
+            f"{Matrix3.__repr__(self)}\n"
+            f"(S1:{self.S1:.3g}, S2:{self.S2:.3g}, S3:{self.S3:.3g})"
+        )
 
     @classmethod
     def from_defgrad(cls, F, form="left", **kwargs) -> "Ellipsoid":
@@ -987,10 +989,10 @@ class OrientationTensor3(Ellipsoid):
     @classmethod
     def from_features(cls, g) -> "OrientationTensor3":
         """
-        Return ``Ortensor`` of data in ``Group``
+        Return ``Ortensor`` of data in Vector3Set of features
 
         Args:
-            g: ``Group`` of ``Vector3``, ``Lin`` or ``Foliation``
+            g (Vector3Set): Set of features
 
         Example:
           >>> g = linset.random_fisher(position=lin(120,50))
