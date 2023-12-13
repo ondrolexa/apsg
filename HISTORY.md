@@ -1,5 +1,8 @@
 # Changes
 
+### 1.1.4 (Dec 13 2023)
+ * Ellipsoid repr bugfix
+
 ### 1.1.3 (Oct 23 2023)
 Bugfix release
  * slip and dilatation tendency methods added to stress
