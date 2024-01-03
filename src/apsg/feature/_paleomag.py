@@ -274,7 +274,7 @@ class Core(object):
         data["a95"] = body[ix]["Prec"].to_list()
         data["vectors"] = []
         for n, r in body[ix].iterrows():
-            data["vectors"].append(r[2] * Vector3(r["Dsp"], r["Isp"]))
+            data["vectors"].append(r.iloc[2] * Vector3(r["Dsp"], r["Isp"]))
         return cls(**data)
 
     def write_rs3(self, filename=None):
@@ -342,9 +342,9 @@ class Core(object):
         ):
             ln = "{:<4} {: 9.2E} {: 9.2E} {: 9.2E} {: 9.2E} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:4.1f} {}".format(
                 step,
-                V[0],
-                V[1],
-                V[2],
+                V.x,
+                V.y,
+                V.z,
                 MAG,
                 geo.geo[0],
                 geo.geo[1],
