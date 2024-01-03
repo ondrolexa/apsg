@@ -156,10 +156,10 @@ class Core(object):
         infoln = "{:<8}  a={:5.1f}   b={:5.1f}   s={:5.1f}   d={:5.1f}   v={}m3  {}"
         ln0 = infoln.format(
             ff,
-            self.gref.lin.dd[0],
-            self.gref.lin.dd[1],
-            self.bedding.dd[0],
-            self.bedding.dd[1],
+            self.gref.lin.geo[0],
+            self.gref.lin.geo[1],
+            self.bedding.geo[0],
+            self.bedding.geo[1],
             eformat(self.volume, 2),
             dt,
         )
@@ -295,14 +295,14 @@ class Core(object):
         latitude = self.latitude if self.latitude is not None else ""
         longitude = self.longitude if self.longitude is not None else ""
         height = self.height if self.height is not None else ""
-        sdec, sinc = (round(self.gref.fol.dd[0]), round(self.gref.fol.dd[1]))
+        sdec, sinc = (round(self.gref.fol.geo[0]), round(self.gref.fol.geo[1]))
         bdec, binc = (
-            (round(self.bedding.dd[0]), round(self.bedding.dd[1]))
+            (round(self.bedding.geo[0]), round(self.bedding.geo[1]))
             if self.bedding is not None
             else ("", "")
         )
         fdec, finc = (
-            (round(self.foldaxis.dd[0]), round(self.foldaxis.dd[1]))
+            (round(self.foldaxis.geo[0]), round(self.foldaxis.geo[1]))
             if self.foldaxis is not None
             else ("", "")
         )
@@ -324,7 +324,7 @@ class Core(object):
                 self.a95,
                 self.comments,
             ):
-                ln = f"{id:2} {step:<10} {MAG:>13g} {V.dd[0]:>5.1f} {V.dd[1]:> 5.1f} {geo.dd[0]:>5.1f} {geo.dd[1]:> 5.1f} {tilt.dd[0]:>5.1f} {tilt.dd[1]:> 5.1f}             {a95:>5.1f}                                   {comment:10}"
+                ln = f"{id:2} {step:<10} {MAG:>13g} {V.geo[0]:>5.1f} {V.geo[1]:> 5.1f} {geo.geo[0]:>5.1f} {geo.geo[1]:> 5.1f} {tilt.geo[0]:>5.1f} {tilt.geo[1]:> 5.1f}             {a95:>5.1f}                                   {comment:10}"
                 print(ln, file=res3file, end="\r\n")
 
     @property
@@ -346,10 +346,10 @@ class Core(object):
                 V[1],
                 V[2],
                 MAG,
-                geo.dd[0],
-                geo.dd[1],
-                tilt.dd[0],
-                tilt.dd[1],
+                geo.geo[0],
+                geo.geo[1],
+                tilt.geo[0],
+                tilt.geo[1],
                 a95,
                 comment,
             )
@@ -399,7 +399,7 @@ class Core(object):
     def tilt(self):
         """Returns ``Vector3Set`` of vectors in tilt‐corrected coordinates system"""
         return self.geo.rotate(
-            Lineation(self.bedding.dd[0] - 90, 0), -self.bedding.dd[1]
+            Lineation(self.bedding.geo[0] - 90, 0), -self.bedding.geo[1]
         )
 
     def pca(self, kind="geo", origin=False):

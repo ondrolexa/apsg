@@ -1,5 +1,8 @@
 # Changes
 
+### 1.1.5 master
+ * paleomag Core .dd bug fixed
+
 ### 1.1.4 (Dec 13 2023)
  * Ellipsoid repr bugfix
 
