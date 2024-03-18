@@ -142,18 +142,18 @@ class Vector2Set(FeatureSet):
         return np.asarray([e.direction for e in self]).T
 
     def proj(self, vec):
-        """Return projections of all features in ``FeatureSet`` onto vector."""
+        """Return projections of all features in ``Vector2Set`` onto vector."""
         return type(self)([e.project() for e in self], name=self.name)
 
     def dot(self, vec):
-        """Return array of dot products of all features in ``FeatureSet`` with vector."""
+        """Return array of dot products of all features in ``Vector2Set`` with vector."""
         return np.array([e.dot(vec) for e in self])
 
     def cross(self, other=None):
-        """Return cross products of all features in ``FeatureSet``
+        """Return cross products of all features in ``Vector2Set``
 
         Without arguments it returns cross product of all pairs in dataset.
-        If argument is ``FeatureSet`` of same length or single data object
+        If argument is ``Vector2Set`` of same length or single data object
         element-wise cross-products are calculated.
         """
         res = []
@@ -170,10 +170,10 @@ class Vector2Set(FeatureSet):
     __pow__ = cross
 
     def angle(self, other=None):
-        """Return angles of all data in ``FeatureSet`` object
+        """Return angles of all data in ``Vector2Set`` object
 
         Without arguments it returns angles of all pairs in dataset.
-        If argument is ``FeatureSet`` of same length or single data object
+        If argument is ``Vector2Set`` of same length or single data object
         element-wise angles are calculated.
         """
         res = []
@@ -188,13 +188,13 @@ class Vector2Set(FeatureSet):
         return np.asarray(res)
 
     def normalized(self):
-        """Return ``FeatureSet`` object with normalized (unit length) elements."""
+        """Return ``Vector2Set`` object with normalized (unit length) elements."""
         return type(self)([e.normalized() for e in self], name=self.name)
 
     uv = normalized
 
     def transform(self, F, **kwargs):
-        """Return affine transformation of all features ``FeatureSet`` by matrix 'F'.
+        """Return affine transformation of all features ``Vector2Set`` by matrix 'F'.
 
         Args:
           F: Transformation matrix. Array-like value e.g. ``DeformationGradient3``
@@ -206,12 +206,12 @@ class Vector2Set(FeatureSet):
         return type(self)([e.transform(F, **kwargs) for e in self], name=self.name)
 
     def R(self, mean=False):
-        """Return resultant of data in ``FeatureSet`` object.
+        """Return resultant of data in ``Vector2Set`` object.
 
-        Resultant is of same type as features in ``FeatureSet``. Note
-        that ``Foliation`` and ``Lineation`` are axial in nature so
-        resultant can give other result than expected. Anyway for axial
-        data orientation tensor analysis will give you right answer.
+        Resultant is of same type as features in ``Vector2Set``. Note
+        that ``Axial2`` is axial in nature so resultant can give
+        other result than expected. Anyway for axial data orientation
+        tensor analysis will give you right answer.
 
         Args:
             mean: if True returns mean resultant. Default False
@@ -254,7 +254,7 @@ class Vector2Set(FeatureSet):
         return acosd(abs(self.R(mean=True)))
 
     def rdegree(self):
-        """Degree of preffered orientation of vectors in ``FeatureSet``.
+        """Degree of preffered orientation of vectors in ``Vector2Set``.
 
         D = 100 * (2 * abs(R) - n) / n
         """
@@ -279,7 +279,7 @@ class Vector2Set(FeatureSet):
         return self._cache["svd"]
 
     def halfspace(self):
-        """Change orientation of vectors in ``FeatureSet``, so all have angle<=90 with
+        """Change orientation of vectors in ``Vector2Set``, so all have angle<=90 with
         resultant.
 
         """
@@ -298,13 +298,13 @@ class Vector2Set(FeatureSet):
 
     @classmethod
     def from_direction(cls, angles, name="Default"):
-        """Create ``FeatureSet`` object from arrays of direction angles
+        """Create ``Vector2Set`` object from arrays of direction angles
 
         Args:
           angles: list or angles
 
         Keyword Args:
-          name: name of ``FeatureSet`` object. Default is 'Default'
+          name: name of ``Vector2Set`` object. Default is 'Default'
 
         Example:
           >>> f = vec2set.from_angles([120,130,140,125, 132. 131])
@@ -314,14 +314,14 @@ class Vector2Set(FeatureSet):
 
     @classmethod
     def from_xy(cls, x, y, name="Default"):
-        """Create ``FeatureSet`` object from arrays of x and y components
+        """Create ``Vector2Set`` object from arrays of x and y components
 
         Args:
           x: list or array of x components
           y: list or array of y components
 
         Keyword Args:
-          name: name of ``FeatureSet`` object. Default is 'Default'
+          name: name of ``Vector2Set`` object. Default is 'Default'
 
         Example:
           >>> v = vec2set.from_xy([-0.4330127, -0.4330127, -0.66793414],
@@ -332,7 +332,7 @@ class Vector2Set(FeatureSet):
 
     @classmethod
     def random(cls, n=100, name="Default"):
-        """Method to create ``FeatureSet`` of features with uniformly distributed
+        """Method to create ``Vector2Set`` of features with uniformly distributed
         random orientation.
 
         Keyword Args:
@@ -349,7 +349,7 @@ class Vector2Set(FeatureSet):
 
     @classmethod
     def random_vonmises(cls, n=100, position=0, kappa=5, name="Default"):
-        """Return ``FeatureSet`` of random vectors sampled from von Mises distribution
+        """Return ``Vector2Set`` of random vectors sampled from von Mises distribution
         around center position with concentration kappa.
 
         Args:

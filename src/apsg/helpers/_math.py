@@ -22,12 +22,12 @@ def tand(x):
 
 def asind(x):
     """Calculate arc sine in degrees"""
-    return math.degrees(math.asin(x))
+    return math.degrees(math.asin(max(min(x, 1), -1)))
 
 
 def acosd(x):
     """Calculate arc cosine in degrees"""
-    return math.degrees(math.acos(x))
+    return math.degrees(math.acos(max(min(x, 1), -1)))
 
 
 def atand(x):
