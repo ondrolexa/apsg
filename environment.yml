@@ -4,3 +4,4 @@ dependencies:
   - matplotlib
   - scipy
   - pandas
+  - sqlalchemy

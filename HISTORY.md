@@ -1,5 +1,8 @@
 # Changes
 
+### 1.2.0 (master)
+ * sqlalchemy and pandas added to requirements
+
 ### 1.1.5 (May 15 2024)
  * paleomag Core .dd bug fixed
  * fix round-off domain math error for acosd and asind

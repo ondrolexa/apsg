@@ -17,7 +17,7 @@ with open(path.join(CURRENT_PATH, "HISTORY.md")) as file:
 
 setup(
     name="apsg",
-    version="1.1.5",
+    version="1.2.0",
     description="APSG - The package for structural geologists",
     long_description=readme + "\n\n" + history,
     long_description_content_type="text/markdown",
@@ -37,11 +37,11 @@ setup(
     ],
     packages=find_packages(where="src"),
     package_dir={"": "src"},
-    install_requires=["numpy", "matplotlib", "scipy"],
+    install_requires=["numpy", "matplotlib", "scipy", "sqlalchemy", "pandas"],
     extras_require={
         "docs": ["sphinx", "ipykernel", "nbsphinx"],
         "test": ["pytest", "black"],
-        "extra": ["jupyterlab", "pandas"],
+        "extra": ["jupyterlab"],
     },
     project_urls={
         "Documentation": "https://apsg.readthedocs.io/",
