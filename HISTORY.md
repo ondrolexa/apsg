@@ -1,7 +1,8 @@
 # Changes
 
-### 1.1.5 master
+### 1.1.5 (May 15 2024)
  * paleomag Core .dd bug fixed
+ * fix round-off domain math error for acosd and asind
 
 ### 1.1.4 (Dec 13 2023)
  * Ellipsoid repr bugfix
