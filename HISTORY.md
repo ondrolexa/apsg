@@ -2,6 +2,7 @@
 
 ### 1.2.0 (master)
  * sqlalchemy and pandas added to requirements
+ * quicknet fault bug fixed
 
 ### 1.1.5 (May 15 2024)
  * paleomag Core .dd bug fixed
