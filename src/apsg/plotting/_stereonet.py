@@ -940,17 +940,17 @@ def quicknet(*args, **kwargs):
         filename (str): filename for figure. Default `stereonet.png`
         savefig_kwargs (dict): dict passed to ``plt.savefig``
         fol_as_pole (bool): True to plot planar features as poles,
-            False for plotting as great circle. Default `True`
+            False for plotting as great circle. Default `False`
 
     Example:
         >>> l = linset.random_fisher(position=lin(120, 50))
         >>> f = folset.random_fisher(position=lin(300, 40))
-        >>> quicknet(f, l, fol_as_pole=False)
+        >>> quicknet(f, l)
     """
     savefig = kwargs.get("savefig", False)
     filename = kwargs.get("filename", "stereonet.png")
     savefig_kwargs = kwargs.get("savefig_kwargs", {})
-    fol_as_pole = kwargs.get("fol_as_pole", True)
+    fol_as_pole = kwargs.get("fol_as_pole", False)
     s = StereoNet(**kwargs)
     for arg in args:
         if isinstance(arg, Vector3):
@@ -963,10 +963,10 @@ def quicknet(*args, **kwargs):
                 s.line(arg)
             else:
                 s.vector(arg)
-        elif isinstance(arg, Pair):
-            s.pair(arg)
         elif isinstance(arg, Fault):
             s.fault(arg)
+        elif isinstance(arg, Pair):
+            s.pair(arg)
         elif isinstance(arg, Cone):
             s.cone(arg)
         elif isinstance(arg, Vector3Set):
@@ -979,10 +979,10 @@ def quicknet(*args, **kwargs):
                 s.line(arg)
             else:
                 s.vector(arg)
-        elif isinstance(arg, PairSet):
-            s.pair(arg)
         elif isinstance(arg, FaultSet):
             s.fault(arg)
+        elif isinstance(arg, PairSet):
+            s.pair(arg)
         else:
             print(f"{type(arg)} not supported.")
     if savefig:
