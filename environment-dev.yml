@@ -1,0 +1,12 @@
+# run: mamba env create --file environment-dev.yml
+# remove: mamba env remove -n apsg
+name: apsg
+dependencies:
+  - numpy
+  - matplotlib
+  - scipy
+  - pandas
+  - sqlalchemy
+  - pip
+  - pip:
+      - -e .

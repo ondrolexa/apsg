@@ -1563,6 +1563,18 @@ class ClusterSet(object):
     Provides a hierarchical clustering using `scipy.cluster` routines.
     The distance matrix is calculated as an angle between features, where ``Foliation``
     and ``Lineation`` use axial angles while ``Vector3`` uses direction angles.
+
+    Args:
+        azi (float): plunge direction of linear feature in degrees
+        inc (float): plunge of linear feature in degrees
+
+    Keyword Args:
+        maxclust (int): Desired number of clusters. Default 2
+        angle (float): Forms flat clusters so that the original observations in each
+            cluster have no greater angle. Default is None to use maxclust criterion.
+        method (str): Method for calculating the distance between the newly formed
+            cluster and observations. Default is 'average' for UPGMA algorithm
+
     """
 
     def __init__(self, d, **kwargs):
@@ -1580,13 +1592,13 @@ class ClusterSet(object):
     def __repr__(self):
         info = f"Already {len(self.groups)} clusters created."
         if self.angle is not None:
-            crit = "Criterion: Angle\nSettings: distance=%.4g\n" % (self.angle)
+            crit = f"Criterion: Angle\nSettings: distance={self.angle:.4g}\n"
         else:
-            crit = "Criterion: Maxclust\nSettings: muxclust=%.4g\n" % (self.maxclust)
+            crit = f"Criterion: Maxclust\nSettings: maxclust={self.maxclust:.4g}\n"
         return (
             "ClusterSet\n"
-            + "Number of data: %d\n" % len(self.data)
-            + "Linkage method: %s\n" % self.method
+            + f"Number of data: {len(self.data)}\n"
+            + f"Linkage method: {self.method}\n"
             + crit
             + info
         )

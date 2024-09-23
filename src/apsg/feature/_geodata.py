@@ -367,8 +367,9 @@ class Fault(Pair):
         - `p` could be Fault
         - `p` could be tuple of (fazi, finc, lazi, linc, sense)
         - `p` could be tuple of (fx, fy ,fz, lx, ly, lz)
-    - with 2 arguments f and l could be Vector3 like objects,
-      e.g. ``Foliation`` and ``Lineation``
+    - with 2 arguments p (Pair object) and sense
+    - with 3 arguments f, l (Vector3 like objects), e.g. ``Foliation``
+      and ``Lineation`` and sense
     - with 5 numerical arguments defining `fol(fazi, finc)`, `lin(lazi, linc)` and sense
 
     Args:
@@ -376,7 +377,9 @@ class Fault(Pair):
         finc (float): dip of planar feature in degrees
         lazi (float): plunge direction of linear feature in degrees
         linc (float): plunge of linear feature in degrees
-        sense (float): sense of movement -/+1 hanging-wall up/down reverse/normal
+        sense (float or str): sense of movement +/11 hanging-wall down/up. When str,
+            ,ust be one of 's', 'd', 'n', 'r'.
+
 
     Attributes:
         fvec (Vector3): corrected vector normal to plane
@@ -384,11 +387,11 @@ class Fault(Pair):
         sense (int): sense of movement (+/-1)
 
     Example:
-        >>> fault()
-        >>> fault(p)
-        >>> fault(f, l)
-        >>> fault(fazi, finc, lazi, linc, sense)
         >>> f = fault(140, 30, 110, 26, -1)
+        >>> f = fault(140, 30, 110, 26, 'r')
+        >>> p = pair(140, 30, 110, 26)
+        >>> f = fault(p, 'n')
+        >>> f = fault(fol(120, 80), lin(32, 10), 's')
 
     """
 
@@ -396,18 +399,20 @@ class Fault(Pair):
 
     def __init__(self, *args):
         if len(args) == 0:
-            fvec, lvec, sense = Vector3(0, 0, 1), Vector3(1, 0, 0), 1
+            fvec, lvec = Vector3(0, 0, 1), Vector3(1, 0, 0)
         elif len(args) == 1 and np.asarray(args[0]).shape == (5,):
             fazi, finc, lazi, linc, sense = (float(v) for v in args[0])
             fvec, lvec = Foliation(fazi, finc), Lineation(lazi, linc)
+            sense = self.calc_sense(fvec, lvec, sense)
             if sense < 0:
                 lvec = -lvec
         elif len(args) == 1 and issubclass(type(args[0]), Pair):
             fvec, lvec = args[0].fvec, args[0].lvec
         elif len(args) == 2 and issubclass(type(args[0]), Pair):
             fvec, lvec = args[0].fvec, args[0].lvec
+            sense = self.calc_sense(fvec, lvec, args[1])
             georax = lvec.lower().cross(fvec.lower())
-            if args[0].rax == georax and args[1] < 0:
+            if args[0].rax == georax and sense < 0:
                 lvec = -lvec
         elif len(args) == 2:
             if issubclass(type(args[0]), Vector3) and issubclass(
@@ -419,18 +424,42 @@ class Fault(Pair):
                 type(args[1]), Vector3
             ):
                 fvec, lvec = args[0], args[1]
+                sense = self.calc_sense(fvec, lvec, args[2])
                 rax = lvec.cross(fvec)
                 georax = lvec.lower().cross(fvec.lower())
-                if rax == georax and args[2] < 0:
+                if rax == georax and sense < 0:
                     lvec = -lvec
         elif len(args) == 5:
             fvec = Foliation(args[0], args[1])
             lvec = Lineation(args[2], args[3])
-            if args[4] < 0:
+            sense = self.calc_sense(fvec, lvec, args[4])
+            if sense < 0:
                 lvec = -lvec
         else:
             raise TypeError("Not valid arguments for Fault")
         super().__init__(fvec, lvec)
+
+    @classmethod
+    def calc_sense(cls, fvec, lvec, sense):
+        if isinstance(sense, int) or isinstance(sense, float):
+            return sense
+        elif isinstance(sense, str):
+            p = Pair(fvec, lvec)
+            if sense.lower() == "s":
+                if p.rax == p.rax.lower():
+                    res = -1
+                else:
+                    res = 1
+            elif sense.lower() == "d":
+                if p.rax == p.rax.lower():
+                    res = 1
+                else:
+                    res = -1
+            elif sense.lower() == "n":
+                res = 1
+            elif sense.lower() == "r":
+                res = -1
+            return res
 
     def __repr__(self):
         fazi, finc = self.fol.geo

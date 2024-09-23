@@ -1,6 +1,9 @@
 # Changes
 
-### 1.2.0 (master)
+### 1.2.1 (Sep 23 2024)
+ * Fault sense could be defined by str, one of 's', 'd', 'n' and 'r'
+
+### 1.2.0 (May 24 2024)
  * sqlalchemy and pandas added to requirements
  * quicknet fault bug fixed
 
