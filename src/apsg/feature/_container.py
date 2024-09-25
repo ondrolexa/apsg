@@ -84,7 +84,7 @@ class FeatureSet:
         if isinstance(other, type(self)):
             return type(self)(self.data + other.data, name=self.name)
         else:
-            raise TypeError("Only {self.__name__} is allowed")
+            raise TypeError(f"Only {self.__name__} is allowed")
 
     def rotate(self, axis, phi):
         """Rotate ``FeatureSet`` object `phi` degress about `axis`."""
