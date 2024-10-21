@@ -26,7 +26,7 @@ class Vector:
     def __hash__(self):
         return hash((type(self).__name__,) + self._coords)
 
-    def __array__(self, dtype=None):
+    def __array__(self, dtype=None, copy=None):
         return np.array(self._coords, dtype=dtype)
 
     def to_json(self):

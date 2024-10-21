@@ -103,7 +103,7 @@ class Vector3Array(ExtensionArray):
         """
         return Vec3Dtype()
 
-    def __array__(self, dtype=str):
+    def __array__(self, dtype=str, copy=None):
         return np.array([str(f) for f in self._obj], dtype=dtype)
 
     @classmethod

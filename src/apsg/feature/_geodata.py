@@ -265,7 +265,7 @@ class Pair:
         """
         return not self == other
 
-    def __array__(self, dtype=None):
+    def __array__(self, dtype=None, copy=None):
         return np.hstack((self.fvec, self.lvec)).astype(dtype)
 
     def label(self):
@@ -485,7 +485,7 @@ class Fault(Pair):
         """
         return not self == other
 
-    def __array__(self, dtype=None):
+    def __array__(self, dtype=None, copy=None):
         return np.hstack((self.fvec, self.lvec, self.sense)).astype(dtype)
 
     def to_json(self):
@@ -649,7 +649,7 @@ class Cone:
     def __ne__(self, other):
         return not self == other
 
-    def __array__(self, dtype=None):
+    def __array__(self, dtype=None, copy=None):
         return np.hstack((self.axis, self.secant, self.revangle)).astype(dtype)
 
     def label(self):

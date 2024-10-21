@@ -48,7 +48,7 @@ class FeatureSet:
         """Return label"""
         return self.name
 
-    def __array__(self, dtype=None):
+    def __array__(self, dtype=None, copy=None):
         return np.array([np.array(p) for p in self.data], dtype=dtype)
 
     def __eq__(self, other):
@@ -902,7 +902,7 @@ class PairSet(FeatureSet):
     def __repr__(self):
         return f"P({len(self)}) {self.name}"
 
-    def __array__(self, dtype=None):
+    def __array__(self, dtype=None, copy=None):
         return np.array([np.array(p) for p in self.data], dtype=dtype)
 
     @property
