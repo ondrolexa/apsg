@@ -9,7 +9,7 @@ from apsg.config import apsg_conf
 from apsg.math._vector import Vector2, Vector3
 from apsg.helpers._math import acosd
 from apsg.feature._geodata import Lineation, Foliation, Pair, Fault, Cone
-from apsg.feature._tensor3 import OrientationTensor3, Ellipsoid
+from apsg.feature._tensor3 import OrientationTensor3, Ellipsoid, DeformationGradient3
 from apsg.feature._tensor2 import OrientationTensor2, Ellipse
 from apsg.feature._statistics import KentDistribution, vonMisesFisher
 
@@ -938,6 +938,45 @@ class PairSet(FeatureSet):
         """
         return Vector3Set([e.rax for e in self], name=self.name)
 
+    def angle(self, other=None):
+        """Return angles of all data in ``PairSet`` object
+
+        Without arguments it returns angles of all pairs in dataset.
+        If argument is ``PairSet`` of same length or single data object
+        element-wise angles are calculated.
+        """
+        res = []
+        if other is None:
+            res = [
+                abs(
+                    DeformationGradient3.from_two_pairs(
+                        e, f, symmetry=True
+                    ).axisangle()[1]
+                )
+                for e, f in combinations(self.data, 2)
+            ]
+        elif issubclass(type(other), PairSet):
+            res = [
+                abs(
+                    DeformationGradient3.from_two_pairs(
+                        e, f, symmetry=True
+                    ).axisangle()[1]
+                )
+                for e, f in zip(self, other)
+            ]
+        elif issubclass(type(other), Pair):
+            res = [
+                abs(
+                    DeformationGradient3.from_two_pairs(
+                        e, other, symmetry=True
+                    ).axisangle()[1]
+                )
+                for e in self
+            ]
+        else:
+            raise TypeError("Wrong argument type!")
+        return np.asarray(res)
+
     @property
     def ortensor(self):
         """Return Lisle (1989) orientation tensor ``OrientationTensor3`` of orientations
@@ -1110,6 +1149,45 @@ class FaultSet(PairSet):
     def d(self):
         """Return dihedra planes of FaultSet as FoliationSet"""
         return FoliationSet([e.d for e in self], name=self.name + "-D")
+
+    def angle(self, other=None):
+        """Return angles of all data in ``FaultSet`` object
+
+        Without arguments it returns angles of all pairs in dataset.
+        If argument is ``FaultSet`` of same length or single data object
+        element-wise angles are calculated.
+        """
+        res = []
+        if other is None:
+            res = [
+                abs(
+                    DeformationGradient3.from_two_pairs(
+                        e, f, symmetry=False
+                    ).axisangle()[1]
+                )
+                for e, f in combinations(self.data, 2)
+            ]
+        elif issubclass(type(other), FaultSet):
+            res = [
+                abs(
+                    DeformationGradient3.from_two_pairs(
+                        e, f, symmetry=False
+                    ).axisangle()[1]
+                )
+                for e, f in zip(self, other)
+            ]
+        elif issubclass(type(other), Fault):
+            res = [
+                abs(
+                    DeformationGradient3.from_two_pairs(
+                        e, other, symmetry=False
+                    ).axisangle()[1]
+                )
+                for e in self
+            ]
+        else:
+            raise TypeError("Wrong argument type!")
+        return np.asarray(res)
 
     @classmethod
     def random(cls, n=25):
@@ -1578,8 +1656,10 @@ class ClusterSet(object):
     """
 
     def __init__(self, d, **kwargs):
-        assert isinstance(d, Vector2Set) or isinstance(
-            d, Vector3Set
+        assert (
+            isinstance(d, Vector2Set)
+            or isinstance(d, Vector3Set)
+            or isinstance(d, PairSet)
         ), "Only vec2set or vecset could be clustered"
         self.data = d.copy()
         self.maxclust = kwargs.get("maxclust", 2)
