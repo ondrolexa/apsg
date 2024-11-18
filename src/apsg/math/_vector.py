@@ -450,7 +450,10 @@ class Vector3(Vector):
             return float(r)
 
     def __pow__(self, other):
-        return self.cross(other)
+        if issubclass(type(other), Vector3):
+            return self.cross(other)
+        else:
+            return type(self)(np.pow(self, other))
 
     @ensure_first_arg_same
     def cross(self, other):
