@@ -84,9 +84,6 @@ class Vector:
 
     __pos__ = __copy__
 
-    def __pow__(self, other):
-        return type(self)(np.power(self, other))
-
     def __abs__(self):
         return math.sqrt(sum(map(lambda x: x * x, self._coords)))
 
@@ -451,6 +448,9 @@ class Vector3(Vector):
             return type(self)(r)
         else:
             return float(r)
+
+    def __pow__(self, other):
+        return self.cross(other)
 
     @ensure_first_arg_same
     def cross(self, other):

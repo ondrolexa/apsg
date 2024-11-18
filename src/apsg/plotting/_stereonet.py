@@ -951,38 +951,39 @@ def quicknet(*args, **kwargs):
     filename = kwargs.get("filename", "stereonet.png")
     savefig_kwargs = kwargs.get("savefig_kwargs", {})
     fol_as_pole = kwargs.get("fol_as_pole", False)
+    label = kwargs.get("label", "_nolegend_")
     s = StereoNet(**kwargs)
     for arg in args:
         if isinstance(arg, Vector3):
             if isinstance(arg, Foliation):
                 if fol_as_pole:
-                    s.pole(arg)
+                    s.pole(arg, label=label)
                 else:
-                    s.great_circle(arg)
+                    s.great_circle(arg, label=label)
             elif isinstance(arg, Lineation):
-                s.line(arg)
+                s.line(arg, label=label)
             else:
-                s.vector(arg)
+                s.vector(arg, label=label)
         elif isinstance(arg, Fault):
-            s.fault(arg)
+            s.fault(arg, label=label)
         elif isinstance(arg, Pair):
-            s.pair(arg)
+            s.pair(arg, label=label)
         elif isinstance(arg, Cone):
-            s.cone(arg)
+            s.cone(arg, label=label)
         elif isinstance(arg, Vector3Set):
             if isinstance(arg, FoliationSet):
                 if fol_as_pole:
-                    s.pole(arg)
+                    s.pole(arg, label=label)
                 else:
-                    s.great_circle(arg)
+                    s.great_circle(arg, label=label)
             elif isinstance(arg, LineationSet):
-                s.line(arg)
+                s.line(arg, label=label)
             else:
-                s.vector(arg)
+                s.vector(arg, label=label)
         elif isinstance(arg, FaultSet):
-            s.fault(arg)
+            s.fault(arg, label=label)
         elif isinstance(arg, PairSet):
-            s.pair(arg)
+            s.pair(arg, label=label)
         else:
             print(f"{type(arg)} not supported.")
     if savefig:

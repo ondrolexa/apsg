@@ -1,5 +1,13 @@
 # Changes
 
+### 1.2.3 (Nov 18 2024)
+ * ClusterSet accepts PairSet and FaultSet
+ * quicknet label option added
+ * vector pow bug fix
+
+### 1.2.2 (Oct 21 2024)
+ * Fault sense could be defined by str, one of 's', 'd', 'n' and 'r'
+
 ### 1.2.1 (Sep 23 2024)
  * Fault sense could be defined by str, one of 's', 'd', 'n' and 'r'
 
