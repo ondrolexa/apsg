@@ -453,7 +453,7 @@ class Vector3(Vector):
         if issubclass(type(other), Vector3):
             return self.cross(other)
         else:
-            return type(self)(np.pow(self, other))
+            return type(self)(np.power(self, other))
 
     @ensure_first_arg_same
     def cross(self, other):
