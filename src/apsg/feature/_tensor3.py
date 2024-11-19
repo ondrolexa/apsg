@@ -254,9 +254,7 @@ class DeformationGradient3(Matrix3):
              [0.  0.  0.5]]
 
         """
-        from scipy.linalg import logm
-
-        return VelocityGradient3(logm(np.asarray(self)) / time)
+        return VelocityGradient3(spla.logm(np.asarray(self)) / time)
 
 
 class VelocityGradient3(Matrix3):
@@ -283,15 +281,13 @@ class VelocityGradient3(Matrix3):
             steps (int): when bigger than 1, will return a list
                          of ``DeformationGradient3`` tensors for each timestep.
         """
-        from scipy.linalg import expm
-
         if steps > 1:  # FIX once container for matrix will be implemented
             return [
-                DeformationGradient3(expm(np.asarray(self) * t))
+                DeformationGradient3(spla.expm(np.asarray(self) * t))
                 for t in np.linspace(0, time, steps)
             ]
         else:
-            return DeformationGradient3(expm(np.asarray(self) * time))
+            return DeformationGradient3(spla.expm(np.asarray(self) * time))
 
     def rate(self):
         """
@@ -309,7 +305,6 @@ class VelocityGradient3(Matrix3):
 
 
 class Tensor3(Matrix3):
-    @property
     def eigenlins(self):
         """
         Return tuple of eigenvectors as ``Lineation`` objects.
@@ -317,7 +312,6 @@ class Tensor3(Matrix3):
 
         return tuple(Lineation(v) for v in self.eigenvectors())
 
-    @property
     def eigenfols(self):
         """
         Return tuple of eigenvectors as ``Foliation`` objects.
@@ -348,8 +342,9 @@ class Stress3(Tensor3):
     the maximum principal stress is the most tensile (least compressive)
     and the minimum principal stress is the least tensile (most compressive).
     Tensile normal stresses have positive values, and compressive normal
-    stresses have negative values. If the maximum principal stress is <=0 and the minimum principal stress
-    is negative then the stresses are completely compressive.
+    stresses have negative values. If the maximum principal stress is <=0
+    and the minimum principal stress is negative then the stresses are
+    completely compressive.
 
     Note: Stress tensor has a special properties sigma1, sigma2 and sigma3
     to follow common geological terminology. sigma1 is most compressive
@@ -1003,7 +998,7 @@ class OrientationTensor3(Ellipsoid):
            [-0.149  0.308  0.373]
            [-0.202  0.373  0.566]]
           (S1:0.955, S2:0.219, S3:0.2)
-          >>> ot.eigenlins
+          >>> ot.eigenlins()
           (L:119/51, L:341/31, L:237/21)
 
         """

@@ -40,7 +40,7 @@ class Matrix:
     def to_json(self):
         return {"datatype": type(self).__name__, "args": (self._coefs,)}
 
-    def __array__(self, dtype=None):
+    def __array__(self, dtype=None, copy=None):
         return np.array(self._coefs, dtype=dtype)
 
     def __nonzero__(self):

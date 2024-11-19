@@ -12,7 +12,6 @@ __all__ = ["RosePlot"]
 
 
 class RosePlot(object):
-
     """
     ``RosePlot`` class for rose histogram plotting.
 

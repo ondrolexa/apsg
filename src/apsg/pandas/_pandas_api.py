@@ -107,7 +107,7 @@ class Vector3Array(ExtensionArray):
         return np.array([str(f) for f in self._obj], dtype=dtype)
 
     @classmethod
-    def _from_sequence(cls, scalars):
+    def _from_sequence(cls, scalars, dtype=None, copy=False):
         """
         Construct a new ExtensionArray from a sequence of scalars.
         Each element will be an instance of the scalar type for this array,
@@ -166,13 +166,7 @@ class Vector3Array(ExtensionArray):
         """
         Take element from array using positional indexing
         """
-        from pandas.core.algorithms import take
-
-        if allow_fill and fill_value is None:
-            fill_value = self.dtype.na_value
-
-        fols = take(self._obj, indices, fill_value=fill_value, allow_fill=allow_fill)
-        return type(self)(fols)
+        return type(self)(self._obj[indices])
 
     def copy(self):
         """
@@ -322,7 +316,7 @@ class VectorSetBaseAccessor:
         self._col = c
 
     @property
-    def getset(self):
+    def G(self):
         """Get ``FeatureSet``"""
         res = self._obj[self._col].array._obj
         res.name = self._col
@@ -330,21 +324,21 @@ class VectorSetBaseAccessor:
 
     def R(self):
         """Return resultant of data in ``FeatureSet``."""
-        return self.getset.R()
+        return self.G.R()
 
     def fisher_k(self):
         """Precision parameter based on Fisher's statistics"""
-        stats = self.getset.fisher_statistics()
+        stats = self.G.fisher_statistics()
         return stats["k"]
 
     def fisher_csd(self):
         """Angular standard deviation based on Fisher's statistics"""
-        stats = self.getset.fisher_statistics()
+        stats = self.G.fisher_statistics()
         return stats["csd"]
 
     def fisher_a95(self):
         """95% confidence limit based on Fisher's statistics"""
-        stats = self.getset.fisher_statistics()
+        stats = self.G.fisher_statistics()
         return stats["a95"]
 
     def var(self):
@@ -352,7 +346,7 @@ class VectorSetBaseAccessor:
 
         var = 1 - abs(R) / n
         """
-        return self.getset.var()
+        return self.G.var()
 
     def delta(self):
         """Cone angle containing ~63% of the data in degrees.
@@ -360,27 +354,27 @@ class VectorSetBaseAccessor:
         For enough large sample it approach angular standard deviation (csd)
         of Fisher statistics
         """
-        return self.getset.delta()
+        return self.G.delta()
 
     def rdegree(self):
         """Degree of preffered orientation of vectors in ``FeatureSet``.
 
         D = 100 * (2 * abs(R) - n) / n
         """
-        return self.getset.rdegree()
+        return self.G.rdegree()
 
     def ortensor(self):
         """Return orientation tensor ``Ortensor`` of vectors in ``FeatureSet``."""
-        return self.getset.ortensor()
+        return self.G.ortensor()
 
     def contour(self, snet=None, **kwargs):
         """Plot data contours on StereoNet"""
         if snet is None:
             s = StereoNet()
-            s.contour(self.getset, **kwargs)
+            s.contour(self.G, **kwargs)
             s.show()
         else:
-            snet.contour(self.getset, **kwargs)
+            snet.contour(self.G, **kwargs)
 
 
 @pd.api.extensions.register_dataframe_accessor("vec")
@@ -405,10 +399,10 @@ class Vec3Accessor(VectorSetBaseAccessor):
         """Plot vecs as vectors on StereoNet"""
         if snet is None:
             s = StereoNet()
-            s.vector(self.getset, **kwargs)
+            s.vector(self.G, **kwargs)
             s.show()
         else:
-            snet.vector(self.getset, **kwargs)
+            snet.vector(self.G, **kwargs)
 
 
 @pd.api.extensions.register_dataframe_accessor("fol")
@@ -434,15 +428,15 @@ class FolAccessor(VectorSetBaseAccessor):
         if snet is None:
             s = StereoNet()
             if aspole:
-                s.pole(self.getset, **kwargs)
+                s.pole(self.G, **kwargs)
             else:
-                s.great_circle(self.getset, **kwargs)
+                s.great_circle(self.G, **kwargs)
             s.show()
         else:
             if aspole:
-                snet.pole(self.getset, **kwargs)
+                snet.pole(self.G, **kwargs)
             else:
-                snet.great_circle(self.getset, **kwargs)
+                snet.great_circle(self.G, **kwargs)
 
 
 @pd.api.extensions.register_dataframe_accessor("lin")
@@ -467,10 +461,10 @@ class LinAccessor(VectorSetBaseAccessor):
         """Plot lins as line on StereoNet"""
         if snet is None:
             s = StereoNet()
-            s.line(self.getset, **kwargs)
+            s.line(self.G, **kwargs)
             s.show()
         else:
-            snet.line(self.getset, **kwargs)
+            snet.line(self.G, **kwargs)
 
 
 @pd.api.extensions.register_dataframe_accessor("fault")
@@ -485,7 +479,7 @@ class FaultAccessor:
         self._col = c
 
     @property
-    def getset(self):
+    def G(self):
         """Get ``FeatureSet``"""
         res = self._obj[self._col].array._obj
         res.name = self._col
@@ -507,7 +501,7 @@ class FaultAccessor:
         """Plot vecs as vectors on StereoNet"""
         if snet is None:
             s = StereoNet()
-            s.fault(self.getset, **kwargs)
+            s.fault(self.G, **kwargs)
             s.show()
         else:
-            snet.fault(self.getset, **kwargs)
+            snet.fault(self.G, **kwargs)

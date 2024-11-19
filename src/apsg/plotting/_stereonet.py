@@ -862,7 +862,7 @@ class StereoNet:
                 key: kwargs[key]
                 for key in kwargs.keys() & {"alpha", "ls", "lw", "label"}
             }
-            fols = args[0].eigenfols
+            fols = args[0].eigenfols()
             if kwargs["color"] is None:
                 del kwargs["color"]
             self._great_circle(fols[0], color=kwargs.get("color", "red"), **selkw)
@@ -873,7 +873,7 @@ class StereoNet:
                 key: kwargs[key]
                 for key in kwargs.keys() & {"alpha", "marker", "mew", "ms", "label"}
             }
-            lins = args[0].eigenfols
+            lins = args[0].eigenfols()
             if kwargs["color"] is None:
                 del kwargs["color"]
             self._line(lins[0], color=kwargs.get("color", "red"), **selkw)

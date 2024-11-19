@@ -550,7 +550,7 @@ class TestVector3Set:
     def test_centered_group(self):
         g = vecset.random_fisher(position=lin(40, 50))
         gc = g.centered()
-        el = gc.ortensor().eigenlins
+        el = gc.ortensor().eigenlins()
         assert el[0] == vec("x") and el[1] == vec("y") and el[2] == vec("z")
 
 
@@ -579,7 +579,7 @@ class TestLineationSet:
     def test_centered_group(self):
         g = linset.random_fisher(position=lin(40, 50))
         gc = g.centered()
-        el = gc.ortensor().eigenlins
+        el = gc.ortensor().eigenlins()
         assert el[0] == vec("x") and el[1] == vec("y") and el[2] == vec("z")
 
 

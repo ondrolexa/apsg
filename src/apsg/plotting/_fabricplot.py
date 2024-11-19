@@ -12,7 +12,6 @@ __all__ = ["VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot"]
 
 
 class FabricPlot(object):
-
     """
     Metaclas for Fabric plots
     """
@@ -129,7 +128,6 @@ class FabricPlot(object):
 
 
 class VollmerPlot(FabricPlot):
-
     """
     Represents the triangular fabric plot (Vollmer, 1989).
 
@@ -292,7 +290,6 @@ class VollmerPlot(FabricPlot):
 
 
 class RamsayPlot(FabricPlot):
-
     """
     Represents the Ramsay deformation plot.
 
@@ -386,7 +383,6 @@ class RamsayPlot(FabricPlot):
 
 
 class FlinnPlot(FabricPlot):
-
     """
     Represents the Ramsay deformation plot.
 
@@ -480,7 +476,6 @@ class FlinnPlot(FabricPlot):
 
 
 class HsuPlot(FabricPlot):
-
     """
     Represents the Hsu fabric plot.
 

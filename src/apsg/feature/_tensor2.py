@@ -106,9 +106,7 @@ class DeformationGradient2(Matrix2):
 
     def velgrad(self, time=1):
         """Return ``VelocityGradient2`` for given time"""
-        from scipy.linalg import logm
-
-        return VelocityGradient2(logm(np.asarray(self)) / time)
+        return VelocityGradient2(spla.logm(np.asarray(self)) / time)
 
 
 class VelocityGradient2(Matrix2):
@@ -136,15 +134,13 @@ class VelocityGradient2(Matrix2):
             steps (int): when bigger than 1, will return a list
                          of ``DeformationGradient2`` tensors for each timestep.
         """
-        from scipy.linalg import expm
-
         if steps > 1:  # FIX once container for matrix will be implemented
             return [
-                DeformationGradient2(expm(np.asarray(self) * t))
+                DeformationGradient2(spla.expm(np.asarray(self) * t))
                 for t in np.linspace(0, time, steps)
             ]
         else:
-            return DeformationGradient2(expm(np.asarray(self) * time))
+            return DeformationGradient2(spla.expm(np.asarray(self) * time))
 
     def rate(self):
         """
