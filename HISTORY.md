@@ -1,5 +1,10 @@
 # Changes
 
+## 1.3.0 (master)
+ * Python 3.10 set as minimal version
+ * Tensor3 eigenlins and eigenfols implemented as methods
+ * pandas accessors G property to get apsg FeatureSet
+
 ### 1.2.3 (Nov 18 2024)
  * ClusterSet accepts PairSet and FaultSet
  * quicknet label option added
@@ -11,7 +16,7 @@
 ### 1.2.1 (Sep 23 2024)
  * Fault sense could be defined by str, one of 's', 'd', 'n' and 'r'
 
-### 1.2.0 (May 24 2024)
+## 1.2.0 (May 24 2024)
  * sqlalchemy and pandas added to requirements
  * quicknet fault bug fixed
 
@@ -49,7 +54,7 @@ See documentation and Pandas interface tutorial for further details.
  * density_lookup method implemented for StereoNet.grid
  * Stress tensor sigma* properties using inverted order of eigenvalues
  * render2fig method of StereoNet implemented
- * vector-like objects are not iterable, so properly render in pandas 
+ * vector-like objects are not iterable, so properly render in pandas
 
 ## 1.0.0 (Oct 7 2022)
 New major release
