@@ -80,4 +80,3 @@ or directly
     :members:
     :show-inheritance:
     :autosummary-no-nesting:
-

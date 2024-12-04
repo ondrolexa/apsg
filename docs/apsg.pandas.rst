@@ -9,4 +9,3 @@ This module provide basic integration with pandas.
     :members:
     :show-inheritance:
     :autosummary-no-nesting:
-

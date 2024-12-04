@@ -9,4 +9,3 @@ This module provide basic linear algebra classes.
     :members:
     :show-inheritance:
     :autosummary-no-nesting:
-
