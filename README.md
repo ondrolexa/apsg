@@ -23,7 +23,9 @@ Check [documentation](https://apsg.readthedocs.org) for more details.
 
 ## Requirements
 
-You need Python 3.8 or later to run APSG. The package requires [NumPy](https://numpy.org/) and [SciPy](https://www.scipy.org/), and [Matplotlib](https://matplotlib.org/).
+You need Python 3.9 or later to run APSG. The package requires [NumPy](https://numpy.org/) and [SciPy](https://www.scipy.org/),
+[Matplotlib](https://matplotlib.org/), [SciPy](https://scipy.org/), [SQLAlchemy](https://www.sqlalchemy.org/)
+and [pandas](https://pandas.pydata.org/).
 
 ## Quick start
 
@@ -42,6 +44,21 @@ python setup.py install
 or
 ```
 pip install .
+```
+
+#### Comments on Debian systems
+
+Latest Debian-based systems does not allow to install non-debian packages system-wide.
+However, installing all requirements allows to force install APSG system-wide without troubles.
+
+Install requirements using apt:
+```
+sudo apt install python3-numpy python3-matplotlib python3-scipy python3-sqlalchemy python3-pandas
+```
+
+and then install apsg using pip:
+```
+pip install --break-system-packages apsg
 ```
 
 #### Upgrading via pip
