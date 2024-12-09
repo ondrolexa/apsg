@@ -24,6 +24,27 @@ class DeformationGradient2(Matrix2):
     """
 
     @classmethod
+    def from_comp(cls, xx=1, xy=0, yx=0, yy=1):
+        """Return ``DeformationGradient2`` defined by individual components.
+        Default is zero tensor.
+
+        Keyword Args:
+            xx (float): tensor component F_xx
+            xy (float): tensor component F_xy
+            yx (float): tensor component F_yx
+            yy (float): tensor component F_yy
+
+        Example:
+            >>> F = matrix2.from_comp(xy=2)
+            >>> F
+            [[0. 2.]
+            [0. 0.]]
+
+        """
+
+        return cls([[xx, xy], [yx, yy]])
+
+    @classmethod
     def from_ratio(cls, R=1):
         """Return isochoric ``DeformationGradient2`` tensor with axial stretches defined by strain ratio.
         Default is identity tensor.
@@ -124,6 +145,27 @@ class VelocityGradient2(Matrix2):
       >>> L = velgrad2(np.diag([0.1, -0.1]))
 
     """
+
+    @classmethod
+    def from_comp(cls, xx=0, xy=0, yx=0, yy=0):
+        """Return ``VelocityGradient2`` defined by individual components.
+        Default is zero tensor.
+
+        Keyword Args:
+            xx (float): tensor component L_xx
+            xy (float): tensor component L_xy
+            yx (float): tensor component L_yx
+            yy (float): tensor component L_yy
+
+        Example:
+            >>> L = velgrad2.from_comp(xy=2)
+            >>> L
+            [[0. 2.]
+             [0. 0.]]
+
+        """
+
+        return cls([[xx, xy], [yx, yy]])
 
     def defgrad(self, time=1, steps=1):
         """

@@ -202,7 +202,7 @@ class Matrix2(Matrix):
         v: 2-dimensional array-like object
 
     Example:
-        >>> Matrix2()
+        >>> matrix2()
         Matrix2
         [[1 0]
          [0 1]]
@@ -223,9 +223,9 @@ class Matrix2(Matrix):
         self._coefs = tuple(coefs[0]), tuple(coefs[1])
 
     @classmethod
-    def from_comp(cls, xx=1, xy=0, yx=0, yy=1):
-        """Return ``Matrix2`` defined by individual components. Default is identity
-        tensor.
+    def from_comp(cls, xx=0, xy=0, yx=0, yy=0):
+        """Return ``Matrix2`` defined by individual components. Default is zero
+        matrix.
 
         Keyword Args:
             xx (float): tensor component M_xx
@@ -234,10 +234,11 @@ class Matrix2(Matrix):
             yy (float): tensor component M_yy
 
         Example:
-            >>> F = Matrix2.from_comp(xy=2)
-            >>> F
-            [[1. 2.]
-             [0. 1.]]
+            >>> M = matrix2.from_comp(xy=2)
+            >>> M
+            Matrix2
+            [[0. 2.]
+             [0. 0.]]
 
         """
 
@@ -288,12 +289,12 @@ class Matrix3(Matrix):
         v: 2-dimensional array-like object
 
     Example:
-        >>> Matrix3()
+        >>> matrix()
         Matrix3
         [[1 0 0]
          [0 1 0]
          [0 0 1]]
-        >>> A = Matrix3([[2, 1, 0], [0, 0.5, 0], [0, -0.5, 1]])
+        >>> A = matrix([[2, 1, 0], [0, 0.5, 0], [0, -0.5, 1]])
 
     """
 
@@ -310,9 +311,9 @@ class Matrix3(Matrix):
         self._coefs = tuple(coefs[0]), tuple(coefs[1]), tuple(coefs[2])
 
     @classmethod
-    def from_comp(cls, xx=1, xy=0, xz=0, yx=0, yy=1, yz=0, zx=0, zy=0, zz=1):
-        """Return ``Matrix3`` defined by individual components. Default is identity
-        tensor.
+    def from_comp(cls, xx=0, xy=0, xz=0, yx=0, yy=0, yz=0, zx=0, zy=0, zz=0):
+        """Return ``Matrix3`` defined by individual components. Default is zero
+        matrix.
 
         Keyword Args:
             xx (float): tensor component M_xx
@@ -326,11 +327,11 @@ class Matrix3(Matrix):
             zz (float): tensor component M_zz
 
         Example:
-            >>> F = Matrix3.from_comp(xy=1, zy=-0.5)
-            >>> F
-            [[ 1.   1.   0. ]
-             [ 0.   1.   0. ]
-             [ 0.  -0.5  1. ]]
+            >>> M = matrix.from_comp(xy=1, zy=-0.5)
+            >>> M
+            [[ 0.   1.   0. ]
+             [ 0.   0.   0. ]
+             [ 0.  -0.5  0. ]]
 
         """
 

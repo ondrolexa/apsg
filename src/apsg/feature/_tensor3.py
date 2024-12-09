@@ -25,6 +25,34 @@ class DeformationGradient3(Matrix3):
     """
 
     @classmethod
+    def from_comp(cls, xx=1, xy=0, xz=0, yx=0, yy=1, yz=0, zx=0, zy=0, zz=1):
+        """Return ``DeformationGradient3`` defined by individual components.
+        Default is identity tensor.
+
+        Keyword Args:
+            xx (float): tensor component F_xx
+            xy (float): tensor component F_xy
+            xz (float): tensor component F_xz
+            yx (float): tensor component F_yx
+            yy (float): tensor component F_yy
+            yz (float): tensor component F_yz
+            zx (float): tensor component F_zx
+            zy (float): tensor component F_zy
+            zz (float): tensor component F_zz
+
+        Example:
+            >>> F = defgrad.from_comp(xy=1, zy=-0.5)
+            >>> F
+            DeformationGradient3
+            [[ 1.   1.   0. ]
+             [ 0.   1.   0. ]
+             [ 0.  -0.5  1. ]]
+
+        """
+
+        return cls([[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]])
+
+    @classmethod
     def from_ratios(cls, Rxy=1, Ryz=1):
         """Return isochoric ``DeformationGradient3`` tensor with axial stretches
         defined by strain ratios. Default is identity tensor.
@@ -271,6 +299,33 @@ class VelocityGradient3(Matrix3):
     Example:
       >>> L = velgrad(np.diag([0.1, 0, -0.1]))
     """
+
+    @classmethod
+    def from_comp(cls, xx=0, xy=0, xz=0, yx=0, yy=0, yz=0, zx=0, zy=0, zz=0):
+        """Return ``VelocityGradient3`` defined by individual components. Default is zero
+        tensor.
+
+        Keyword Args:
+            xx (float): tensor component L_xx
+            xy (float): tensor component L_xy
+            xz (float): tensor component L_xz
+            yx (float): tensor component L_yx
+            yy (float): tensor component L_yy
+            yz (float): tensor component L_yz
+            zx (float): tensor component L_zx
+            zy (float): tensor component L_zy
+            zz (float): tensor component L_zz
+
+        Example:
+            >>> L = velgrad.from_comp(xy=1, zy=-0.5)
+            >>> L
+            [[ 0.   1.   0. ]
+             [ 0.   0.   0. ]
+             [ 0.  -0.5  0. ]]
+
+        """
+
+        return cls([[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]])
 
     def defgrad(self, time=1, steps=1):
         """
