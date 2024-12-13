@@ -1,9 +1,9 @@
-# Changes
+# Changelog
 
-## 1.3.0 (master)
+## 1.3.0 (Dec 14 2024)
  * Python 3.10 set as minimal version
  * Tensor3 eigenlins and eigenfols implemented as methods
- * pandas accessors G property to get apsg FeatureSet
+ * pandas accessors G property returns apsg FeatureSet
 
 ### 1.2.3 (Nov 18 2024)
  * ClusterSet accepts PairSet and FaultSet

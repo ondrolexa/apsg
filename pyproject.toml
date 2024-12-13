@@ -4,20 +4,35 @@ version = "1.3.0"
 description = "APSG - The package for structural geologists"
 authors = ["Ondrej Lexa <lexa.ondrej@gmail.com>"]
 readme = "README.md"
+license = "MIT"
+repository = "https://github.com/ondrolexa/apsg"
+documentation = "https://apsg.readthedocs.io"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+include = ["AUTHORS.md", "CHANGELOG.md", "CONTRIBUTING.md"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
-numpy = "^1.20"
-matplotlib = "^3.6"
-scipy = "^1.10"
+python = "^3.10"
+numpy = "^2.1"
+matplotlib = "^3.9"
+pyqt5 = "^5.15"
+scipy = "^1.14"
 sqlalchemy = "^1.3"
 pandas = "^2.1"
 
 
 [tool.poetry.group.docs.dependencies]
-sphinx = "^7.2"
-ipykernel = "^6.29"
-nbsphinx = "^0.8"
+sphinx = "*"
+ipykernel = "*"
+nbsphinx = "*"
 
 
 [tool.poetry.group.extra.dependencies]
@@ -25,8 +40,11 @@ jupyterlab = "^4"
 
 
 [tool.poetry.group.test.dependencies]
-pytest = "^7.4"
-black = "^24"
+pytest = "*"
+black = "*"
+
+[tool.poetry.scripts]
+iapsg = "apsg.shell:main"
 
 [build-system]
 requires = ["poetry-core"]
