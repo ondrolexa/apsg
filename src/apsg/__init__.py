@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import importlib.metadata
 from apsg.math import (
     Vector3 as vec,
     Vector2 as vec2,
@@ -99,6 +98,6 @@ __all__ = (
     "quicknet",
 )
 
-__version__ = importlib.metadata.version("apsg")
+__version__ = "1.3.1"
 __author__ = "Ondrej Lexa"
 __email__ = "lexa.ondrej@gmail.com"

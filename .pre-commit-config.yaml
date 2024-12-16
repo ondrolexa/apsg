@@ -1,0 +1,40 @@
+repos:
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v5.0.0
+      hooks:
+          - id: check-case-conflict
+          - id: check-docstring-first
+          - id: check-illegal-windows-names
+          - id: check-merge-conflict
+          - id: check-toml
+          - id: check-yaml
+          - id: end-of-file-fixer
+          - id: trailing-whitespace
+
+    - repo: https://github.com/psf/black-pre-commit-mirror
+      rev: 24.8.0
+      hooks:
+          - id: black
+            args: [--line-length=88]
+            exclude: ^(.venv/|docs/)
+            types: ["python"]
+
+    - repo: https://github.com/PyCQA/flake8
+      rev: 7.1.1
+      hooks:
+          - id: flake8
+            args:
+                - --max-line-length=88
+                - --ignore=F401,E501,W503,E731,E743,E741,E203
+            exclude: ^(.venv/|docs/)
+            types: ["python"]
+
+    - repo: local
+      hooks:
+          - id: pytest
+            name: pytest
+            entry: ./.venv/bin/pytest
+            language: system
+            types: [python]
+            pass_filenames: false
+            always_run: true

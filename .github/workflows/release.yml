@@ -1,15 +1,17 @@
-name: Upload Python Package
+name: PyPi Publisher
 
 on:
-    release:
-        types: [created]
+  workflow_dispatch:
+  release:
+    types: [ published ]
 
 jobs:
-    deploy:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-            - name: Build and publish to pypi
-              uses: JRubics/poetry-publish@v2.0
-              with:
-                  pypi_token: ${{ secrets.PYPI_APIKEY }}
+  pypi-publisher:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: thevickypedia/pypi-publisher@v3
+        env:
+          token: ${{ secrets.PYPI_APIKEY }}
+        with:
+          python-version: "3.10"
+          skip-existing: true

@@ -31,6 +31,11 @@ Install the **latest stable** version of APSG from PyPI:
 pip install apsg
 ```
 
+To include jupyterlab and pyqt5 in installation, use `extra` option:
+```bash
+pip install apsg[extra]
+```
+
 or install **master** with:
 ```bash
 pip install git+https://github.com/ondrolexa/apsg.git
