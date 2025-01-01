@@ -9,7 +9,7 @@ jobs:
   pypi-publisher:
     runs-on: ubuntu-latest
     steps:
-      - uses: thevickypedia/pypi-publisher@v3
+      - uses: thevickypedia/pypi-publisher@v4
         env:
           token: ${{ secrets.PYPI_APIKEY }}
         with:
