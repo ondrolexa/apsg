@@ -13,7 +13,17 @@ from apsg.feature._container import LineationSet, FoliationSet
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import Column, Float, ForeignKey, Integer, String, Table, Text, text
+from sqlalchemy import (
+    Column,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    Text,
+    text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -24,17 +34,20 @@ metadata = Base.metadata
 class Meta(Base):
     __tablename__ = "meta"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(16), nullable=False)
     value = Column(Text)
+
+    def __repr__(self):
+        return "Meta:{}={}".format(self.name, self.value)
 
 
 class Site(Base):
     __tablename__ = "sites"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     id_units = Column(ForeignKey("units.id"), nullable=False, index=True)
-    name = Column(String(16), nullable=False, server_default=text("''"))
+    name = Column(String(16), nullable=False)
     x_coord = Column(Float, server_default=text("NULL"))
     y_coord = Column(Float, server_default=text("NULL"))
     description = Column(Text)
@@ -42,6 +55,8 @@ class Site(Base):
     unit = relationship("Unit", back_populates="sites")
 
     structdata = relationship("Structdata", back_populates="site")
+
+    __table_args__ = (UniqueConstraint("name", name="_site_name_uc"),)
 
     def __repr__(self):
         return "Site:{} ({})".format(self.name, self.unit.name)
@@ -59,7 +74,7 @@ tagged = Table(
 class Attached(Base):
     __tablename__ = "attach"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     id_structdata_planar = Column(
         ForeignKey("structdata.id"), nullable=False, index=True
     )
@@ -74,7 +89,7 @@ class Attached(Base):
 class Structdata(Base):
     __tablename__ = "structdata"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     id_sites = Column(ForeignKey("sites.id"), nullable=False, index=True)
     id_structype = Column(ForeignKey("structype.id"), nullable=False, index=True)
     azimuth = Column(Float, nullable=False, server_default=text("0"))
@@ -102,7 +117,7 @@ class Structdata(Base):
 class Structype(Base):
     __tablename__ = "structype"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     pos = Column(Integer, nullable=False, server_default=text("0"))
     structure = Column(String(16), nullable=False)
     description = Column(Text)
@@ -112,6 +127,8 @@ class Structype(Base):
 
     structdata = relationship("Structdata", back_populates="structype")
 
+    __table_args__ = (UniqueConstraint("structure", name="_structype_structure_uc"),)
+
     def __repr__(self):
         return "Type:{}".format(self.structure)
 
@@ -119,12 +136,14 @@ class Structype(Base):
 class Tag(Base):
     __tablename__ = "tags"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     pos = Column(Integer, nullable=False, server_default=text("0"))
     name = Column(String(16), nullable=False)
     description = Column(Text)
 
     structdata = relationship("Structdata", secondary=tagged, back_populates="tags")
+
+    __table_args__ = (UniqueConstraint("name", name="_tag_name_uc"),)
 
     def __repr__(self):
         return "Tag:{}".format(self.name)
@@ -133,12 +152,14 @@ class Tag(Base):
 class Unit(Base):
     __tablename__ = "units"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     pos = Column(Integer, nullable=False, server_default=text("0"))
     name = Column(String(60), nullable=False)
     description = Column(Text)
 
     sites = relationship("Site", back_populates="unit")
+
+    __table_args__ = (UniqueConstraint("name", name="_unit_name_uc"),)
 
     def __repr__(self):
         return "Unit:{}".format(self.name)
@@ -203,7 +224,8 @@ class SDBSession:
     Keyword Args:
         create (bool): if True existing sdbfile will be deleted
             and new database will be created
-        autocommit(bool): if True, each operation is autocommitted
+        autocommit(bool): if True, each operation is autocommitted.
+            Default False
 
     Example:
         >>> db = SDBSession('database.sdb', create=True)
@@ -496,24 +518,24 @@ class SDBSession:
             self.commit()
         return pair
 
-    def add_pair(self, pair, foltype, lintype, **kwargs):
+    def add_pair(self, site, foltype, lintype, pair, **kwargs):
         """
-        Add attached foliation and lineation to database
+        Add attached foliation and lineation to database. Note that
+        measurements of foliation and lineation are corrected.
 
         Args:
-            pair (Pair): pair instance
+            site (Site): site instance
             foltype (Structype): structype instance
             lintype (Structype): structype instance
+            pair (Pair): pair instance
 
         Returns:
             Attached
 
         """
         assert isinstance(pair, Pair), "pair argument must be instance of Pair class"
-        kwargs["structype"] = foltype
-        fol = self.add_fol(pair.fol, **kwargs)
-        kwargs["structype"] = lintype
-        lin = self.add_lin(pair.lin, **kwargs)
+        fol = self.add_fol(site, foltype, pair.fol, **kwargs)
+        lin = self.add_lin(site, lintype, pair.lin, **kwargs)
         return self.attach(fol, lin)
 
     def sites(self, **kwargs):
