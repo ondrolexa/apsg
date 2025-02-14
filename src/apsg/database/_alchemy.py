@@ -500,19 +500,21 @@ class SDBSession:
         azimuth, inclination = lin.geo
         return self.add_structdata(site, structype, azimuth, inclination, **kwargs)
 
-    def attach(self, fol, lin):
+    def attach(self, planar, linear):
         """
-        Add Lineation to site
+        Attach Foliation to Lineation
 
         Args:
-            fol (Foliation): foliation instance
-            lin (Lineation): lineation instance
+            planar (Structdata): planar Structdata
+            linear (Structdata): linear Structdata
 
         Returns:
             Attached
 
         """
-        pair = Attached(planar=fol, linear=lin)
+        assert planar.structype.planar == 1, "First argument must be planar Structdata"
+        assert linear.structype.planar == 0, "Second argument must be linear Structdata"
+        pair = Attached(planar=planar, linear=linear)
         self.session.add(pair)
         if self.autocommit:
             self.commit()
@@ -618,7 +620,7 @@ class SDBSession:
             .filter_by(structype=structype, **kwargs)
             .all()
         )
-        if structype.planar:
+        if structype.planar == 1:
             res = FoliationSet(
                 [Foliation(v.azimuth, v.inclination) for v in data],
                 name=structype.structure,
