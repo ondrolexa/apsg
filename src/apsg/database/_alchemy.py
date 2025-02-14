@@ -52,9 +52,11 @@ class Site(Base):
     y_coord = Column(Float, server_default=text("NULL"))
     description = Column(Text)
 
-    unit = relationship("Unit", back_populates="sites")
+    unit = relationship("Unit", back_populates="sites", cascade="save-update")
 
-    structdata = relationship("Structdata", back_populates="site")
+    structdata = relationship(
+        "Structdata", back_populates="site", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (UniqueConstraint("name", name="_site_name_uc"),)
 
@@ -65,9 +67,15 @@ class Site(Base):
 tagged = Table(
     "tagged",
     metadata,
-    Column("id", Integer, autoincrement=True),
-    Column("id_tags", Integer, ForeignKey("tags.id"), primary_key=True),
-    Column("id_structdata", Integer, ForeignKey("structdata.id"), primary_key=True),
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("id_tags", Integer, ForeignKey("tags.id"), nullable=False, index=True),
+    Column(
+        "id_structdata",
+        Integer,
+        ForeignKey("structdata.id"),
+        nullable=False,
+        index=True,
+    ),
 )
 
 
@@ -97,9 +105,13 @@ class Structdata(Base):
     description = Column(Text)
 
     site = relationship("Site", back_populates="structdata")
-    structype = relationship("Structype", back_populates="structdata")
+    structype = relationship(
+        "Structype", back_populates="structdata", cascade="save-update"
+    )
 
-    tags = relationship("Tag", secondary=tagged, back_populates="structdata")
+    tags = relationship(
+        "Tag", secondary=tagged, back_populates="structdata", cascade="save-update"
+    )
 
     attach_planar = relationship(
         "Attached", backref="planar", primaryjoin=id == Attached.id_structdata_planar
@@ -299,7 +311,7 @@ class SDBSession:
 
     def meta(self, name, **kwargs):
         """
-        Insert, update or retrieve (when kwargs empty) Meta
+        Query Meta when no kwargs or insert/update when kwargs provided
 
         Args:
             name (str): meta name
@@ -323,7 +335,7 @@ class SDBSession:
 
     def site(self, name, **kwargs):
         """
-        Insert, update or retrieve (when kwargs empty) Site
+        Query Site when no kwargs or insert/update when kwargs provided
 
         Args:
             name (str): site name
@@ -350,7 +362,7 @@ class SDBSession:
 
     def unit(self, name, **kwargs):
         """
-        Insert, update or retrieve (when kwargs empty) Unit
+        Query Unit when no kwargs or insert/update when kwargs provided
 
         Args:
             name (str): unit name
@@ -374,7 +386,7 @@ class SDBSession:
 
     def tag(self, name, **kwargs):
         """
-        Insert, update or retrieve (when kwargs empty) Tag
+        Query Tag when no kwargs or insert/update when kwargs provided
 
         Args:
             name (str): tag name
@@ -398,14 +410,14 @@ class SDBSession:
 
     def structype(self, structure, **kwargs):
         """
-        Insert, update or retrieve (when kwargs empty) Structype
+        Query Structype when no kwargs or insert/update when kwargs provided
 
         Args:
-            structure (str): label for structure
+            structure (str): label used for structure
 
         Keyword Args:
-            description (str): structype description
-            planar (int): 1 for planar 0 for linear
+            description (str): Structype description
+            planar (int): 1 for planar 0 for linear Structype
             structcode (int): structcode (optional)
             groupcode (int): groupcode (optional)
 
@@ -427,11 +439,11 @@ class SDBSession:
 
     def add_structdata(self, site, structype, azimuth, inclination, **kwargs):
         """
-        Add structdata to site
+        Add structural measurement to site
 
         Args:
-            site (Site): site instance
-            structype (Structype): structype instance
+            site (Site): Site instance
+            structype (Structype): Structype instance
             azimuth (float): dip direction or plunge direction
             inclination (float): dip or plunge
 
@@ -459,9 +471,9 @@ class SDBSession:
         Add Foliation to site
 
         Args:
-            site (Site): site instance
-            structype (Structype): structype instance
-            fol (Foliation): foliation instance
+            site (Site): Site instance
+            structype (Structype): Structype instance
+            fol (Foliation): Foliation instance
 
         Keyword Args:
             description (str): structdata description
@@ -482,9 +494,9 @@ class SDBSession:
         Add Lineation to site
 
         Args:
-            site (Site): site instance
-            structype (Structype): structype instance
-            lin (Lineation): lineation instance
+            site (Site): Site instance
+            structype (Structype): Structype instance
+            lin (Lineation): Lineation instance
 
         Keyword Args:
             description (str): structdata description
@@ -529,7 +541,7 @@ class SDBSession:
             site (Site): site instance
             foltype (Structype): structype instance
             lintype (Structype): structype instance
-            pair (Pair): pair instance
+            pair (Pair): Pair instance
 
         Returns:
             Attached
@@ -542,7 +554,8 @@ class SDBSession:
 
     def sites(self, **kwargs):
         """
-        Retrieve Site or list of Sites based on criteria in kwargs
+        Retrieve list of Site instances filtered by kwargs. If query results
+        in single site, instance of Site is returned.
 
         Keyword arguments are passed to sqlalchemy filter_by method
         """
@@ -557,7 +570,8 @@ class SDBSession:
 
     def units(self, **kwargs):
         """
-        Retrieve Unit or list of Units based on criteria in kwargs
+        Retrieve list of Unit instances filtered by kwargs. If query results
+        in single unit, instance of Unit is returned.
 
         Keyword arguments are passed to sqlalchemy filter_by method
         """
@@ -572,7 +586,8 @@ class SDBSession:
 
     def structypes(self, **kwargs):
         """
-        Retrieve Structype or list of Structypes based on criteria in kwargs
+        Retrieve list of Structype instances filtered by kwargs. If query results
+        in single structural type, instance of Structype is returned.
 
         Keyword arguments are passed to sqlalchemy filter_by method
         """
@@ -587,7 +602,8 @@ class SDBSession:
 
     def tags(self, **kwargs):
         """
-        Retrieve Tag or list of Tags based on criteria in kwargs
+        Retrieve list of Tag instances filtered by kwargs. If query results
+        in single tag, instance of Tag is returned.
 
         Keyword arguments are passed to sqlalchemy filter_by method
         """
@@ -613,7 +629,7 @@ class SDBSession:
             structypes = (
                 self.session.query(Structype).filter_by(structure=structype).all()
             )
-            assert len(structypes) == 1, f"There is no structure {structype} in db"
+            assert len(structypes) == 1, f"There is no structure {structype} in db."
             structype = structypes[0]
         data = (
             self.session.query(Structdata)
