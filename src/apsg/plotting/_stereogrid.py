@@ -206,8 +206,7 @@ class StereoGrid:
         dcgrid = np.asarray(self.grid).T
         X, Y = self.proj.project_data(*dcgrid, clip_inside=False)
         cf = ax.tricontourf(X, Y, self.values, **parsed)
-        for collection in cf.collections:
-            collection.set_clip_path(primitive)
+        cf.set_clip_path(primitive)
         ax.set_xlim(-1.05, 1.05)
         ax.set_ylim(-1.05, 1.05)
         if colorbar:
@@ -249,15 +248,14 @@ class StereoGrid:
             radius=1,
             edgecolor="black",
             fill=False,
-            clip_box="None",
+            clip_box=None,
             label="_nolegend_",
         )
         ax.add_patch(primitive)
         dcgrid = np.asarray(self.grid).T
         X, Y = self.proj.project_data(*dcgrid, clip_inside=False)
         cf = ax.tricontour(X, Y, self.values, **parsed)
-        for collection in cf.collections:
-            collection.set_clip_path(primitive)
+        cf.set_clip_path(primitive)
         if colorbar:
             fig.colorbar(cf, ax=ax, shrink=0.6)
         plt.show()
@@ -281,7 +279,7 @@ class StereoGrid:
             radius=1,
             edgecolor="black",
             fill=False,
-            clip_box="None",
+            clip_box=None,
             label="_nolegend_",
         )
         ax.add_patch(primitive)

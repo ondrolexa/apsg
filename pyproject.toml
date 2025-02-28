@@ -15,7 +15,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
 ]
-dependencies = ["numpy", "matplotlib", "scipy", "sqlalchemy", "pandas"]
+dependencies = ["numpy", "matplotlib>=3.9", "scipy", "sqlalchemy", "pandas"]
 
 [project.optional-dependencies]
 extra = ["jupyterlab", "pyqt5"]

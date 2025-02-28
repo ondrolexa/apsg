@@ -901,16 +901,14 @@ class StereoNet:
         dcgrid = np.asarray(self.grid.grid).T
         X, Y = self.proj.project_data(*dcgrid, clip_inside=False)
         cf = self.ax.tricontourf(X, Y, self.grid.values, **kwargs)
-        for collection in cf.collections:
-            collection.set_clip_path(self.primitive)
+        cf.set_clip_path(self.primitive)
         if clines:
             kwargs["cmap"] = None
             kwargs["colors"] = "k"
             kwargs["linewidths"] = linewidths
             kwargs["linestyles"] = linestyles
             cl = self.ax.tricontour(X, Y, self.grid.values, **kwargs)
-            for collection in cl.collections:
-                collection.set_clip_path(self.primitive)
+            cl.set_clip_path(self.primitive)
         if show_data:
             artist = StereoNetArtistFactory.create_point(*args[0], **data_kws)
             self._line(*artist.args, **artist.kwargs)
