@@ -1,5 +1,10 @@
 # Changelog
 
+### 1.3.1 (Feb 28 2025)
+ * SQLAlchemy interface to sdb updated
+ * matplotlib 3.9 minimum version
+ * collections clipping bug fixed
+
 ## 1.3.0 (Dec 14 2024)
  * Python 3.10 set as minimal version
  * Tensor3 eigenlins and eigenfols implemented as methods

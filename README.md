@@ -24,36 +24,50 @@ You need Python 3.9 or later to run APSG. The package requires [NumPy](https://n
 [Matplotlib](https://matplotlib.org/), [SciPy](https://scipy.org/), [SQLAlchemy](https://www.sqlalchemy.org/)
 and [pandas](https://pandas.pydata.org/).
 
-## :rocket: Quick start
+## :rocket: How to install
 
-Install the **latest stable** version of APSG from PyPI:
-```bash
-pip install apsg
-```
+It is strongly suggested to install **apsg** into separate environment. You can create
+Python virtual environment. For Linux and macOS use:
+
+    python -m venv .venv
+    source .venv/bin/activate
+
+for Windows use Command Prompt or PowerShell:
+
+    python -m venv .venv
+    .venv\Scripts\activate
+
+> [!NOTE]
+> On Microsoft Windows, it may be required to set the execution policy in PowerShell for the user.
+> You can do this by issuing the following PowerShell command:
+> ```
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
+
+and install latest stable version of **apsg** using pip within the environment:
+
+    pip install apsg
 
 To include jupyterlab and pyqt5 in installation, use `extra` option:
-```bash
-pip install apsg[extra]
-```
+
+## I'm using conda or mamba to manage environments
+
+    pip install apsg[extra]
 
 or install **master** with:
-```bash
-pip install git+https://github.com/ondrolexa/apsg.git
-```
 
-Alternatively, you can cloce the repository and do a local install (recommended for dev):
-```bash
-git clone https://github.com/ondrolexa/apsg.git
-cd apsg
-pip install -e ."
-```
+    pip install git+https://github.com/ondrolexa/apsg.git
+
+Alternatively, you can clone the repository and do a local install (recommended for dev):
+    git clone https://github.com/ondrolexa/apsg.git
+    cd apsg
+    pip install -e .[dev]
 
 #### Upgrading via pip
 
 To upgrade an existing version of APSG from PyPI, execute:
-```bash
-pip install apsg --upgrade --no-deps
-```
+
+    pip install apsg --upgrade --no-deps
 
 #### Comments on system-wide instalations on Debian systems
 
@@ -61,36 +75,23 @@ Latest Debian-based systems does not allow to install non-debian packages system
 However, installing all requirements allows to force install APSG system-wide without troubles.
 
 Install requirements using apt:
-```bash
-sudo apt install python3-numpy python3-matplotlib python3-scipy python3-sqlalchemy python3-pandas
-```
+
+    sudo apt install python3-numpy python3-matplotlib python3-scipy python3-sqlalchemy python3-pandas
 
 and then install apsg using pip:
-```bash
-pip install --break-system-packages apsg
-```
 
-### Conda/Mamba
+    pip install --break-system-packages apsg
 
-The APSG package is also available on `conda-forge` channel. Installing `apsg`
-from the `conda-forge` channel can be achieved by adding `conda-forge` to your
-channels:
+### I'm using conda or mamba to manage environments
 
-```bash
-conda config --add channels conda-forge
-```
+If you have already have conda or mamba installed, you can create environment with:
 
-Once the `conda-forge` channel has been enabled, `apsg` can be installed with:
+    conda config --add channels conda-forge
+    conda create -n apsg python apsg jupyterlab pyqt
 
-```bash
-conda install apsg
-```
+or using mamba
 
-It is possible to list all of the versions of `apsg` available on your platform with:
-
-```bash
-conda search apsg --channel conda-forge
-```
+    mamba create -n apsg python apsg jupyterlab pyqt
 
 #### Current release info
 
