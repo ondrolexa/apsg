@@ -50,14 +50,11 @@ Changelog = "https://github.com/ondrolexa/apsg/blob/master/CHANGELOG.md"
 iapsg = "apsg.shell:main"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/apsg"]
-
-[tool.hatch.version]
-path = "src/apsg/__init__.py"
+[tool.setuptools.dynamic]
+version = { attr = "apsg.__version__" }
 
 [tool.black]
 line-length = 88

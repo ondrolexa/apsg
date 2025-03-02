@@ -1,5 +1,8 @@
 # Changelog
 
+### 1.3.2 (Mar 2 2025)
+ * using setuptools as builder
+
 ### 1.3.1 (Feb 28 2025)
  * SQLAlchemy interface to sdb updated
  * matplotlib 3.9 minimum version
