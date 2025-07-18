@@ -35,7 +35,7 @@ class Meta(Base):
     __tablename__ = "meta"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(16), nullable=False)
+    name = Column(String(16), nullable=False, unique=True)
     value = Column(Text)
 
     def __repr__(self):
@@ -47,7 +47,7 @@ class Site(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_units = Column(ForeignKey("units.id"), nullable=False, index=True)
-    name = Column(String(16), nullable=False)
+    name = Column(String(16), nullable=False, unique=True)
     x_coord = Column(Float, server_default=text("NULL"))
     y_coord = Column(Float, server_default=text("NULL"))
     description = Column(Text)
@@ -57,8 +57,6 @@ class Site(Base):
     structdata = relationship(
         "Structdata", back_populates="site", cascade="all, delete-orphan"
     )
-
-    __table_args__ = (UniqueConstraint("name", name="_site_name_uc"),)
 
     def __repr__(self):
         return "Site:{} ({})".format(self.name, self.unit.name)
@@ -131,15 +129,13 @@ class Structype(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     pos = Column(Integer, nullable=False, server_default=text("0"))
-    structure = Column(String(16), nullable=False)
+    structure = Column(String(16), nullable=False, unique=True)
     description = Column(Text)
     structcode = Column(Integer, server_default=text("0"))
     groupcode = Column(Integer, server_default=text("0"))
     planar = Column(Integer, server_default=text("1"))
 
     structdata = relationship("Structdata", back_populates="structype")
-
-    __table_args__ = (UniqueConstraint("structure", name="_structype_structure_uc"),)
 
     def __repr__(self):
         return "Type:{}".format(self.structure)
@@ -150,12 +146,10 @@ class Tag(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     pos = Column(Integer, nullable=False, server_default=text("0"))
-    name = Column(String(16), nullable=False)
+    name = Column(String(16), nullable=False, unique=True)
     description = Column(Text)
 
     structdata = relationship("Structdata", secondary=tagged, back_populates="tags")
-
-    __table_args__ = (UniqueConstraint("name", name="_tag_name_uc"),)
 
     def __repr__(self):
         return "Tag:{}".format(self.name)
@@ -166,12 +160,10 @@ class Unit(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     pos = Column(Integer, nullable=False, server_default=text("0"))
-    name = Column(String(60), nullable=False)
+    name = Column(String(60), nullable=False, unique=True)
     description = Column(Text)
 
     sites = relationship("Site", back_populates="unit")
-
-    __table_args__ = (UniqueConstraint("name", name="_unit_name_uc"),)
 
     def __repr__(self):
         return "Unit:{}".format(self.name)
