@@ -94,6 +94,13 @@ class SDB(object):
                 raise
 
     def info(self, report="basic"):
+        """
+        PySDB database report
+
+        Args:
+            report (str): type of report. `basic`, `data` or `tags`. Default `basic`
+
+        """
         lines = []
         if report == "basic":
             lines.append("PySDB database version: {}".format(self.meta("version")))
@@ -111,7 +118,7 @@ class SDB(object):
                 if len(r) > 0:
                     lines.append("Number of {} measurements: {}".format(s, len(r)))
         elif report == "tags":
-            for s in self.structures():
+            for s in self.tags():
                 r = self.execsql(self._make_select(tags=s))
                 if len(r) > 0:
                     lines.append("{} measurements tagged as {}.".format(len(r), s))
