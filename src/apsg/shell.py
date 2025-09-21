@@ -6,8 +6,6 @@
 Run the interactive shell.
 """
 
-
-import pkg_resources
 import code
 
 try:
@@ -15,14 +13,16 @@ try:
 except ImportError:
     pass
 
-from pylab import *  # NOQA
+import numpy as np
+import matplotlib.pyplot as plt
+import apsg
 from apsg import *  # NOQA
 
 
 def main():
     banner = "+----------------------------------------------------------+\n"
     banner += "    APSG toolbox "
-    banner += pkg_resources.require("apsg")[0].version
+    banner += apsg.__version__
     banner += " - http://ondrolexa.github.io/apsg\n"
     banner += "+----------------------------------------------------------+"
     vars = globals().copy()

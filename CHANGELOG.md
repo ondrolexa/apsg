@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.3.3 (Sep 21 2025)
+ * iapsg fixed
+ * sdbread tags fix
+
 ### 1.3.2 (Mar 2 2025)
  * using setuptools as builder
 
