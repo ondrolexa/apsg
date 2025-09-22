@@ -1,5 +1,9 @@
 # Changelog
 
+### master
+ * roundig bug fixed
+ * quicknet pass all kwargs to StereoNet methods
+
 ### 1.3.3 (Sep 21 2025)
  * iapsg fixed
  * sdbread tags fix

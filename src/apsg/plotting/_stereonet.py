@@ -939,6 +939,7 @@ def quicknet(*args, **kwargs):
         savefig_kwargs (dict): dict passed to ``plt.savefig``
         fol_as_pole (bool): True to plot planar features as poles,
             False for plotting as great circle. Default `False`
+        Additional kwargs are passed to StereoNet method
 
     Example:
         >>> l = linset.random_fisher(position=lin(120, 50))
@@ -949,39 +950,39 @@ def quicknet(*args, **kwargs):
     filename = kwargs.get("filename", "stereonet.png")
     savefig_kwargs = kwargs.get("savefig_kwargs", {})
     fol_as_pole = kwargs.get("fol_as_pole", False)
-    label = kwargs.get("label", "_nolegend_")
+    kwargs["label"] = kwargs.get("label", "_nolegend_")
     s = StereoNet(**kwargs)
     for arg in args:
         if isinstance(arg, Vector3):
             if isinstance(arg, Foliation):
                 if fol_as_pole:
-                    s.pole(arg, label=label)
+                    s.pole(arg, **kwargs)
                 else:
-                    s.great_circle(arg, label=label)
+                    s.great_circle(arg, **kwargs)
             elif isinstance(arg, Lineation):
-                s.line(arg, label=label)
+                s.line(arg, **kwargs)
             else:
-                s.vector(arg, label=label)
+                s.vector(arg, **kwargs)
         elif isinstance(arg, Fault):
-            s.fault(arg, label=label)
+            s.fault(arg, **kwargs)
         elif isinstance(arg, Pair):
-            s.pair(arg, label=label)
+            s.pair(arg, **kwargs)
         elif isinstance(arg, Cone):
-            s.cone(arg, label=label)
+            s.cone(arg, **kwargs)
         elif isinstance(arg, Vector3Set):
             if isinstance(arg, FoliationSet):
                 if fol_as_pole:
-                    s.pole(arg, label=label)
+                    s.pole(arg, **kwargs)
                 else:
-                    s.great_circle(arg, label=label)
+                    s.great_circle(arg, **kwargs)
             elif isinstance(arg, LineationSet):
-                s.line(arg, label=label)
+                s.line(arg, **kwargs)
             else:
-                s.vector(arg, label=label)
+                s.vector(arg, **kwargs)
         elif isinstance(arg, FaultSet):
-            s.fault(arg, label=label)
+            s.fault(arg, **kwargs)
         elif isinstance(arg, PairSet):
-            s.pair(arg, label=label)
+            s.pair(arg, **kwargs)
         else:
             print(f"{type(arg)} not supported.")
     if savefig:

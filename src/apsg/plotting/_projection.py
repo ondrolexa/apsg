@@ -26,14 +26,18 @@ class Projection:
         if self.hemisphere == "upper":
             X, Y = self._project(-x, -y, -z)
             if clip_inside:
-                outside = (X * X + Y * Y > 1.0) and not np.isclose(X * X + Y * Y, 1)
+                outside = np.logical_and(
+                    X * X + Y * Y > 1.0, ~np.isclose(X * X + Y * Y, 1)
+                )
                 X[outside] = np.nan
                 Y[outside] = np.nan
             return -X, -Y
         else:
             X, Y = self._project(x, y, z)
             if clip_inside:
-                outside = (X * X + Y * Y > 1.0) and not np.isclose(X * X + Y * Y, 1)
+                outside = np.logical_and(
+                    X * X + Y * Y > 1.0, ~np.isclose(X * X + Y * Y, 1)
+                )
                 X[outside] = np.nan
                 Y[outside] = np.nan
             return X, Y
@@ -44,8 +48,12 @@ class Projection:
         X1, Y1 = self._project(x, y, z)
         X2, Y2 = self._project(-x, -y, -z)
         if clip_inside:
-            outside1 = X1 * X1 + Y1 * Y1 > 1.0
-            outside2 = X2 * X2 + Y2 * Y2 > 1.0
+            outside1 = np.logical_and(
+                X1 * X1 + Y1 * Y1 > 1.0, ~np.isclose(X1 * X1 + Y1 * Y1, 1)
+            )
+            outside2 = np.logical_and(
+                X2 * X2 + Y2 * Y2 > 1.0, ~np.isclose(X2 * X2 + Y2 * Y2, 1)
+            )
             X1[outside1] = np.nan
             Y1[outside1] = np.nan
             X2[outside2] = np.nan
