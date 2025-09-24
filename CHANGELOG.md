@@ -1,7 +1,9 @@
 # Changelog
 
+### master
+
 ### 1.3.4 (Sep 24 2025)
- * roundig bug fixed
+ * rounding bug fixed
  * quicknet pass all kwargs to StereoNet methods
 
 ### 1.3.3 (Sep 21 2025)
