@@ -63,7 +63,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "APSG"
-copyright = "2015-2024, Ondrej Lexa"
+copyright = "2015-2025, Ondrej Lexa"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout

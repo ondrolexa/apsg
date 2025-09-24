@@ -1,6 +1,6 @@
 # Changelog
 
-### master
+### 1.3.4 (Sep 24 2025)
  * roundig bug fixed
  * quicknet pass all kwargs to StereoNet methods
 
