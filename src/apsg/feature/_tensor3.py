@@ -440,6 +440,30 @@ class Stress3(Tensor3):
 
         return cls([[xx, xy, xz], [xy, yy, yz], [xz, yz, zz]])
 
+    @classmethod
+    def from_ratio(cls, r=0.5, mag=1):
+        """
+        Return ``Stress`` tensor with given shape ration.
+
+        Keyword Args:
+          r (float): shape ratio between 0 and 1. Default 0.5
+          mag (float): magnitude of differential stress. Default 1.
+
+        Example:
+          >>> S = stress.from_ratio(r=0.25, mag=10)
+          >>> S
+          Stress3
+          [[-5.   0.   0. ]
+           [ 0.  -2.5  0. ]
+           [ 0.   0.   5. ]]
+
+        """
+
+        xx = -mag / 2
+        yy = xx + r * mag
+        zz = mag / 2
+        return cls([[xx, 0, 0], [0, yy, 0], [0, 0, zz]])
+
     @property
     def mean_stress(self):
         """

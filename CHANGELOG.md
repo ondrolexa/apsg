@@ -1,6 +1,7 @@
 # Changelog
 
 ### master
+ * stress tensor from_ratio method added
 
 ### 1.3.4 (Sep 24 2025)
  * rounding bug fixed
