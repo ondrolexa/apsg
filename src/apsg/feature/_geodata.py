@@ -446,15 +446,15 @@ class Fault(Pair):
         elif isinstance(sense, str):
             p = Pair(fvec, lvec)
             if sense.lower() == "s":
-                if p.rax == p.rax.lower():
-                    res = -1
-                else:
+                if p.rax.is_upper():
                     res = 1
+                else:
+                    res = -1
             elif sense.lower() == "d":
-                if p.rax == p.rax.lower():
-                    res = 1
-                else:
+                if p.rax.is_upper():
                     res = -1
+                else:
+                    res = 1
             elif sense.lower() == "n":
                 res = 1
             elif sense.lower() == "r":
@@ -464,7 +464,8 @@ class Fault(Pair):
     def __repr__(self):
         fazi, finc = self.fol.geo
         lazi, linc = self.lin.geo
-        schar = [" ", "+", "-"][self.sense]
+        schar = self.sense_str
+        # schar = [" ", "+", "-"][self.sense]
         return f"F:{fazi:.0f}/{finc:.0f}-{lazi:.0f}/{linc:.0f} {schar}"
 
     @ensure_first_arg_same
@@ -518,6 +519,24 @@ class Fault(Pair):
             return 1
         else:
             return -1
+
+    @property
+    def sense_str(self):
+        if abs(self.rax.geo[1]) > 75:
+            if self.rax.z > 0:
+                schar = "D"
+            elif self.rax.z < 0:
+                schar = "S"
+            else:
+                schar = " "
+        else:
+            if self.sense < 0:
+                schar = "R"
+            elif self.sense > 0:
+                schar = "N"
+            else:
+                schar = " "
+        return schar
 
     def p_vector(self, ptangle=90):
         """Return P axis as ``Vector3``"""

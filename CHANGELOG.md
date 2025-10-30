@@ -2,6 +2,8 @@
 
 ### master
  * stress tensor from_ratio method added
+ * fault sense_str property for string representation added
+ * fault sense_str used fore repr by default
 
 ### 1.3.4 (Sep 24 2025)
  * rounding bug fixed

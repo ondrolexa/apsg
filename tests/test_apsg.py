@@ -20,7 +20,7 @@ import numpy as np
 
 from apsg.config import apsg_conf
 from apsg import vec, fol, lin, fault, pair
-from apsg import vecset, linset, folset
+from apsg import vecset, linset
 from apsg import defgrad
 
 atol = 1e-05  # safe tests
@@ -612,7 +612,7 @@ class Testfault:
 
     def test_fault_rotation_sense(self):
         f = fault(90, 30, 110, 28, -1)
-        assert repr(f.rotate(lin(220, 10), 60)) == "F:343/37-301/29 +"
+        assert repr(f.rotate(lin(220, 10), 60)) == "F:343/37-301/29 N"
 
     def test_fault_t_axis(self):
         f = fault(150, 60, 150, 60, 1)

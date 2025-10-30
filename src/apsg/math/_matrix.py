@@ -4,10 +4,6 @@ from apsg.config import apsg_conf
 from apsg.decorator._decorator import ensure_first_arg_same
 from apsg.math._vector import Vector3, Vector2
 
-"""
-TO BE ADDED
-"""
-
 
 class Matrix:
     """Base class for Matrix2 and Matrix3"""
@@ -128,7 +124,7 @@ class Matrix:
         return self._coefs[1][1]
 
     @property
-    def I(self):
+    def I(self):  # noqa: E743
         return type(self)(np.linalg.inv(self))
 
     @property

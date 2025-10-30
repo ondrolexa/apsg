@@ -1121,6 +1121,11 @@ class FaultSet(PairSet):
         return np.array([f.sense for f in self])
 
     @property
+    def sense_str(self):
+        """Return array of sense characters"""
+        return np.array([f.sense_str for f in self])
+
+    @property
     def p_vector(self, ptangle=90):
         """Return p-axes of FaultSet as Vector3Set"""
         return Vector3Set([e.p_vector(ptangle) for e in self], name=self.name)
@@ -1196,7 +1201,15 @@ class FaultSet(PairSet):
 
     @classmethod
     def from_csv(
-        cls, filename, delimiter=",", facol=0, ficol=1, lacol=2, licol=3, scol=4
+        cls,
+        filename,
+        delimiter=",",
+        sense_str=False,
+        facol=0,
+        ficol=1,
+        lacol=2,
+        licol=3,
+        scol=4,
     ):
         """Read ``FaultSet`` from csv file"""
 
@@ -1220,48 +1233,73 @@ class FaultSet(PairSet):
                     faname, finame = reader.fieldnames[facol], reader.fieldnames[ficol]
                     laname, liname = reader.fieldnames[lacol], reader.fieldnames[licol]
                     sname = reader.fieldnames[scol]
-                    r = [
-                        (
-                            float(row[faname]),
-                            float(row[finame]),
-                            float(row[laname]),
-                            float(row[liname]),
-                            int(row[sname]),
-                        )
-                        for row in reader
-                    ]
+                    if sense_str:
+                        r = [
+                            (
+                                float(row[faname]),
+                                float(row[finame]),
+                                float(row[laname]),
+                                float(row[liname]),
+                                row[sname],
+                            )
+                            for row in reader
+                        ]
+                    else:
+                        r = [
+                            (
+                                float(row[faname]),
+                                float(row[finame]),
+                                float(row[laname]),
+                                float(row[liname]),
+                                int(row[sname]),
+                            )
+                            for row in reader
+                        ]
                 else:
                     reader = csv.reader(csvfile, dialect=dialect)
+
                     r = [
                         (
                             float(row[facol]),
                             float(row[ficol]),
                             float(row[lacol]),
                             float(row[licol]),
-                            int(row[scol]),
+                            row[scol],
                         )
                         for row in reader
                     ]
             else:
                 if has_header:
                     reader = csv.DictReader(csvfile, dialect=dialect)
-                    r = [
-                        (
-                            float(row[facol]),
-                            float(row[ficol]),
-                            float(row[lacol]),
-                            float(row[licol]),
-                            int(row[scol]),
-                        )
-                        for row in reader
-                    ]
+                    if sense_str:
+                        r = [
+                            (
+                                float(row[facol]),
+                                float(row[ficol]),
+                                float(row[lacol]),
+                                float(row[licol]),
+                                row[scol],
+                            )
+                            for row in reader
+                        ]
+                    else:
+                        r = [
+                            (
+                                float(row[facol]),
+                                float(row[ficol]),
+                                float(row[lacol]),
+                                float(row[licol]),
+                                int(row[scol]),
+                            )
+                            for row in reader
+                        ]
                 else:
                     raise ValueError("No header line in CSV file...")
 
         fazi, finc, lazi, linc, sense = zip(*r)
         return cls.from_array(fazi, finc, lazi, linc, sense, name=basename(filename))
 
-    def to_csv(self, filename, delimiter=","):
+    def to_csv(self, filename, delimiter=",", sense_str=False):
         """Save ``FaultSet`` object to csv file
 
         Args:
@@ -1269,6 +1307,7 @@ class FaultSet(PairSet):
 
         Keyword Args:
           delimiter (str): values delimiter. Default ','
+          sense_str (bool): save sense as N, R, S or D. Default False
 
         Note: Written values are rounded according to `ndigits` settings in apsg_conf
 
@@ -1284,19 +1323,30 @@ class FaultSet(PairSet):
             for dt in self:
                 fazi, finc = dt.fol.geo
                 lazi, linc = dt.lin.geo
-                writer.writerow(
-                    {
-                        "fazi": round(fazi, n),
-                        "finc": round(finc, n),
-                        "lazi": round(lazi, n),
-                        "linc": round(linc, n),
-                        "sense": dt.sense,
-                    }
-                )
+                if sense_str:
+                    writer.writerow(
+                        {
+                            "fazi": round(fazi, n),
+                            "finc": round(finc, n),
+                            "lazi": round(lazi, n),
+                            "linc": round(linc, n),
+                            "sense": dt.sense_str,
+                        }
+                    )
+                else:
+                    writer.writerow(
+                        {
+                            "fazi": round(fazi, n),
+                            "finc": round(finc, n),
+                            "lazi": round(lazi, n),
+                            "linc": round(linc, n),
+                            "sense": dt.sense,
+                        }
+                    )
 
     @classmethod
     def from_array(cls, fazis, fincs, lazis, lincs, senses, name="Default"):
-        """Create ``PairSet`` from arrays of azimuths and inclinations
+        """Create ``FaultSet`` from arrays of azimuths, inclinations and senses
 
         Args:
           azis: list or array of azimuths
