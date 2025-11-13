@@ -1,39 +1,42 @@
 # -*- coding: utf-8 -*-
 import sys
-from apsg.feature._geodata import Lineation, Foliation, Pair, Fault, Cone
+
 from apsg.feature._container import (
-    FeatureSet,
-    Vector2Set,
-    Vector3Set,
-    LineationSet,
-    FoliationSet,
-    PairSet,
-    FaultSet,
+    ClusterSet,
     ConeSet,
+    Direction2Set,
     EllipseSet,
     EllipsoidSet,
+    FaultSet,
+    FeatureSet,
+    FoliationSet,
+    G,
+    LineationSet,
     OrientationTensor2Set,
     OrientationTensor3Set,
-    G,
-    ClusterSet,
+    PairSet,
+    Vector2Set,
+    Vector3Set,
+)
+from apsg.feature._geodata import Cone, Direction, Fault, Foliation, Lineation, Pair
+from apsg.feature._paleomag import Core
+from apsg.feature._tensor2 import (
+    DeformationGradient2,
+    Ellipse,
+    OrientationTensor2,
+    Stress2,
+    VelocityGradient2,
 )
 from apsg.feature._tensor3 import (
     DeformationGradient3,
-    VelocityGradient3,
-    Stress3,
     Ellipsoid,
     OrientationTensor3,
+    Stress3,
+    VelocityGradient3,
 )
-from apsg.feature._tensor2 import (
-    DeformationGradient2,
-    VelocityGradient2,
-    Stress2,
-    Ellipse,
-    OrientationTensor2,
-)
-from apsg.feature._paleomag import Core
 
 __all__ = (
+    "Direction",
     "Lineation",
     "Foliation",
     "Pair",
@@ -50,6 +53,7 @@ __all__ = (
     "Ellipse",
     "OrientationTensor2",
     "Vector2Set",
+    "Direction2Set",
     "FeatureSet",
     "Vector3Set",
     "LineationSet",

@@ -1,9 +1,13 @@
 # Changelog
 
 ### master
+
+### 1.3.5 (Nov 13 2025)
+ * Direction and Direction2Set added
+ * cluster use different metrics for axial and vector data
  * stress tensor from_ratio method added
  * fault sense_str property for string representation added
- * fault sense_str used fore repr by default
+ * fault sense_str used for repr by default
 
 ### 1.3.4 (Sep 24 2025)
  * rounding bug fixed

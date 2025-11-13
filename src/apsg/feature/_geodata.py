@@ -1,15 +1,50 @@
 import warnings
+
 import numpy as np
 
+from apsg.decorator._decorator import ensure_arguments, ensure_first_arg_same
 from apsg.helpers._notation import (
     geo2vec_planar,
-    vec2geo_planar,
-    vec2geo_planar_signed,
     vec2geo_linear,
     vec2geo_linear_signed,
+    vec2geo_planar,
+    vec2geo_planar_signed,
 )
-from apsg.decorator._decorator import ensure_first_arg_same, ensure_arguments
-from apsg.math._vector import Vector3, Axial3
+from apsg.math._vector import Axial2, Axial3, Vector3
+
+
+class Direction(Axial2):
+    """
+    A class to represent axial (non-oriented) 2D linear feature (direction).
+
+    There are different way to create ``Direction`` object:
+
+    - without arguments create default ``Direction`` D:0
+    - with single argument `d`, where:
+
+        - `d` could be Vector2-like object
+        - `d` could be string 'x' or 'y' - principal axes of coordinate system
+        - `d` could be tuple of (x, y) - vector components
+    - with 1 argument direction
+    - with 2 numerical arguments defining vector components
+
+    Args:
+        direction (float): plunge direction of linear feature in degrees
+
+    Example:
+        >>> dir2()
+        >>> dir2('y')
+        >>> dir2(45)
+        >>> d = dir2(1, -1)
+    """
+
+    def __repr__(self):
+        return f"D:{self.direction:.0f}"
+
+    def to_json(self):
+        """Return as JSON dict"""
+        azi, inc = vec2geo_linear_signed(self)
+        return {"datatype": type(self).__name__, "args": (azi, inc)}
 
 
 class Lineation(Axial3):

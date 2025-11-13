@@ -1,17 +1,19 @@
-import sys
+import csv
 from itertools import combinations
-import numpy as np
+from os.path import basename
+
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
 from scipy.stats import vonmises
-from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 
 from apsg.config import apsg_conf
-from apsg.math._vector import Vector2, Vector3
-from apsg.helpers._math import acosd
-from apsg.feature._geodata import Lineation, Foliation, Pair, Fault, Cone
-from apsg.feature._tensor3 import OrientationTensor3, Ellipsoid, DeformationGradient3
-from apsg.feature._tensor2 import OrientationTensor2, Ellipse
+from apsg.feature._geodata import Cone, Direction, Fault, Foliation, Lineation, Pair
 from apsg.feature._statistics import KentDistribution, vonMisesFisher
+from apsg.feature._tensor2 import Ellipse, OrientationTensor2
+from apsg.feature._tensor3 import DeformationGradient3, Ellipsoid, OrientationTensor3
+from apsg.helpers._math import acosd
+from apsg.math._vector import Axial2, Axial3, Vector2, Vector3
 
 
 class FeatureSet:
@@ -22,12 +24,11 @@ class FeatureSet:
     __slots__ = ("data", "name")
 
     def __init__(self, data, name="Default"):
-        dtype_cls = getattr(sys.modules[__name__], type(self).__feature_type__)
         assert all(
-            [isinstance(obj, dtype_cls) for obj in data]
-        ), f"Data must be instances of {type(self).__feature_type__}"
+            [isinstance(obj, self.__feature_class__) for obj in data]
+        ), f"Data must be instances of {self.__feature_class__.__name__}"
         # cast to correct instances
-        self.data = tuple([dtype_cls(d) for d in data])
+        self.data = tuple([self.__feature_class__(d) for d in data])
         self.name = name
         self._cache = {}
 
@@ -117,7 +118,7 @@ class Vector2Set(FeatureSet):
     Class to store set of ``Vector2`` features
     """
 
-    __feature_type__ = "Vector2"
+    __feature_class__ = Vector2
 
     def __repr__(self):
         return f"V2({len(self)}) {self.name}"
@@ -283,7 +284,6 @@ class Vector2Set(FeatureSet):
         resultant.
 
         """
-        dtype_cls = getattr(sys.modules[__name__], type(self).__feature_type__)
         v = Vector3Set(self)
         v_data = list(v)
         alldone = np.all(v.angle(v.R()) <= 90)
@@ -294,10 +294,10 @@ class Vector2Set(FeatureSet):
                     v_data[ix] = -v_data[ix]
                 v = Vector3Set(v_data)
                 alldone = np.all(v.angle(v.R()) <= 90)
-        return type(self)([dtype_cls(vec) for vec in v], name=self.name)
+        return type(self)([self.__feature_class__(vec) for vec in v], name=self.name)
 
     @classmethod
-    def from_direction(cls, angles, name="Default"):
+    def from_directions(cls, angles, name="Default"):
         """Create ``Vector2Set`` object from arrays of direction angles
 
         Args:
@@ -309,8 +309,7 @@ class Vector2Set(FeatureSet):
         Example:
           >>> f = vec2set.from_angles([120,130,140,125, 132. 131])
         """
-        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
-        return cls([dtype_cls(a) for a in angles], name=name)
+        return cls([cls.__feature_class__(a) for a in angles], name=name)
 
     @classmethod
     def from_xy(cls, x, y, name="Default"):
@@ -327,8 +326,7 @@ class Vector2Set(FeatureSet):
           >>> v = vec2set.from_xy([-0.4330127, -0.4330127, -0.66793414],
                                   [0.75, 0.25, 0.60141061])
         """
-        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
-        return cls([dtype_cls(xx, yy) for xx, yy in zip(x, y)], name=name)
+        return cls([cls.__feature_class__(xx, yy) for xx, yy in zip(x, y)], name=name)
 
     @classmethod
     def random(cls, n=100, name="Default"):
@@ -344,8 +342,7 @@ class Vector2Set(FeatureSet):
           >>> l = vec2set.random(100)
 
         """
-        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
-        return cls([dtype_cls.random() for i in range(n)], name=name)
+        return cls([cls.__feature_class__.random() for i in range(n)], name=name)
 
     @classmethod
     def random_vonmises(cls, n=100, position=0, kappa=5, name="Default"):
@@ -361,9 +358,19 @@ class Vector2Set(FeatureSet):
         Example:
           >>> l = linset.random_fisher(position=lin(120,50))
         """
-        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
         angles = np.degrees(vonmises.rvs(kappa, loc=np.radians(position), size=n))
-        return cls([dtype_cls(a) for a in angles], name=name)
+        return cls([cls.__feature_class__(a) for a in angles], name=name)
+
+
+class Direction2Set(Vector2Set):
+    """
+    Class to store set of ``Direction`` features
+    """
+
+    __feature_class__ = Direction
+
+    def __repr__(self):
+        return f"D2({len(self)}) {self.name}"
 
 
 class Vector3Set(FeatureSet):
@@ -371,7 +378,7 @@ class Vector3Set(FeatureSet):
     Class to store set of ``Vector3`` features
     """
 
-    __feature_type__ = "Vector3"
+    __feature_class__ = Vector3
 
     def __repr__(self):
         return f"V3({len(self)}) {self.name}"
@@ -597,7 +604,6 @@ class Vector3Set(FeatureSet):
         resultant.
 
         """
-        dtype_cls = getattr(sys.modules[__name__], type(self).__feature_type__)
         v = Vector3Set(self)
         v_data = list(v)
         alldone = np.all(v.angle(v.R()) <= 90)
@@ -608,7 +614,7 @@ class Vector3Set(FeatureSet):
                     v_data[ix] = -v_data[ix]
                 v = Vector3Set(v_data)
                 alldone = np.all(v.angle(v.R()) <= 90)
-        return type(self)([dtype_cls(vec) for vec in v], name=self.name)
+        return type(self)([self.__feature_class__(vec) for vec in v], name=self.name)
 
     @classmethod
     def from_csv(cls, filename, acol=0, icol=1):
@@ -627,9 +633,6 @@ class Vector3Set(FeatureSet):
           >>> gl = linset.from_csv('file2.csv', acol=1, icol=2) #doctest: +SKIP
 
         """
-        from os.path import basename
-        import csv
-
         with open(filename) as csvfile:
             has_header = csv.Sniffer().has_header(csvfile.read(1024))
             csvfile.seek(0)
@@ -665,7 +668,6 @@ class Vector3Set(FeatureSet):
         Note: Written values are rounded according to `ndigits` settings in apsg_conf
 
         """
-        import csv
 
         n = apsg_conf["ndigits"]
 
@@ -692,8 +694,9 @@ class Vector3Set(FeatureSet):
           >>> f = folset.from_array([120,130,140], [10,20,30])
           >>> l = linset.from_array([120,130,140], [10,20,30])
         """
-        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
-        return cls([dtype_cls(azi, inc) for azi, inc in zip(azis, incs)], name=name)
+        return cls(
+            [cls.__feature_class__(azi, inc) for azi, inc in zip(azis, incs)], name=name
+        )
 
     @classmethod
     def from_xyz(cls, x, y, z, name="Default"):
@@ -712,8 +715,10 @@ class Vector3Set(FeatureSet):
                                   [0.75, 0.25, 0.60141061],
                                   [0.5, 0.8660254, 0.43837115])
         """
-        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
-        return cls([dtype_cls(xx, yy, zz) for xx, yy, zz in zip(x, y, z)], name=name)
+        return cls(
+            [cls.__feature_class__(xx, yy, zz) for xx, yy, zz in zip(x, y, z)],
+            name=name,
+        )
 
     @classmethod
     def random_normal(cls, n=100, position=Vector3(0, 0, 1), sigma=20, name="Default"):
@@ -733,7 +738,6 @@ class Vector3Set(FeatureSet):
 
         """
         data = []
-        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
         orig = Vector3(0, 0, 1)
         ax = orig.cross(position)
         ang = orig.angle(position)
@@ -742,7 +746,7 @@ class Vector3Set(FeatureSet):
             np.random.normal(loc=0, scale=sigma, size=n),
         ):
             v = orig.rotate(Vector3(s, 0), r).rotate(ax, ang)
-            data.append(dtype_cls(v))
+            data.append(cls.__feature_class__(v))
         return cls(data, name=name)
 
     @classmethod
@@ -759,9 +763,8 @@ class Vector3Set(FeatureSet):
         Example:
           >>> l = linset.random_fisher(position=lin(120,50))
         """
-        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
         dc = vonMisesFisher(position, kappa, n)
-        return cls([dtype_cls(d) for d in dc], name=name)
+        return cls([cls.__feature_class__(d) for d in dc], name=name)
 
     @classmethod
     def random_fisher2(cls, n=100, position=Vector3(0, 0, 1), kappa=20, name="Default"):
@@ -807,11 +810,10 @@ class Vector3Set(FeatureSet):
           >>> l = linset.random_kent(p, n=300, kappa=30)
         """
         assert issubclass(type(p), Pair), "Argument must be Pair object."
-        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
         if beta is None:
             beta = kappa / 2
         kd = KentDistribution(p.lvec, p.fvec.cross(p.lvec), p.fvec, kappa, beta)
-        return cls([dtype_cls(d) for d in kd.rvs(n)], name=name)
+        return cls([cls.__feature_class__(d) for d in kd.rvs(n)], name=name)
 
     @classmethod
     def uniform_sfs(cls, n=100, name="Default"):
@@ -830,14 +832,13 @@ class Vector3Set(FeatureSet):
           >>> v.ortensor().eigenvalues()
           (0.3334645347163635, 0.33333474915201167, 0.33320071613162483)
         """
-        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
         phi = (1 + np.sqrt(5)) / 2
         i2 = 2 * np.arange(n) - n + 1
         theta = 2 * np.pi * i2 / phi
         sp = i2 / n
         cp = np.sqrt((n + i2) * (n - i2)) / n
         dc = np.array([cp * np.sin(theta), cp * np.cos(theta), sp]).T
-        return cls([dtype_cls(d) for d in dc], name=name)
+        return cls([cls.__feature_class__(d) for d in dc], name=name)
 
     @classmethod
     def uniform_gss(cls, n=100, name="Default"):
@@ -855,7 +856,6 @@ class Vector3Set(FeatureSet):
           >>> v.ortensor().eigenvalues()
           (0.33335688569571587, 0.33332315115436933, 0.33331996314991513)
         """
-        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
         inc = np.pi * (3 - np.sqrt(5))
         off = 2 / n
         k = np.arange(n)
@@ -863,7 +863,7 @@ class Vector3Set(FeatureSet):
         r = np.sqrt(1 - y * y)
         phi = k * inc
         dc = np.array([np.cos(phi) * r, y, np.sin(phi) * r]).T
-        return cls([dtype_cls(d) for d in dc], name=name)
+        return cls([cls.__feature_class__(d) for d in dc], name=name)
 
 
 class LineationSet(Vector3Set):
@@ -871,7 +871,7 @@ class LineationSet(Vector3Set):
     Class to store set of ``Lineation`` features
     """
 
-    __feature_type__ = "Lineation"
+    __feature_class__ = Lineation
 
     def __repr__(self):
         return f"L({len(self)}) {self.name}"
@@ -882,7 +882,7 @@ class FoliationSet(Vector3Set):
     Class to store set of ``Foliation`` features
     """
 
-    __feature_type__ = "Foliation"
+    __feature_class__ = Foliation
 
     def __repr__(self):
         return f"S({len(self)}) {self.name}"
@@ -897,7 +897,7 @@ class PairSet(FeatureSet):
     Class to store set of ``Pair`` features
     """
 
-    __feature_type__ = "Pair"
+    __feature_class__ = Pair
 
     def __repr__(self):
         return f"P({len(self)}) {self.name}"
@@ -995,9 +995,6 @@ class PairSet(FeatureSet):
     def from_csv(cls, filename, delimiter=",", facol=0, ficol=1, lacol=2, licol=3):
         """Read ``PairSet`` from csv file"""
 
-        from os.path import basename
-        import csv
-
         with open(filename) as csvfile:
             has_header = csv.Sniffer().has_header(csvfile.read(1024))
             csvfile.seek(0)
@@ -1063,7 +1060,6 @@ class PairSet(FeatureSet):
         Note: Written values are rounded according to `ndigits` settings in apsg_conf
 
         """
-        import csv
 
         n = apsg_conf["ndigits"]
 
@@ -1095,10 +1091,9 @@ class PairSet(FeatureSet):
           name: name of ``PairSet`` object. Default is 'Default'
         """
 
-        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
         return cls(
             [
-                dtype_cls(fazi, finc, lazi, linc)
+                cls.__feature_class__(fazi, finc, lazi, linc)
                 for fazi, finc, lazi, linc in zip(fazis, fincs, lazis, lincs)
             ],
             name=name,
@@ -1110,7 +1105,7 @@ class FaultSet(PairSet):
     Class to store set of ``Fault`` features
     """
 
-    __feature_type__ = "Fault"
+    __feature_class__ = Fault
 
     def __repr__(self):
         return f"F({len(self)}) {self.name}"
@@ -1213,9 +1208,6 @@ class FaultSet(PairSet):
     ):
         """Read ``FaultSet`` from csv file"""
 
-        from os.path import basename
-        import csv
-
         with open(filename) as csvfile:
             has_header = csv.Sniffer().has_header(csvfile.read(1024))
             csvfile.seek(0)
@@ -1312,7 +1304,6 @@ class FaultSet(PairSet):
         Note: Written values are rounded according to `ndigits` settings in apsg_conf
 
         """
-        import csv
 
         n = apsg_conf["ndigits"]
 
@@ -1356,10 +1347,9 @@ class FaultSet(PairSet):
           name: name of ``PairSet`` object. Default is 'Default'
         """
 
-        dtype_cls = getattr(sys.modules[__name__], cls.__feature_type__)
         return cls(
             [
-                dtype_cls(fazi, finc, lazi, linc, sense)
+                cls.__feature_class__(fazi, finc, lazi, linc, sense)
                 for fazi, finc, lazi, linc, sense in zip(
                     fazis, fincs, lazis, lincs, senses
                 )
@@ -1373,7 +1363,7 @@ class ConeSet(FeatureSet):
     Class to store set of ``Cone`` features
     """
 
-    __feature_type__ = "Cone"
+    __feature_class__ = Cone
 
     def __repr__(self):
         return f"C({len(self)}) {self.name}"
@@ -1384,7 +1374,7 @@ class EllipseSet(FeatureSet):
     Class to store set of ``Ellipse`` features
     """
 
-    __feature_type__ = "Ellipse"
+    __feature_class__ = Ellipse
 
     @property
     def S1(self) -> np.ndarray:
@@ -1441,7 +1431,7 @@ class OrientationTensor2Set(EllipseSet):
     Class to store set of ``OrientationTensor2`` features
     """
 
-    __feature_type__ = "OrientationTensor2"
+    __feature_class__ = OrientationTensor2
 
 
 class EllipsoidSet(FeatureSet):
@@ -1449,7 +1439,7 @@ class EllipsoidSet(FeatureSet):
     Class to store set of ``Ellipsoid`` features
     """
 
-    __feature_type__ = "Ellipsoid"
+    __feature_class__ = Ellipsoid
 
     @property
     def strength(self) -> np.ndarray:
@@ -1683,7 +1673,7 @@ class OrientationTensor3Set(EllipsoidSet):
     Class to store set of ``OrientationTensor3`` features
     """
 
-    __feature_type__ = "OrientationTensor3"
+    __feature_class__ = OrientationTensor3
 
 
 class ClusterSet(object):
@@ -1710,7 +1700,7 @@ class ClusterSet(object):
             isinstance(d, Vector2Set)
             or isinstance(d, Vector3Set)
             or isinstance(d, PairSet)
-        ), "Only vec2set or vecset could be clustered"
+        ), "Only vec2set, vecset and pairset could be clustered"
         self.data = d.copy()
         self.maxclust = kwargs.get("maxclust", 2)
         self.angle = kwargs.get("angle", None)
@@ -1762,7 +1752,10 @@ class ClusterSet(object):
         """
 
         self.method = kwargs.get("method", self.method)
-        self.Z = linkage(self.pdist, method=self.method, metric=angle_metric)
+        if issubclass(self.__feature_class__, (Axial2, Axial3)):
+            self.Z = linkage(self.pdist, method=self.method, metric=angle_metric_axial)
+        else:
+            self.Z = linkage(self.pdist, method=self.method, metric=angle_metric)
 
     def dendrogram(self, **kwargs):
         """Show dendrogram
@@ -1855,4 +1848,8 @@ def G(lst, name="Default"):
 
 
 def angle_metric(u, v):
+    return np.degrees(np.arccos(np.dot(u, v)))
+
+
+def angle_metric_axial(u, v):
     return np.degrees(np.arccos(np.abs(np.dot(u, v))))
