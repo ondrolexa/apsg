@@ -28,16 +28,7 @@ docs = [
     "nbsphinx",
     "autodocsumm",
 ]
-dev = [
-    "pytest",
-    "black",
-    "sphinx",
-    "sphinx_rtd_theme",
-    "readthedocs-sphinx-search",
-    "ipykernel",
-    "nbsphinx",
-    "autodocsumm",
-]
+dev = ["apsg[extra,tests,docs]", "black"]
 
 [project.urls]
 Homepage = "https://github.com/ondrolexa/apsg"

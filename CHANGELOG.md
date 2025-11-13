@@ -2,6 +2,10 @@
 
 ### master
 
+### 1.3.6 (Nov 13 2025)
+ * cluster bug fixed
+ * RosePlot is axial for dir2set and vectorial for vec2set
+
 ### 1.3.5 (Nov 13 2025)
  * Direction and Direction2Set added
  * cluster use different metrics for axial and vector data

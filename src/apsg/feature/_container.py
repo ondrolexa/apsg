@@ -142,6 +142,14 @@ class Vector2Set(FeatureSet):
         """Return array of direction angles"""
         return np.asarray([e.direction for e in self]).T
 
+    def to_vec2(self):
+        """Return ``Vector2Set`` object with all data converted to ``Vector2``."""
+        return Vector2Set([Vector2(e) for e in self], name=self.name)
+
+    def to_dir2(self):
+        """Return ``Direction2Set`` object with all data converted to ``Direction``."""
+        return Direction2Set([Direction(e) for e in self], name=self.name)
+
     def proj(self, vec):
         """Return projections of all features in ``Vector2Set`` onto vector."""
         return type(self)([e.project() for e in self], name=self.name)
@@ -1752,7 +1760,7 @@ class ClusterSet(object):
         """
 
         self.method = kwargs.get("method", self.method)
-        if issubclass(self.__feature_class__, (Axial2, Axial3)):
+        if issubclass(self.data.__feature_class__, (Axial2, Axial3)):
             self.Z = linkage(self.pdist, method=self.method, metric=angle_metric_axial)
         else:
             self.Z = linkage(self.pdist, method=self.method, metric=angle_metric)

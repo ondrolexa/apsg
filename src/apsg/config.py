@@ -138,7 +138,6 @@ apsg_conf = dict(
     ),
     roseplot_default_kwargs=dict(
         bins=36,
-        axial=True,
         density=True,
         arrowness=0.95,
         rwidth=1,

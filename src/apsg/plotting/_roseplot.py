@@ -1,12 +1,13 @@
 import pickle
 
-import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import vonmises, circmean
+import numpy as np
+from scipy.stats import circmean, vonmises
 
 from apsg.config import apsg_conf
-from apsg.plotting._plot_artists import RosePlotArtistFactory
 from apsg.feature import feature_from_json
+from apsg.math._vector import Axial2, Axial3
+from apsg.plotting._plot_artists import RosePlotArtistFactory
 
 __all__ = ["RosePlot"]
 
@@ -20,7 +21,6 @@ class RosePlot(object):
         title_kws (dict): dictionary of keyword arguments passed to matplotlib suptitle
             method.
         bins (int): Number of bins. Default 36
-        axial (bool): Directional data are axial. Defaut True
         density (bool): Use density instead of counts. Default False
         pdf (bool): Plot Von Mises density function instead histogram. Default False
         pdf_res (int): Resolution of pdf. Default 901
@@ -245,7 +245,7 @@ class RosePlot(object):
         width = 2 * np.pi / self._kwargs["bins"]
         legend = kwargs.pop("legend")
         for arg in args:
-            if self._kwargs["axial"]:
+            if issubclass(arg.__feature_class__, (Axial2, Axial3)):
                 ang = np.concatenate((arg.direction % 360, (arg.direction + 180) % 360))
                 weights = np.concatenate((abs(arg), abs(arg)))
             else:
@@ -279,7 +279,7 @@ class RosePlot(object):
             ang = arg.direction % 360
             # weights = abs(arg)
             radii = np.zeros_like(theta)
-            if self._kwargs["axial"]:
+            if issubclass(arg.__feature_class__, (Axial2, Axial3)):
                 for a in ang:
                     radii += (
                         vonmises.pdf(theta, self._kwargs["kappa"], loc=np.radians(a))
@@ -308,32 +308,21 @@ class RosePlot(object):
             bottom = bottom + radii
 
     def _muci(self, *args, **kwargs):
-        ang = np.radians(np.concatenate([arg.direction for arg in args]))
         conflevel = kwargs.pop("confidence_level")
         n_resamples = kwargs.pop("n_resamples")
-        # calculate mean and CI
-        if self._kwargs["axial"]:
-            mu = circmean(2 * ang) / 2
-            ang_shift = ang + np.pi / 2 - mu
-            bsmu = [
-                circmean(np.random.choice(2 * ang_shift, size=len(ang_shift)))
-                for i in range(n_resamples)
-            ]
-            low = np.percentile(bsmu, 100 - conflevel) / 2 + mu - np.pi / 2
-            high = np.percentile(bsmu, conflevel) / 2 + mu - np.pi / 2
-        else:
-            mu = circmean(ang)
-            ang_shift = ang + np.pi - mu
-            bsmu = [
-                circmean(np.random.choice(ang_shift, size=len(ang_shift)))
-                for i in range(n_resamples)
-            ]
-            low = np.percentile(bsmu, (100 - conflevel) / 2) + mu - np.pi
-            high = np.percentile(bsmu, 100 - (100 - conflevel) / 2) + mu - np.pi
-        radii = []
         for arg in args:
+            radii = []
             p = 0
-            if self._kwargs["axial"]:
+            ang = np.radians(arg.direction)
+            if issubclass(arg.__feature_class__, (Axial2, Axial3)):
+                mu = circmean(2 * ang) / 2
+                ang_shift = ang + np.pi / 2 - mu
+                bsmu = [
+                    circmean(np.random.choice(2 * ang_shift, size=len(ang_shift)))
+                    for i in range(n_resamples)
+                ]
+                low = np.percentile(bsmu, 100 - conflevel) / 2 + mu - np.pi / 2
+                high = np.percentile(bsmu, conflevel) / 2 + mu - np.pi / 2
                 for a in arg.direction:
                     p += vonmises.pdf(mu, self._kwargs["kappa"], loc=np.radians(a)) / 2
                     p += (
@@ -341,16 +330,28 @@ class RosePlot(object):
                         / 2
                     )
             else:
+                mu = circmean(ang)
+                ang_shift = ang + np.pi - mu
+                bsmu = [
+                    circmean(np.random.choice(ang_shift, size=len(ang_shift)))
+                    for i in range(n_resamples)
+                ]
+                low = np.percentile(bsmu, (100 - conflevel) / 2) + mu - np.pi
+                high = np.percentile(bsmu, 100 - (100 - conflevel) / 2) + mu - np.pi
                 for a in arg.direction:
                     p += vonmises.pdf(mu, self._kwargs["kappa"], loc=np.radians(a))
             radii.append(p / len(arg))
-        if self._kwargs["scaled"]:
-            radii = np.sqrt(radii)
-        mur = 1.1 * sum(radii)
-        ci_angles = np.linspace(low, high, int(5 * np.degrees(high - low)))
-        self.ax.plot([mu, mu + np.pi], [mur, mur], **kwargs)
-        self.ax.plot(ci_angles, mur * np.ones_like(ci_angles), **kwargs)
-        self.ax.plot(ci_angles + np.pi, mur * np.ones_like(ci_angles), **kwargs)
+            if self._kwargs["scaled"]:
+                radii = np.sqrt(radii)
+            mur = 1.1 * sum(radii)
+            ci_angles = np.linspace(low, high, int(5 * np.degrees(high - low)))
+            if issubclass(arg.__feature_class__, (Axial2, Axial3)):
+                self.ax.plot([mu, mu + np.pi], [mur, mur], **kwargs)
+                self.ax.plot(ci_angles, mur * np.ones_like(ci_angles), **kwargs)
+                self.ax.plot(ci_angles + np.pi, mur * np.ones_like(ci_angles), **kwargs)
+            else:
+                self.ax.plot([0, mu], [0, mur], **kwargs)
+                self.ax.plot(ci_angles, mur * np.ones_like(ci_angles), **kwargs)
 
 
 def roseartist_from_json(obj_json):
