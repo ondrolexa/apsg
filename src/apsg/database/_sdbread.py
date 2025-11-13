@@ -10,7 +10,7 @@ from apsg.feature._geodata import Lineation, Foliation
 from apsg.feature._container import LineationSet, FoliationSet
 
 
-class SDB(object):
+class SDB:
     """
     sqlite3 based read-only interface to PySDB database
 
