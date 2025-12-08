@@ -1,7 +1,9 @@
 # Changelog
 
+### master
+
 ### 1.3.7 (Dec 8 2025)
- * transform method added to ElliseSet and EllipsoidSet
+ * transform method added to EllipseSet and EllipsoidSet
  * repr bug fixed
 
 ### 1.3.6 (Nov 13 2025)
