@@ -1384,6 +1384,9 @@ class EllipseSet(FeatureSet):
 
     __feature_class__ = Ellipse
 
+    def __repr__(self):
+        return f"E2({len(self)}) {self.name}"
+
     @property
     def S1(self) -> np.ndarray:
         """
@@ -1433,6 +1436,15 @@ class EllipseSet(FeatureSet):
         """
         return np.array([e.e12 for e in self])
 
+    def transform(self, F):
+        """Return transformation of all features ``EllipseSet`` by matrix 'F'.
+
+        Args:
+            F: Transformation matrix. Array-like value e.g. ``DeformationGradient3``
+
+        """
+        return type(self)([e.transform(F) for e in self], name=self.name)
+
 
 class OrientationTensor2Set(EllipseSet):
     """
@@ -1441,6 +1453,9 @@ class OrientationTensor2Set(EllipseSet):
 
     __feature_class__ = OrientationTensor2
 
+    def __repr__(self):
+        return f"M2({len(self)}) {self.name}"
+
 
 class EllipsoidSet(FeatureSet):
     """
@@ -1448,6 +1463,9 @@ class EllipsoidSet(FeatureSet):
     """
 
     __feature_class__ = Ellipsoid
+
+    def __repr__(self):
+        return f"E({len(self)}) {self.name}"
 
     @property
     def strength(self) -> np.ndarray:
@@ -1675,6 +1693,15 @@ class EllipsoidSet(FeatureSet):
         """
         return np.array([e.MAD for e in self])
 
+    def transform(self, F):
+        """Return transformation of all features ``EllipsoidSet`` by matrix 'F'.
+
+        Args:
+        F: Transformation matrix. Array-like value e.g. ``DeformationGradient3``
+
+        """
+        return type(self)([e.transform(F) for e in self], name=self.name)
+
 
 class OrientationTensor3Set(EllipsoidSet):
     """
@@ -1682,6 +1709,9 @@ class OrientationTensor3Set(EllipsoidSet):
     """
 
     __feature_class__ = OrientationTensor3
+
+    def __repr__(self):
+        return f"M({len(self)}) {self.name}"
 
 
 class ClusterSet(object):
