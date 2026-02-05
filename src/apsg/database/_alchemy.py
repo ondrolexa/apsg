@@ -632,7 +632,7 @@ class SDBSession:
                 .filter_by(**site)
                 .join(Site.unit)
                 .filter_by(**unit)
-                .join(Structdata.tags)
+                .outerjoin(Structdata.tags)
                 .filter_by(**tag)
                 .all()
             )

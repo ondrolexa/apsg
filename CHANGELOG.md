@@ -2,6 +2,9 @@
 
 ### master
 
+### 1.3.9 (Feb 5 2026)
+ * SDBSession getset bug fixed
+
 ### 1.3.8 (Feb 5 2026)
  * SDBSession getset improved
  * SDBSession getpairs and getfaults added
