@@ -2,6 +2,10 @@
 
 ### master
 
+### 1.3.8 (Feb 5 2026)
+ * SDBSession getset improved
+ * SDBSession getpairs and getfaults added
+
 ### 1.3.7 (Dec 8 2025)
  * transform method added to EllipseSet and EllipsoidSet
  * repr bug fixed

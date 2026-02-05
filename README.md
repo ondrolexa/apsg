@@ -20,7 +20,7 @@ APSG is the package for structural geologists. It defines several new python cla
 
 ## :hammer_and_wrench: Requirements
 
-You need Python 3.9 or later to run APSG. The package requires [NumPy](https://numpy.org/) and [SciPy](https://www.scipy.org/),
+You need Python 3.10 or later to run APSG. The package requires [NumPy](https://numpy.org/) and [SciPy](https://www.scipy.org/),
 [Matplotlib](https://matplotlib.org/), [SciPy](https://scipy.org/), [SQLAlchemy](https://www.sqlalchemy.org/)
 and [pandas](https://pandas.pydata.org/).
 
