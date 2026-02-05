@@ -7,12 +7,13 @@ SQLAlchemy API to access PySDB database
 import os
 from datetime import datetime
 import contextlib
+import warnings
 
-from apsg.feature._geodata import Lineation, Foliation, Pair
-from apsg.feature._container import LineationSet, FoliationSet
+from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
+from apsg.feature._container import LineationSet, FoliationSet, PairSet, FaultSet
 
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, aliased
 from sqlalchemy import (
     Column,
     Float,
@@ -607,34 +608,175 @@ class SDBSession:
         else:
             return tags
 
-    def getset(self, structype, **kwargs):
+    def getset(self, structype, site={}, unit={}, tag={}):
         """Method to retrieve data from SDB database to ``FeatureSet``.
 
         Args:
-          structype (str, Structype):  structure or list of structures to retrieve
-
-        Keyword arguments are passed to sqlalchemy filter_by method
+          structype (str | Structype):  structure to retrieve
+          site (dict): keyword args passed to filter site
+          unit (dict): keyword args passed to filter unit
+          tag (dict): keyword args passed to filter tag
 
         """
         if isinstance(structype, str):
-            structypes = (
-                self.session.query(Structype).filter_by(structure=structype).all()
+            dbstruct = (
+                self.session.query(Structype).filter_by(structure=structype).first()
             )
-            assert len(structypes) == 1, f"There is no structure {structype} in db."
-            structype = structypes[0]
-        data = (
-            self.session.query(Structdata)
-            .filter_by(structype=structype, **kwargs)
-            .all()
-        )
-        if structype.planar == 1:
-            res = FoliationSet(
-                [Foliation(v.azimuth, v.inclination) for v in data],
-                name=structype.structure,
+            assert dbstruct is not None, f"There is no structure {structype} in db."
+            structype = dbstruct
+        if isinstance(structype, Structype):
+            data = (
+                self.session.query(Structdata)
+                .filter_by(structype=structype)
+                .join(Structdata.site)
+                .filter_by(**site)
+                .join(Site.unit)
+                .filter_by(**unit)
+                .join(Structdata.tags)
+                .filter_by(**tag)
+                .all()
             )
+            if structype.planar == 1:
+                res = FoliationSet(
+                    [Foliation(v.azimuth, v.inclination) for v in data],
+                    name=structype.structure,
+                )
+            else:
+                res = LineationSet(
+                    [Lineation(v.azimuth, v.inclination) for v in data],
+                    name=structype.structure,
+                )
+            return res
         else:
-            res = LineationSet(
-                [Lineation(v.azimuth, v.inclination) for v in data],
-                name=structype.structure,
+            raise ValueError("structype argument must be string or Structype")
+
+    def getpairs(self, ptype, ltype, site={}, unit={}, ptag={}, ltag={}):
+        """Method to retrieve data from SDB database to ``PairSet``.
+
+        Args:
+          ptype (str | Structype):  planar structure to retrieve
+          ltype (str | Structype):  linear structure to retrieve
+
+        Keyword Args:
+          site (dict): keyword args passed to filter site
+          unit (dict): keyword args passed to filter unit
+          ptag (dict): keyword args passed to filter planar tag
+          ltag (dict): keyword args passed to filter linear tag
+
+        """
+        if isinstance(ptype, str):
+            dbstruct = self.session.query(Structype).filter_by(structure=ptype).first()
+            assert dbstruct is not None, f"There is no structure {ptype} in db."
+            ptype = dbstruct
+        if isinstance(ltype, str):
+            dbstruct = self.session.query(Structype).filter_by(structure=ltype).first()
+            assert dbstruct is not None, f"There is no structure {ltype} in db."
+            ltype = dbstruct
+        if isinstance(ptype, Structype) and isinstance(ltype, Structype):
+            AttachPlanar = aliased(Structdata)
+            AttachLinear = aliased(Structdata)
+            TagPlanar = aliased(Tag)
+            TagLinear = aliased(Tag)
+            data = (
+                self.session.query(Attached)
+                .join(AttachPlanar, Attached.planar)
+                .filter_by(structype=ptype)
+                .join(AttachLinear, Attached.linear)
+                .filter_by(structype=ltype)
+                .join(Structdata.site)
+                .filter_by(**site)
+                .join(Site.unit)
+                .filter_by(**unit)
+                .outerjoin(TagPlanar, AttachPlanar.tags)
+                .filter_by(**ptag)
+                .outerjoin(TagLinear, AttachLinear.tags)
+                .filter_by(**ltag)
+                .all()
             )
-        return res
+            pairs = []
+            warnings.filterwarnings("error")
+            for v in data:
+                try:
+                    pair = Pair(
+                        v.planar.azimuth,
+                        v.planar.inclination,
+                        v.linear.azimuth,
+                        v.linear.inclination,
+                    )
+                    pairs.append(pair)
+                except UserWarning:
+                    print(
+                        f"Too big misfit for pair {v.planar}-{v.linear} on {v.planar.site}"
+                    )
+            warnings.resetwarnings()
+            res = PairSet(pairs, name=f"{ptype.structure}-{ltype.structure}")
+            return res
+        else:
+            raise ValueError("structype argument must be string or Structype")
+
+    def getfaults(self, ptype, ltype, sense, site={}, unit={}, ptag={}, ltag={}):
+        """Method to retrieve data from SDB database to ``FaultSet``.
+
+        Args:
+          ptype (str | Structype):  planar structure to retrieve
+          ltype (str | Structype):  linear structure to retrieve
+          sense (float or str): sense of movement +/-1 hanging-wall down/up. When str,
+              must be one of 's', 'd', 'n', 'r'.
+
+        Keyword Args:
+          site (dict): keyword args passed to filter site
+          unit (dict): keyword args passed to filter unit
+          ptag (dict): keyword args passed to filter planar tag
+          ltag (dict): keyword args passed to filter linear tag
+
+        """
+        if isinstance(ptype, str):
+            dbstruct = self.session.query(Structype).filter_by(structure=ptype).first()
+            assert dbstruct is not None, f"There is no structure {ptype} in db."
+            ptype = dbstruct
+        if isinstance(ltype, str):
+            dbstruct = self.session.query(Structype).filter_by(structure=ltype).first()
+            assert dbstruct is not None, f"There is no structure {ltype} in db."
+            ltype = dbstruct
+        if isinstance(ptype, Structype) and isinstance(ltype, Structype):
+            AttachPlanar = aliased(Structdata)
+            AttachLinear = aliased(Structdata)
+            TagPlanar = aliased(Tag)
+            TagLinear = aliased(Tag)
+            data = (
+                self.session.query(Attached)
+                .join(AttachPlanar, Attached.planar)
+                .filter_by(structype=ptype)
+                .join(AttachLinear, Attached.linear)
+                .filter_by(structype=ltype)
+                .join(Structdata.site)
+                .filter_by(**site)
+                .join(Site.unit)
+                .filter_by(**unit)
+                .outerjoin(TagPlanar, AttachPlanar.tags)
+                .filter_by(**ptag)
+                .outerjoin(TagLinear, AttachLinear.tags)
+                .filter_by(**ltag)
+                .all()
+            )
+            faults = []
+            warnings.filterwarnings("error")
+            for v in data:
+                try:
+                    fault = Fault(
+                        v.planar.azimuth,
+                        v.planar.inclination,
+                        v.linear.azimuth,
+                        v.linear.inclination,
+                        sense,
+                    )
+                    faults.append(fault)
+                except UserWarning:
+                    print(
+                        f"Too big misfit for pair {v.planar}-{v.linear} on {v.planar.site}"
+                    )
+            warnings.resetwarnings()
+            res = FaultSet(faults, name=f"{ptype.structure}-{ltype.structure}")
+            return res
+        else:
+            raise ValueError("structype argument must be string or Structype")

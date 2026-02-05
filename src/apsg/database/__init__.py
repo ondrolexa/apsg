@@ -6,6 +6,7 @@ from apsg.database._alchemy import (
     Site,
     Structdata,
     Structype,
+    Attached,
     Tag,
     Unit,
 )
@@ -17,6 +18,7 @@ __all__ = (
     "Site",
     "Structdata",
     "Structype",
+    "Attached",
     "Tag",
     "Unit",
     "SDB",

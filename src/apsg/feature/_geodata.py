@@ -412,8 +412,8 @@ class Fault(Pair):
         finc (float): dip of planar feature in degrees
         lazi (float): plunge direction of linear feature in degrees
         linc (float): plunge of linear feature in degrees
-        sense (float or str): sense of movement +/11 hanging-wall down/up. When str,
-            ,ust be one of 's', 'd', 'n', 'r'.
+        sense (float or str): sense of movement +/-1 hanging-wall down/up. When str,
+            must be one of 's', 'd', 'n', 'r'.
 
 
     Attributes:
