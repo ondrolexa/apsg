@@ -8,7 +8,7 @@ from apsg.math._vector import Vector3, Vector2
 class Matrix:
     """Base class for Matrix2 and Matrix3"""
 
-    __slots__ = "_coefs"
+    __slots__ = ("_coefs", "_attrs", "_cache")
 
     def __init__(self):
         self._cache = {}
@@ -34,7 +34,11 @@ class Matrix:
         return hash((type(self).__name__,) + self._coefs)
 
     def to_json(self):
-        return {"datatype": type(self).__name__, "args": (self._coefs,)}
+        return {
+            "datatype": type(self).__name__,
+            "args": (self._coefs,),
+            "kwargs": self._attrs,
+        }
 
     def __array__(self, dtype=None, copy=None):
         return np.array(self._coefs, dtype=dtype)
@@ -206,9 +210,10 @@ class Matrix2(Matrix):
 
     """
 
+    __slots__ = ("_coefs", "_attrs")
     __shape__ = (2, 2)
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         super().__init__()
         if len(args) == 0:
             coefs = ((1, 0), (0, 1))
@@ -217,6 +222,7 @@ class Matrix2(Matrix):
         else:
             raise TypeError("Not valid arguments for Matrix2")
         self._coefs = tuple(coefs[0]), tuple(coefs[1])
+        self._attrs = kwargs
 
     @classmethod
     def from_comp(cls, xx=0, xy=0, yx=0, yy=0):
@@ -294,9 +300,10 @@ class Matrix3(Matrix):
 
     """
 
+    __slots__ = ("_coefs", "_attrs")
     __shape__ = (3, 3)
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         super().__init__()
         if len(args) == 0:
             coefs = ((1, 0, 0), (0, 1, 0), (0, 0, 1))
@@ -305,6 +312,7 @@ class Matrix3(Matrix):
         else:
             raise TypeError("Not valid arguments for Matrix3")
         self._coefs = tuple(coefs[0]), tuple(coefs[1]), tuple(coefs[2])
+        self._attrs = kwargs
 
     @classmethod
     def from_comp(cls, xx=0, xy=0, xz=0, yx=0, yy=0, yz=0, zx=0, zy=0, zz=0):

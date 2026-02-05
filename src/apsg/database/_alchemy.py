@@ -4,16 +4,11 @@
 SQLAlchemy API to access PySDB database
 """
 
-import os
-from datetime import datetime
 import contextlib
+import os
 import warnings
+from datetime import datetime
 
-from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
-from apsg.feature._container import LineationSet, FoliationSet, PairSet, FaultSet
-
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker, aliased
 from sqlalchemy import (
     Column,
     Float,
@@ -22,10 +17,15 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    create_engine,
+    event,
     text,
 )
-from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import aliased, relationship, sessionmaker
+
+from apsg.feature._container import FaultSet, FoliationSet, LineationSet, PairSet
+from apsg.feature._geodata import Fault, Foliation, Lineation, Pair
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -638,12 +638,30 @@ class SDBSession:
             )
             if structype.planar == 1:
                 res = FoliationSet(
-                    [Foliation(v.azimuth, v.inclination) for v in data],
+                    [
+                        Foliation(
+                            v.azimuth,
+                            v.inclination,
+                            site=v.site.name,
+                            unit=v.site.unit.name,
+                            tags=[t.name for t in v.tags],
+                        )
+                        for v in data
+                    ],
                     name=structype.structure,
                 )
             else:
                 res = LineationSet(
-                    [Lineation(v.azimuth, v.inclination) for v in data],
+                    [
+                        Lineation(
+                            v.azimuth,
+                            v.inclination,
+                            site=v.site.name,
+                            unit=v.site.unit.name,
+                            tags=[t.name for t in v.tags],
+                        )
+                        for v in data
+                    ],
                     name=structype.structure,
                 )
             return res

@@ -34,8 +34,16 @@ from apsg.feature._tensor3 import (
     Stress3,
     VelocityGradient3,
 )
+from apsg.math._matrix import Matrix2, Matrix3
+from apsg.math._vector import Axial2, Axial3, Vector2, Vector3
 
 __all__ = (
+    "Vector3",
+    "Axial3",
+    "Vector2",
+    "Axial2",
+    "Matrix3",
+    "Matrix2",
     "Direction",
     "Lineation",
     "Foliation",

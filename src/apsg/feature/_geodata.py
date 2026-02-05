@@ -44,7 +44,11 @@ class Direction(Axial2):
     def to_json(self):
         """Return as JSON dict"""
         azi, inc = vec2geo_linear_signed(self)
-        return {"datatype": type(self).__name__, "args": (azi, inc)}
+        return {
+            "datatype": type(self).__name__,
+            "args": (azi, inc),
+            "kwargs": self._attrs,
+        }
 
 
 class Lineation(Axial3):
@@ -91,7 +95,11 @@ class Lineation(Axial3):
     def to_json(self):
         """Return as JSON dict"""
         azi, inc = vec2geo_linear_signed(self)
-        return {"datatype": type(self).__name__, "args": (azi, inc)}
+        return {
+            "datatype": type(self).__name__,
+            "args": (azi, inc),
+            "kwargs": self._attrs,
+        }
 
 
 class Foliation(Axial3):
@@ -121,7 +129,7 @@ class Foliation(Axial3):
 
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         if len(args) == 0:
             coords = (0, 0, 1)
         elif len(args) == 1:
@@ -145,6 +153,7 @@ class Foliation(Axial3):
         else:
             raise TypeError("Not valid arguments for Foliation")
         self._coords = tuple(coords)
+        self._attrs = kwargs
 
     def __repr__(self):
         azi, inc = self.geo
@@ -164,7 +173,11 @@ class Foliation(Axial3):
     def to_json(self):
         """Return as JSON dict"""
         azi, inc = vec2geo_planar_signed(self)
-        return {"datatype": type(self).__name__, "args": (azi, inc)}
+        return {
+            "datatype": type(self).__name__,
+            "args": (azi, inc),
+            "kwargs": self._attrs,
+        }
 
     def dipvec(self):
         """Return dip vector"""
@@ -244,10 +257,10 @@ class Pair:
 
     """
 
-    __slots__ = ("fvec", "lvec", "misfit")
+    __slots__ = ("fvec", "lvec", "misfit", "_attrs")
     __shape__ = (6,)
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         if len(args) == 0:
             fvec, lvec = Vector3(0, 0, 1), Vector3(1, 0, 0)
         elif len(args) == 1 and issubclass(type(args[0]), Pair):
@@ -280,6 +293,7 @@ class Pair:
         self.fvec = Vector3(fvec.rotate(ax, ang))
         self.lvec = Vector3(lvec.rotate(ax, -ang))
         self.misfit = misfit
+        self._attrs = kwargs
 
     def __repr__(self):
         fazi, finc = self.fol.geo
@@ -311,7 +325,11 @@ class Pair:
         """Return as JSON dict"""
         fazi, finc = vec2geo_planar_signed(self.fvec)
         lazi, linc = vec2geo_linear_signed(self.lvec)
-        return {"datatype": type(self).__name__, "args": (fazi, finc, lazi, linc)}
+        return {
+            "datatype": type(self).__name__,
+            "args": (fazi, finc, lazi, linc),
+            "kwargs": self._attrs,
+        }
 
     @classmethod
     def random(cls):
@@ -432,7 +450,7 @@ class Fault(Pair):
 
     __shape__ = (7,)
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         if len(args) == 0:
             fvec, lvec = Vector3(0, 0, 1), Vector3(1, 0, 0)
         elif len(args) == 1 and np.asarray(args[0]).shape == (5,):
@@ -473,6 +491,7 @@ class Fault(Pair):
         else:
             raise TypeError("Not valid arguments for Fault")
         super().__init__(fvec, lvec)
+        self._attrs = kwargs
 
     @classmethod
     def calc_sense(cls, fvec, lvec, sense):
@@ -531,6 +550,7 @@ class Fault(Pair):
         return {
             "datatype": type(self).__name__,
             "args": (fazi, finc, lazi, linc, self.sense),
+            "kwargs": self._attrs,
         }
 
     @classmethod
@@ -634,10 +654,10 @@ class Cone:
 
     """
 
-    __slots__ = ("axis", "secant", "revangle")
+    __slots__ = ("axis", "secant", "revangle", "_attrs")
     __shape__ = (7,)
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         if len(args) == 0:
             axis, secant, revangle = Vector3(0, 0, 1), Vector3(1, 0, 0), 360
         elif len(args) == 1 and issubclass(type(args[0]), Cone):
@@ -687,6 +707,7 @@ class Cone:
         self.revangle = float(revangle)
         if self.axis.angle(self.secant) > 90:
             self.secant = -self.secant
+        self._attrs = kwargs
 
     def __repr__(self):
         azi, inc = vec2geo_linear(self.axis)
@@ -717,6 +738,7 @@ class Cone:
         return {
             "datatype": type(self).__name__,
             "args": (aazi, ainc, sazi, sinc, self.revangle),
+            "kwargs": self._attrs,
         }
 
     @classmethod

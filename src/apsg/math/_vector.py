@@ -3,12 +3,12 @@ import math
 import numpy as np
 
 from apsg.config import apsg_conf
-from apsg.helpers._math import sind, cosd, acosd, atan2d
+from apsg.decorator._decorator import ensure_first_arg_same
+from apsg.helpers._math import acosd, atan2d, cosd, sind
 from apsg.helpers._notation import (
     geo2vec_linear,
     vec2geo_linear_signed,
 )
-from apsg.decorator._decorator import ensure_first_arg_same
 
 
 class Vector:
@@ -16,7 +16,7 @@ class Vector:
     Base class for Vector2 and Vector3
     """
 
-    __slots__ = ("_coords",)
+    __slots__ = ("_coords", "_attrs")
 
     def __copy__(self):
         return type(self)(self._coords)
@@ -30,7 +30,11 @@ class Vector:
         return np.array(self._coords, dtype=dtype)
 
     def to_json(self):
-        return {"datatype": type(self).__name__, "args": (self._coords,)}
+        return {
+            "datatype": type(self).__name__,
+            "args": (self._coords,),
+            "kwargs": self._attrs,
+        }
 
     @ensure_first_arg_same
     def __eq__(self, other):
@@ -163,9 +167,10 @@ class Vector2(Vector):
 
     """
 
+    __slots__ = ("_coords", "_attrs")
     __shape__ = (2,)
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         if len(args) == 0:
             coords = (1, 0)
         if len(args) == 1:
@@ -185,6 +190,7 @@ class Vector2(Vector):
         else:
             raise TypeError(f"Not valid arguments for {type(self).__name__}")
         self._coords = tuple(coords)
+        self._attrs = kwargs
 
     def __repr__(self):
         n = apsg_conf["ndigits"]
@@ -365,9 +371,10 @@ class Vector3(Vector):
 
     """
 
+    __slots__ = ("_coords", "_attrs")
     __shape__ = (3,)
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         if len(args) == 0:
             coords = (1, 0, 0)
         elif len(args) == 1:
@@ -391,6 +398,7 @@ class Vector3(Vector):
         else:
             raise TypeError(f"Not valid arguments for {type(self).__name__}")
         self._coords = tuple(coords)
+        self._attrs = kwargs
 
     @property
     def z(self):

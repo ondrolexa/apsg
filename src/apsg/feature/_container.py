@@ -21,14 +21,13 @@ class FeatureSet:
     Base class for containers
     """
 
-    __slots__ = ("data", "name")
+    __slots__ = ("data", "name", "_cache")
 
     def __init__(self, data, name="Default"):
         assert all(
             [isinstance(obj, self.__feature_class__) for obj in data]
         ), f"Data must be instances of {self.__feature_class__.__name__}"
-        # cast to correct instances
-        self.data = tuple([self.__feature_class__(d) for d in data])
+        self.data = tuple(data)
         self.name = name
         self._cache = {}
 
@@ -86,6 +85,13 @@ class FeatureSet:
             return type(self)(self.data + other.data, name=self.name)
         else:
             raise TypeError(f"Only {self.__name__} is allowed")
+
+    def filter(self, **kwargs):
+        """Filter ``FeatureSet`` objects attrs"""
+        sel = list(self.data)
+        for key, val in kwargs.items():
+            sel = list(filter(lambda item: item._attrs.get(key, None) == val, sel))
+        return type(self)(sel)
 
     def rotate(self, axis, phi):
         """Rotate ``FeatureSet`` object `phi` degress about `axis`."""
