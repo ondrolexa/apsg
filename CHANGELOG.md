@@ -3,6 +3,7 @@
 ### master
  * attributes storage implemented
  * apsg_config implemented as dataclass
+ * add_vecs, add_fols, add_lins and add_faults added to pandas API
 
 ### 1.3.9 (Feb 5 2026)
  * SDBSession getset bug fixed

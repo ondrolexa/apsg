@@ -1,15 +1,22 @@
 import numpy as np
 import pandas as pd
-from pandas.core.dtypes.dtypes import PandasExtensionDtype
-from pandas.api.extensions import ExtensionArray
+from pandas.api.extensions import ExtensionArray, ExtensionDtype
+
+from apsg.feature import (
+    Fault,
+    FaultSet,
+    Foliation,
+    FoliationSet,
+    Lineation,
+    LineationSet,
+    Vector3Set,
+)
 from apsg.math import Vector3
-from apsg.feature import Foliation, Lineation, Fault
-from apsg.feature import FoliationSet, LineationSet, Vector3Set, FaultSet
 from apsg.plotting import StereoNet
 
 
 @pd.api.extensions.register_extension_dtype
-class Vec3Dtype(PandasExtensionDtype):
+class Vec3Dtype(ExtensionDtype):
     """
     Class to describe the custom Vector3 data type
     """
@@ -263,6 +270,17 @@ class APSGAccessor:
         res[name] = Vector3Array(seq)
         return res
 
+    def add_vecs(self, features, name="vecs"):
+        """Add column with `Vector3` features
+
+        Keyword Args:
+            name (str): Name of created column. Default 'vecs'
+        """
+        assert isinstance(features, Vector3Set), "Argument must be Vector3Set"
+        res = self._obj.copy()
+        res[name] = Vector3Array(features.data)
+        return res
+
     def create_fols(self, columns=["azi", "inc"], name="fols"):
         """Create column with `Foliation` features
 
@@ -276,6 +294,17 @@ class APSGAccessor:
         res[name] = FolArray(seq)
         return res
 
+    def add_fols(self, features, name="fols"):
+        """Add column with `Foliation` features
+
+        Keyword Args:
+            name (str): Name of created column. Default 'fols'
+        """
+        assert isinstance(features, FoliationSet), "Argument must be FoliationSet"
+        res = self._obj.copy()
+        res[name] = FolArray(features.data)
+        return res
+
     def create_lins(self, columns=["azi", "inc"], name="lins"):
         """Create column with `Lineation` features
 
@@ -287,6 +316,17 @@ class APSGAccessor:
         res = self._obj.copy()
         seq = [Lineation(*row.values) for _, row in self._obj[columns].iterrows()]
         res[name] = LinArray(seq)
+        return res
+
+    def add_lins(self, features, name="lins"):
+        """Add column with `Lineation` features
+
+        Keyword Args:
+            name (str): Name of created column. Default 'lins'
+        """
+        assert isinstance(features, LineationSet), "Argument must be LineationSet"
+        res = self._obj.copy()
+        res[name] = LinArray(features.data)
         return res
 
     def create_faults(
@@ -304,6 +344,17 @@ class APSGAccessor:
         res[name] = FaultArray(seq)
         return res
 
+    def add_faults(self, features, name="faults"):
+        """Add column with `Fault` features
+
+        Keyword Args:
+            name (str): Name of created column. Default 'lins'
+        """
+        assert isinstance(features, FaultSet), "Argument must be FaultSet"
+        res = self._obj.copy()
+        res[name] = FaultArray(features.data)
+        return res
+
 
 class VectorSetBaseAccessor:
     """
@@ -314,6 +365,10 @@ class VectorSetBaseAccessor:
         c = self._validate(pandas_obj)
         self._obj = pandas_obj
         self._col = c
+
+    @staticmethod
+    def _validate(obj):
+        return NotImplemented
 
     @property
     def G(self):
