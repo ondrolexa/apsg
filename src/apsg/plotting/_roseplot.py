@@ -2,6 +2,7 @@ import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.projections import PolarAxes
 from scipy.stats import circmean, vonmises
 
 from apsg.config import apsg_conf
@@ -42,7 +43,7 @@ class RosePlot(object):
     """
 
     def __init__(self, **kwargs):
-        self._kwargs = apsg_conf["roseplot_default_kwargs"].copy()
+        self._kwargs = apsg_conf.roseplot_default_kwargs.copy()
         self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
         self._artists = []
 
@@ -98,15 +99,15 @@ class RosePlot(object):
     def init_figure(self):
         self.fig = plt.figure(
             0,
-            figsize=apsg_conf["figsize"],
-            dpi=apsg_conf["dpi"],
-            facecolor=apsg_conf["facecolor"],
+            figsize=apsg_conf.figsize,
+            dpi=apsg_conf.dpi,
+            facecolor=apsg_conf.facecolor,
         )
         if hasattr(self.fig.canvas.manager, "set_window_title"):
             self.fig.canvas.manager.set_window_title("Rose diagram")
 
     def _render(self):
-        self.ax = self.fig.add_subplot(111, polar=True)
+        self.ax: PolarAxes = self.fig.add_subplot(111, polar=True)
         self._draw_layout()
         self._plot_artists()
         h, lbls = self.ax.get_legend_handles_labels()

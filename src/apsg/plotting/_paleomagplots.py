@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 from apsg.config import apsg_conf
 from apsg.plotting._stereonet import StereoNet
@@ -15,7 +15,7 @@ def zijderveld_plot(core, kind="geo"):
     data = getattr(core, kind)
     N, E, Z = np.array(data).T
     N0, E0, Z0 = data[0]
-    fig, ax = plt.subplots(facecolor="white", figsize=apsg_conf["figsize"])
+    fig, ax = plt.subplots(facecolor="white", figsize=apsg_conf.figsize)
     ax.plot(E, N, "b-", label="Horizontal")
     ax.plot(E0, N0, "b+", markersize=14)
     ax.plot(E, N, "bo", picker=5)
@@ -44,7 +44,7 @@ def zijderveld_plot(core, kind="geo"):
 
 
 def demag_plot(core):
-    fig, ax = plt.subplots(figsize=apsg_conf["figsize"])
+    fig, ax = plt.subplots(figsize=apsg_conf.figsize)
     ax.plot(core.nsteps[0], core.MAG[0] / core.MAG.max(), "k+", markersize=14)
     ax.plot(core.nsteps, core.MAG / core.MAG.max(), "ko-")
     ax.set_ylabel("M/Mmax")

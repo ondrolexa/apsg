@@ -1,18 +1,18 @@
 import numpy as np
 
 from apsg.config import apsg_conf
-from apsg.math._vector import Vector3
-from apsg.feature._geodata import Foliation, Pair, Fault, Cone
-from apsg.feature._tensor3 import Tensor3, Ellipsoid
 from apsg.feature._container import (
-    Vector3Set,
-    Vector2Set,
-    FoliationSet,
-    PairSet,
-    FaultSet,
     ConeSet,
     EllipsoidSet,
+    FaultSet,
+    FoliationSet,
+    PairSet,
+    Vector2Set,
+    Vector3Set,
 )
+from apsg.feature._geodata import Cone, Fault, Foliation, Pair
+from apsg.feature._tensor3 import Ellipsoid, Tensor3
+from apsg.math._vector import Vector3
 
 # StereoNet
 
@@ -22,7 +22,7 @@ class StereoNet_Artists:
         self.factory = factory
 
     def update_kwargs(self, style):
-        self.kwargs = apsg_conf[style].copy()
+        self.kwargs = getattr(apsg_conf, style).copy()
         self.kwargs["label"] = self.stereonet_method
 
     def to_json(self):
@@ -416,7 +416,7 @@ class RosePlot_Artists:
         self.factory = factory
 
     def update_kwargs(self, style):
-        self.kwargs = apsg_conf[style].copy()
+        self.kwargs = getattr(apsg_conf, style).copy()
         self.kwargs["label"] = self.roseplot_method
 
 
@@ -489,7 +489,7 @@ class FabricPlot_Artists:
         self.factory = factory
 
     def update_kwargs(self, style):
-        self.kwargs = apsg_conf[style].copy()
+        self.kwargs = getattr(apsg_conf, style).copy()
         self.kwargs["label"] = self.fabricplot_method
 
     def to_json(self):

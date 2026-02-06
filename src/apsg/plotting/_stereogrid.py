@@ -1,12 +1,12 @@
-import numpy as np
-import matplotlib.tri as tri
-from matplotlib.patches import Circle
 import matplotlib.pyplot as plt
+import matplotlib.tri as tri
+import numpy as np
+from matplotlib.patches import Circle
 
 from apsg.config import apsg_conf
-from apsg.feature._geodata import Lineation
 from apsg.feature._container import Vector3Set
-from apsg.plotting._projection import EqualAreaProj, EqualAngleProj
+from apsg.feature._geodata import Lineation
+from apsg.plotting._projection import EqualAngleProj, EqualAreaProj
 
 
 class StereoGrid:
@@ -186,7 +186,7 @@ class StereoGrid:
         parsed["cmap"] = kwargs.get("cmap", "Greys")
         parsed["levels"] = kwargs.get("levels", 6)
 
-        fig, ax = plt.subplots(figsize=apsg_conf["figsize"])
+        fig, ax = plt.subplots(figsize=apsg_conf.figsize)
         ax.set_aspect(1)
         ax.set_axis_off()
 
@@ -235,7 +235,7 @@ class StereoGrid:
         parsed["linestyles"] = kwargs.get("linestyles", "-")
         parsed["levels"] = kwargs.get("levels", 6)
 
-        fig, ax = plt.subplots(figsize=apsg_conf["figsize"])
+        fig, ax = plt.subplots(figsize=apsg_conf.figsize)
         ax.set_aspect(1)
         ax.set_axis_off()
 
@@ -265,7 +265,7 @@ class StereoGrid:
 
         proj = EqualAreaProj(**kwargs)
 
-        fig, ax = plt.subplots(figsize=apsg_conf["figsize"])
+        fig, ax = plt.subplots(figsize=apsg_conf.figsize)
         ax.set_aspect(1)
         ax.set_axis_off()
 

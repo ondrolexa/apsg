@@ -1,12 +1,40 @@
-# Default module settings.
+from dataclasses import dataclass, field
 
-apsg_conf = dict(
-    notation="dd",  # notation geological measurements (dd or rhr)
-    vec2geo=False,  # repr Vector3 using notation
-    ndigits=3,  # Round to ndigits in repr
-    figsize=(8, 6),  # Default figure size
-    dpi=100,  # Default figure dpi
-    facecolor="white",  # Default figure facecolor
+
+@dataclass
+class Config:
+    """Class for keeping apsg configuration values."""
+
+    notation: str = "dd"  # notation geological measurements (dd or rhr)
+    vec2geo: bool = False  # repr Vector3 using notation
+    ndigits: int = 3  # Round to ndigits in repr
+    figsize: tuple = (8, 6)  # Default figure size
+    dpi: int = 100  # Default figure dpi
+    facecolor: str = "white"
+    stereonet_default_kwargs: dict = field(default_factory=dict)
+    stereonet_default_point_kwargs: dict = field(default_factory=dict)
+    stereonet_default_pole_kwargs: dict = field(default_factory=dict)
+    stereonet_default_vector_kwargs: dict = field(default_factory=dict)
+    stereonet_default_great_circle_kwargs: dict = field(default_factory=dict)
+    stereonet_default_arc_kwargs: dict = field(default_factory=dict)
+    stereonet_default_scatter_kwargs: dict = field(default_factory=dict)
+    stereonet_default_cone_kwargs: dict = field(default_factory=dict)
+    stereonet_default_pair_kwargs: dict = field(default_factory=dict)
+    stereonet_default_fault_kwargs: dict = field(default_factory=dict)
+    stereonet_default_hoeppner_kwargs: dict = field(default_factory=dict)
+    stereonet_default_arrow_kwargs: dict = field(default_factory=dict)
+    stereonet_default_tensor_kwargs: dict = field(default_factory=dict)
+    stereonet_default_contour_kwargs: dict = field(default_factory=dict)
+    roseplot_default_kwargs: dict = field(default_factory=dict)
+    roseplot_default_bar_kwargs: dict = field(default_factory=dict)
+    roseplot_default_pdf_kwargs: dict = field(default_factory=dict)
+    roseplot_default_muci_kwargs: dict = field(default_factory=dict)
+    fabricplot_default_kwargs: dict = field(default_factory=dict)
+    fabricplot_default_point_kwargs: dict = field(default_factory=dict)
+    fabricplot_default_path_kwargs: dict = field(default_factory=dict)
+
+
+apsg_conf = Config(
     stereonet_default_kwargs=dict(
         kind="equal-area",
         overlay_position=(0, 0, 0, 0),

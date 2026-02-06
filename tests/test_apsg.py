@@ -15,13 +15,11 @@ Proper unit tests should fail for exactly one reason
 """
 
 
-import pytest
 import numpy as np
+import pytest
 
+from apsg import defgrad, fault, fol, lin, linset, pair, vec, vecset
 from apsg.config import apsg_conf
-from apsg import vec, fol, lin, fault, pair
-from apsg import vecset, linset
-from apsg import defgrad
 
 atol = 1e-05  # safe tests
 
@@ -53,7 +51,7 @@ class TestVector:
         assert current == expects
 
     def test_that_vec_string_gets_three_digits_when_vec2dd_settings_is_false(self):
-        apsg_conf["vec2geo"] = False
+        apsg_conf.vec2geo = False
 
         v = vec(1, 2, 3)
 
@@ -63,7 +61,7 @@ class TestVector:
         assert current == expects
 
     def test_that_vec_string_gets_dip_and_dir_when_vec2dd_settings_is_true(self):
-        apsg_conf["vec2geo"] = True
+        apsg_conf.vec2geo = True
 
         v = vec(1, 2, 3)
 
@@ -72,7 +70,7 @@ class TestVector:
 
         assert current == expects
 
-        apsg_conf["vec2geo"] = False
+        apsg_conf.vec2geo = False
 
     # ``==`` operator
 

@@ -2,23 +2,23 @@
 
 import pickle
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.patches import Circle
 
 from apsg.config import apsg_conf
-from apsg.math._vector import Vector3
-from apsg.feature._geodata import Lineation, Foliation, Pair, Fault, Cone
-from apsg.feature._container import (
-    Vector3Set,
-    LineationSet,
-    FoliationSet,
-    PairSet,
-    FaultSet,
-)
 from apsg.feature import feature_from_json
-from apsg.plotting._stereogrid import StereoGrid
+from apsg.feature._container import (
+    FaultSet,
+    FoliationSet,
+    LineationSet,
+    PairSet,
+    Vector3Set,
+)
+from apsg.feature._geodata import Cone, Fault, Foliation, Lineation, Pair
+from apsg.math._vector import Vector3
 from apsg.plotting._plot_artists import StereoNetArtistFactory
+from apsg.plotting._stereogrid import StereoGrid
 
 __all__ = ["StereoNet"]
 
@@ -58,7 +58,7 @@ class StereoNet:
     """
 
     def __init__(self, **kwargs):
-        self._kwargs = apsg_conf["stereonet_default_kwargs"].copy()
+        self._kwargs = apsg_conf.stereonet_default_kwargs.copy()
         self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
         self._kwargs["title"] = kwargs.get("title", None)
         self.grid = StereoGrid(**self._kwargs)
@@ -183,9 +183,9 @@ class StereoNet:
     def init_figure(self):
         self.fig = plt.figure(
             0,
-            figsize=apsg_conf["figsize"],
-            dpi=apsg_conf["dpi"],
-            facecolor=apsg_conf["facecolor"],
+            figsize=apsg_conf.figsize,
+            dpi=apsg_conf.dpi,
+            facecolor=apsg_conf.facecolor,
         )
         if hasattr(self.fig.canvas.manager, "set_window_title"):
             self.fig.canvas.manager.set_window_title(self.proj.netname)
@@ -808,7 +808,7 @@ class StereoNet:
 
     def _fault(self, *args, **kwargs):
         h = self._great_circle(*[arg.fol for arg in args], **kwargs)
-        quiver_kwargs = apsg_conf["stereonet_default_arrow_kwargs"]
+        quiver_kwargs = apsg_conf.stereonet_default_arrow_kwargs
         quiver_kwargs["pivot"] = "tail"
         quiver_kwargs["color"] = h[0].get_color()
         for arg in args:
@@ -816,7 +816,7 @@ class StereoNet:
 
     def _hoeppner(self, *args, **kwargs):
         h = self._line(*[arg.fol for arg in args], **kwargs)
-        quiver_kwargs = apsg_conf["stereonet_default_arrow_kwargs"]
+        quiver_kwargs = apsg_conf.stereonet_default_arrow_kwargs
         quiver_kwargs["color"] = h[0].get_color()
         for arg in args:
             self._arrow(arg.fol, arg.lin, sense=arg.sense, **quiver_kwargs)

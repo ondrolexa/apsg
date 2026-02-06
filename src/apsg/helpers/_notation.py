@@ -1,5 +1,5 @@
 from apsg.config import apsg_conf
-from apsg.helpers._math import sind, cosd, asind, atan2d
+from apsg.helpers._math import asind, atan2d, cosd, sind
 
 # NOTATION TRANSORMATIONS
 
@@ -22,7 +22,7 @@ def geo2vec_planar(*args):
         azi (float): dip direction or strike
         inc (float): dip
     """
-    return {"dd": fol2vec_dd, "rhr": fol2vec_rhr}[apsg_conf["notation"]](*args)
+    return {"dd": fol2vec_dd, "rhr": fol2vec_rhr}[apsg_conf.notation](*args)
 
 
 ##############################
@@ -71,9 +71,7 @@ def vec2fol_rhr_signed(v):
 
 
 def vec2geo_planar_signed(arg):
-    return {"dd": vec2fol_dd_signed, "rhr": vec2fol_rhr_signed}[apsg_conf["notation"]](
-        arg
-    )
+    return {"dd": vec2fol_dd_signed, "rhr": vec2fol_rhr_signed}[apsg_conf.notation](arg)
 
 
 def vec2geo_planar(arg):
@@ -85,7 +83,7 @@ def vec2geo_planar(arg):
     Args:
         v (Vector3): ``Vector3`` like object
     """
-    return {"dd": vec2fol_dd, "rhr": vec2fol_rhr}[apsg_conf["notation"]](arg)
+    return {"dd": vec2fol_dd, "rhr": vec2fol_rhr}[apsg_conf.notation](arg)
 
 
 ##############################
@@ -104,9 +102,7 @@ def vec2lin_dd_signed(v):
 
 
 def vec2geo_linear_signed(arg):
-    return {"dd": vec2lin_dd_signed, "rhr": vec2lin_dd_signed}[apsg_conf["notation"]](
-        arg
-    )
+    return {"dd": vec2lin_dd_signed, "rhr": vec2lin_dd_signed}[apsg_conf.notation](arg)
 
 
 def vec2geo_linear(arg):

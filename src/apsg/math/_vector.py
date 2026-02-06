@@ -1,4 +1,5 @@
 import math
+from abc import ABC, abstractmethod
 
 import numpy as np
 
@@ -11,12 +12,15 @@ from apsg.helpers._notation import (
 )
 
 
-class Vector:
-    """
-    Base class for Vector2 and Vector3
-    """
+class Vector(ABC):
+    """Abstract base class for Vector2 and Vector3"""
 
     __slots__ = ("_coords", "_attrs")
+
+    @abstractmethod
+    def __init__(self, *args, **kwargs):
+        self._coords = (None, None, None)
+        self._attrs = {}
 
     def __copy__(self):
         return type(self)(self._coords)
@@ -92,6 +96,14 @@ class Vector:
         return math.sqrt(sum(map(lambda x: x * x, self._coords)))
 
     magnitude = __abs__
+
+    @abstractmethod
+    def dot(self, other):
+        pass
+
+    @abstractmethod
+    def normalized(self):
+        pass
 
     def label(self):
         """Return label"""
@@ -193,7 +205,7 @@ class Vector2(Vector):
         self._attrs = kwargs
 
     def __repr__(self):
-        n = apsg_conf["ndigits"]
+        n = apsg_conf.ndigits
         return f"Vector2({round(self.x, n):g}, {round(self.y, n):g})"
 
     def __len__(self):
@@ -406,11 +418,11 @@ class Vector3(Vector):
         return self._coords[2]
 
     def __repr__(self):
-        if apsg_conf["vec2geo"]:
+        if apsg_conf.vec2geo:
             azi, inc = self.geo
             return f"V:{azi:.0f}/{inc:.0f}"
         else:
-            n = apsg_conf["ndigits"]
+            n = apsg_conf.ndigits
             return f"Vector3({round(self.x, n):g}, {round(self.y, n):g}, {round(self.z, n):g})"
 
     def __len__(self):

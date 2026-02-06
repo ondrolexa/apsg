@@ -1,12 +1,12 @@
 import pickle
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.patches import Polygon
 
 from apsg.config import apsg_conf
-from apsg.plotting._plot_artists import FabricPlotArtistFactory
 from apsg.feature import feature_from_json
+from apsg.plotting._plot_artists import FabricPlotArtistFactory
 
 __all__ = ["VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot"]
 
@@ -17,7 +17,7 @@ class FabricPlot(object):
     """
 
     def __init__(self, **kwargs):
-        self._kwargs = apsg_conf["fabricplot_default_kwargs"].copy()
+        self._kwargs = apsg_conf.fabricplot_default_kwargs.copy()
         self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
         self._artists = []
 
@@ -67,9 +67,9 @@ class FabricPlot(object):
     def init_figure(self):
         self.fig = plt.figure(
             0,
-            figsize=apsg_conf["figsize"],
-            dpi=apsg_conf["dpi"],
-            facecolor=apsg_conf["facecolor"],
+            figsize=apsg_conf.figsize,
+            dpi=apsg_conf.dpi,
+            facecolor=apsg_conf.facecolor,
         )
         if hasattr(self.fig.canvas.manager, "set_window_title"):
             self.fig.canvas.manager.set_window_title(self.window_title)

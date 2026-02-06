@@ -1,16 +1,22 @@
+from abc import ABC, abstractmethod
+
 import numpy as np
 
 from apsg.config import apsg_conf
 from apsg.decorator._decorator import ensure_first_arg_same
-from apsg.math._vector import Vector3, Vector2
+from apsg.math._vector import Vector2, Vector3
 
 
-class Matrix:
-    """Base class for Matrix2 and Matrix3"""
+class Matrix(ABC):
+    """Abstarct base class for Matrix2 and Matrix3"""
 
     __slots__ = ("_coefs", "_attrs", "_cache")
+    __shape__ = (0, 0)
 
-    def __init__(self):
+    @abstractmethod
+    def __init__(self, *args, **kwargs):
+        self._coefs = ((None, None, None), (None, None, None), (None, None, None))
+        self._attrs = {}
         self._cache = {}
 
     def __copy__(self):
@@ -23,19 +29,18 @@ class Matrix:
         return tuple(c for row in self._coefs for c in row)
 
     def __repr__(self):
-        n = apsg_conf["ndigits"]
-        m = [[round(e, n) for e in row] for row in self._coefs]
-        return f"{type(self).__name__}\n{str(np.array(m))}"
+        n = apsg_conf.ndigits
+        return f"{self.label()}\n{str(np.asarray(self._coefs).round(n))}"
 
     def label(self):
-        return str(type(self).__name__)
+        return self.__class__.__name__
 
     def __hash__(self):
-        return hash((type(self).__name__,) + self._coefs)
+        return hash((self.label(),) + self._coefs)
 
     def to_json(self):
         return {
-            "datatype": type(self).__name__,
+            "datatype": self.label(),
             "args": (self._coefs,),
             "kwargs": self._attrs,
         }
@@ -147,7 +152,7 @@ class Matrix:
     @property
     def _eigh(self):
         if "eigh" not in self._cache:
-            evals, evecs = np.linalg.eigh(self._coefs)
+            evals, evecs = np.linalg.eigh(np.asarray(self._coefs))
             idx = evals.argsort()[::-1]
             evals = evals[idx]
             evecs = evecs[:, idx]
@@ -163,30 +168,6 @@ class Matrix:
         """Determinant"""
 
         return float(np.linalg.det(self))
-
-    @property
-    def E1(self):
-        """First eigenvalue"""
-
-        return float(self.eigenvalues()[0])
-
-    @property
-    def E2(self):
-        """Second eigenvalue"""
-
-        return float(self.eigenvalues()[1])
-
-    @property
-    def V1(self):
-        """First eigenvector"""
-
-        return self.eigenvectors()[0]
-
-    @property
-    def V2(self):
-        """Second eigenvector"""
-
-        return self.eigenvectors()[1]
 
 
 class Matrix2(Matrix):
@@ -266,6 +247,30 @@ class Matrix2(Matrix):
         else:
             return Vector2(r)
 
+    @property
+    def E1(self):
+        """First eigenvalue"""
+
+        return float(self.eigenvalues()[0])
+
+    @property
+    def E2(self):
+        """Second eigenvalue"""
+
+        return float(self.eigenvalues()[1])
+
+    @property
+    def V1(self):
+        """First eigenvector"""
+
+        return self.eigenvectors()[0]
+
+    @property
+    def V2(self):
+        """Second eigenvector"""
+
+        return self.eigenvectors()[1]
+
     def eigenvectors(self):
         """Return tuple of principal eigenvectors as ``Vector3`` objects."""
         U = self._eigh[1].T
@@ -315,7 +320,7 @@ class Matrix3(Matrix):
         self._attrs = kwargs
 
     @classmethod
-    def from_comp(cls, xx=0, xy=0, xz=0, yx=0, yy=0, yz=0, zx=0, zy=0, zz=0):
+    def from_comp(cls, **kwargs):
         """Return ``Matrix3`` defined by individual components. Default is zero
         matrix.
 
@@ -338,7 +343,15 @@ class Matrix3(Matrix):
              [ 0.  -0.5  0. ]]
 
         """
-
+        xx = kwargs.get("xx", 0)
+        xy = kwargs.get("xy", 0)
+        xz = kwargs.get("xz", 0)
+        yx = kwargs.get("yx", 0)
+        yy = kwargs.get("yy", 0)
+        yz = kwargs.get("yz", 0)
+        zx = kwargs.get("zx", 0)
+        zy = kwargs.get("zy", 0)
+        zz = kwargs.get("zz", 0)
         return cls([[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]])
 
     def __len__(self):
@@ -387,10 +400,34 @@ class Matrix3(Matrix):
         return self._coefs[2][2]
 
     @property
+    def E1(self):
+        """First eigenvalue"""
+
+        return float(self.eigenvalues()[0])
+
+    @property
+    def E2(self):
+        """Second eigenvalue"""
+
+        return float(self.eigenvalues()[1])
+
+    @property
     def E3(self):
         """Third eigenvalue"""
 
         return float(self.eigenvalues()[2])
+
+    @property
+    def V1(self):
+        """First eigenvector"""
+
+        return self.eigenvectors()[0]
+
+    @property
+    def V2(self):
+        """Second eigenvector"""
+
+        return self.eigenvectors()[1]
 
     @property
     def V3(self):

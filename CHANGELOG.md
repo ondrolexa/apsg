@@ -2,6 +2,7 @@
 
 ### master
  * attributes storage implemented
+ * apsg_config implemented as dataclass
 
 ### 1.3.9 (Feb 5 2026)
  * SDBSession getset bug fixed

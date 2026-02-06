@@ -4,6 +4,7 @@ from os.path import basename
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
 from scipy.stats import vonmises
 
@@ -24,9 +25,6 @@ class FeatureSet:
     __slots__ = ("data", "name", "_cache")
 
     def __init__(self, data, name="Default"):
-        assert all(
-            [isinstance(obj, self.__feature_class__) for obj in data]
-        ), f"Data must be instances of {self.__feature_class__.__name__}"
         self.data = tuple(data)
         self.name = name
         self._cache = {}
@@ -39,10 +37,13 @@ class FeatureSet:
     def to_json(self):
         """Return as JSON dict"""
         return {
-            "datatype": type(self).__name__,
+            "datatype": self.__class__.__name__,
             "args": ({"collection": tuple(item.to_json() for item in self)},),
             "kwargs": {"name": self.name},
         }
+
+    def attrs(self):
+        return pd.DataFrame([item._attrs for item in self.data])
 
     def label(self):
         """Return label"""
@@ -65,17 +66,18 @@ class FeatureSet:
 
     def __getitem__(self, key):
         if isinstance(key, slice):
-            return type(self)(self.data[key])
+            return self.__class__(self.data[key], name=self.name)
         # elif isinstance(key, int):
         elif np.issubdtype(type(key), np.integer):
             return self.data[key]
-        elif isinstance(key, np.ndarray):  # fancy indexing
-            idxs = np.arange(len(self.data), dtype=int)[key]
-            return type(self)([self.data[ix] for ix in idxs])
-        else:
-            raise TypeError(
-                "Wrong index. Only slice, int and np.array are allowed for indexing."
-            )
+        else:  # fancy indexing
+            try:
+                idxs = np.arange(len(self.data), dtype=int)[np.asarray(key)]
+                return self.__class__([self.data[ix] for ix in idxs], name=self.name)
+            except Exception:
+                raise TypeError(
+                    "Wrong index. Only slice, int and array like are allowed for indexing."
+                )
 
     def __iter__(self):
         return iter(self.data)
@@ -84,7 +86,7 @@ class FeatureSet:
         if isinstance(other, type(self)):
             return type(self)(self.data + other.data, name=self.name)
         else:
-            raise TypeError(f"Only {self.__name__} is allowed")
+            raise TypeError(f"Only {self.__class__.__name__} is allowed")
 
     def filter(self, **kwargs):
         """Filter ``FeatureSet`` objects attrs"""
@@ -125,6 +127,12 @@ class Vector2Set(FeatureSet):
     """
 
     __feature_class__ = Vector2
+
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        assert all(
+            [isinstance(obj, Vector2) for obj in data]
+        ), "Data must be instances of Vector2"
 
     def __repr__(self):
         return f"V2({len(self)}) {self.name}"
@@ -298,7 +306,7 @@ class Vector2Set(FeatureSet):
         resultant.
 
         """
-        v = Vector3Set(self)
+        v = Vector2Set(self)
         v_data = list(v)
         alldone = np.all(v.angle(v.R()) <= 90)
         while not alldone:
@@ -306,7 +314,7 @@ class Vector2Set(FeatureSet):
             for ix, do in enumerate(ang > 90):
                 if do:
                     v_data[ix] = -v_data[ix]
-                v = Vector3Set(v_data)
+                v = Vector2Set(v_data)
                 alldone = np.all(v.angle(v.R()) <= 90)
         return type(self)([self.__feature_class__(vec) for vec in v], name=self.name)
 
@@ -383,6 +391,12 @@ class Direction2Set(Vector2Set):
 
     __feature_class__ = Direction
 
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        assert all(
+            [isinstance(obj, Direction) for obj in data]
+        ), "Data must be instances of Direction"
+
     def __repr__(self):
         return f"D2({len(self)}) {self.name}"
 
@@ -393,6 +407,12 @@ class Vector3Set(FeatureSet):
     """
 
     __feature_class__ = Vector3
+
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        assert all(
+            [isinstance(obj, Vector3) for obj in data]
+        ), "Data must be instances of Vector3"
 
     def __repr__(self):
         return f"V3({len(self)}) {self.name}"
@@ -418,7 +438,7 @@ class Vector3Set(FeatureSet):
 
     @property
     def geo(self):
-        """Return arrays of azi and inc according to apsg_conf['notation']"""
+        """Return arrays of azi and inc according to apsg_conf.notation"""
         azi, inc = np.asarray([e.geo for e in self]).T
         return azi, inc
 
@@ -655,8 +675,11 @@ class Vector3Set(FeatureSet):
             if isinstance(acol, int) and isinstance(icol, int):
                 if has_header:
                     reader = csv.DictReader(csvfile, dialect=dialect)
-                    aname, iname = reader.fieldnames[acol], reader.fieldnames[icol]
-                    r = [(float(row[aname]), float(row[iname])) for row in reader]
+                    if reader.fieldnames is not None:
+                        aname, iname = reader.fieldnames[acol], reader.fieldnames[icol]
+                        r = [(float(row[aname]), float(row[iname])) for row in reader]
+                    else:
+                        raise ValueError("No header line in CSV file...")
                 else:
                     reader = csv.reader(csvfile, dialect=dialect)
                     r = [(float(row[acol]), float(row[icol])) for row in reader]
@@ -683,7 +706,7 @@ class Vector3Set(FeatureSet):
 
         """
 
-        n = apsg_conf["ndigits"]
+        n = apsg_conf.ndigits
 
         with open(filename, "w", newline="") as csvfile:
             fieldnames = ["azi", "inc"]
@@ -887,6 +910,12 @@ class LineationSet(Vector3Set):
 
     __feature_class__ = Lineation
 
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        assert all(
+            [isinstance(obj, Lineation) for obj in data]
+        ), "Data must be instances of Lineation"
+
     def __repr__(self):
         return f"L({len(self)}) {self.name}"
 
@@ -897,6 +926,12 @@ class FoliationSet(Vector3Set):
     """
 
     __feature_class__ = Foliation
+
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        assert all(
+            [isinstance(obj, Foliation) for obj in data]
+        ), "Data must be instances of Foliation"
 
     def __repr__(self):
         return f"S({len(self)}) {self.name}"
@@ -912,6 +947,12 @@ class PairSet(FeatureSet):
     """
 
     __feature_class__ = Pair
+
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        assert all(
+            [isinstance(obj, Pair) for obj in data]
+        ), "Data must be instances of Pair"
 
     def __repr__(self):
         return f"P({len(self)}) {self.name}"
@@ -1006,7 +1047,17 @@ class PairSet(FeatureSet):
         return PairSet([Pair.random() for i in range(n)])
 
     @classmethod
-    def from_csv(cls, filename, delimiter=",", facol=0, ficol=1, lacol=2, licol=3):
+    def from_csv(
+        cls,
+        filename,
+        delimiter=",",
+        sense_str=False,
+        facol=0,
+        ficol=1,
+        lacol=2,
+        licol=3,
+        scol=4,
+    ):
         """Read ``PairSet`` from csv file"""
 
         with open(filename) as csvfile:
@@ -1022,17 +1073,26 @@ class PairSet(FeatureSet):
             ):
                 if has_header:
                     reader = csv.DictReader(csvfile, dialect=dialect)
-                    faname, finame = reader.fieldnames[facol], reader.fieldnames[ficol]
-                    laname, liname = reader.fieldnames[lacol], reader.fieldnames[licol]
-                    r = [
-                        (
-                            float(row[faname]),
-                            float(row[finame]),
-                            float(row[laname]),
-                            float(row[liname]),
+                    if reader.fieldnames is not None:
+                        faname, finame = (
+                            reader.fieldnames[facol],
+                            reader.fieldnames[ficol],
                         )
-                        for row in reader
-                    ]
+                        laname, liname = (
+                            reader.fieldnames[lacol],
+                            reader.fieldnames[licol],
+                        )
+                        r = [
+                            (
+                                float(row[faname]),
+                                float(row[finame]),
+                                float(row[laname]),
+                                float(row[liname]),
+                            )
+                            for row in reader
+                        ]
+                    else:
+                        raise ValueError("No header line in CSV file...")
                 else:
                     reader = csv.reader(csvfile, dialect=dialect)
                     r = [
@@ -1075,7 +1135,7 @@ class PairSet(FeatureSet):
 
         """
 
-        n = apsg_conf["ndigits"]
+        n = apsg_conf.ndigits
 
         with open(filename, "w", newline="") as csvfile:
             fieldnames = ["azi", "inc", "lazi", "linc"]
@@ -1094,12 +1154,14 @@ class PairSet(FeatureSet):
                 )
 
     @classmethod
-    def from_array(cls, fazis, fincs, lazis, lincs, name="Default"):
-        """Create ``PairSet`` from arrays of azimuths and inclinations
+    def from_array(cls, fazis, fincs, lazis, lincs, senses=[], name="Default"):
+        """Create ``FaultSet`` from arrays of azimuths, inclinations and senses
 
         Args:
-          azis: list or array of azimuths
-          incs: list or array of inclinations
+          fazis: list or array of azimuths
+          fincs: list or array of inclinations
+          lazis: list or array of azimuths
+          lincs: list or array of inclinations
 
         Keyword Args:
           name: name of ``PairSet`` object. Default is 'Default'
@@ -1120,6 +1182,12 @@ class FaultSet(PairSet):
     """
 
     __feature_class__ = Fault
+
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        assert all(
+            [isinstance(obj, Fault) for obj in data]
+        ), "Data must be instances of Fault"
 
     def __repr__(self):
         return f"F({len(self)}) {self.name}"
@@ -1205,7 +1273,7 @@ class FaultSet(PairSet):
 
     @classmethod
     def random(cls, n=25):
-        """Create PairSet of random pairs"""
+        """Create FaultSet of random faults"""
         return FaultSet([Fault.random() for i in range(n)])
 
     @classmethod
@@ -1236,31 +1304,40 @@ class FaultSet(PairSet):
             ):
                 if has_header:
                     reader = csv.DictReader(csvfile, dialect=dialect)
-                    faname, finame = reader.fieldnames[facol], reader.fieldnames[ficol]
-                    laname, liname = reader.fieldnames[lacol], reader.fieldnames[licol]
-                    sname = reader.fieldnames[scol]
-                    if sense_str:
-                        r = [
-                            (
-                                float(row[faname]),
-                                float(row[finame]),
-                                float(row[laname]),
-                                float(row[liname]),
-                                row[sname],
-                            )
-                            for row in reader
-                        ]
+                    if reader.fieldnames is not None:
+                        faname, finame = (
+                            reader.fieldnames[facol],
+                            reader.fieldnames[ficol],
+                        )
+                        laname, liname = (
+                            reader.fieldnames[lacol],
+                            reader.fieldnames[licol],
+                        )
+                        sname = reader.fieldnames[scol]
+                        if sense_str:
+                            r = [
+                                (
+                                    float(row[faname]),
+                                    float(row[finame]),
+                                    float(row[laname]),
+                                    float(row[liname]),
+                                    row[sname],
+                                )
+                                for row in reader
+                            ]
+                        else:
+                            r = [
+                                (
+                                    float(row[faname]),
+                                    float(row[finame]),
+                                    float(row[laname]),
+                                    float(row[liname]),
+                                    int(row[sname]),
+                                )
+                                for row in reader
+                            ]
                     else:
-                        r = [
-                            (
-                                float(row[faname]),
-                                float(row[finame]),
-                                float(row[laname]),
-                                float(row[liname]),
-                                int(row[sname]),
-                            )
-                            for row in reader
-                        ]
+                        raise ValueError("No header line in CSV file...")
                 else:
                     reader = csv.reader(csvfile, dialect=dialect)
 
@@ -1319,7 +1396,7 @@ class FaultSet(PairSet):
 
         """
 
-        n = apsg_conf["ndigits"]
+        n = apsg_conf.ndigits
 
         with open(filename, "w", newline="") as csvfile:
             fieldnames = ["fazi", "finc", "lazi", "linc", "sense"]
@@ -1350,15 +1427,18 @@ class FaultSet(PairSet):
                     )
 
     @classmethod
-    def from_array(cls, fazis, fincs, lazis, lincs, senses, name="Default"):
+    def from_array(cls, fazis, fincs, lazis, lincs, senses=[], name="Default"):
         """Create ``FaultSet`` from arrays of azimuths, inclinations and senses
 
         Args:
-          azis: list or array of azimuths
-          incs: list or array of inclinations
+          fazis: list or array of azimuths
+          fincs: list or array of inclinations
+          lazis: list or array of azimuths
+          lincs: list or array of inclinations
+          senses: list or array of senses
 
         Keyword Args:
-          name: name of ``PairSet`` object. Default is 'Default'
+          name: name of ``FaultSet`` object. Default is 'Default'
         """
 
         return cls(
@@ -1379,6 +1459,12 @@ class ConeSet(FeatureSet):
 
     __feature_class__ = Cone
 
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        assert all(
+            [isinstance(obj, Cone) for obj in data]
+        ), "Data must be instances of Cone"
+
     def __repr__(self):
         return f"C({len(self)}) {self.name}"
 
@@ -1389,6 +1475,12 @@ class EllipseSet(FeatureSet):
     """
 
     __feature_class__ = Ellipse
+
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        assert all(
+            [isinstance(obj, Ellipse) for obj in data]
+        ), "Data must be instances of Ellipse"
 
     def __repr__(self):
         return f"E2({len(self)}) {self.name}"
@@ -1459,6 +1551,12 @@ class OrientationTensor2Set(EllipseSet):
 
     __feature_class__ = OrientationTensor2
 
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        assert all(
+            [isinstance(obj, OrientationTensor2) for obj in data]
+        ), "Data must be instances of OrientationTensor2"
+
     def __repr__(self):
         return f"M2({len(self)}) {self.name}"
 
@@ -1469,6 +1567,12 @@ class EllipsoidSet(FeatureSet):
     """
 
     __feature_class__ = Ellipsoid
+
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        assert all(
+            [isinstance(obj, Ellipsoid) for obj in data]
+        ), "Data must be instances of Ellipsoid"
 
     def __repr__(self):
         return f"E({len(self)}) {self.name}"
@@ -1716,6 +1820,12 @@ class OrientationTensor3Set(EllipsoidSet):
 
     __feature_class__ = OrientationTensor3
 
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        assert all(
+            [isinstance(obj, OrientationTensor3) for obj in data]
+        ), "Data must be instances of OrientationTensor3"
+
     def __repr__(self):
         return f"M({len(self)}) {self.name}"
 
@@ -1807,7 +1917,7 @@ class ClusterSet(object):
         See ``scipy.cluster.hierarchy.dendrogram`` for possible kwargs.
         """
 
-        fig, ax = plt.subplots(figsize=apsg_conf["figsize"])
+        fig, ax = plt.subplots(figsize=apsg_conf.figsize)
         dendrogram(self.Z, ax=ax, **kwargs)
         plt.show()
 
@@ -1830,7 +1940,7 @@ class ClusterSet(object):
             within_grp_var.append(var)
             mean_var.append(np.mean(var))
         if not no_plot:
-            fig, ax = plt.subplots(figsize=apsg_conf["figsize"])
+            fig, ax = plt.subplots(figsize=apsg_conf.figsize)
             ax.boxplot(within_grp_var, positions=nclust)
             ax.plot(nclust, mean_var, "k")
             ax.set_xlabel("Number of clusters")

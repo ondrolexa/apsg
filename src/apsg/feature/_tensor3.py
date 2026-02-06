@@ -1,12 +1,13 @@
 import math
+
 import numpy as np
 from scipy import linalg as spla
 
-from apsg.helpers._math import sind, cosd, atand
-from apsg.math._vector import Vector3
-from apsg.math._matrix import Matrix3
 from apsg.decorator._decorator import ensure_arguments
-from apsg.feature._geodata import Lineation, Foliation, Pair, Fault
+from apsg.feature._geodata import Fault, Foliation, Lineation, Pair
+from apsg.helpers._math import atand, cosd, sind
+from apsg.math._matrix import Matrix3
+from apsg.math._vector import Vector3
 
 
 class DeformationGradient3(Matrix3):
@@ -25,7 +26,7 @@ class DeformationGradient3(Matrix3):
     """
 
     @classmethod
-    def from_comp(cls, xx=1, xy=0, xz=0, yx=0, yy=1, yz=0, zx=0, zy=0, zz=1):
+    def from_comp(cls, **kwargs):
         """Return ``DeformationGradient3`` defined by individual components.
         Default is identity tensor.
 
@@ -49,7 +50,15 @@ class DeformationGradient3(Matrix3):
              [ 0.  -0.5  1. ]]
 
         """
-
+        xx = kwargs.get("xx", 1)
+        xy = kwargs.get("xy", 0)
+        xz = kwargs.get("xz", 0)
+        yx = kwargs.get("yx", 0)
+        yy = kwargs.get("yy", 1)
+        yz = kwargs.get("yz", 0)
+        zx = kwargs.get("zx", 0)
+        zy = kwargs.get("zy", 0)
+        zz = kwargs.get("zz", 1)
         return cls([[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]])
 
     @classmethod
@@ -301,7 +310,7 @@ class VelocityGradient3(Matrix3):
     """
 
     @classmethod
-    def from_comp(cls, xx=0, xy=0, xz=0, yx=0, yy=0, yz=0, zx=0, zy=0, zz=0):
+    def from_comp(cls, **kwargs):
         """Return ``VelocityGradient3`` defined by individual components. Default is zero
         tensor.
 
@@ -324,7 +333,15 @@ class VelocityGradient3(Matrix3):
              [ 0.  -0.5  0. ]]
 
         """
-
+        xx = kwargs.get("xx", 0)
+        xy = kwargs.get("xy", 0)
+        xz = kwargs.get("xz", 0)
+        yx = kwargs.get("yx", 0)
+        yy = kwargs.get("yy", 0)
+        yz = kwargs.get("yz", 0)
+        zx = kwargs.get("zx", 0)
+        zy = kwargs.get("zy", 0)
+        zz = kwargs.get("zz", 0)
         return cls([[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]])
 
     def defgrad(self, time=1, steps=1):
@@ -419,11 +436,11 @@ class Stress3(Tensor3):
     """
 
     @classmethod
-    def from_comp(cls, xx=0, xy=0, xz=0, yy=0, yz=0, zz=0):
+    def from_comp(cls, **kwargs):
         """
         Return ``Stress`` tensor. Default is zero tensor.
 
-        Note that stress tensor must be symmetrical.
+        Note that stress tensor is always symmetrical.
 
         Keyword Args:
           xx, xy, xz, yy, yz, zz (float): tensor components
@@ -437,7 +454,12 @@ class Stress3(Tensor3):
            [ 0.  0. 10.]]
 
         """
-
+        xx = kwargs.get("xx", 0)
+        xy = kwargs.get("xy", kwargs.get("yx", 0))
+        xz = kwargs.get("xz", kwargs.get("zx", 0))
+        yy = kwargs.get("yy", 0)
+        yz = kwargs.get("yz", kwargs.get("zy", 0))
+        zz = kwargs.get("zz", 0)
         return cls([[xx, xy, xz], [xy, yy, yz], [xz, yz, zz]])
 
     @classmethod

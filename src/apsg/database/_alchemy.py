@@ -320,7 +320,7 @@ class SDBSession:
                 meta = Meta(name=name, **kwargs)
                 self.session.add(meta)
             else:
-                self.session.query(Meta).filter_by(name=name).update(kwargs)
+                meta.update(kwargs)
             if self.autocommit:
                 self.commit()
         return meta
@@ -347,7 +347,7 @@ class SDBSession:
                 site = Site(name=name, **kwargs)
                 self.session.add(site)
             else:
-                self.session.query(Site).filter_by(name=name).update(kwargs)
+                site.update(kwargs)
             if self.autocommit:
                 self.commit()
         return site
@@ -371,7 +371,7 @@ class SDBSession:
                 unit = Unit(name=name, **kwargs)
                 self.session.add(unit)
             else:
-                self.session.query(Unit).filter_by(name=name).update(kwargs)
+                unit.update(kwargs)
             if self.autocommit:
                 self.commit()
         return unit
@@ -395,7 +395,7 @@ class SDBSession:
                 tag = Tag(name=name, **kwargs)
                 self.session.add(tag)
             else:
-                self.session.query(Tag).filter_by(name=name).update(kwargs)
+                tag.update(kwargs)
             if self.autocommit:
                 self.commit()
         return tag
@@ -422,9 +422,7 @@ class SDBSession:
                 structype = Structype(structure=structure, **kwargs)
                 self.session.add(structype)
             else:
-                self.session.query(Structype).filter_by(structure=structure).update(
-                    kwargs
-                )
+                structype.update(kwargs)
             if self.autocommit:
                 self.commit()
         return structype
@@ -608,7 +606,7 @@ class SDBSession:
         else:
             return tags
 
-    def getset(self, structype, site={}, unit={}, tag={}):
+    def getset(self, structype, **kwargs):
         """Method to retrieve data from SDB database to ``FeatureSet``.
 
         Args:
@@ -616,8 +614,39 @@ class SDBSession:
           site (dict): keyword args passed to filter site
           unit (dict): keyword args passed to filter unit
           tag (dict): keyword args passed to filter tag
+          store (list): list of properties to be stored in feature as _attrs
+              Available values:"id", "x_coord", "y_coord", "site", "unit", "tags"
+              or "geo". Default []
+
+        Example:
+          >> g = db.getset("S2")
+          >> g = db.getset("S2", unit=dict(name="Main unit"))
+          >> g = db.getset("S2", tag=dict(name="AP"))
 
         """
+        site = kwargs.get("site", {})
+        unit = kwargs.get("unit", {})
+        tag = kwargs.get("tag", {})
+        store = kwargs.get("store", [])
+
+        def get_attrs(v):
+            res = {}
+            if "id" in store:
+                res["id"] = v.id
+            if "x_coord" in store:
+                res["x_coord"] = v.site.x_coord
+            if "y_coord" in store:
+                res["y_coord"] = v.site.y_coord
+            if "site" in store:
+                res["site"] = v.site.name
+            if "unit" in store:
+                res["unit"] = v.site.unit.name
+            if "tags" in store:
+                res["tags"] = [t.name for t in v.tags]
+            if "geo" in store:
+                res["geo"] = (v.site.x_coord, v.site.y_coord)
+            return res
+
         if isinstance(structype, str):
             dbstruct = (
                 self.session.query(Structype).filter_by(structure=structype).first()
@@ -642,9 +671,7 @@ class SDBSession:
                         Foliation(
                             v.azimuth,
                             v.inclination,
-                            site=v.site.name,
-                            unit=v.site.unit.name,
-                            tags=[t.name for t in v.tags],
+                            **get_attrs(v),
                         )
                         for v in data
                     ],
@@ -656,9 +683,7 @@ class SDBSession:
                         Lineation(
                             v.azimuth,
                             v.inclination,
-                            site=v.site.name,
-                            unit=v.site.unit.name,
-                            tags=[t.name for t in v.tags],
+                            **get_attrs(v),
                         )
                         for v in data
                     ],

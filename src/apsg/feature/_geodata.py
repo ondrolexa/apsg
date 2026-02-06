@@ -114,7 +114,7 @@ class Foliation(Axial3):
         - `f` could be Vector3-like object
         - `f` could be string 'x', 'y' or 'z' - principal planes of coordinate system
         - `f` could be tuple of (x, y, z) - vector components
-    - with 2 arguments follows active notation. See apsg_conf["notation"]
+    - with 2 arguments follows active notation. See apsg_conf.notation
     - with 3 numerical arguments defining vector components of plane normal
 
     Args:
