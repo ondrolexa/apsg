@@ -21,22 +21,32 @@ from sqlalchemy import (
     event,
     text,
 )
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import aliased, relationship, sessionmaker
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    aliased,
+    mapped_column,
+    relationship,
+    sessionmaker,
+)
 
 from apsg.feature._container import FaultSet, FoliationSet, LineationSet, PairSet
 from apsg.feature._geodata import Fault, Foliation, Lineation, Pair
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
+
+
 metadata = Base.metadata
 
 
 class Meta(Base):
     __tablename__ = "meta"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(16), nullable=False, unique=True)
-    value = Column(Text)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(16), nullable=False, unique=True)
+    value: Mapped[str] = mapped_column(Text)
 
     def __repr__(self):
         return "Meta:{}={}".format(self.name, self.value)
@@ -45,12 +55,14 @@ class Meta(Base):
 class Site(Base):
     __tablename__ = "sites"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    id_units = Column(ForeignKey("units.id"), nullable=False, index=True)
-    name = Column(String(16), nullable=False, unique=True)
-    x_coord = Column(Float, server_default=text("NULL"))
-    y_coord = Column(Float, server_default=text("NULL"))
-    description = Column(Text)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id_units: Mapped[int] = mapped_column(
+        ForeignKey("units.id"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(16), nullable=False, unique=True)
+    x_coord: Mapped[float | None] = mapped_column(Float, server_default=text("NULL"))
+    y_coord: Mapped[float | None] = mapped_column(Float, server_default=text("NULL"))
+    description: Mapped[str | None] = mapped_column(Text)
 
     unit = relationship("Unit", back_populates="sites", cascade="save-update")
 
@@ -80,12 +92,23 @@ tagged = Table(
 class Attached(Base):
     __tablename__ = "attach"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    id_structdata_planar = Column(
-        ForeignKey("structdata.id"), nullable=False, index=True
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id_structdata_planar: Mapped[int] = mapped_column(
+        ForeignKey("structdata.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    id_structdata_linear = Column(
-        ForeignKey("structdata.id"), nullable=False, index=True
+    id_structdata_linear: Mapped[int] = mapped_column(
+        ForeignKey("structdata.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    planar = relationship(
+        "Structdata",
+        back_populates="attach_planar",
+        foreign_keys=[id_structdata_planar],
+    )
+    linear = relationship(
+        "Structdata",
+        back_populates="attach_linear",
+        foreign_keys=[id_structdata_linear],
     )
 
     def __repr__(self):
@@ -95,12 +118,20 @@ class Attached(Base):
 class Structdata(Base):
     __tablename__ = "structdata"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    id_sites = Column(ForeignKey("sites.id"), nullable=False, index=True)
-    id_structype = Column(ForeignKey("structype.id"), nullable=False, index=True)
-    azimuth = Column(Float, nullable=False, server_default=text("0"))
-    inclination = Column(Float, nullable=False, server_default=text("0"))
-    description = Column(Text)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id_sites: Mapped[int] = mapped_column(
+        ForeignKey("sites.id"), nullable=False, index=True
+    )
+    id_structype: Mapped[int] = mapped_column(
+        ForeignKey("structype.id"), nullable=False, index=True
+    )
+    azimuth: Mapped[float] = mapped_column(
+        Float, nullable=False, server_default=text("0")
+    )
+    inclination: Mapped[float] = mapped_column(
+        Float, nullable=False, server_default=text("0")
+    )
+    description: Mapped[str | None] = mapped_column(Text)
 
     site = relationship("Site", back_populates="structdata")
     structype = relationship(
@@ -112,10 +143,16 @@ class Structdata(Base):
     )
 
     attach_planar = relationship(
-        "Attached", backref="planar", primaryjoin=id == Attached.id_structdata_planar
+        "Attached",
+        back_populates="planar",
+        primaryjoin=id == Attached.id_structdata_planar,
+        cascade="all, delete",
     )
     attach_linear = relationship(
-        "Attached", backref="linear", primaryjoin=id == Attached.id_structdata_linear
+        "Attached",
+        back_populates="linear",
+        primaryjoin=id == Attached.id_structdata_linear,
+        cascade="all, delete",
     )
 
     def __repr__(self):
@@ -127,15 +164,17 @@ class Structdata(Base):
 class Structype(Base):
     __tablename__ = "structype"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    pos = Column(Integer, nullable=False, server_default=text("0"))
-    structure = Column(String(16), nullable=False, unique=True)
-    description = Column(Text)
-    structcode = Column(Integer, server_default=text("0"))
-    groupcode = Column(Integer, server_default=text("0"))
-    planar = Column(Integer, server_default=text("1"))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    pos: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    structure: Mapped[str] = mapped_column(String(16), nullable=False, unique=True)
+    description: Mapped[str | None] = mapped_column(Text)
+    structcode: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    groupcode: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    planar: Mapped[int] = mapped_column(Integer, server_default=text("1"))
 
-    structdata = relationship("Structdata", back_populates="structype")
+    structdata = relationship(
+        "Structdata", back_populates="structype", cascade="all, delete"
+    )
 
     def __repr__(self):
         return "Type:{}".format(self.structure)
@@ -144,10 +183,10 @@ class Structype(Base):
 class Tag(Base):
     __tablename__ = "tags"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    pos = Column(Integer, nullable=False, server_default=text("0"))
-    name = Column(String(16), nullable=False, unique=True)
-    description = Column(Text)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    pos: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    name: Mapped[str] = mapped_column(String(16), nullable=False, unique=True)
+    description: Mapped[str | None] = mapped_column(Text)
 
     structdata = relationship("Structdata", secondary=tagged, back_populates="tags")
 
@@ -158,12 +197,12 @@ class Tag(Base):
 class Unit(Base):
     __tablename__ = "units"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    pos = Column(Integer, nullable=False, server_default=text("0"))
-    name = Column(String(60), nullable=False, unique=True)
-    description = Column(Text)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    pos: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    name: Mapped[str] = mapped_column(String(60), nullable=False, unique=True)
+    description: Mapped[str | None] = mapped_column(Text)
 
-    sites = relationship("Site", back_populates="unit")
+    sites = relationship("Site", back_populates="unit", cascade="all, delete")
 
     def __repr__(self):
         return "Unit:{}".format(self.name)
@@ -245,6 +284,7 @@ class SDBSession:
             metadata.create_all(self.sdb_engine)
         sdb_Session = sessionmaker(bind=self.sdb_engine)
         self.session = sdb_Session()
+        self.session.execute(text("PRAGMA foreign_keys=ON"))
         if kwargs.get("create", False):
             meta = default_meta()
             meta.update(kwargs.get("meta", {}))
@@ -266,7 +306,7 @@ class SDBSession:
         lines.append(f"PySDB database version: {self.meta('version').value}")
         lines.append(f"PySDB database CRS: {self.meta('crs').value}")
         lines.append(f"PySDB database created: {self.meta('created').value}")
-        lines.append(f"PySDB database updated: {self.meta('created').value}")
+        lines.append(f"PySDB database updated: {self.meta('updated').value}")
         lines.append(f"Number of sites: {self.session.query(Site).count()}")
         lines.append(f"Number of units: {self.session.query(Unit).count()}")
         lines.append(f"Number of structures: {self.session.query(Structype).count()}")
@@ -301,6 +341,20 @@ class SDBSession:
         """
         self.session.rollback()
 
+    def add(self, obj):
+        """
+        add to session
+
+        """
+        self.session.add(obj)
+
+    def add_all(self, list_obj):
+        """
+        add to session
+
+        """
+        self.session.add_all(list_obj)
+
     def meta(self, name, **kwargs):
         """
         Query Meta when no kwargs or insert/update when kwargs provided
@@ -320,7 +374,8 @@ class SDBSession:
                 meta = Meta(name=name, **kwargs)
                 self.session.add(meta)
             else:
-                meta.update(kwargs)
+                for key, value in kwargs.items():
+                    setattr(meta, key, value)
             if self.autocommit:
                 self.commit()
         return meta
@@ -336,7 +391,7 @@ class SDBSession:
             x_coord (float): x coord or longitude
             y_coord (float): y coord or latitude
             description (str): site description
-            unit (Unit): unit instance (mus be provided)
+            unit (Unit): unit instance (must be provided)
 
         Returns:
             Site
@@ -345,12 +400,18 @@ class SDBSession:
         if kwargs:
             if site is None:
                 site = Site(name=name, **kwargs)
+                if site.unit is None:
+                    site.unit = self.session.query(Unit).filter_by(id=1).first()
                 self.session.add(site)
             else:
-                site.update(kwargs)
+                for key, value in kwargs.items():
+                    setattr(site, key, value)
             if self.autocommit:
                 self.commit()
-        return site
+        if site is None:
+            raise ValueError(f"Site {name} not found")
+        else:
+            return site
 
     def unit(self, name, **kwargs):
         """
@@ -371,10 +432,43 @@ class SDBSession:
                 unit = Unit(name=name, **kwargs)
                 self.session.add(unit)
             else:
-                unit.update(kwargs)
+                for key, value in kwargs.items():
+                    setattr(unit, key, value)
             if self.autocommit:
                 self.commit()
-        return unit
+        if unit is None:
+            raise ValueError(f"Unit {name} not found")
+        else:
+            return unit
+
+    def remove_unit(self, name, **kwargs):
+        """
+        Remove Unit
+
+        Note: When assign is None associated sites are removed
+
+        Args:
+            name (str): name of unit to be removed
+
+        Keyword Args:
+            assign (str): Structype to be assigned to data
+
+        """
+        unit = self.session.query(Unit).filter_by(name=name).first()
+        if unit is not None:
+            assign = kwargs.get("assign", None)
+            if assign is not None:
+                new_unit = self.session.query(Unit).filter_by(name=assign).first()
+                if new_unit is None:
+                    new_unit = self.unit(assign)
+                for data in self.session.query(Site).filter_by(unit=unit).all():
+                    data.unit = new_unit
+
+            self.session.delete(unit)
+            if self.autocommit:
+                self.commit()
+        else:
+            raise ValueError(f"Unit {name} not found")
 
     def tag(self, name, **kwargs):
         """
@@ -395,10 +489,14 @@ class SDBSession:
                 tag = Tag(name=name, **kwargs)
                 self.session.add(tag)
             else:
-                tag.update(kwargs)
+                for key, value in kwargs.items():
+                    setattr(tag, key, value)
             if self.autocommit:
                 self.commit()
-        return tag
+        if tag is None:
+            raise ValueError(f"Tag {name} not found")
+        else:
+            return tag
 
     def structype(self, structure, **kwargs):
         """
@@ -422,10 +520,55 @@ class SDBSession:
                 structype = Structype(structure=structure, **kwargs)
                 self.session.add(structype)
             else:
-                structype.update(kwargs)
+                for key, value in kwargs.items():
+                    setattr(structype, key, value)
             if self.autocommit:
                 self.commit()
-        return structype
+        if structype is None:
+            raise ValueError(f"Structype {structure} not found")
+        else:
+            return structype
+
+    def remove_structype(self, structure, **kwargs):
+        """
+        Remove Structype
+
+        Note: When assign is None associated data are removed
+
+        Args:
+            structure (str): structure of structype to be removed
+
+        Keyword Args:
+            assign (str): Structype to be assigned to data
+
+        """
+        structype = self.session.query(Structype).filter_by(structure=structure).first()
+        if structype is not None:
+            assign = kwargs.get("assign", None)
+            if assign is not None:
+                new_structype = (
+                    self.session.query(Structype).filter_by(structure=assign).first()
+                )
+                if new_structype is None:
+                    new_structype = self.structype(assign, planar=structype.planar)
+                if structype.planar == new_structype.planar:
+                    for data in (
+                        self.session.query(Structdata)
+                        .filter_by(structype=structype)
+                        .all()
+                    ):
+                        data.structype = new_structype
+                else:
+                    if structype.planar:
+                        raise ValueError("Structure to be assigned must be planar")
+                    else:
+                        raise ValueError("Structure to be assigned must be linear")
+
+            self.session.delete(structype)
+            if self.autocommit:
+                self.commit()
+        else:
+            raise ValueError(f"Structype {structure} not found")
 
     def add_structdata(self, site, structype, azimuth, inclination, **kwargs):
         """
@@ -516,11 +659,11 @@ class SDBSession:
         """
         assert planar.structype.planar == 1, "First argument must be planar Structdata"
         assert linear.structype.planar == 0, "Second argument must be linear Structdata"
-        pair = Attached(planar=planar, linear=linear)
-        self.session.add(pair)
+        attach = Attached(planar=planar, linear=linear)
+        self.session.add(attach)
         if self.autocommit:
             self.commit()
-        return pair
+        return attach
 
     def add_pair(self, site, foltype, lintype, pair, **kwargs):
         """
@@ -538,73 +681,46 @@ class SDBSession:
 
         """
         assert isinstance(pair, Pair), "pair argument must be instance of Pair class"
+        assert foltype.planar, "foltype must be planar"
+        assert not lintype.planar, "lintype must be linear"
         fol = self.add_fol(site, foltype, pair.fol, **kwargs)
         lin = self.add_lin(site, lintype, pair.lin, **kwargs)
         return self.attach(fol, lin)
 
-    def sites(self, **kwargs):
+    def sites(self):
         """
-        Retrieve list of Site instances filtered by kwargs. If query results
-        in single site, instance of Site is returned.
+        Returns list of all Site instances
 
-        Keyword arguments are passed to sqlalchemy filter_by method
         """
-        if kwargs:
-            sites = self.session.query(Site).filter_by(**kwargs).all()
-        else:
-            sites = self.session.query(Site).all()
-        if len(sites) == 1:
-            return sites[0]
-        else:
-            return sites
+        return self.session.query(Site).all()
 
     def units(self, **kwargs):
         """
-        Retrieve list of Unit instances filtered by kwargs. If query results
-        in single unit, instance of Unit is returned.
+        Returns list of all Unit instances
 
-        Keyword arguments are passed to sqlalchemy filter_by method
         """
-        if kwargs:
-            units = self.session.query(Unit).filter_by(**kwargs).all()
-        else:
-            units = self.session.query(Unit).all()
-        if len(units) == 1:
-            return units[0]
-        else:
-            return units
+        return self.session.query(Unit).all()
 
-    def structypes(self, **kwargs):
+    def structypes(self, planar=None):
         """
-        Retrieve list of Structype instances filtered by kwargs. If query results
-        in single structural type, instance of Structype is returned.
+        Returns list of Structype instances
 
-        Keyword arguments are passed to sqlalchemy filter_by method
+        Keyword Args:
+            planar (int): 0 for linear, 1 for planar, None for all. Default None
+
         """
-        if kwargs:
-            structypes = self.session.query(Structype).filter_by(**kwargs).all()
+        if planar is not None:
+            structypes = self.session.query(Structype).filter_by(planar=planar).all()
         else:
             structypes = self.session.query(Structype).all()
-        if len(structypes) == 1:
-            return structypes[0]
-        else:
-            return structypes
+        return structypes
 
-    def tags(self, **kwargs):
+    def tags(self):
         """
-        Retrieve list of Tag instances filtered by kwargs. If query results
-        in single tag, instance of Tag is returned.
+        Returns list of all Tag instances
 
-        Keyword arguments are passed to sqlalchemy filter_by method
         """
-        if kwargs:
-            tags = self.session.query(Tag).filter_by(**kwargs).all()
-        else:
-            tags = self.session.query(Tag).all()
-        if len(tags) == 1:
-            return tags[0]
-        else:
-            return tags
+        return self.session.query(Tag).all()
 
     def getset(self, structype, **kwargs):
         """Method to retrieve data from SDB database to ``FeatureSet``.
