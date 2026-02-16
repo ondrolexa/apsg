@@ -4,6 +4,7 @@ import numpy as np
 
 from apsg.config import apsg_conf
 from apsg.decorator._decorator import ensure_first_arg_same
+from apsg.helpers._helper import is_jsonable
 from apsg.math._vector import Vector2, Vector3
 
 
@@ -203,7 +204,10 @@ class Matrix2(Matrix):
         else:
             raise TypeError("Not valid arguments for Matrix2")
         self._coefs = tuple(coefs[0]), tuple(coefs[1])
-        self._attrs = kwargs
+        if is_jsonable(kwargs):
+            self._attrs = kwargs
+        else:
+            raise TypeError("Provided attributes are not serializable.")
 
     @classmethod
     def from_comp(cls, xx=0, xy=0, yx=0, yy=0):
@@ -317,7 +321,10 @@ class Matrix3(Matrix):
         else:
             raise TypeError("Not valid arguments for Matrix3")
         self._coefs = tuple(coefs[0]), tuple(coefs[1]), tuple(coefs[2])
-        self._attrs = kwargs
+        if is_jsonable(kwargs):
+            self._attrs = kwargs
+        else:
+            raise TypeError("Provided attributes are not serializable.")
 
     @classmethod
     def from_comp(cls, **kwargs):

@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 
 from apsg.decorator._decorator import ensure_arguments, ensure_first_arg_same
+from apsg.helpers._helper import is_jsonable
 from apsg.helpers._notation import (
     geo2vec_planar,
     vec2geo_linear,
@@ -153,7 +154,10 @@ class Foliation(Axial3):
         else:
             raise TypeError("Not valid arguments for Foliation")
         self._coords = tuple(coords)
-        self._attrs = kwargs
+        if is_jsonable(kwargs):
+            self._attrs = kwargs
+        else:
+            raise TypeError("Provided attributes are not serializable.")
 
     def __repr__(self):
         azi, inc = self.geo
@@ -293,7 +297,10 @@ class Pair:
         self.fvec = Vector3(fvec.rotate(ax, ang))
         self.lvec = Vector3(lvec.rotate(ax, -ang))
         self.misfit = misfit
-        self._attrs = kwargs
+        if is_jsonable(kwargs):
+            self._attrs = kwargs
+        else:
+            raise TypeError("Provided attributes are not serializable.")
 
     def __repr__(self):
         fazi, finc = self.fol.geo
@@ -491,7 +498,10 @@ class Fault(Pair):
         else:
             raise TypeError("Not valid arguments for Fault")
         super().__init__(fvec, lvec)
-        self._attrs = kwargs
+        if is_jsonable(kwargs):
+            self._attrs = kwargs
+        else:
+            raise TypeError("Provided attributes are not serializable.")
 
     @classmethod
     def calc_sense(cls, fvec, lvec, sense):
@@ -707,7 +717,10 @@ class Cone:
         self.revangle = float(revangle)
         if self.axis.angle(self.secant) > 90:
             self.secant = -self.secant
-        self._attrs = kwargs
+            if is_jsonable(kwargs):
+                self._attrs = kwargs
+            else:
+                raise TypeError("Provided attributes are not serializable.")
 
     def __repr__(self):
         azi, inc = vec2geo_linear(self.axis)

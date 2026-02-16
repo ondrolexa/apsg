@@ -29,7 +29,7 @@ class Vec3Dtype(ExtensionDtype):
         """
         Return array type associated with this dtype
         """
-        return Vector3Array
+        return Vec3Array
 
     def __str__(self):
         return self.name
@@ -89,7 +89,7 @@ class FaultDtype(Vec3Dtype):
         return FaultArray
 
 
-class Vector3Array(ExtensionArray):
+class Vec3Array(ExtensionArray):
     """
     Custom Extension Array type for an array of Vector3
     """
@@ -182,7 +182,7 @@ class Vector3Array(ExtensionArray):
         return type(self)(self._obj)
 
 
-class FolArray(Vector3Array):
+class FolArray(Vec3Array):
     """
     Custom Extension Array type for an array of fols
     """
@@ -204,7 +204,7 @@ class FolArray(Vector3Array):
         return FolDtype()
 
 
-class LinArray(Vector3Array):
+class LinArray(Vec3Array):
     """
     Custom Extension Array type for an array of lins
     """
@@ -226,7 +226,7 @@ class LinArray(Vector3Array):
         return LinDtype()
 
 
-class FaultArray(Vector3Array):
+class FaultArray(Vec3Array):
     """
     Custom Extension Array type for an array of faults
     """
@@ -267,7 +267,7 @@ class APSGAccessor:
         """
         res = self._obj.copy()
         seq = [Vector3(*row.values) for _, row in self._obj[columns].iterrows()]
-        res[name] = Vector3Array(seq)
+        res[name] = Vec3Array(seq)
         return res
 
     def add_vecs(self, features, name="vecs"):
@@ -278,7 +278,7 @@ class APSGAccessor:
         """
         assert isinstance(features, Vector3Set), "Argument must be Vector3Set"
         res = self._obj.copy()
-        res[name] = Vector3Array(features.data)
+        res[name] = Vec3Array(features.data)
         return res
 
     def create_fols(self, columns=["azi", "inc"], name="fols"):

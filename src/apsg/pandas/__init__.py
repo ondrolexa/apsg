@@ -4,12 +4,12 @@ from apsg.pandas._pandas_api import (
     FaultArray,
     FolArray,
     LinArray,
-    Vector3Array,
+    Vec3Array,
     pd,
 )
 
 __all__ = (
-    "Vector3Array",
+    "Vec3Array",
     "LinArray",
     "FolArray",
     "FaultArray",

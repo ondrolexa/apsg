@@ -1,7 +1,7 @@
 # Changelog
 
 ### master
- * attributes storage implemented
+ * attributes storage implemented (passed as kwargs to features)
  * apsg_config implemented as dataclass
  * add_vecs, add_fols, add_lins and add_faults added to pandas API
 

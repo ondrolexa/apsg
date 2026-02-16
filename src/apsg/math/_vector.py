@@ -5,6 +5,7 @@ import numpy as np
 
 from apsg.config import apsg_conf
 from apsg.decorator._decorator import ensure_first_arg_same
+from apsg.helpers._helper import is_jsonable
 from apsg.helpers._math import acosd, atan2d, cosd, sind
 from apsg.helpers._notation import (
     geo2vec_linear,
@@ -202,7 +203,10 @@ class Vector2(Vector):
         else:
             raise TypeError(f"Not valid arguments for {type(self).__name__}")
         self._coords = tuple(coords)
-        self._attrs = kwargs
+        if is_jsonable(kwargs):
+            self._attrs = kwargs
+        else:
+            raise TypeError("Provided attributes are not serializable.")
 
     def __repr__(self):
         n = apsg_conf.ndigits
@@ -410,7 +414,10 @@ class Vector3(Vector):
         else:
             raise TypeError(f"Not valid arguments for {type(self).__name__}")
         self._coords = tuple(coords)
-        self._attrs = kwargs
+        if is_jsonable(kwargs):
+            self._attrs = kwargs
+        else:
+            raise TypeError("Provided attributes are not serializable.")
 
     @property
     def z(self):
