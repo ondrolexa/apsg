@@ -279,6 +279,11 @@ class SDBSession:
         if kwargs.get("create", False):
             with contextlib.suppress(FileNotFoundError):
                 os.remove(sdb_file)
+        else:
+            if not os.path.exists(sdb_file):
+                raise FileNotFoundError(
+                    f"SDB database {sdb_file} does not exists. Use `create` kwarg, if you want to create the new one."
+                )
         self.sdb_engine = create_engine("sqlite:///{}".format(sdb_file))
         if kwargs.get("create", False):
             metadata.create_all(self.sdb_engine)
