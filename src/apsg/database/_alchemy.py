@@ -32,6 +32,7 @@ from sqlalchemy.orm import (
 
 from apsg.feature._container import FaultSet, FoliationSet, LineationSet, PairSet
 from apsg.feature._geodata import Fault, Foliation, Lineation, Pair
+from apsg.pandas import pd, FolArray, LinArray
 
 
 class Base(DeclarativeBase):
@@ -726,6 +727,124 @@ class SDBSession:
 
         """
         return self.session.query(Tag).all()
+
+    def structdata(self, structype):
+        """
+        Returns list of all Structdata instances of given structype
+
+        Args:
+          structype (str | Structype):  structure to retrieve
+
+        """
+        if isinstance(structype, str):
+            dbstruct = (
+                self.session.query(Structype).filter_by(structure=structype).first()
+            )
+            assert dbstruct is not None, f"There is no structure {structype} in db."
+            structype = dbstruct
+        if isinstance(structype, Structype):
+            return self.session.query(Structdata).filter_by(structype=structype).all()
+        else:
+            raise ValueError("structype argument must be string or Structype")
+
+    def df(self, structype, **kwargs):
+        """Method to retrieve data from SDB database as ``pandas.DataFrame``.
+
+        Args:
+          structype (str | Structype):  structure to retrieve
+          site (dict): keyword args passed to filter site
+          unit (dict): keyword args passed to filter unit
+          tag (dict): keyword args passed to filter tag
+          store (list): list of properties to be included in dataframe.
+              Available values:"id", "x_coord", "y_coord", "site", "unit", "tags"
+              or "geo". Default []
+          expand_tags (bool): If True tags are one hot encoded. Default False
+          apsg (bool): If True structural data are added as APSG features.
+              Default False.
+
+        Example:
+          >> df = db.df("S2")
+          >> df = db.df("S2", unit=dict(name="Main unit"))
+          >> df = db.df("S2", tag=dict(name="AP"))
+
+        """
+        site = kwargs.get("site", {})
+        unit = kwargs.get("unit", {})
+        tag = kwargs.get("tag", {})
+        store = kwargs.get("store", [])
+        expand_tags = kwargs.get("expand_tags", False)
+        apsg = kwargs.get("apsg", False)
+
+        def get_attrs(v):
+            res = {}
+            if "id" in store:
+                res["id"] = v.id
+            if "x_coord" in store:
+                res["x_coord"] = v.site.x_coord
+            if "y_coord" in store:
+                res["y_coord"] = v.site.y_coord
+            if "site" in store:
+                res["site"] = v.site.name
+            if "unit" in store:
+                res["unit"] = v.site.unit.name
+            if "tags" in store:
+                res["tags"] = [t.name for t in v.tags]
+            if "geo" in store:
+                res["geo"] = (v.site.x_coord, v.site.y_coord)
+            return res
+
+        if isinstance(structype, str):
+            dbstruct = (
+                self.session.query(Structype).filter_by(structure=structype).first()
+            )
+            assert dbstruct is not None, f"There is no structure {structype} in db."
+            structype = dbstruct
+        if isinstance(structype, Structype):
+            res = []
+            sdata = []
+            for row in (
+                self.session.query(Structdata)
+                .filter_by(structype=structype)
+                .join(Structdata.site)
+                .filter_by(**site)
+                .join(Site.unit)
+                .filter_by(**unit)
+                .outerjoin(Structdata.tags)
+                .filter_by(**tag)
+                .all()
+            ):
+                item = dict(
+                    site=row.site.name,
+                    x_coord=row.site.x_coord,
+                    y_coord=row.site.x_coord,
+                    unit=row.site.unit.name,
+                )
+                if apsg:
+                    item[structype.structure] = None
+                    sdata.append((row.azimuth, row.inclination))
+                else:
+                    item["structure"] = row.structype.structure
+                    item["azi"] = row.azimuth
+                    item["inc"] = row.inclination
+                if expand_tags:
+                    item.update({tag.name: "x" for tag in row.tags})
+                else:
+                    item["tags"] = ",".join([tag.name for tag in row.tags])
+                res.append(item)
+
+            df = pd.DataFrame(res)
+            if apsg:
+                if structype.planar:
+                    df[structype.structure] = FolArray(
+                        [Foliation(azi, inc) for azi, inc in sdata]
+                    )
+                else:
+                    df[structype.structure] = LinArray(
+                        [Lineation(azi, inc) for azi, inc in sdata]
+                    )
+            return df
+        else:
+            raise ValueError("structype argument must be string or Structype")
 
     def getset(self, structype, **kwargs):
         """Method to retrieve data from SDB database to ``FeatureSet``.
