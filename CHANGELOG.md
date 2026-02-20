@@ -1,9 +1,10 @@
 # Changelog
 
-### master
+### 1.4.0 (Feb 20 2026)
  * attributes storage implemented (passed as kwargs to features)
  * apsg_config implemented as dataclass
  * add_vecs, add_fols, add_lins and add_faults added to pandas API
+ * df and structdata methods added to SDBSession
 
 ### 1.3.9 (Feb 5 2026)
  * SDBSession getset bug fixed
