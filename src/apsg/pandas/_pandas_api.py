@@ -391,10 +391,16 @@ class VectorSetBaseAccessor:
         stats = self.G.fisher_statistics()
         return stats["csd"]
 
-    def fisher_a95(self):
-        """95% confidence limit based on Fisher's statistics"""
-        stats = self.G.fisher_statistics()
-        return stats["a95"]
+    def fisher_alpha(self, level=0.95):
+        """Half-angle (degrees) of the confidence cone around
+        the mean direction based on Fisher's statistics
+
+        Args:
+            level: confidence level. Default 0.95 for 95 %
+
+        """
+        stats = self.G.fisher_statistics(level=level)
+        return stats["alpha"]
 
     def var(self):
         """Spherical variance based on resultant length (Mardia 1972).

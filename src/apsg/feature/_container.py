@@ -5,8 +5,9 @@ from os.path import basename
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy import stats
 from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
-from scipy.stats import vonmises
+from scipy.spatial.distance import cdist
 
 from apsg.config import apsg_conf
 from apsg.feature._geodata import Cone, Direction, Fault, Foliation, Lineation, Pair
@@ -244,21 +245,53 @@ class Vector2Set(FeatureSet):
             R = R / len(self)
         return R
 
-    def fisher_statistics(self):
+    def fisher_statistics(self, level=0.95):
         """Fisher's statistics
 
+        Args:
+            level: confidence level. Default 0.95 for 95 %
+
         fisher_statistics returns dictionary with keys:
-            `k`    estimated precision parameter,
-            `csd`  estimated angular standard deviation
-            `a95`  confidence limit
+            `k`     estimated precision parameter,
+            `csd`   estimated angular standard deviation
+            `alpha` half-angle (degrees) of the confidence cone around
+                    the mean direction
+            `uniform` Rayleigh test to test uniformity for critical value
+                    with α = 1 - level. Default 5%
         """
-        stats = {"k": np.inf, "a95": 0, "csd": 0}
+
+        def kappa_estimate(N, R):
+            """Estimate the von Mises concentration parameter k from the mean resultant
+            using the approximation of Best & Fisher (1981).
+            """
+            Rbar = R / N
+            if Rbar < 0.53:
+                kappa = 2 * Rbar + Rbar**3 + (5 / 6) * Rbar**5
+            elif Rbar < 0.85:
+                kappa = -0.4 + 1.39 * Rbar + 0.43 / (1.0 - Rbar)
+            else:
+                kappa = 1.0 / (Rbar**3 - 4 * Rbar**2 + 3 * Rbar)
+
+            return kappa
+
+        def confidence_cone(N, R, level=0.95):
+            """Half-angle (degrees) of the (1-α) confidence cone around the mean direction."""
+            alpha = 1.0 - level
+            Rbar = R / N
+            if Rbar >= 1.0 or N <= 1:
+                return 0.0
+            exponent = 1.0 / (N - 1.0)
+            cos_theta = 1.0 - ((N - R) / R) * (alpha ** (-exponent) - 1.0)
+            return acosd(np.clip(cos_theta, -1.0, 1.0))
+
+        stats = {"k": np.inf, "alpha": 0, "csd": 0, "uniform": False}
         N = len(self)
         R = abs(self.normalized().R())
         if N != R:
-            stats["k"] = (N - 1) / (N - R)
+            stats["k"] = kappa_estimate(N, R)
             stats["csd"] = 81 / np.sqrt(stats["k"])
-            stats["a95"] = acosd(1 - ((N - R) / R) * (20 ** (1 / (N - 1)) - 1))
+            stats["alpha"] = confidence_cone(N, R, level)
+            stats["uniform"] = bool(R <= np.sqrt(-N / 2.0 * np.log(1 - level)))
         return stats
 
     def var(self):
@@ -380,7 +413,7 @@ class Vector2Set(FeatureSet):
         Example:
           >>> l = linset.random_fisher(position=lin(120,50))
         """
-        angles = np.degrees(vonmises.rvs(kappa, loc=np.radians(position), size=n))
+        angles = np.degrees(stats.vonmises.rvs(kappa, loc=np.radians(position), size=n))
         return cls([cls.__feature_class__(a) for a in angles], name=name)
 
 
@@ -547,35 +580,68 @@ class Vector3Set(FeatureSet):
             R = R / len(self)
         return R
 
-    def fisher_statistics(self):
+    def fisher_statistics(self, level=0.95):
         """Fisher's statistics
 
+        Args:
+            level: confidence level. Default 0.95 for 95 %
+
         fisher_statistics returns dictionary with keys:
-            `k`    estimated precision parameter,
-            `csd`  estimated angular standard deviation
-            `a95`  confidence limit
+            `k`     estimated precision parameter,
+            `csd`   estimated angular standard deviation
+            `alpha` half-angle (degrees) of the confidence cone around
+                    the mean direction
+            `uniform` Rayleigh test to test uniformity for critical value
+                    with α = 1 - level. Default 5%
         """
-        stats = {"k": np.inf, "a95": 0, "csd": 0}
+
+        def kappa_estimate(N, R):
+            """Maximum-likelihood estimate of the Fisher concentration parameter κ.
+
+            Uses the approximation from Fisher (1953) / Mardia & Jupp (2000):
+            """
+            Rbar = R / N
+            if Rbar >= 1.0:
+                return np.inf
+            if Rbar > 0.9:
+                return (N - 1.0) / (N - R)
+            return (2.0 * Rbar + Rbar**3) / (1.0 - Rbar**2)
+
+        def confidence_cone(N, R, level):
+            """Half-angle (degrees) of the (1-α) confidence cone around the mean direction."""
+            alpha = 1.0 - level
+            Rbar = R / N
+            if Rbar >= 1.0 or N <= 1:
+                return 0.0
+            exponent = 1.0 / (N - 1.0)
+            cos_theta = 1.0 - ((N - R) / R) * (alpha ** (-exponent) - 1.0)
+            return acosd(np.clip(cos_theta, -1.0, 1.0))
+
+        stats = {"k": np.inf, "alpha": 0, "csd": 0, "uniform": False}
         N = len(self)
         R = abs(self.normalized().R())
-        if N != R:
-            stats["k"] = (N - 1) / (N - R)
+        if R < N:
+            stats["k"] = kappa_estimate(N, R)
             stats["csd"] = 81 / np.sqrt(stats["k"])
-            stats["a95"] = acosd(1 - ((N - R) / R) * (20 ** (1 / (N - 1)) - 1))
+            stats["alpha"] = confidence_cone(N, R, level)
+            stats["uniform"] = bool(R <= np.sqrt(-N / 2.0 * np.log(1 - level)))
         return stats
 
-    def fisher_cone_a95(self):
+    def fisher_cone(self, level=0.95):
         """Confidence limit cone based on Fisher's statistics
 
-        Cone axis is resultant and apical angle is a95 confidence limit
+        Args:
+            level: confidence level. Default 0.95 for 95 %
+
+        Returns confidence cone around the mean direction with given level
         """
         stats = self.fisher_statistics()
-        return Cone(self.normalized().R(), stats["a95"])
+        return Cone(self.normalized().R(), stats["alpha"])
 
     def fisher_cone_csd(self):
         """Angular standard deviation cone based on Fisher's statistics
 
-        Cone axis is resultant and apical angle is angular standard deviation
+        Returns standard deviation cone around the mean direction
         """
         stats = self.fisher_statistics()
         return Cone(self.normalized().R(), stats["csd"])
@@ -649,6 +715,116 @@ class Vector3Set(FeatureSet):
                 v = Vector3Set(v_data)
                 alldone = np.all(v.angle(v.R()) <= 90)
         return type(self)([self.__feature_class__(vec) for vec in v], name=self.name)
+
+    def similarity(self, other, **kwargs):
+        """Tests whether two sets of 3D vectors are sampled from the same distribution.
+        H0 hypothesis is that two samples are from same distribution
+
+        Note on methods:
+
+        Hotelling's T² Test: Parametric. Multivariate generalisation of the
+            two-sample t-test. Sensitive to differences in mean but assumes
+            multivariate normality.
+
+        Energy Distance Test: Non-parametric permutation test based on the
+            energy statistic (Székely & Rizzo 2004). Detects any distributional
+            difference (mean, variance, shape, etc.).
+
+        MMD Test (RBF kernel): Non-parametric permutation test using Maximum
+            Mean Discrepancy with a Gaussian kernel. Also detects arbitrary
+            distributional differences.
+
+        Args:
+            method: One of "hotelling", "energy_distance" or "mmd"
+            alpha: significance level. Default 0.05
+            n_permutations: Default 999
+            random_state: Default 42
+            bandwidth: Default None for median heuristic
+
+        Returns statistic, p-value and reject_H0 (False for different distributions)
+        """
+
+        method = kwargs.get("method", "energy_distance")
+        alpha = kwargs.get("alpha", 0.05)
+        n_permutations = kwargs.get("n_permutations", 999)
+        random_state = kwargs.get("random_state", 42)
+        bandwidth = kwargs.get("bandwidth", None)
+
+        n, m = len(self), len(other)
+        rng = np.random.default_rng(random_state)
+        match method:
+            case "hotelling":
+                mean_diff = self.R() / n - other.R() / m
+                # Pooled covariance matrix
+                S_X = np.cov(self, rowvar=False)
+                S_Y = np.cov(other, rowvar=False)
+                S_pooled = ((n - 1) * S_X + (m - 1) * S_Y) / (n + m - 2)
+                # T² statistic
+                S_inv = np.linalg.pinv(S_pooled)
+                T2 = (n * m / (n + m)) * (mean_diff @ S_inv @ mean_diff)
+                # Convert to F-statistic
+                F_stat = T2 * (n + m - 4) / ((n + m - 2) * 3)
+                df1, df2 = 3, n + m - 4
+                p_value = float(1.0 - stats.f.cdf(F_stat, df1, df2))
+                return float(T2), p_value, p_value >= alpha
+            case "mmd":
+
+                def _rbf_mmd2(X: np.ndarray, Y: np.ndarray, bandwidth: float) -> float:
+                    gamma = 1.0 / (2.0 * bandwidth**2)
+
+                    K_XX = np.exp(-gamma * cdist(X, X, metric="sqeuclidean"))
+                    K_YY = np.exp(-gamma * cdist(Y, Y, metric="sqeuclidean"))
+                    K_XY = np.exp(-gamma * cdist(X, Y, metric="sqeuclidean"))
+
+                    # Unbiased: zero out diagonal contributions
+                    np.fill_diagonal(K_XX, 0.0)
+                    np.fill_diagonal(K_YY, 0.0)
+
+                    mmd2 = (
+                        K_XX.sum() / (n * (n - 1))
+                        + K_YY.sum() / (m * (m - 1))
+                        - 2.0 * K_XY.mean()
+                    )
+                    return mmd2
+
+                pooled = np.vstack([self, other])
+                # Median heuristic for bandwidth
+                if bandwidth is None:
+                    dists = cdist(pooled, pooled, metric="euclidean")
+                    bandwidth = float(np.median(dists[dists > 0]))
+                observed = _rbf_mmd2(self, other, bandwidth)
+
+                count = 0
+                for _ in range(n_permutations):
+                    perm = rng.permutation(len(pooled))
+                    X_perm = pooled[perm[:n]]
+                    Y_perm = pooled[perm[n:]]
+                    if _rbf_mmd2(X_perm, Y_perm, bandwidth) >= observed:
+                        count += 1
+
+                p_value = (count + 1) / (n_permutations + 1)
+                return float(observed), float(p_value), p_value >= alpha
+            case _:  # Energy Distance
+
+                def _energy_statistic(X: np.ndarray, Y: np.ndarray) -> float:
+                    XY = np.mean(cdist(X, Y))  # cross-distances
+                    XX = np.mean(cdist(X, X))  # within X
+                    YY = np.mean(cdist(Y, Y))  # within Y
+                    return (n * m / (n + m)) * (2 * XY - XX - YY)
+
+                pooled = np.vstack([self, other])
+                observed = _energy_statistic(self, other)
+
+                count = 0
+                for _ in range(n_permutations):
+                    perm = rng.permutation(len(pooled))
+                    X_perm = pooled[perm[:n]]
+                    Y_perm = pooled[perm[n:]]
+                    if _energy_statistic(X_perm, Y_perm) >= observed:
+                        count += 1
+
+                p_value = (count + 1) / (n_permutations + 1)
+                return float(observed), float(p_value), p_value >= alpha
 
     @classmethod
     def from_csv(cls, filename, acol=0, icol=1):

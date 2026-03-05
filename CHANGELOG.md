@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.4.1 (master)
+ * Fisher statistics improved
+ * similary test for vecset implemented
+
 ### 1.4.0 (Feb 20 2026)
  * attributes storage implemented (passed as kwargs to features)
  * apsg_config implemented as dataclass
