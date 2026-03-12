@@ -13,7 +13,12 @@ from apsg.config import apsg_conf
 from apsg.feature._geodata import Cone, Direction, Fault, Foliation, Lineation, Pair
 from apsg.feature._statistics import KentDistribution, vonMisesFisher
 from apsg.feature._tensor2 import Ellipse, OrientationTensor2
-from apsg.feature._tensor3 import DeformationGradient3, Ellipsoid, OrientationTensor3
+from apsg.feature._tensor3 import (
+    DeformationGradient3,
+    Ellipsoid,
+    OrientationTensor3,
+    Stress3,
+)
 from apsg.helpers._math import acosd
 from apsg.math._vector import Axial2, Axial3, Vector2, Vector3
 
@@ -1627,6 +1632,93 @@ class FaultSet(PairSet):
             name=name,
         )
 
+    def stress_inversion(self, bootstrap=False, n=100):
+        """Stress inversion from fault-slip data
+
+        Determines the orientation of principal stresses (σ1, σ2, σ3) and the
+        stress ratio R using the Michael (1984) linear inversion method.
+
+        """
+
+        def _equation_rows(n, s):
+            """
+            Two linear equations for one fault that encode the Wallace-Bott condition
+
+            Build 3×5 matrix B  such that  T = B @ m,  where
+              T  = traction vector on plane with normal n
+              m  = [σ11, σ12, σ13, σ22, σ23]   (deviatoric; σ33 = −σ11−σ22)
+
+            (slip direction = shear-traction direction):
+                s × τ = 0   →   two independent rows  ∈ ℝ^5
+
+            Parameters
+            ----------
+            n : unit fault-plane normal
+            s : unit slip vector
+
+            Returns
+            -------
+            rows : ndarray (2, 5)
+            """
+            n1, n2, n3 = n
+            B = np.array(
+                [
+                    [n1, n2, n3, 0, 0],  # T_East
+                    [0, n1, 0, n2, n3],  # T_North
+                    [-n3, 0, n1, -n3, n2],  # T_Up
+                ]
+            )
+            # Shear-traction projector:  P @ m = τ  (removes normal component)
+            c = n @ B  # 1-D array of length 5
+            P = B - np.outer(n, c)  # 3×5
+            # (s × τ)_x = s_y·τ_z − s_z·τ_y = 0
+            row1 = np.array([0.0, -s[2], s[1]]) @ P
+            # (s × τ)_y = s_z·τ_x − s_x·τ_z = 0
+            row2 = np.array([s[2], 0.0, -s[0]]) @ P
+            return np.vstack([row1, row2])
+
+        if not bootstrap:
+            normals = np.array(self.fvec)
+            slips = np.array(self.lvec)
+            A = np.vstack([_equation_rows(n, s) for n, s in zip(normals, slips)])
+            _, _, Vt = np.linalg.svd(A, full_matrices=True)
+            # Reconstruct 3×3 symmetric deviatoric stress tensor from 5-component vector.
+            s11, s12, s13, s22, s23 = Vt[-1]
+            return Stress3(
+                [
+                    [s11, s12, s13],
+                    [s12, s22, s23],
+                    [s13, s23, -(s11 + s22)],
+                ]
+            )
+        else:
+            sigs = []
+            for sample in self.bootstrap(n=n):
+                normals = np.array(sample.fvec)
+                slips = np.array(sample.lvec)
+                A = np.vstack([_equation_rows(n, s) for n, s in zip(normals, slips)])
+                _, _, Vt = np.linalg.svd(A, full_matrices=True)
+                # Reconstruct 3×3 symmetric deviatoric stress tensor from 5-component vector.
+                s11, s12, s13, s22, s23 = Vt[-1]
+                sigma = Stress3(
+                    [
+                        [s11, s12, s13],
+                        [s12, s22, s23],
+                        [s13, s23, -(s11 + s22)],
+                    ]
+                )
+                sigs.append(sigma)
+            return Stress3Set(sigs)
+
+    def angular_misfit(self, sigma):
+        """Angular misfit (°) between observed slip and predicted shear-traction direction.
+
+        Args:
+            sigma (Stress3): Stress tensor
+
+        """
+        return np.array([f.angular_misfit(sigma) for f in self])
+
 
 class ConeSet(FeatureSet):
     """
@@ -2004,6 +2096,74 @@ class OrientationTensor3Set(EllipsoidSet):
 
     def __repr__(self):
         return f"M({len(self)}) {self.name}"
+
+
+class Stress3Set(FeatureSet):
+    """
+    Class to store set of ``Stress3`` features
+    """
+
+    __feature_class__ = Stress3
+
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        assert all(
+            [isinstance(obj, Stress3) for obj in data]
+        ), "Data must be instances of Stress3"
+
+    def __repr__(self):
+        return f"Sig({len(self)}) {self.name}"
+
+    @property
+    def sigma1(self) -> np.ndarray:
+        """
+        Return the array of the maximum principal stress (max compressive)
+        """
+
+        return np.array([e.E3 for e in self])
+
+    @property
+    def sigma2(self) -> np.ndarray:
+        """
+        Return the array of the intermediate principal stress (max compressive)
+        """
+
+        return np.array([e.E2 for e in self])
+
+    @property
+    def sigma3(self) -> np.ndarray:
+        """
+        Return the array of the minimum principal stress (max tensile)
+        """
+
+        return np.array([e.E1 for e in self])
+
+    @property
+    def sigma1dir(self) -> Vector3Set:
+        """
+        Return Vector3Set of unit length vector in direction of maximum
+        principal stress (max compressive)
+        """
+
+        return Vector3Set([e.V3 for e in self])
+
+    @property
+    def sigma2dir(self) -> Vector3Set:
+        """
+        Return Vector3Set of unit length vector in direction of intermediate
+        principal stress
+        """
+
+        return Vector3Set([e.V2 for e in self])
+
+    @property
+    def sigma3dir(self) -> Vector3Set:
+        """
+        Return Vector3Set of unit length vector in direction of minimum
+        principal stress (max tensile)
+        """
+
+        return Vector3Set([e.V1 for e in self])
 
 
 class ClusterSet(object):

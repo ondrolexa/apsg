@@ -78,6 +78,9 @@ from apsg.feature import (
     Stress3 as stress,
 )
 from apsg.feature import (
+    Stress3Set as stressset,
+)
+from apsg.feature import (
     Vector2Set as vec2set,
 )
 from apsg.feature import (
@@ -136,6 +139,7 @@ __all__ = (
     "ellipsoidset",
     "ortensor2set",
     "ortensorset",
+    "stressset",
     "cluster",
     "G",
     "defgrad",

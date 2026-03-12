@@ -16,6 +16,7 @@ from apsg.feature._container import (
     Vector3Set,
 )
 from apsg.feature._geodata import Cone, Fault, Foliation, Lineation, Pair
+from apsg.feature._tensor3 import Stress3
 from apsg.math._vector import Vector3
 from apsg.plotting._plot_artists import StereoNetArtistFactory
 from apsg.plotting._stereogrid import StereoGrid
@@ -553,6 +554,30 @@ class StereoNet:
         except TypeError as err:
             print(err)
 
+    def stress(self, *args, **kwargs):
+        """
+        Plot principal stresses of stress tensor
+
+        Args:
+            Stress3 feature(s)
+
+        Keyword Args:
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color. Default is red, green, blue for s1, s2, s3
+            ls (str): Line style string (only for multiple features).
+                Default "-"
+            lw (float): Set line width. Default 1.5
+            mew (float): Set the marker edge width. Default 1
+            ms (float): Set the marker size. Default 12
+            marker (str): Marker style string. Default "*"
+
+        """
+        try:
+            artist = StereoNetArtistFactory.create_stress(*args, **kwargs)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
     def contour(self, *args, **kwargs):
         """
         Plot filled contours using modified Kamb contouring technique with exponential
@@ -873,12 +898,41 @@ class StereoNet:
                 key: kwargs[key]
                 for key in kwargs.keys() & {"alpha", "marker", "mew", "ms", "label"}
             }
-            lins = args[0].eigenfols()
+            kwargs["ls"] = "none"
+            lins = args[0].eigenlins()
             if kwargs["color"] is None:
                 del kwargs["color"]
-            self._line(lins[0], color=kwargs.get("color", "red"), **selkw)
+            if selkw["label"] != "_tensor":
+                selkw["label"] = "S1"
+                self._line(lins[0], color=kwargs.get("color", "red"), **selkw)
+                selkw["label"] = "S2"
+                self._line(lins[1], color=kwargs.get("color", "green"), **selkw)
+                selkw["label"] = "S3"
+                self._line(lins[2], color=kwargs.get("color", "blue"), **selkw)
+            else:
+                self._line(lins[0], color=kwargs.get("color", "red"), **selkw)
+                self._line(lins[1], color=kwargs.get("color", "green"), **selkw)
+                self._line(lins[2], color=kwargs.get("color", "blue"), **selkw)
+
+    def _stress(self, *args, **kwargs):
+        selkw = {
+            key: kwargs[key]
+            for key in kwargs.keys() & {"alpha", "marker", "mew", "ms", "label"}
+        }
+        lins = args[0].eigenlins()
+        if kwargs["color"] is None:
+            del kwargs["color"]
+        if selkw["label"] != "_stress":
+            selkw["label"] = "σ1"
+            self._line(lins[2], color=kwargs.get("color", "red"), **selkw)
+            selkw["label"] = "σ2"
             self._line(lins[1], color=kwargs.get("color", "green"), **selkw)
-            self._line(lins[2], color=kwargs.get("color", "blue"), **selkw)
+            selkw["label"] = "σ3"
+            self._line(lins[0], color=kwargs.get("color", "blue"), **selkw)
+        else:
+            self._line(lins[2], color=kwargs.get("color", "red"), **selkw)
+            self._line(lins[1], color=kwargs.get("color", "green"), **selkw)
+            self._line(lins[0], color=kwargs.get("color", "blue"), **selkw)
 
     def _contour(self, *args, **kwargs):
         sigma = kwargs.pop("sigma")
@@ -983,6 +1037,8 @@ def quicknet(*args, **kwargs):
             s.fault(arg, **kwargs)
         elif isinstance(arg, PairSet):
             s.pair(arg, **kwargs)
+        elif isinstance(arg, Stress3):
+            s.stress(arg, **kwargs)
         else:
             print(f"{type(arg)} not supported.")
     if savefig:

@@ -3,6 +3,8 @@
 ### 1.4.1 (master)
  * Fisher statistics improved
  * similary test for vecset implemented
+ * stress inversion method added to faultset
+ * angular_misfit method added to Fault and FaultSet
 
 ### 1.4.0 (Feb 20 2026)
  * attributes storage implemented (passed as kwargs to features)

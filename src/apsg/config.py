@@ -24,6 +24,7 @@ class Config:
     stereonet_default_hoeppner_kwargs: dict = field(default_factory=dict)
     stereonet_default_arrow_kwargs: dict = field(default_factory=dict)
     stereonet_default_tensor_kwargs: dict = field(default_factory=dict)
+    stereonet_default_stress_kwargs: dict = field(default_factory=dict)
     stereonet_default_contour_kwargs: dict = field(default_factory=dict)
     roseplot_default_kwargs: dict = field(default_factory=dict)
     roseplot_default_bar_kwargs: dict = field(default_factory=dict)
@@ -148,6 +149,14 @@ apsg_conf = Config(
         marker="o",
         mew=1,
         ms=9,
+    ),
+    stereonet_default_stress_kwargs=dict(
+        alpha=None,
+        color=None,
+        ls="none",
+        marker="*",
+        mew=1,
+        ms=12,
     ),
     stereonet_default_contour_kwargs=dict(
         alpha=None,

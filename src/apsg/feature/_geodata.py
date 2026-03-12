@@ -366,7 +366,16 @@ class Pair:
 
     @property
     def rax(self):
-        return self.lvec.cross(self.fvec)
+        return self.fvec.cross(self.lvec)
+
+    @property
+    def rake(self):
+        """
+        Return a rake of linear feature on planar feature of ``Pair`` in degrees.
+        """
+        return -np.degrees(
+            np.atan2(-self.lvec.dot(self.fol.rake(90)), self.lvec.dot(self.fol.rake(0)))
+        )
 
     @property
     def fol(self):
@@ -470,9 +479,7 @@ class Fault(Pair):
             fvec, lvec = args[0].fvec, args[0].lvec
         elif len(args) == 2 and issubclass(type(args[0]), Pair):
             fvec, lvec = args[0].fvec, args[0].lvec
-            sense = self.calc_sense(fvec, lvec, args[1])
-            georax = lvec.lower().cross(fvec.lower())
-            if args[0].rax == georax and sense < 0:
+            if Fault(fvec, lvec).sense != self.calc_sense(fvec, lvec, args[1]):
                 lvec = -lvec
         elif len(args) == 2:
             if issubclass(type(args[0]), Vector3) and issubclass(
@@ -484,16 +491,12 @@ class Fault(Pair):
                 type(args[1]), Vector3
             ):
                 fvec, lvec = args[0], args[1]
-                sense = self.calc_sense(fvec, lvec, args[2])
-                rax = lvec.cross(fvec)
-                georax = lvec.lower().cross(fvec.lower())
-                if rax == georax and sense < 0:
+                if Fault(fvec, lvec).sense != self.calc_sense(fvec, lvec, args[2]):
                     lvec = -lvec
         elif len(args) == 5:
             fvec = Foliation(args[0], args[1])
             lvec = Lineation(args[2], args[3])
-            sense = self.calc_sense(fvec, lvec, args[4])
-            if sense < 0:
+            if Fault(fvec, lvec).sense != self.calc_sense(fvec, lvec, args[4]):
                 lvec = -lvec
         else:
             raise TypeError("Not valid arguments for Fault")
@@ -504,18 +507,18 @@ class Fault(Pair):
             raise TypeError("Provided attributes are not serializable.")
 
     @classmethod
-    def calc_sense(cls, fvec, lvec, sense):
+    def calc_sense(cls, fvec, lvec, sense) -> int:
         if isinstance(sense, int) or isinstance(sense, float):
-            return sense
+            return int(sense)
         elif isinstance(sense, str):
             p = Pair(fvec, lvec)
             if sense.lower() == "s":
-                if p.rax.is_upper():
+                if abs(p.rake) < 90:
                     res = 1
                 else:
                     res = -1
             elif sense.lower() == "d":
-                if p.rax.is_upper():
+                if abs(p.rake) < 90:
                     res = -1
                 else:
                     res = 1
@@ -575,32 +578,21 @@ class Fault(Pair):
         return cls(fvec, lvec, random.choice([-1, 1]))
 
     @property
-    def georax(self):
-        return self.lvec.lower().cross(self.fvec.lower())
-
-    @property
     def sense(self):
-        if self.rax == self.georax:
-            return 1
-        else:
-            return -1
+        return int(np.sign(self.rake))
 
     @property
     def sense_str(self):
-        if abs(self.rax.geo[1]) > 75:
-            if self.rax.z > 0:
-                schar = "D"
-            elif self.rax.z < 0:
+        if abs(self.rax.geo[1]) > 60:
+            if abs(self.rake) < 90:
                 schar = "S"
             else:
-                schar = " "
+                schar = "D"
         else:
-            if self.sense < 0:
-                schar = "R"
-            elif self.sense > 0:
+            if self.rake > 0:
                 schar = "N"
             else:
-                schar = " "
+                schar = "R"
         return schar
 
     def p_vector(self, ptangle=90):
@@ -609,7 +601,7 @@ class Fault(Pair):
 
     def t_vector(self, ptangle=90):
         """Return T-axis as ``Vector3``."""
-        return self.fvec.rotate(self.lvec.cross(self.fvec), +ptangle / 2)
+        return self.fvec.rotate(self.lvec.cross(self.fvec), ptangle / 2)
 
     @property
     def p(self):
@@ -630,6 +622,15 @@ class Fault(Pair):
     def d(self):
         """Return dihedra plane as ``Fol``"""
         return Foliation(self.lvec.cross(self.fvec).cross(self.fvec))
+
+    def angular_misfit(self, sigma):
+        """Angular misfit (°) between observed slip and predicted shear-traction direction.
+
+        Args:
+            sigma (Stress3): Stress tensor
+
+        """
+        return self.lvec.angle(sigma.fault(self.fvec).lvec)
 
 
 class Cone:
