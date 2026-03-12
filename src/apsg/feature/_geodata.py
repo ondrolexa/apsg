@@ -508,9 +508,7 @@ class Fault(Pair):
 
     @classmethod
     def calc_sense(cls, fvec, lvec, sense) -> int:
-        if isinstance(sense, int) or isinstance(sense, float):
-            return int(sense)
-        elif isinstance(sense, str):
+        if isinstance(sense, str):
             p = Pair(fvec, lvec)
             if sense.lower() == "s":
                 if abs(p.rake) < 90:
@@ -527,6 +525,8 @@ class Fault(Pair):
             elif sense.lower() == "r":
                 res = -1
             return res
+        else:
+            return int(sense)
 
     def __repr__(self):
         fazi, finc = self.fol.geo

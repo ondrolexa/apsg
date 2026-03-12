@@ -797,7 +797,7 @@ class Vector3Set(FeatureSet):
                 if bandwidth is None:
                     dists = cdist(pooled, pooled, metric="euclidean")
                     bandwidth = float(np.median(dists[dists > 0]))
-                observed = _rbf_mmd2(self, other, bandwidth)
+                observed = _rbf_mmd2(np.array(self), other, bandwidth)
 
                 count = 0
                 for _ in range(n_permutations):
@@ -818,7 +818,7 @@ class Vector3Set(FeatureSet):
                     return (n * m / (n + m)) * (2 * XY - XX - YY)
 
                 pooled = np.vstack([self, other])
-                observed = _energy_statistic(self, other)
+                observed = _energy_statistic(np.array(self), other)
 
                 count = 0
                 for _ in range(n_permutations):
@@ -1663,9 +1663,9 @@ class FaultSet(PairSet):
             n1, n2, n3 = n
             B = np.array(
                 [
-                    [n1, n2, n3, 0, 0],  # T_East
-                    [0, n1, 0, n2, n3],  # T_North
-                    [-n3, 0, n1, -n3, n2],  # T_Up
+                    [-n1, n2, n3, 0, 0],  # T_East
+                    [0, n1, 0, -n2, n3],  # T_North
+                    [n3, 0, n1, n3, n2],  # T_Up
                 ]
             )
             # Shear-traction projector:  P @ m = τ  (removes normal component)
