@@ -439,7 +439,8 @@ class Fault(Pair):
     - with 2 arguments p (Pair object) and sense
     - with 3 arguments f, l (Vector3 like objects), e.g. ``Foliation``
       and ``Lineation`` and sense
-    - with 5 numerical arguments defining `fol(fazi, finc)`, `lin(lazi, linc)` and sense
+    - with 3 arguments fazi, finc, rake
+    - with 5 arguments fazi, finc, lazi, linc, sense
 
     Args:
         fazi (float): dip azimuth of planar feature in degrees
@@ -493,6 +494,9 @@ class Fault(Pair):
                 fvec, lvec = args[0], args[1]
                 if Fault(fvec, lvec).sense != self.calc_sense(fvec, lvec, args[2]):
                     lvec = -lvec
+            else:
+                fvec = Foliation(args[0], args[1])
+                lvec = fvec.rake(args[2])
         elif len(args) == 5:
             fvec = Foliation(args[0], args[1])
             lvec = Lineation(args[2], args[3])

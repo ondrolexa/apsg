@@ -105,12 +105,13 @@ class FeatureSet:
         """Rotate ``FeatureSet`` object `phi` degress about `axis`."""
         return type(self)([e.rotate(axis, phi) for e in self], name=self.name)
 
-    def bootstrap(self, n=100, size=None):
+    def bootstrap(self, n=100, size=None, replace=True):
         """Return generator of bootstraped samples from ``FeatureSet``.
 
         Args:
-          n: number of samples to be generated. Default 100.
-          size: number of data in sample. Default is same as ``FeatureSet``.
+          n (int): number of samples to be generated. Default 100.
+          size (int): number of data in sample. Default is same as ``FeatureSet``.
+          replace (bool): Whether the sample is with or without replacement. Default is True
 
         Example:
           >>> np.random.seed(6034782)
@@ -124,7 +125,7 @@ class FeatureSet:
         if size is None:
             size = len(self)
         for i in range(n):
-            yield self[np.random.choice(range(len(self)), size)]
+            yield self[np.random.choice(range(len(self)), size=size, replace=replace)]
 
 
 class Vector2Set(FeatureSet):
@@ -1635,80 +1636,70 @@ class FaultSet(PairSet):
     def stress_inversion(self, bootstrap=False, n=100):
         """Stress inversion from fault-slip data
 
-        Determines the orientation of principal stresses (σ1, σ2, σ3) and the
-        stress ratio R using the Michael (1984) linear inversion method.
+        The 4-D inversion method developed by Michael (1984) is a classic approach
+        in structural geology. It determines the orientation of the principal stress
+        axes (σ1, σ2, σ3) and the stress ratio R by assuming that the slip on a fault
+        occurs in the direction of the maximum resolved shear stress.
+
+        Args:
+            bootstrap (bool): When True return set of stress tensors
+            n (int): number of boostrapped samples. Default 100
 
         """
 
-        def _equation_rows(n, s):
+        def solve_michael_inversion(faults):
             """
-            Two linear equations for one fault that encode the Wallace-Bott condition
-
-            Build 3×5 matrix B  such that  T = B @ m,  where
-              T  = traction vector on plane with normal n
-              m  = [σ11, σ12, σ13, σ22, σ23]   (deviatoric; σ33 = −σ11−σ22)
-
-            (slip direction = shear-traction direction):
-                s × τ = 0   →   two independent rows  ∈ ℝ^5
-
-            Parameters
-            ----------
-            n : unit fault-plane normal
-            s : unit slip vector
-
-            Returns
-            -------
-            rows : ndarray (2, 5)
+            Linear inversion for the deviatoric stress tensor components.
             """
-            n1, n2, n3 = n
-            B = np.array(
-                [
-                    [-n1, n2, n3, 0, 0],  # T_East
-                    [0, n1, 0, -n2, n3],  # T_North
-                    [n3, 0, n1, n3, n2],  # T_Up
-                ]
-            )
-            # Shear-traction projector:  P @ m = τ  (removes normal component)
-            c = n @ B  # 1-D array of length 5
-            P = B - np.outer(n, c)  # 3×5
-            # (s × τ)_x = s_y·τ_z − s_z·τ_y = 0
-            row1 = np.array([0.0, -s[2], s[1]]) @ P
-            # (s × τ)_y = s_z·τ_x − s_x·τ_z = 0
-            row2 = np.array([s[2], 0.0, -s[0]]) @ P
-            return np.vstack([row1, row2])
+            A = []
+            d = []
 
-        if not bootstrap:
-            normals = np.array(self.fvec)
-            slips = np.array(self.lvec)
-            A = np.vstack([_equation_rows(n, s) for n, s in zip(normals, slips)])
-            _, _, Vt = np.linalg.svd(A, full_matrices=True)
-            # Reconstruct 3×3 symmetric deviatoric stress tensor from 5-component vector.
-            s11, s12, s13, s22, s23 = Vt[-1]
-            return Stress3(
-                [
-                    [s11, s12, s13],
-                    [s12, s22, s23],
-                    [s13, s23, -(s11 + s22)],
-                ]
-            )
-        else:
-            sigs = []
-            for sample in self.bootstrap(n=n):
-                normals = np.array(sample.fvec)
-                slips = np.array(sample.lvec)
-                A = np.vstack([_equation_rows(n, s) for n, s in zip(normals, slips)])
-                _, _, Vt = np.linalg.svd(A, full_matrices=True)
-                # Reconstruct 3×3 symmetric deviatoric stress tensor from 5-component vector.
-                s11, s12, s13, s22, s23 = Vt[-1]
-                sigma = Stress3(
+            for f in faults:
+                nx, ny, nz = f.fvec._coords
+                sx, sy, sz = f.lvec._coords
+                # Design matrix for: s11, s12, s13, s22, s23
+                M = np.array(
                     [
-                        [s11, s12, s13],
-                        [s12, s22, s23],
-                        [s13, s23, -(s11 + s22)],
+                        [
+                            nx * (1 - 2 * nx**2),
+                            ny * (1 - 2 * nx**2),
+                            nz * (1 - 2 * nx**2),
+                            -nx * ny**2,
+                            -2 * nx * ny * nz,
+                        ],
+                        [
+                            -ny * nx**2,
+                            nx * (1 - 2 * ny**2),
+                            -2 * nx * ny * nz,
+                            ny * (1 - 2 * ny**2),
+                            nz * (1 - 2 * ny**2),
+                        ],
+                        [
+                            -nz * nx**2,
+                            -2 * nx * ny * nz,
+                            nx * (1 - 2 * nz**2),
+                            -nz * ny**2,
+                            ny * (1 - 2 * nz**2),
+                        ],
                     ]
                 )
-                sigs.append(sigma)
-            return Stress3Set(sigs)
+                A.extend(M)
+                d.extend([sx, sy, sz])
+            x, _, _, _ = np.linalg.lstsq(np.array(A), np.array(d), rcond=None)
+            # Trace-free: s33 = -(s11 + s22)
+            s11, s12, s13, s22, s23 = x
+            s33 = -(s11 + s22)
+            # GEOLOGICAL CONVENTION: Flip signs so compression is positive
+            return Stress3(
+                -np.array([[s11, s12, s13], [s12, s22, s23], [s13, s23, s33]])
+            )
+
+        if not bootstrap:
+            return solve_michael_inversion(self)
+        else:
+            return Stress3Set(
+                [solve_michael_inversion(sample) for sample in self.bootstrap(n=n)]
+            )
 
     def angular_misfit(self, sigma):
         """Angular misfit (°) between observed slip and predicted shear-traction direction.

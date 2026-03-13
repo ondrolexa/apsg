@@ -2,7 +2,6 @@ import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.projections import PolarAxes
 from scipy.stats import circmean, vonmises
 
 from apsg.config import apsg_conf
@@ -53,8 +52,8 @@ class RosePlot(object):
 
     def _draw_layout(self):
         # self.ax.format_coord = self.format_coord
-        self.ax.set_theta_direction(-1)
-        self.ax.set_theta_zero_location("N")
+        self.ax.set_theta_direction(-1)  # type: ignore
+        self.ax.set_theta_zero_location("N")  # type: ignore
         self.ax.grid(self._kwargs["grid"], **self._kwargs["grid_kws"])
 
     def _plot_artists(self):
@@ -107,7 +106,7 @@ class RosePlot(object):
             self.fig.canvas.manager.set_window_title("Rose diagram")
 
     def _render(self):
-        self.ax: PolarAxes = self.fig.add_subplot(111, polar=True)
+        self.ax = self.fig.add_subplot(111, polar=True)
         self._draw_layout()
         self._plot_artists()
         h, lbls = self.ax.get_legend_handles_labels()
