@@ -156,6 +156,8 @@ class Matrix(ABC):
             evals, evecs = np.linalg.eigh(np.asarray(self._coefs))
             idx = evals.argsort()[::-1]
             evals = evals[idx]
+            # round very small numbers to zero
+            evals[np.isclose(evals, np.zeros_like(evals))] = 0
             evecs = evecs[:, idx]
             self._cache["eigh"] = evals, evecs
         return self._cache["eigh"]
