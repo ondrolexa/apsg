@@ -6,7 +6,7 @@ from scipy.stats import circmean, vonmises
 
 from apsg.config import apsg_conf
 from apsg.feature import feature_from_json
-from apsg.math._vector import Axial2, Axial3
+from apsg.math._vector import Axial2
 from apsg.plotting._plot_artists import RosePlotArtistFactory
 
 __all__ = ["RosePlot"]
@@ -31,6 +31,8 @@ class RosePlot(object):
         grid_kws (dict): Dict passed to Axes.grid. Default {}
 
         Other keyword arguments are passed to matplotlib plot.
+
+    Note: Roseplot is weighted by magnitude of Direction or Vector2 features
 
     Examples:
         >>> v = vec2set.random_vonmises(position=120)
@@ -202,8 +204,6 @@ class RosePlot(object):
                 Default "-"
             lw (float): Set line width. Default 1.5
             legend (bool): Whether to show legend. Default False
-            weight (float): Factor to scale probability density function
-                Default 1
 
         """
         try:
@@ -245,7 +245,7 @@ class RosePlot(object):
         width = 2 * np.pi / self._kwargs["bins"]
         legend = kwargs.pop("legend")
         for arg in args:
-            if issubclass(arg.__feature_class__, (Axial2, Axial3)):
+            if issubclass(arg.__feature_class__, Axial2):
                 ang = np.concatenate((arg.direction % 360, (arg.direction + 180) % 360))
                 weights = np.concatenate((abs(arg), abs(arg)))
             else:
@@ -273,20 +273,22 @@ class RosePlot(object):
     def _pdf(self, *args, **kwargs):
         bottom = np.zeros_like(self._kwargs["pdf_res"])
         legend = kwargs.pop("legend")
-        weight = kwargs.pop("weight")
         theta = np.linspace(-np.pi, np.pi, self._kwargs["pdf_res"])
         for arg in args:
             ang = arg.direction % 360
-            # weights = abs(arg)
+            weights = abs(arg)
+            weights = len(weights) * weights / sum(weights)
             radii = np.zeros_like(theta)
-            if issubclass(arg.__feature_class__, (Axial2, Axial3)):
-                for a in ang:
+            if issubclass(arg.__feature_class__, Axial2):
+                for a, weight in zip(ang, weights):
                     radii += (
-                        vonmises.pdf(theta, self._kwargs["kappa"], loc=np.radians(a))
+                        weight
+                        * vonmises.pdf(theta, self._kwargs["kappa"], loc=np.radians(a))
                         / 2
                     )
                     radii += (
-                        vonmises.pdf(
+                        weight
+                        * vonmises.pdf(
                             theta, self._kwargs["kappa"], loc=np.radians(a + 180)
                         )
                         / 2
@@ -297,7 +299,6 @@ class RosePlot(object):
                         theta, self._kwargs["kappa"], loc=np.radians(a)
                     )
             radii /= len(ang)
-            radii *= weight
             if self._kwargs["scaled"]:
                 radii = np.sqrt(radii)
             if legend:
@@ -314,7 +315,7 @@ class RosePlot(object):
             radii = []
             p = 0
             ang = np.radians(arg.direction)
-            if issubclass(arg.__feature_class__, (Axial2, Axial3)):
+            if issubclass(arg.__feature_class__, Axial2):
                 mu = circmean(2 * ang) / 2
                 ang_shift = ang + np.pi / 2 - mu
                 bsmu = [
@@ -345,7 +346,7 @@ class RosePlot(object):
                 radii = np.sqrt(radii)
             mur = 1.1 * sum(radii)
             ci_angles = np.linspace(low, high, int(5 * np.degrees(high - low)))
-            if issubclass(arg.__feature_class__, (Axial2, Axial3)):
+            if issubclass(arg.__feature_class__, Axial2):
                 self.ax.plot([mu, mu + np.pi], [mur, mur], **kwargs)
                 self.ax.plot(ci_angles, mur * np.ones_like(ci_angles), **kwargs)
                 self.ax.plot(ci_angles + np.pi, mur * np.ones_like(ci_angles), **kwargs)
