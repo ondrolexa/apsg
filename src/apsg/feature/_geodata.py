@@ -4,6 +4,7 @@ import numpy as np
 
 from apsg.decorator._decorator import ensure_arguments, ensure_first_arg_same
 from apsg.helpers._helper import is_jsonable
+from apsg.helpers._math import atan2d
 from apsg.helpers._notation import (
     geo2vec_planar,
     vec2geo_linear,
@@ -186,6 +187,11 @@ class Foliation(Axial3):
     def dipvec(self):
         """Return dip vector"""
         return Vector3(*vec2geo_planar(self))
+
+    def strike(self):
+        """Return strike as Direction"""
+        n = self.uv()
+        return Direction((atan2d(n.y, n.x) + 90) % 360)
 
     def pole(self):
         """Return plane normal as vector"""

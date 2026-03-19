@@ -5,6 +5,8 @@
  * similary test for vecset implemented
  * stress inversion method added to faultset
  * angular_misfit method added to Fault and FaultSet
+ * Roseplot weighting fixed
+ * strike method added to planara features
 
 ### 1.4.0 (Feb 20 2026)
  * attributes storage implemented (passed as kwargs to features)

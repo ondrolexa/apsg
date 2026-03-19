@@ -1122,6 +1122,10 @@ class FoliationSet(Vector3Set):
         """Return ``FeatureSet`` object with plane dip vector."""
         return Vector3Set([e.dipvec() for e in self], name=self.name)
 
+    def strike(self):
+        """Return ``Direction2Set`` object with strikes of planar features."""
+        return Direction2Set([e.strike() for e in self], name=self.name)
+
 
 class PairSet(FeatureSet):
     """
