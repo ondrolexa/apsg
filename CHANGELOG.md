@@ -7,6 +7,7 @@
  * angular_misfit method added to Fault and FaultSet
  * Roseplot weighting fixed
  * strike method added to planara features
+ * from_declination added to defgrad to create rotation correcting magnetic declination
 
 ### 1.4.0 (Feb 20 2026)
  * attributes storage implemented (passed as kwargs to features)

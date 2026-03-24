@@ -1,6 +1,8 @@
 import math
+from datetime import datetime
 
 import numpy as np
+from pygeomag import GeoMag
 from scipy import linalg as spla
 
 from apsg.decorator._decorator import ensure_arguments
@@ -8,6 +10,8 @@ from apsg.feature._geodata import Fault, Foliation, Lineation, Pair
 from apsg.helpers._math import atand, cosd, sind
 from apsg.math._matrix import Matrix3
 from apsg.math._vector import Vector3
+
+geo_mag = GeoMag(high_resolution=True)
 
 
 class DeformationGradient3(Matrix3):
@@ -228,6 +232,37 @@ class DeformationGradient3(Matrix3):
             return R4[ix]
         else:
             return cls(cls.from_pair(p2) @ cls.from_pair(p1).I)
+
+    @classmethod
+    def from_declination(cls, lat, lon, year=None, alt=0):
+        """
+        Return ``DeformationGradient3`` representing rotation of coordinates correcting
+        magnetic declination at given coordinates and given time
+
+        Args:
+            lat (float): latitude
+            lon (float): longitude
+
+        Keyword Args:
+          year (float): decimal year
+          alt (float): altitude in km
+
+        Returns:
+            ``Defgrad3`` rotational matrix
+
+        Example:
+            >>> R = defgrad.from_declination(48.6, 13.2, alt=0.6)
+            >>> f = fol(20, 48)
+            >>> f.transform(R)
+            S:25/48
+
+        """
+        if year is None:
+            year = datetime.now().year + datetime.now().month / 12
+        result = geo_mag.calculate(
+            glat=lat, glon=lon, alt=0, time=year, allow_date_outside_lifespan=True
+        )
+        return DeformationGradient3.from_axisangle(Lineation(0, 90), result.d)
 
     @property
     def R(self):

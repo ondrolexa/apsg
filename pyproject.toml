@@ -15,10 +15,10 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
 ]
-dependencies = ["numpy", "matplotlib>=3.9", "scipy", "sqlalchemy", "pandas"]
+dependencies = ["numpy", "matplotlib>=3.9", "scipy", "sqlalchemy", "pandas", "pygeomag"]
 
 [project.optional-dependencies]
-extra = ["jupyterlab", "pyqt5"]
+extra = ["jupyterlab", "pyqt6"]
 tests = ["pytest"]
 docs = [
     "sphinx",
