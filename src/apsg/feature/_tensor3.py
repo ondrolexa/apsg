@@ -4,10 +4,11 @@ from datetime import datetime
 import numpy as np
 from pygeomag import GeoMag
 from scipy import linalg as spla
+from scipy.spatial.transform import Rotation
 
 from apsg.decorator._decorator import ensure_arguments
 from apsg.feature._geodata import Fault, Foliation, Lineation, Pair
-from apsg.helpers._math import atand, cosd, sind
+from apsg.helpers._math import atand
 from apsg.math._matrix import Matrix3
 from apsg.math._vector import Vector3
 
@@ -127,19 +128,21 @@ class DeformationGradient3(Matrix3):
           >>> F = defgrad.from_axisangle(lin(120, 30), 45)
         """
 
-        x, y, z = vector.uv()._coords
-        c, s = cosd(theta), sind(theta)
-        xs, ys, zs = x * s, y * s, z * s
-        xc, yc, zc = x * (1 - c), y * (1 - c), z * (1 - c)
-        xyc, yzc, zxc = x * yc, y * zc, z * xc
+        rotvec = theta * np.array(vector.uv())
+        return cls(Rotation.from_rotvec(rotvec, degrees=True).as_matrix())
+        # x, y, z = vector.uv()._coords
+        # c, s = cosd(theta), sind(theta)
+        # xs, ys, zs = x * s, y * s, z * s
+        # xc, yc, zc = x * (1 - c), y * (1 - c), z * (1 - c)
+        # xyc, yzc, zxc = x * yc, y * zc, z * xc
 
-        return cls(
-            [
-                [x * xc + c, xyc - zs, zxc + ys],
-                [xyc + zs, y * yc + c, yzc - xs],
-                [zxc - ys, yzc + xs, z * zc + c],
-            ]
-        )
+        # return cls(
+        #     [
+        #         [x * xc + c, xyc - zs, zxc + ys],
+        #         [xyc + zs, y * yc + c, yzc - xs],
+        #         [zxc - ys, yzc + xs, z * zc + c],
+        #     ]
+        # )
 
     @classmethod
     @ensure_arguments(Vector3, Vector3)
@@ -170,9 +173,6 @@ class DeformationGradient3(Matrix3):
           v1: ``Vector3`` like object
           v2: ``Vector3`` like object
            a: estimated rotation axis ``Vector3`` like object
-
-        Returns:
-            ``Defgrad3`` rotational matrix
 
         Example:
             >>> v1 = lin(130, 49)
@@ -206,9 +206,6 @@ class DeformationGradient3(Matrix3):
 
         Keyword Args:
           symmetry (bool): If True, returns minimum angle rotation of axial pairs
-
-        Returns:
-            ``Defgrad3`` rotational matrix
 
         Example:
             >>> p1 = pair(58, 36, 81, 34)
@@ -247,9 +244,6 @@ class DeformationGradient3(Matrix3):
           year (float): decimal year
           alt (float): altitude in km
 
-        Returns:
-            ``Defgrad3`` rotational matrix
-
         Example:
             >>> R = defgrad.from_declination(48.6, 13.2, alt=0.6)
             >>> f = fol(20, 48)
@@ -262,7 +256,54 @@ class DeformationGradient3(Matrix3):
         result = geo_mag.calculate(
             glat=lat, glon=lon, alt=0, time=year, allow_date_outside_lifespan=True
         )
-        return DeformationGradient3.from_axisangle(Lineation(0, 90), result.d)
+        return cls.from_axisangle(Lineation(0, 90), result.d)
+
+    @classmethod
+    def from_quat(cls, quat, scalar_first=False):
+        """
+        Return ``DeformationGradient3`` representing rotation of coordinates created
+        from unit norm quaternion.
+
+        Args:
+            quat (array_like): quaternion
+
+        Keyword Args:
+            scalar_first (bool): Whether the scalar component goes first or last. Default is False
+
+        Example:
+            >>> q = [-0.11543715, 0.19994301, 0.39988603, 0.88701083]
+            >>> R = defgrad.from_quat(q)
+            >>> f = fol(20, 48)
+            >>> f.transform(R)
+            S:82/23
+
+        """
+        return cls(Rotation.from_quat(quat, scalar_first=False).as_matrix())
+
+    @classmethod
+    def from_euler(cls, seq, angles):
+        """
+        Return ``DeformationGradient3`` representing rotation of coordinates created
+        from unit norm quaternion.
+
+        Args:
+            seq (str): sequence of axes for rotations. Up to 3 characters belonging to the set
+                {‘X’, ‘Y’, ‘Z’} for intrinsic rotations, or {‘x’, ‘y’, ‘z’} for extrinsic rotations.
+            angles (array_like): Euler angles specified in degrees. Each character in seq
+                defines one axis around which angles turns.
+
+        Example:
+            >>> R = defgrad.from_euler('zxz', [30,-64, 125])
+            >>> f = fol(20, 48)
+            >>> f.transform(R)
+            S:74/70
+
+        """
+        return cls(Rotation.from_euler(seq, angles, degrees=True).as_matrix())
+
+    def is_rotation(self):
+        """Return True if DeformationGradient3 is rotation"""
+        return np.allclose(Rotation.from_matrix(self).as_matrix(), self)
 
     @property
     def R(self):
@@ -284,24 +325,44 @@ class DeformationGradient3(Matrix3):
         _, V = spla.polar(self, "left")
         return type(self)(V)
 
+    def quat(self, scalar_first=False):
+        """Return rotation part of ``DeformationGradient3`` as quaternion
+
+        Keyword Args:
+            scalar_first (bool): Whether the scalar component goes first or last. Default is False
+
+        """
+        R = self.R
+        return Rotation.from_matrix(R).as_quat(canonical=True)
+
     def axisangle(self):
         """Return rotation part of ``DeformationGradient3`` as axis, angle tuple."""
         R = self.R
-        w, W = np.linalg.eig(R.T)
-        i = np.where(abs(np.real(w) - 1.0) < 1e-8)[0]
-        if not len(i):
-            raise ValueError("no unit eigenvector corresponding to eigenvalue 1")
-        axis = Vector3(np.real(W[:, i[-1]]).squeeze())
-        # rotation angle depending on direction
-        cosa = (np.trace(R) - 1.0) / 2.0
-        if abs(axis.z) > 1e-8:
-            sina = (R[1][0] + (cosa - 1.0) * axis.x * axis.y) / axis.z
-        elif abs(axis.y) > 1e-8:
-            sina = (R[0][2] + (cosa - 1.0) * axis.x * axis.z) / axis.y
-        else:
-            sina = (R[2][1] + (cosa - 1.0) * axis.y * axis.z) / axis.x
-        angle = np.rad2deg(np.arctan2(sina, cosa))
-        return axis, float(angle)
+        rotvec = Rotation.from_matrix(R).as_rotvec(degrees=True)
+        sign = 1.0
+        if rotvec[2] < 0:
+            sign = -1.0
+        return sign * Vector3(rotvec).uv(), sign * np.linalg.norm(rotvec)
+        # w, W = np.linalg.eig(R.T)
+        # i = np.where(abs(np.real(w) - 1.0) < 1e-8)[0]
+        # if not len(i):
+        #     raise ValueError("no unit eigenvector corresponding to eigenvalue 1")
+        # axis = Vector3(np.real(W[:, i[-1]]).squeeze())
+        # # rotation angle depending on direction
+        # cosa = (np.trace(R) - 1.0) / 2.0
+        # if abs(axis.z) > 1e-8:
+        #     sina = (R[1][0] + (cosa - 1.0) * axis.x * axis.y) / axis.z
+        # elif abs(axis.y) > 1e-8:
+        #     sina = (R[0][2] + (cosa - 1.0) * axis.x * axis.z) / axis.y
+        # else:
+        #     sina = (R[2][1] + (cosa - 1.0) * axis.y * axis.z) / axis.x
+        # angle = np.rad2deg(np.arctan2(sina, cosa))
+        # return axis, float(angle)
+
+    def euler(self, seq):
+        """Return rotation part of ``DeformationGradient3`` as Euler angles"""
+        R = self.R
+        return Rotation.from_matrix(R).as_euler(seq, degrees=True)
 
     def velgrad(self, time=1):
         """
