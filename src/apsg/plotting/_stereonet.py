@@ -580,21 +580,24 @@ class StereoNet:
 
     def contour(self, *args, **kwargs):
         """
-        Plot filled contours using modified Kamb contouring technique with exponential
-        smoothing.
+        Plot filled contours in multiples of uniform distribution.
 
         Args:
             Vector3Set like feature
 
         Keyword Args:
+            method (str): "kamb" for modified Kamb contouring technique with exponential
+                smoothing or "sph" for spherical harmonics method. Default "sph"
             levels (int or list): number or values of contours. Default 6
             cmap: matplotlib colormap used for filled contours. Default "Greys"
             colorbar (bool): Show colorbar. Default False
             alpha (float): transparency. Default None
             antialiased (bool): Default True
-            sigma (float): If None it is automatically calculated
-            sigmanorm (bool): If True scaled counts are normalized by sigma.
-                Default True
+            n_max (int): maximum harmonic degree i.e. the angular resolution. Must be
+                even number (for "sph" method). Default 6
+            sigma (float): If None it is automatically calculated (for "kamb" method)
+            sigmanorm (bool): If True scaled counts are normalized by sigma
+                (for "kamb" method). Default True
             trimzero (bool): Remove values equal to 0. Default True
             clines (bool): Show contour lines instead filled contours. Default False
             linewidths (float): contour lines width
@@ -608,6 +611,8 @@ class StereoNet:
             if len(args) > 0:
                 self.grid.calculate_density(
                     args[0],
+                    method=artist.kwargs.get("method"),
+                    n_max=artist.kwargs.get("n_max"),
                     sigma=artist.kwargs.get("sigma"),
                     sigmanorm=artist.kwargs.get("sigmanorm"),
                     trimzero=artist.kwargs.get("trimzero"),
@@ -935,6 +940,8 @@ class StereoNet:
             self._line(lins[0], color=kwargs.get("color", "blue"), **selkw)
 
     def _contour(self, *args, **kwargs):
+        method = kwargs.pop("method")
+        n_max = kwargs.pop("n_max")
         sigma = kwargs.pop("sigma")
         trimzero = kwargs.pop("trimzero")
         sigmanorm = (kwargs.pop("sigmanorm"),)
@@ -948,7 +955,12 @@ class StereoNet:
         if not self.grid.calculated:
             if len(args) > 0:
                 self.grid.calculate_density(
-                    args[0], sigma=sigma, sigmanorm=sigmanorm, trimzero=trimzero
+                    args[0],
+                    method=method,
+                    n_max=n_max,
+                    sigma=sigma,
+                    sigmanorm=sigmanorm,
+                    trimzero=trimzero,
                 )
             else:
                 return None

@@ -1,6 +1,7 @@
 # Changelog
 
 ### 1.4.1 (master)
+ * Spherical harmonics are used as default contouring method. Keyword mathod added.
  * Fisher statistics improved
  * similary test for vecset implemented
  * stress inversion method added to faultset

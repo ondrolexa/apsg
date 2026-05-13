@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as tri
 import numpy as np
 from matplotlib.patches import Circle
+from scipy.special import sph_harm_y
 
 from apsg.config import apsg_conf
 from apsg.feature._container import Vector3Set
@@ -58,7 +59,6 @@ class StereoGrid:
         # initial values
         self.values = np.zeros(self.grid_n, dtype=float)
         self.calculated = False
-        self.density_params = None
         self.features = None
 
     def __repr__(self):
@@ -90,67 +90,103 @@ class StereoGrid:
     def calculate_density(self, features, **kwargs):
         """Calculate density distribution of vectors from ``FeatureSet`` object.
 
-        The modified Kamb contouring technique with exponential smoothing is used.
-
         Args:
-            sigma (float): if none sigma is calculated automatically.
-              Default None
-            sigmanorm (bool): If True counting is normalized to sigma
-              multiples. Default True
+            method (str): "kamb" for modified Kamb contouring technique with exponential
+                smoothing or "sph" for spherical harmonics method. Default "sph"
+            n_max (int): maximum harmonic degree i.e. the angular resolution. Must be
+                even number (for "sph" method). Default 6
+            sigma (float): if none sigma is calculated automatically (for "kamb" method).
+                Default None
+            sigmanorm (bool): If True counting is normalized to sigma multiples
+                (for "kamb" method). Default True
             trimzero: if True, zero contour is not drawn. Default True
 
         """
-        # parse options
-        sigma = kwargs.get("sigma", None)
-        self.features = np.atleast_2d(features)
-        n = len(self.features)
-        if sigma is None:
-            # k = estimate_k(features)
-            # sigma = np.sqrt(2 * n / (k - 2))
-            # Totally empirical as estimate_k is problematic
-            if n < 10:
-                sigma = 3
+
+        def real_sph_harm(n, m, polar, azimuthal):
+            """
+            Compute real spherical harmonics.
+            """
+            # Calculate the complex spherical harmonic for positive m
+            Y_complex = sph_harm_y(n, abs(m), polar, azimuthal)
+            # Standard conversion from complex to real spherical harmonics
+            if m < 0:
+                return np.sqrt(2) * Y_complex.imag
+            elif m == 0:
+                return Y_complex.real
             else:
-                sigma = np.sqrt(2 * n / (np.log(n) - 2)) / 3
-        k = 2 * (1.0 + n / sigma**2)
-        # method = kwargs.get("method", "exp_kamb")
+                return np.sqrt(2) * Y_complex.real
+
+        def evaluate_odf(coefficients, polar, azimuthal):
+            """
+            Evaluates the ODF on given angles using calculated SH coefficients.
+            """
+            # Initialize an array of zeros with the same shape as the input grid
+            odf_values = np.zeros_like(polar, dtype=float)
+            # Sum the contribution of each harmonic basis function
+            for (n, m), c in coefficients.items():
+                odf_values += c * real_sph_harm(n, m, polar, azimuthal)
+
+            return odf_values
+
+        self.features = np.atleast_2d(features)
+        nfeatures = len(self.features)
+        if kwargs.get("method", "sph") == "sph":
+            n_max = kwargs.get("n_max", 6)
+            if n_max % 2 != 0:
+                raise ValueError("n_max must be an even integer for axial data.")
+            # Calculate ODF spherical harmonic coefficients for axial unit vectors.
+            azi, inc = features.geo
+            azimuthal = np.deg2rad(azi)
+            polar = np.deg2rad(90 - inc)
+            coeffs = {}
+            # Iterate only over even degrees (l = 0, 2, 4...)
+            for n in range(0, n_max + 1, 2):
+                for m in range(-n, n + 1):
+                    # Evaluate the harmonic at all data points
+                    Y_nm_vals = real_sph_harm(n, m, polar, azimuthal)
+                    # The coefficient is the mean of the basis function over the data
+                    coeffs[(n, m)] = np.sum(Y_nm_vals) / nfeatures
+            # Scales spherical harmonic coefficients so the resulting ODF
+            # is in units of Multiples of Uniform Distribution (MUD).
+            # Extract the isotropic coefficient (n=0, m=0)
+            c_0_0 = coeffs.get((0, 0))
+            # The Y_0_0 spherical harmonic is a constant: 1 / sqrt(4*pi)
+            Y_0_0 = 1.0 / np.sqrt(4 * np.pi)
+            # Calculate the mean value of the unscaled ODF
+            mean_odf_value = c_0_0 * Y_0_0
+            # Scale all coefficients by dividing by this mean value
+            mud_coeffs = {}
+            for (n, m), c in coeffs.items():
+                mud_coeffs[(n, m)] = c / mean_odf_value
+            # Evaluates the ODF on StereoGrid
+            azi, inc = self.grid.geo
+            azimuthal = np.deg2rad(azi)
+            polar = np.deg2rad(90 - inc)
+            self.values = np.clip(evaluate_odf(mud_coeffs, polar, azimuthal), 0, None)
+        else:
+            sigma = kwargs.get("sigma", None)
+            if sigma is None:
+                # k = estimate_k(features)
+                # sigma = np.sqrt(2 * nfeatures / (k - 2))
+                # Totally empirical as estimate_k is problematic
+                if nfeatures < 10:
+                    sigma = 3
+                else:
+                    sigma = np.sqrt(2 * nfeatures / (np.log(nfeatures) - 2)) / 3
+            k = 2 * (1.0 + nfeatures / sigma**2)
+            sigmanorm = kwargs.get("sigmanorm", True)
+            # do calc
+            scale = np.sqrt(nfeatures * (k / 2.0 - 1) / k**2)
+            cnt = np.exp(k * (np.abs(np.dot(self.grid, self.features.T)) - 1))
+            self.values = cnt.sum(axis=1) / scale
+            if sigmanorm:
+                self.values /= sigma
+            self.values[self.values < 0] = 0
         trim = kwargs.get("trimzero", True)
-        sigmanorm = kwargs.get("sigmanorm", True)
-        # do calc
-        scale = np.sqrt(n * (k / 2.0 - 1) / k**2)
-        cnt = np.exp(k * (np.abs(np.dot(self.grid, self.features.T)) - 1))
-        self.values = cnt.sum(axis=1) / scale
-        if sigmanorm:
-            self.values /= sigma
-        self.values[self.values < 0] = 0
         if trim:
             self.values[self.values == 0] = np.finfo(float).tiny
         self.calculated = True
-        self.density_params = k, scale, sigma, sigmanorm
-
-    def density_lookup(self, v):
-        """
-        Calculate density distribution value at position given by vector
-
-        Note: you need to calculate density before using this method
-
-        Args:
-            v: Vector3 like object
-
-        Keyword Args:
-            p (int): power. Default 2
-        """
-        if self.density_params is not None:
-            k, scale, sigma, sigmanorm = self.density_params
-            cnt = np.exp(k * (np.abs(np.dot(v.normalized(), self.features.T)) - 1))
-            val = cnt.sum() / scale
-            if sigmanorm:
-                val /= sigma
-            return val
-        else:
-            raise ValueError(
-                "No density distribution calculated. Use calculate_density method."
-            )
 
     def apply_func(self, func, *args, **kwargs):
         """Calculate values of user-defined function on sphere.
