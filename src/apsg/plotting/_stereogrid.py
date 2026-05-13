@@ -199,7 +199,7 @@ class StereoGrid:
             radius=1,
             edgecolor="black",
             fill=False,
-            clip_box="None",
+            clip_box=None,
             label="_nolegend_",
         )
         ax.add_patch(primitive)
