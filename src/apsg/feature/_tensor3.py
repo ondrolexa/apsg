@@ -473,19 +473,29 @@ class VelocityGradient3(Matrix3):
 
 
 class Tensor3(Matrix3):
-    def eigenlins(self):
-        """
-        Return tuple of eigenvectors as ``Lineation`` objects.
-        """
+    def eigenlins(self, which=None):
+        """Return eigenvectors as ``Lineation`` objects.
 
-        return tuple(Lineation(v) for v in self.eigenvectors())
-
-    def eigenfols(self):
+        Args:
+            which: if None returns sorted tuple of eigenlins.
+                If int returns given eigen lineation. Default None.
         """
-        Return tuple of eigenvectors as ``Foliation`` objects.
-        """
+        if which is None:
+            return tuple(Lineation(v) for v in self.eigenvectors())
+        else:
+            return Lineation(self.eigenvectors(which))
 
-        return tuple(Foliation(v) for v in self.eigenvectors())
+    def eigenfols(self, which=None):
+        """Return tuple of eigenvectors as ``Foliation`` objects.
+
+        Args:
+            which: if None returns sorted tuple of eigenfols.
+                If int returns given eigen foliation. Default None.
+        """
+        if which is None:
+            return tuple(Foliation(v) for v in self.eigenvectors())
+        else:
+            return Foliation(self.eigenvectors(which))
 
     @property
     def pair(self):
@@ -1200,8 +1210,11 @@ class OrientationTensor3(Ellipsoid):
           (L:119/51, L:341/31, L:237/21)
 
         """
-
-        return cls(np.dot(np.array(g).T, np.array(g)) / len(g))
+        axes = np.array(g)
+        norms = np.linalg.norm(axes, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        unit_axes = axes / norms
+        return cls(np.dot(unit_axes.T, unit_axes) / len(unit_axes))
 
     @classmethod
     def from_pairs(cls, p, shift=True) -> "OrientationTensor3":

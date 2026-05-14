@@ -7,7 +7,10 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
+from scipy.integrate import quad
+from scipy.optimize import root_scalar
 from scipy.spatial.distance import cdist
+from scipy.spatial.transform import Rotation
 
 from apsg.config import apsg_conf
 from apsg.feature._geodata import Cone, Direction, Fault, Foliation, Lineation, Pair
@@ -587,18 +590,22 @@ class Vector3Set(FeatureSet):
         return R
 
     def fisher_statistics(self, level=0.95):
-        """Fisher's statistics
+        """Fit Fisher distribution and return statistics
 
         Args:
             level: confidence level. Default 0.95 for 95 %
 
         fisher_statistics returns dictionary with keys:
+            `mu`    mean axis of fitted distribution,
             `k`     estimated precision parameter,
             `csd`   estimated angular standard deviation
             `alpha` half-angle (degrees) of the confidence cone around
                     the mean direction
             `uniform` Rayleigh test to test uniformity for critical value
                     with α = 1 - level. Default 5%
+
+        Note: Calculated alpha for level 0.95 means, you can be 95% confident that
+            the true population mean axis lies within alpha degrees of the mu.
         """
 
         def kappa_estimate(N, R):
@@ -606,12 +613,37 @@ class Vector3Set(FeatureSet):
 
             Uses the approximation from Fisher (1953) / Mardia & Jupp (2000):
             """
+
+            # The function A3(kappa) = coth(kappa) - 1/kappa
+            def objective_function(k):
+                # We use 1.0 / np.tanh(k) as the equivalent of coth(k)
+                return (1.0 / np.tanh(k)) - (1.0 / k) - Rbar
+
+            def objective_derivative(k):
+                # Derivative of coth(k) - 1/k is -csch^2(k) + 1/k^2
+                return -(1.0 / np.sinh(k) ** 2) + (1.0 / k**2)
+
             Rbar = R / N
-            if Rbar >= 1.0:
+            if Rbar < 1e-6:
+                return 0.0
+            elif Rbar >= 0.999999:
                 return np.inf
-            if Rbar > 0.9:
-                return (N - 1.0) / (N - R)
-            return (2.0 * Rbar + Rbar**3) / (1.0 - Rbar**2)
+            else:
+                # Initial guess using Banerjee et al. (2005) approximation
+                kappa_guess = (Rbar * (3.0 - Rbar**2)) / (1.0 - Rbar**2)
+                # Solve using the Newton-Raphson method
+                result = root_scalar(
+                    objective_function,
+                    x0=kappa_guess,
+                    fprime=objective_derivative,
+                    method="newton",
+                )
+                if not result.converged:
+                    if Rbar > 0.9:
+                        return (N - 1.0) / (N - R)
+                    else:
+                        return (2.0 * Rbar + Rbar**3) / (1.0 - Rbar**2)
+                return result.root
 
         def confidence_cone(N, R, level):
             """Half-angle (degrees) of the (1-α) confidence cone around the mean direction."""
@@ -623,10 +655,17 @@ class Vector3Set(FeatureSet):
             cos_theta = 1.0 - ((N - R) / R) * (alpha ** (-exponent) - 1.0)
             return acosd(np.clip(cos_theta, -1.0, 1.0))
 
-        stats = {"k": np.inf, "alpha": 0, "csd": 0, "uniform": False}
+        stats = {
+            "mu": Vector3(0, 0, 0),
+            "k": np.inf,
+            "alpha": 0,
+            "csd": 0,
+            "uniform": False,
+        }
         N = len(self)
         R = abs(self.normalized().R())
         if R < N:
+            stats["mu"] = Vector3(self.normalized().R().normalized())
             stats["k"] = kappa_estimate(N, R)
             stats["csd"] = 81 / np.sqrt(stats["k"])
             stats["alpha"] = confidence_cone(N, R, level)
@@ -651,6 +690,72 @@ class Vector3Set(FeatureSet):
         """
         stats = self.fisher_statistics()
         return Cone(self.normalized().R(), stats["csd"])
+
+    def watson_statistics(self, level=0.95):
+        """Fit Watson distribution and return statistics
+
+        Args:
+            level: confidence level. Default 0.95 for 95 %
+
+        watson_statistics returns dictionary with keys:
+            `mu`    mean axis of fitted distribution,
+            `k`     estimated precision parameter,
+            `alpha` half-angle (degrees) of the confidence cone around
+                    the mean direction
+
+        Note: Calculated alpha for level 0.95 means, you can be 95% confident that
+            the true population mean axis lies within alpha degrees of the mu.
+        """
+
+        # Objective: integrate(u^2 * exp(k*u^2)) / integrate(exp(k*u^2)) - lambda_1 = 0
+        def objective_function(k):
+            # We handle numerical stability for large k by shifting the exponent
+            # exp(k * u^2) -> exp(k * (u^2 - 1))
+            # The constants cancel out in the fraction, preventing overflow.
+            def numerator_integrand(u):
+                return (u**2) * np.exp(k * (u**2 - 1.0))
+
+            def denominator_integrand(u):
+                return np.exp(k * (u**2 - 1.0))
+
+            num, _ = quad(numerator_integrand, 0, 1)
+            den, _ = quad(denominator_integrand, 0, 1)
+
+            return (num / den) - lambda_1
+
+        ot = self.ortensor()
+        lambda_1 = ot.eigenvalues(0)
+        lambda_minor = (ot.eigenvalues(1) + ot.eigenvalues(2)) / 2.0
+
+        # Edge cases
+        if lambda_1 >= 0.999999:
+            kappa = np.inf  # Point mass (all axes are perfectly aligned)
+        elif lambda_1 <= 0.333334:
+            kappa = 0.0  # Uniformly distributed (lambda_1 ~ 1/3)
+        else:
+            # High-concentration approximation for initial guess (Mardia & Jupp)
+            kappa_guess = 1.0 / (2.0 * (1.0 - lambda_1))
+            # Use secant method (requires two guesses, doesn't need derivatives)
+            result = root_scalar(
+                objective_function,
+                x0=kappa_guess,
+                x1=kappa_guess + 1.0,
+                method="secant",
+            )
+            if not result.converged:
+                raise RuntimeError("Numerical solver failed to converge for kappa.")
+            kappa = result.root
+
+        if kappa < 1e-5 or (lambda_1 - lambda_minor) < 1e-5:
+            alpha = 90.0  # Maximum uncertainty
+        else:
+            # Calculate the argument for the arcsin function
+            val = -np.log(1.0 - level) / (len(self) * kappa * (lambda_1 - lambda_minor))
+            # Clip to 1.0 to prevent domain errors in arcsin due to small N or low kappa
+            val = min(val, 1.0)
+            alpha = np.degrees(np.arcsin(np.sqrt(val)))
+        stats = {"mu": ot.eigenvectors(0), "k": kappa, "alpha": alpha}
+        return stats
 
     def var(self):
         """Spherical variance based on resultant length (Mardia 1972).
@@ -831,6 +936,11 @@ class Vector3Set(FeatureSet):
 
                 p_value = (count + 1) / (n_permutations + 1)
                 return float(observed), float(p_value), p_value >= alpha
+
+    def align(self, other):
+        """Return best estimate rotation as `DeformationGradient3` to align with others."""
+        R, rssd = Rotation.align_vectors(np.array(other), np.array(self))
+        return DeformationGradient3(R.as_matrix())
 
     @classmethod
     def from_csv(cls, filename, acol=0, icol=1):

@@ -162,9 +162,18 @@ class Matrix(ABC):
             self._cache["eig"] = evals, evecs
         return self._cache["eig"]
 
-    def eigenvalues(self):
-        """Return sorted tuple of principal eigenvalues"""
-        return self._eig[0]
+    def eigenvalues(self, which=None):
+        """Return eigenvalues
+
+        Args:
+            which: if None returns sorted tuple of eigenvalues.
+                If int returns given eigenvalue. Default None.
+
+        """
+        if which is None:
+            return self._eig[0]
+        else:
+            return self._eig[0][which]
 
     @property
     def det(self):
@@ -277,16 +286,32 @@ class Matrix2(Matrix):
 
         return self.eigenvectors()[1]
 
-    def eigenvectors(self):
-        """Return tuple of principal eigenvectors as ``Vector3`` objects."""
-        U = self._eig[1].T
-        return Vector2(U[0]), Vector2(U[1])
+    def eigenvectors(self, which=None):
+        """Return eigenvectors as ``Vector2`` objects.
 
-    def scaled_eigenvectors(self):
-        """Return tuple of principal eigenvectors as ``Vector3`` objects with
-        magnitudes of eigenvalues"""
+        Args:
+            which: if None returns sorted tuple of eigenvectors.
+                If int returns given eigenvector. Default None.
+        """
         U = self._eig[1].T
-        return self.E1 * Vector2(U[0]), self.E2 * Vector2(U[1])
+        if which is None:
+            return Vector2(U[0]), Vector2(U[1])
+        else:
+            return Vector2(U[which])
+
+    def scaled_eigenvectors(self, which=None):
+        """Return eigenvectors with magnitudes of eigenvalues as
+        ``Vector2`` objects
+
+        Args:
+            which: if None returns sorted tuple of eigenvectors.
+                If int returns given eigenvector. Default None.
+        """
+        U = self._eig[1].T
+        if which is None:
+            return self._eig[0] * Vector2(U[0]), self._eig[1] * Vector2(U[1])
+        else:
+            return self._eig[0][which] * Vector2(U[which])
 
 
 class Matrix3(Matrix):
@@ -444,13 +469,33 @@ class Matrix3(Matrix):
 
         return self.eigenvectors()[2]
 
-    def eigenvectors(self):
-        """Return tuple of principal eigenvectors as ``Vector3`` objects."""
-        U = self._eig[1].T
-        return Vector3(U[0]), Vector3(U[1]), Vector3(U[2])
+    def eigenvectors(self, which=None):
+        """Return eigenvectors as ``Vector3`` objects.
 
-    def scaled_eigenvectors(self):
-        """Return tuple of principal eigenvectors as ``Vector3`` objects with
-        magnitudes of eigenvalues"""
+        Args:
+            which: if None returns sorted tuple of eigenvectors.
+                If int returns given eigenvalue. Default None.
+        """
         U = self._eig[1].T
-        return self.E1 * Vector3(U[0]), self.E2 * Vector3(U[1]), self.E3 * Vector3(U[2])
+        if which is None:
+            return Vector3(U[0]), Vector3(U[1]), Vector3(U[2])
+        else:
+            return Vector3(U[which])
+
+    def scaled_eigenvectors(self, which=None):
+        """Return eigenvectors with magnitudes of eigenvalues as
+        ``Vector3`` objects
+
+        Args:
+            which: if None returns sorted tuple of eigenvectors.
+                If int returns given eigenvector. Default None.
+        """
+        U = self._eig[1].T
+        if which is None:
+            return (
+                self._eig[0] * Vector2(U[0]),
+                self._eig[1] * Vector2(U[1]),
+                self._eig[2] * Vector3(U[2]),
+            )
+        else:
+            return self._eig[0][which] * Vector2(U[which])

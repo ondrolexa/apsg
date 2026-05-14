@@ -1,6 +1,8 @@
 # Changelog
 
 ### 1.4.1 (master)
+ * align method added to featureset to find best rotation
+ * Watson statistics added
  * Spherical harmonics are used as default contouring method. Keyword mathod added.
  * Fisher statistics improved
  * similary test for vecset implemented
