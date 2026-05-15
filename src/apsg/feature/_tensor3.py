@@ -91,6 +91,109 @@ class DeformationGradient3(Matrix3):
         y = (Ryz / Rxy) ** (1 / 3)
         return cls.from_comp(xx=y * Rxy, yy=y, zz=y / Ryz)
 
+    def is_rotation(self):
+        """Return True if DeformationGradient3 is rotation"""
+        return np.allclose(np.dot(np.transpose(self), self), np.eye(3)) & np.allclose(
+            1, np.linalg.det(self)
+        )
+
+    @property
+    def R(self):
+        """Return rotation part of ``DeformationGradient3`` from polar decomposition."""
+        R, _ = spla.polar(self)
+        return Rotation3(R)
+
+    @property
+    def U(self):
+        """Return stretching part of ``DeformationGradient3`` from right polar
+        decomposition."""
+        _, U = spla.polar(self, "right")
+        return DeformationGradient3(U)
+
+    @property
+    def V(self):
+        """Return stretching part of ``DeformationGradient3`` from left polar
+        decomposition."""
+        _, V = spla.polar(self, "left")
+        return DeformationGradient3(V)
+
+    def velgrad(self, time=1):
+        """
+        Return ``VelocityGradient3`` calculated as matrix logarithm divided by given
+        time.
+
+        Keyword Args:
+            time (float): total time. Default 1
+
+        Example:
+            >>> F = defgrad.from_comp(xx=2, xy=1, zz=0.5)
+            >>> L = F.velgrad(time=10)
+            >>> L
+            VelocityGradient3
+            [[ 0.069  0.069  0.   ]
+             [ 0.     0.     0.   ]
+             [ 0.     0.    -0.069]]
+            >>> L.defgrad(time=10)
+            DeformationGradient3
+            [[2.  1.  0. ]
+             [0.  1.  0. ]
+             [0.  0.  0.5]]
+
+        """
+        return VelocityGradient3(spla.logm(np.asarray(self)) / time)
+
+
+class Rotation3(DeformationGradient3):
+    """
+    The class to represent 3D rotation matrix.
+
+    Args:
+      a (3x3 array_like): Input data, that can be converted to
+          3x3 2D array. This includes lists, tuples and ndarrays.
+
+    Returns:
+      ``Rotation3`` object
+
+    Example:
+      >>> R = rotation.from_axis_angle(lin(120, 60), 50)
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not np.allclose(np.dot(np.transpose(self), self), np.eye(3)):
+            raise TypeError("Not valid arguments for Rotation3")
+        # fix improper rotations
+        if np.allclose(-1, np.linalg.det(self)):
+            U, S, Vt = np.linalg.svd(self)
+            # Ensure a proper rotation (det=1)
+            coefs = U @ np.diag([1, 1, np.linalg.det(U @ Vt)]) @ Vt
+            self._coefs = tuple(coefs[0]), tuple(coefs[1]), tuple(coefs[2])
+
+    def quat(self, scalar_first=False):
+        """Return rotation part of ``DeformationGradient3`` as quaternion
+
+        Keyword Args:
+            scalar_first (bool): Whether the scalar component goes first or last. Default is False
+
+        """
+        return Rotation.from_matrix(self).as_quat(canonical=True)
+
+    def axisangle(self):
+        """Return rotation part of ``DeformationGradient3`` as axis, angle tuple."""
+        rotvec = Rotation.from_matrix(self).as_rotvec(degrees=True)
+        sign = 1.0
+        if rotvec[2] < 0:
+            sign = -1.0
+        return sign * Vector3(rotvec).uv(), sign * np.linalg.norm(rotvec)
+
+    def angle(self):
+        """Return rotation angle."""
+        rotvec = Rotation.from_matrix(self).as_rotvec(degrees=True)
+        sign = 1.0
+        if rotvec[2] < 0:
+            sign = -1.0
+        return sign * np.linalg.norm(rotvec)
+
     @classmethod
     @ensure_arguments(Pair)
     def from_pair(cls, p):
@@ -130,19 +233,6 @@ class DeformationGradient3(Matrix3):
 
         rotvec = theta * np.array(vector.uv())
         return cls(Rotation.from_rotvec(rotvec, degrees=True).as_matrix())
-        # x, y, z = vector.uv()._coords
-        # c, s = cosd(theta), sind(theta)
-        # xs, ys, zs = x * s, y * s, z * s
-        # xc, yc, zc = x * (1 - c), y * (1 - c), z * (1 - c)
-        # xyc, yzc, zxc = x * yc, y * zc, z * xc
-
-        # return cls(
-        #     [
-        #         [x * xc + c, xyc - zs, zxc + ys],
-        #         [xyc + zs, y * yc + c, yzc - xs],
-        #         [zxc - ys, yzc + xs, z * zc + c],
-        #     ]
-        # )
 
     @classmethod
     @ensure_arguments(Vector3, Vector3)
@@ -301,93 +391,9 @@ class DeformationGradient3(Matrix3):
         """
         return cls(Rotation.from_euler(seq, angles, degrees=True).as_matrix())
 
-    def is_rotation(self):
-        """Return True if DeformationGradient3 is rotation"""
-        return np.allclose(Rotation.from_matrix(self).as_matrix(), self)
-
-    @property
-    def R(self):
-        """Return rotation part of ``DeformationGradient3`` from polar decomposition."""
-        R, _ = spla.polar(self)
-        return type(self)(R)
-
-    @property
-    def U(self):
-        """Return stretching part of ``DeformationGradient3`` from right polar
-        decomposition."""
-        _, U = spla.polar(self, "right")
-        return type(self)(U)
-
-    @property
-    def V(self):
-        """Return stretching part of ``DeformationGradient3`` from left polar
-        decomposition."""
-        _, V = spla.polar(self, "left")
-        return type(self)(V)
-
-    def quat(self, scalar_first=False):
-        """Return rotation part of ``DeformationGradient3`` as quaternion
-
-        Keyword Args:
-            scalar_first (bool): Whether the scalar component goes first or last. Default is False
-
-        """
-        R = self.R
-        return Rotation.from_matrix(R).as_quat(canonical=True)
-
-    def axisangle(self):
-        """Return rotation part of ``DeformationGradient3`` as axis, angle tuple."""
-        R = self.R
-        rotvec = Rotation.from_matrix(R).as_rotvec(degrees=True)
-        sign = 1.0
-        if rotvec[2] < 0:
-            sign = -1.0
-        return sign * Vector3(rotvec).uv(), sign * np.linalg.norm(rotvec)
-        # w, W = np.linalg.eig(R.T)
-        # i = np.where(abs(np.real(w) - 1.0) < 1e-8)[0]
-        # if not len(i):
-        #     raise ValueError("no unit eigenvector corresponding to eigenvalue 1")
-        # axis = Vector3(np.real(W[:, i[-1]]).squeeze())
-        # # rotation angle depending on direction
-        # cosa = (np.trace(R) - 1.0) / 2.0
-        # if abs(axis.z) > 1e-8:
-        #     sina = (R[1][0] + (cosa - 1.0) * axis.x * axis.y) / axis.z
-        # elif abs(axis.y) > 1e-8:
-        #     sina = (R[0][2] + (cosa - 1.0) * axis.x * axis.z) / axis.y
-        # else:
-        #     sina = (R[2][1] + (cosa - 1.0) * axis.y * axis.z) / axis.x
-        # angle = np.rad2deg(np.arctan2(sina, cosa))
-        # return axis, float(angle)
-
     def euler(self, seq):
         """Return rotation part of ``DeformationGradient3`` as Euler angles"""
-        R = self.R
-        return Rotation.from_matrix(R).as_euler(seq, degrees=True)
-
-    def velgrad(self, time=1):
-        """
-        Return ``VelocityGradient3`` calculated as matrix logarithm divided by given
-        time.
-
-        Keyword Args:
-            time (float): total time. Default 1
-
-        Example:
-            >>> F = defgrad.from_comp(xx=2, xy=1, zz=0.5)
-            >>> L = F.velgrad(time=10)
-            >>> L
-            VelocityGradient3
-            [[ 0.069  0.069  0.   ]
-             [ 0.     0.     0.   ]
-             [ 0.     0.    -0.069]]
-            >>> L.defgrad(time=10)
-            DeformationGradient3
-            [[2.  1.  0. ]
-             [0.  1.  0. ]
-             [0.  0.  0.5]]
-
-        """
-        return VelocityGradient3(spla.logm(np.asarray(self)) / time)
+        return Rotation.from_matrix(self).as_euler(seq, degrees=True)
 
 
 class VelocityGradient3(Matrix3):

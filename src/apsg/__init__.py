@@ -72,6 +72,12 @@ from apsg.feature import (
     PairSet as pairset,
 )
 from apsg.feature import (
+    Rotation2 as rotation2,
+)
+from apsg.feature import (
+    Rotation3 as rotation,
+)
+from apsg.feature import (
     Stress2 as stress2,
 )
 from apsg.feature import (
@@ -143,11 +149,13 @@ __all__ = (
     "cluster",
     "G",
     "defgrad",
+    "rotation",
     "velgrad",
     "stress",
     "ellipsoid",
     "ortensor",
     "defgrad2",
+    "rotation2",
     "velgrad2",
     "stress2",
     "ellipse",

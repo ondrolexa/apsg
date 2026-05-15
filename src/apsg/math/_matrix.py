@@ -437,37 +437,37 @@ class Matrix3(Matrix):
     def E1(self):
         """First eigenvalue"""
 
-        return float(self.eigenvalues()[0])
+        return float(self.eigenvalues(0))
 
     @property
     def E2(self):
         """Second eigenvalue"""
 
-        return float(self.eigenvalues()[1])
+        return float(self.eigenvalues(1))
 
     @property
     def E3(self):
         """Third eigenvalue"""
 
-        return float(self.eigenvalues()[2])
+        return float(self.eigenvalues(2))
 
     @property
     def V1(self):
         """First eigenvector"""
 
-        return self.eigenvectors()[0]
+        return self.eigenvectors(0)
 
     @property
     def V2(self):
         """Second eigenvector"""
 
-        return self.eigenvectors()[1]
+        return self.eigenvectors(1)
 
     @property
     def V3(self):
         """Third eigenvector"""
 
-        return self.eigenvectors()[2]
+        return self.eigenvectors(2)
 
     def eigenvectors(self, which=None):
         """Return eigenvectors as ``Vector3`` objects.

@@ -6,11 +6,21 @@ Test the tensor classes.
 
 import numpy as np
 
+from apsg import (
+    defgrad,
+    defgrad2,
+    fol,
+    lin,
+    ortensor,
+    rotation,
+    rotation2,
+    stress,
+    vec,
+    vecset,
+    velgrad,
+    velgrad2,
+)
 from apsg.math import Matrix3
-from apsg import vec
-from apsg import lin, fol, vecset
-from apsg import defgrad, velgrad, stress, ortensor
-from apsg import defgrad2, velgrad2
 
 # Matrix3 type is value object => structural equality
 
@@ -51,7 +61,7 @@ def test_ortensor_uniform():
 def test_orthogonality_rotation_matrix():
     k = lin.random()
     a = np.random.randint(180)
-    R = defgrad.from_axisangle(k, a)
+    R = rotation.from_axisangle(k, a)
     assert np.allclose(R @ R.T, np.eye(3))
 
 
@@ -66,7 +76,13 @@ def test_defgrad_derivation():
 
 def test_rotation_decomposition2():
     F = defgrad2.from_comp(xy=1)
-    assert defgrad2.from_angle(F.angle()) == F.R
+    assert rotation2.from_angle(F.R.angle()) == F.R
+
+
+def test_defgrad_derivation2():
+    F = defgrad2.from_comp(xx=2, yy=0.5)
+    L = velgrad2.from_comp(xx=np.log(2), yy=-np.log(2))
+    F.velgrad() == L
 
 
 # VelGrad
@@ -99,6 +115,6 @@ def test_stress_invariants_under_rotation():
     S = stress.from_comp(xx=4, yy=6, zz=8, xy=1, xz=2)
     k = lin.random()
     a = np.random.randint(180)
-    R = defgrad.from_axisangle(k, a)
+    R = rotation.from_axisangle(k, a)
     Sr = S.transform(R)
     assert np.allclose([S.I1, S.I2, S.I3], [Sr.I1, Sr.I2, Sr.I3])

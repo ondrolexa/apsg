@@ -1,11 +1,12 @@
 import math
+
 import numpy as np
 from scipy import linalg as spla
 
-from apsg.helpers._math import sind, cosd, atan2d
-from apsg.math._vector import Vector2
-from apsg.math._matrix import Matrix2
 from apsg.decorator._decorator import ensure_arguments
+from apsg.helpers._math import atan2d, cosd, sind
+from apsg.math._matrix import Matrix2
+from apsg.math._vector import Vector2
 
 
 class DeformationGradient2(Matrix2):
@@ -63,6 +64,65 @@ class DeformationGradient2(Matrix2):
 
         return cls.from_comp(xx=R ** (1 / 2), yy=R ** (-1 / 2))
 
+    def is_rotation(self):
+        """Return True if DeformationGradient3 is rotation"""
+        return np.allclose(np.dot(np.transpose(self), self), np.eye(2)) & np.allclose(
+            1, np.linalg.det(self)
+        )
+
+    @property
+    def R(self):
+        """Return rotation part of ``DeformationGradient2`` from polar decomposition."""
+        R, _ = spla.polar(self)
+        return Rotation2(R)
+
+    @property
+    def U(self):
+        """Return stretching part of ``DeformationGradient2`` from right polar decomposition."""
+        _, U = spla.polar(self, "right")
+        return type(self)(U)
+
+    @property
+    def V(self):
+        """Return stretching part of ``DeformationGradient2`` from left polar decomposition."""
+        _, V = spla.polar(self, "left")
+        return type(self)(V)
+
+    def velgrad(self, time=1):
+        """Return ``VelocityGradient2`` for given time"""
+        return VelocityGradient2(spla.logm(np.asarray(self)) / time)
+
+
+class Rotation2(DeformationGradient2):
+    """
+    The class to represent 2D rotation matrix.
+
+    Args:
+      a (2x2 array_like): Input data, that can be converted to
+          2x2 2D array. This includes lists, tuples and ndarrays.
+
+    Returns:
+      ``Rotation2`` object
+
+    Example:
+      >>> R = rotation2.from_angle(lin(120, 60), 50)
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not np.allclose(np.dot(np.transpose(self), self), np.eye(2)):
+            raise TypeError("Not valid arguments for Rotation3")
+        # fix improper rotations
+        if np.allclose(-1, np.linalg.det(self)):
+            U, S, Vt = np.linalg.svd(self)
+            # Ensure a proper rotation (det=1)
+            coefs = U @ np.diag([1, 1, np.linalg.det(U @ Vt)]) @ Vt
+            self._coefs = tuple(coefs[0]), tuple(coefs[1])
+
+    def angle(self):
+        """Return rotation angle."""
+        return atan2d(self[1, 0], self[0, 0])
+
     @classmethod
     def from_angle(cls, theta):
         """Return ``DeformationGradient2`` representing rotation by angle theta.
@@ -101,33 +161,6 @@ class DeformationGradient2(Matrix2):
 
         """
         return cls.from_angle(v1.angle(v2))
-
-    @property
-    def R(self):
-        """Return rotation part of ``DeformationGradient2`` from polar decomposition."""
-        R, _ = spla.polar(self)
-        return type(self)(R)
-
-    @property
-    def U(self):
-        """Return stretching part of ``DeformationGradient2`` from right polar decomposition."""
-        _, U = spla.polar(self, "right")
-        return type(self)(U)
-
-    @property
-    def V(self):
-        """Return stretching part of ``DeformationGradient2`` from left polar decomposition."""
-        _, V = spla.polar(self, "left")
-        return type(self)(V)
-
-    def angle(self):
-        """Return rotation part of ``DeformationGradient2`` as angle."""
-        R, _ = spla.polar(self)
-        return atan2d(R[1, 0], R[0, 0])
-
-    def velgrad(self, time=1):
-        """Return ``VelocityGradient2`` for given time"""
-        return VelocityGradient2(spla.logm(np.asarray(self)) / time)
 
 
 class VelocityGradient2(Matrix2):

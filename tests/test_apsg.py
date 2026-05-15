@@ -14,11 +14,10 @@ Proper unit tests should fail for exactly one reason
 (that’s why you usually should be using one assert per unit test.)
 """
 
-
 import numpy as np
 import pytest
 
-from apsg import defgrad, fault, fol, lin, linset, pair, vec, vecset
+from apsg import fault, fol, lin, linset, pair, rotation, vec, vecset
 from apsg.config import apsg_conf
 
 atol = 1e-05  # safe tests
@@ -306,15 +305,15 @@ class TestVector:
     # ``H`` method
 
     def test_mutual_rotation(self, x, y, z):
-        current = defgrad.from_two_vectors(x, y)
-        expects = defgrad.from_axisangle(z, 90)
+        current = rotation.from_two_vectors(x, y)
+        expects = rotation.from_axisangle(z, 90)
 
         assert current == expects
 
     # ``transform`` method
 
     def test_transform_method(self, x, y, z):
-        F = defgrad.from_axisangle(z, 90)
+        F = rotation.from_axisangle(z, 90)
         current = x.transform(F)
         expects = y
 
@@ -395,14 +394,14 @@ class Testlineation:
     def test_mutual_rotation(self):
         l1 = lin.random()
         l2 = lin.random()
-        F = defgrad.from_two_vectors(l1, l2)
+        F = rotation.from_two_vectors(l1, l2)
 
         assert l1.transform(F) == l2
 
     def test_angle_under_rotation(self):
         l1 = lin.random()
         l2 = lin.random()
-        D = defgrad.from_axisangle(lin(45, 45), 60)
+        D = rotation.from_axisangle(lin(45, 45), 60)
 
         assert np.isclose(
             l1.angle(l2), l1.transform(D).angle(l2.transform(D)), atol=atol
@@ -486,14 +485,14 @@ class Testfoliation:
     def test_mutual_rotation(self):
         f1 = fol.random()
         f2 = fol.random()
-        F = defgrad.from_two_vectors(f1, f2)
+        F = rotation.from_two_vectors(f1, f2)
 
         assert f1.transform(F) == f2
 
     def test_angle_under_rotation(self):
         f1 = fol.random()
         f2 = fol.random()
-        D = defgrad.from_axisangle(lin(45, 45), 60)
+        D = rotation.from_axisangle(lin(45, 45), 60)
 
         assert np.isclose(
             f1.angle(f2), f1.transform(D).angle(f2.transform(D)), atol=atol
