@@ -1,6 +1,7 @@
 # Changelog
 
 ### 1.4.1 (master)
+ * Rotation classes derived from deformation gradient class implemented
  * align method added to featureset to find best rotation
  * Watson statistics added
  * Spherical harmonics are used as default contouring method. Keyword mathod added.

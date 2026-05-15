@@ -80,13 +80,13 @@ class DeformationGradient2(Matrix2):
     def U(self):
         """Return stretching part of ``DeformationGradient2`` from right polar decomposition."""
         _, U = spla.polar(self, "right")
-        return type(self)(U)
+        return DeformationGradient2(U)
 
     @property
     def V(self):
         """Return stretching part of ``DeformationGradient2`` from left polar decomposition."""
         _, V = spla.polar(self, "left")
-        return type(self)(V)
+        return DeformationGradient2(V)
 
     def velgrad(self, time=1):
         """Return ``VelocityGradient2`` for given time"""
@@ -125,15 +125,15 @@ class Rotation2(DeformationGradient2):
 
     @classmethod
     def from_angle(cls, theta):
-        """Return ``DeformationGradient2`` representing rotation by angle theta.
+        """Return ``Rotation2`` representing rotation by angle theta.
 
         Args:
           theta: Angle of rotation in degrees
 
         Example:
-          >>> F = defgrad2.from_angle(45)
+          >>> F = rotation2.from_angle(45)
           >>> F
-          DeformationGradient2
+          Rotation2
           [[ 0.707 -0.707]
            [ 0.707  0.707]]
 
@@ -145,7 +145,7 @@ class Rotation2(DeformationGradient2):
     @classmethod
     @ensure_arguments(Vector2, Vector2)
     def from_two_vectors(cls, v1, v2):
-        """Return ``DeformationGradient2`` representing rotation around axis perpendicular
+        """Return ``rotation2`` representing rotation around axis perpendicular
         to both vectors and rotate v1 to v2.
 
         Args:
@@ -153,9 +153,9 @@ class Rotation2(DeformationGradient2):
           v2: ``Vector2`` like object
 
         Example:
-          >>> F = defgrad2.from_two_vectors(vec2(1, 1), vec2(0, 1))
+          >>> F = rotation2.from_two_vectors(vec2(1, 1), vec2(0, 1))
           >>> F
-          DeformationGradient2
+          Rotation2
           [[ 0.707 -0.707]
            [ 0.707  0.707]]
 

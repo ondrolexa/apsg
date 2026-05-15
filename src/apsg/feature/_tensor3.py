@@ -170,7 +170,7 @@ class Rotation3(DeformationGradient3):
             self._coefs = tuple(coefs[0]), tuple(coefs[1]), tuple(coefs[2])
 
     def quat(self, scalar_first=False):
-        """Return rotation part of ``DeformationGradient3`` as quaternion
+        """Return rotation as quaternion
 
         Keyword Args:
             scalar_first (bool): Whether the scalar component goes first or last. Default is False
@@ -179,11 +179,11 @@ class Rotation3(DeformationGradient3):
         return Rotation.from_matrix(self).as_quat(canonical=True)
 
     def axisangle(self):
-        """Return rotation part of ``DeformationGradient3`` as axis, angle tuple."""
+        """Return rotation as (axis, angle) tuple."""
         rotvec = Rotation.from_matrix(self).as_rotvec(degrees=True)
         sign = 1.0
-        if rotvec[2] < 0:
-            sign = -1.0
+        # if rotvec[2] < 0:
+        #    sign = -1.0
         return sign * Vector3(rotvec).uv(), sign * np.linalg.norm(rotvec)
 
     def angle(self):
@@ -197,7 +197,7 @@ class Rotation3(DeformationGradient3):
     @classmethod
     @ensure_arguments(Pair)
     def from_pair(cls, p):
-        """Return ``DeformationGradient3`` representing rotation defined by ``Pair``.
+        """Return ``Rotation3`` representing rotation defined by ``Pair``.
 
         Rotation bring x-axis to lineation and z-axis to normal to plane
 
@@ -221,14 +221,14 @@ class Rotation3(DeformationGradient3):
     @classmethod
     @ensure_arguments(Vector3)
     def from_axisangle(cls, vector, theta):
-        """Return ``DeformationGradient3`` representing rotation around axis.
+        """Return ``Rotation3`` representing rotation around axis.
 
         Args:
           vector: Rotation axis as ``Vector3`` like object
           theta: Angle of rotation in degrees
 
         Example:
-          >>> F = defgrad.from_axisangle(lin(120, 30), 45)
+          >>> F = rotation.from_axisangle(lin(120, 30), 45)
         """
 
         rotvec = theta * np.array(vector.uv())
@@ -237,7 +237,7 @@ class Rotation3(DeformationGradient3):
     @classmethod
     @ensure_arguments(Vector3, Vector3)
     def from_two_vectors(cls, v1, v2):
-        """Return ``DeformationGradient3`` representing rotation around axis perpendicular
+        """Return ``Rotation3`` representing rotation around axis perpendicular
         to both vectors and rotate v1 to v2.
 
         Args:
@@ -245,7 +245,7 @@ class Rotation3(DeformationGradient3):
           v2: ``Vector3`` like object
 
         Example:
-          >>> F = defgrad.from_two_vectors(lin(120, 30), lin(210, 60))
+          >>> F = rotation.from_two_vectors(lin(120, 30), lin(210, 60))
         """
         return cls.from_axisangle(v1.cross(v2), v1.angle(v2))
 
@@ -253,7 +253,7 @@ class Rotation3(DeformationGradient3):
     @ensure_arguments(Vector3, Vector3, Vector3)
     def from_vectors_axis(cls, v1, v2, a):
         """
-        Return ``DeformationGradient3`` representing rotation of vector v1 to v2 around
+        Return ``Rotation3`` representing rotation of vector v1 to v2 around
         axis a.
 
         If v1.angle(a) is not equal to v2.angle(b), the minimum adjustment of rotation
@@ -268,7 +268,7 @@ class Rotation3(DeformationGradient3):
             >>> v1 = lin(130, 49)
             >>> v2 = lin(209, 77)
             >>> a = lin(30, 30)
-            >>> R = defgrad.from_vectors_axis(v1, v2, a)
+            >>> R = rotation.from_vectors_axis(v1, v2, a)
             >>> v1.transform(R) == v2
             True
             >>> a_fix, theta = R.axisangle()
@@ -285,7 +285,7 @@ class Rotation3(DeformationGradient3):
     @classmethod
     def from_two_pairs(cls, p1, p2, symmetry=False):
         """
-        Return ``DeformationGradient3`` representing rotation of coordinates from system
+        Return ``Rotation3`` representing rotation of coordinates from system
         defined by ``Pair`` p1 to system defined by ``Pair`` p2.
 
         Lineation in pair define x axis and normal to foliation in pair define z axis
@@ -300,7 +300,7 @@ class Rotation3(DeformationGradient3):
         Example:
             >>> p1 = pair(58, 36, 81, 34)
             >>> p2 = pair(217,42, 162, 27)
-            >>> R = defgrad.from_two_pairs(p1, p2)
+            >>> R = rotation.from_two_pairs(p1, p2)
             >>> p1.transform(R) == p2
             True
 
@@ -323,7 +323,7 @@ class Rotation3(DeformationGradient3):
     @classmethod
     def from_declination(cls, lat, lon, year=None, alt=0):
         """
-        Return ``DeformationGradient3`` representing rotation of coordinates correcting
+        Return ``Rotation3`` representing rotation of coordinates correcting
         magnetic declination at given coordinates and given time
 
         Args:
@@ -335,7 +335,7 @@ class Rotation3(DeformationGradient3):
           alt (float): altitude in km
 
         Example:
-            >>> R = defgrad.from_declination(48.6, 13.2, alt=0.6)
+            >>> R = rotation.from_declination(48.6, 13.2, alt=0.6)
             >>> f = fol(20, 48)
             >>> f.transform(R)
             S:25/48
@@ -351,7 +351,7 @@ class Rotation3(DeformationGradient3):
     @classmethod
     def from_quat(cls, quat, scalar_first=False):
         """
-        Return ``DeformationGradient3`` representing rotation of coordinates created
+        Return ``Rotation3`` representing rotation of coordinates created
         from unit norm quaternion.
 
         Args:
@@ -362,7 +362,7 @@ class Rotation3(DeformationGradient3):
 
         Example:
             >>> q = [-0.11543715, 0.19994301, 0.39988603, 0.88701083]
-            >>> R = defgrad.from_quat(q)
+            >>> R = rotation.from_quat(q)
             >>> f = fol(20, 48)
             >>> f.transform(R)
             S:82/23
@@ -373,7 +373,7 @@ class Rotation3(DeformationGradient3):
     @classmethod
     def from_euler(cls, seq, angles):
         """
-        Return ``DeformationGradient3`` representing rotation of coordinates created
+        Return ``Rotation3`` representing rotation of coordinates created
         from unit norm quaternion.
 
         Args:
@@ -383,7 +383,7 @@ class Rotation3(DeformationGradient3):
                 defines one axis around which angles turns.
 
         Example:
-            >>> R = defgrad.from_euler('zxz', [30,-64, 125])
+            >>> R = rotation.from_euler('zxz', [30,-64, 125])
             >>> f = fol(20, 48)
             >>> f.transform(R)
             S:74/70
