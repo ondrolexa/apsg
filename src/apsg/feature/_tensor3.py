@@ -169,15 +169,6 @@ class Rotation3(DeformationGradient3):
             coefs = U @ np.diag([1, 1, np.linalg.det(U @ Vt)]) @ Vt
             self._coefs = tuple(coefs[0]), tuple(coefs[1]), tuple(coefs[2])
 
-    def quat(self, scalar_first=False):
-        """Return rotation as quaternion
-
-        Keyword Args:
-            scalar_first (bool): Whether the scalar component goes first or last. Default is False
-
-        """
-        return Rotation.from_matrix(self).as_quat(canonical=True)
-
     def axisangle(self):
         """Return rotation as (axis, angle) tuple."""
         rotvec = Rotation.from_matrix(self).as_rotvec(degrees=True)
@@ -193,6 +184,25 @@ class Rotation3(DeformationGradient3):
         if rotvec[2] < 0:
             sign = -1.0
         return sign * np.linalg.norm(rotvec)
+
+    def euler(self, seq):
+        """Return rotation as Euler angles specified in degrees.
+
+        Note: Each character in seq defines one axis around which angles turns.
+
+        Args:
+            seq (str): sequence of axes for rotations. Up to 3 characters belonging to the set
+                {‘X’, ‘Y’, ‘Z’} for intrinsic rotations, or {‘x’, ‘y’, ‘z’} for extrinsic rotations.
+        """
+        return Rotation.from_matrix(self).as_euler(seq, degrees=True)
+
+    def quat(self, scalar_first=False):
+        """Return rotation as quaternion
+
+        Keyword Args:
+            scalar_first (bool): Whether the scalar component goes first or last. Default is False
+        """
+        return Rotation.from_matrix(self).as_quat(canonical=True)
 
     @classmethod
     @ensure_arguments(Pair)
@@ -390,10 +400,6 @@ class Rotation3(DeformationGradient3):
 
         """
         return cls(Rotation.from_euler(seq, angles, degrees=True).as_matrix())
-
-    def euler(self, seq):
-        """Return rotation part of ``DeformationGradient3`` as Euler angles"""
-        return Rotation.from_matrix(self).as_euler(seq, degrees=True)
 
 
 class VelocityGradient3(Matrix3):
