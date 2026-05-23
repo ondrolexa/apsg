@@ -43,15 +43,6 @@ class Direction(Axial2):
     def __repr__(self):
         return f"D:{self.direction:.0f}"
 
-    def to_json(self):
-        """Return as JSON dict"""
-        azi, inc = vec2geo_linear_signed(self)
-        return {
-            "datatype": type(self).__name__,
-            "args": (azi, inc),
-            "kwargs": self._attrs,
-        }
-
 
 class Lineation(Axial3):
     """
@@ -728,10 +719,10 @@ class Cone:
         self.revangle = float(revangle)
         if self.axis.angle(self.secant) > 90:
             self.secant = -self.secant
-            if is_jsonable(kwargs):
-                self._attrs = kwargs
-            else:
-                raise TypeError("Provided attributes are not serializable.")
+        if is_jsonable(kwargs):
+            self._attrs = kwargs
+        else:
+            raise TypeError("Provided attributes are not serializable.")
 
     def __repr__(self):
         azi, inc = vec2geo_linear(self.axis)

@@ -25,7 +25,7 @@ class DeformationGradient2(Matrix2):
     """
 
     @classmethod
-    def from_comp(cls, xx=1, xy=0, yx=0, yy=1):
+    def from_comp(cls, **kwargs):
         """Return ``DeformationGradient2`` defined by individual components.
         Default is zero tensor.
 
@@ -36,13 +36,17 @@ class DeformationGradient2(Matrix2):
             yy (float): tensor component F_yy
 
         Example:
-            >>> F = matrix2.from_comp(xy=2)
+            >>> F = defgrad2.from_comp(xy=2)
             >>> F
-            [[0. 2.]
-            [0. 0.]]
+            DeformationGradient2
+            [[1. 2.]
+             [0. 1.]]
 
         """
-
+        xx = kwargs.get("xx", 1)
+        xy = kwargs.get("xy", 0)
+        yx = kwargs.get("yx", 0)
+        yy = kwargs.get("yy", 1)
         return cls([[xx, xy], [yx, yy]])
 
     @classmethod
@@ -180,7 +184,7 @@ class VelocityGradient2(Matrix2):
     """
 
     @classmethod
-    def from_comp(cls, xx=0, xy=0, yx=0, yy=0):
+    def from_comp(cls, **kwargs):
         """Return ``VelocityGradient2`` defined by individual components.
         Default is zero tensor.
 
@@ -193,11 +197,15 @@ class VelocityGradient2(Matrix2):
         Example:
             >>> L = velgrad2.from_comp(xy=2)
             >>> L
+            VelocityGradient2
             [[0. 2.]
              [0. 0.]]
 
         """
-
+        xx = kwargs.get("xx", 0)
+        xy = kwargs.get("xy", 0)
+        yx = kwargs.get("yx", 0)
+        yy = kwargs.get("yy", 0)
         return cls([[xx, xy], [yx, yy]])
 
     def defgrad(self, time=1, steps=1):
@@ -253,14 +261,14 @@ class Stress2(Tensor2):
     """
 
     @classmethod
-    def from_comp(cls, xx=0, xy=0, yy=0):
+    def from_comp(cls, **kwargs):
         """
         Return ``Stress2`` tensor. Default is zero tensor.
 
         Note that stress tensor must be symmetrical.
 
         Keyword Args:
-          xx, xy, yy (float): tensor components
+          xx, xy|yx, yy (float): tensor components
 
         Example:
           >>> S = stress2.from_comp(xx=-5, yy=-2, xy=1)
@@ -269,7 +277,9 @@ class Stress2(Tensor2):
           [[-5.  1.]
            [ 1. -2.]]
         """
-
+        xx = kwargs.get("xx", 0)
+        xy = kwargs.get("xy", kwargs.get("yx", 0))
+        yy = kwargs.get("yy", 0)
         return cls([[xx, xy], [xy, yy]])
 
     @property
@@ -376,9 +386,10 @@ class Stress2(Tensor2):
         Returns diagonalized Stress tensor and orthogonal matrix R, which transforms actual
         coordinate system to the principal one.
         """
+        ev = self.eigenvectors()
         return (
             type(self)(np.diag(self.eigenvalues())),
-            DeformationGradient2(self.eigenvectors()),
+            DeformationGradient2(np.array([v._coords for v in ev])),
         )
 
     def cauchy(self, n):
@@ -427,7 +438,7 @@ class Stress2(Tensor2):
         """
         Return signed shear stress magnitude on plane given by normal vector.
         """
-        R = DeformationGradient2.from_angle(n.direction)
+        R = Rotation2.from_angle(n.direction)
         return self.transform(R)[1, 0]
 
 

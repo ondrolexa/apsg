@@ -20,6 +20,7 @@ from apsg.feature._tensor3 import (
     DeformationGradient3,
     Ellipsoid,
     OrientationTensor3,
+    Rotation3,
     Stress3,
 )
 from apsg.helpers._math import acosd
@@ -176,7 +177,7 @@ class Vector2Set(FeatureSet):
 
     def proj(self, vec):
         """Return projections of all features in ``Vector2Set`` onto vector."""
-        return type(self)([e.project() for e in self], name=self.name)
+        return type(self)([e.project(vec) for e in self], name=self.name)
 
     def dot(self, vec):
         """Return array of dot products of all features in ``Vector2Set`` with vector."""
@@ -194,7 +195,7 @@ class Vector2Set(FeatureSet):
             res = [e.cross(f) for e, f in combinations(self.data, 2)]
         elif issubclass(type(other), FeatureSet):
             res = [e.cross(f) for e, f in zip(self, other)]
-        elif issubclass(type(other), Vector3):
+        elif issubclass(type(other), Vector2):
             res = [e.cross(other) for e in self]
         else:
             raise TypeError("Wrong argument type!")
@@ -214,7 +215,7 @@ class Vector2Set(FeatureSet):
             res = [e.angle(f) for e, f in combinations(self.data, 2)]
         elif issubclass(type(other), FeatureSet):
             res = [e.angle(f) for e, f in zip(self, other)]
-        elif issubclass(type(other), Vector3):
+        elif issubclass(type(other), Vector2):
             res = [e.angle(other) for e in self]
         else:
             raise TypeError("Wrong argument type!")
@@ -921,7 +922,7 @@ class Vector3Set(FeatureSet):
                     XY = np.mean(cdist(X, Y))  # cross-distances
                     XX = np.mean(cdist(X, X))  # within X
                     YY = np.mean(cdist(Y, Y))  # within Y
-                    return (n * m / (n + m)) * (2 * XY - XX - YY)
+                    return float((n * m / (n + m)) * (2 * XY - XX - YY))
 
                 pooled = np.vstack([self, other])
                 observed = _energy_statistic(np.array(self), other)
@@ -939,7 +940,7 @@ class Vector3Set(FeatureSet):
 
     def align(self, other):
         """Return best estimate rotation as `DeformationGradient3` to align with others."""
-        R, rssd = Rotation.align_vectors(np.array(other), np.array(self))
+        R = Rotation.align_vectors(np.array(other), np.array(self))[0]
         return DeformationGradient3(R.as_matrix())
 
     @classmethod
@@ -1299,29 +1300,17 @@ class PairSet(FeatureSet):
         res = []
         if other is None:
             res = [
-                abs(
-                    DeformationGradient3.from_two_pairs(
-                        e, f, symmetry=True
-                    ).axisangle()[1]
-                )
+                abs(Rotation3.from_two_pairs(e, f, symmetry=True).axisangle()[1])
                 for e, f in combinations(self.data, 2)
             ]
         elif issubclass(type(other), PairSet):
             res = [
-                abs(
-                    DeformationGradient3.from_two_pairs(
-                        e, f, symmetry=True
-                    ).axisangle()[1]
-                )
+                abs(Rotation3.from_two_pairs(e, f, symmetry=True).axisangle()[1])
                 for e, f in zip(self, other)
             ]
         elif issubclass(type(other), Pair):
             res = [
-                abs(
-                    DeformationGradient3.from_two_pairs(
-                        e, other, symmetry=True
-                    ).axisangle()[1]
-                )
+                abs(Rotation3.from_two_pairs(e, other, symmetry=True).axisangle()[1])
                 for e in self
             ]
         else:
@@ -1538,29 +1527,17 @@ class FaultSet(PairSet):
         res = []
         if other is None:
             res = [
-                abs(
-                    DeformationGradient3.from_two_pairs(
-                        e, f, symmetry=False
-                    ).axisangle()[1]
-                )
+                abs(Rotation3.from_two_pairs(e, f, symmetry=False).axisangle()[1])
                 for e, f in combinations(self.data, 2)
             ]
         elif issubclass(type(other), FaultSet):
             res = [
-                abs(
-                    DeformationGradient3.from_two_pairs(
-                        e, f, symmetry=False
-                    ).axisangle()[1]
-                )
+                abs(Rotation3.from_two_pairs(e, f, symmetry=False).axisangle()[1])
                 for e, f in zip(self, other)
             ]
         elif issubclass(type(other), Fault):
             res = [
-                abs(
-                    DeformationGradient3.from_two_pairs(
-                        e, other, symmetry=False
-                    ).axisangle()[1]
-                )
+                abs(Rotation3.from_two_pairs(e, other, symmetry=False).axisangle()[1])
                 for e in self
             ]
         else:

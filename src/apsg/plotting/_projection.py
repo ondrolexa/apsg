@@ -24,7 +24,7 @@ class Projection:
         if self.rotate_data:
             x, y, z = self.R.dot((x, y, z))
         if self.hemisphere == "upper":
-            X, Y = self._project(-x, -y, -z)
+            X, Y = self._project(-x, -y, -z)  # ty: ignore
             if clip_inside:
                 outside = np.logical_and(
                     X * X + Y * Y > 1.0, ~np.isclose(X * X + Y * Y, 1)
@@ -33,7 +33,7 @@ class Projection:
                 Y[outside] = np.nan
             return -X, -Y
         else:
-            X, Y = self._project(x, y, z)
+            X, Y = self._project(x, y, z)  # ty: ignore
             if clip_inside:
                 outside = np.logical_and(
                     X * X + Y * Y > 1.0, ~np.isclose(X * X + Y * Y, 1)
@@ -45,8 +45,8 @@ class Projection:
     def project_data_antipodal(self, x, y, z, clip_inside=True):
         if self.rotate_data:
             x, y, z = self.R.dot((x, y, z))
-        X1, Y1 = self._project(x, y, z)
-        X2, Y2 = self._project(-x, -y, -z)
+        X1, Y1 = self._project(x, y, z)  # ty: ignore
+        X2, Y2 = self._project(-x, -y, -z)  # ty: ignore
         if clip_inside:
             outside1 = np.logical_and(
                 X1 * X1 + Y1 * Y1 > 1.0, ~np.isclose(X1 * X1 + Y1 * Y1, 1)
@@ -63,14 +63,14 @@ class Projection:
     def inverse_data(self, X, Y):
         if X * X + Y * Y > 1.0:
             return None
-        x, y, z = self._inverse(X, Y)
+        x, y, z = self._inverse(X, Y)  # ty: ignore
         if self.rotate_data:
             x, y, z = self.Ri.dot((x, y, z))
         return x, y, z
 
     def project_overlay(self, x, y, z):
         x, y, z = self.R.dot((x, y, z))
-        X, Y = self._project(x, y, z)
+        X, Y = self._project(x, y, z)  # ty: ignore
         outside = X * X + Y * Y >= 1.0
         X[outside] = np.nan
         Y[outside] = np.nan

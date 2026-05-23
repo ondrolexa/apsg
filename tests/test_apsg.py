@@ -1,620 +1,952 @@
-# -*- coding: utf-8 -*-
+import math
 
-"""
-Unit tests for `apsg` module.
-
-Use this steps for unit test:
-
-- Arrange all necessary preconditions and inputs.
-- Act on the object or method under test.
-- Assert that the expected results have occurred.
-
-
-Proper unit tests should fail for exactly one reason
-(that’s why you usually should be using one assert per unit test.)
-"""
-
-import numpy as np
 import pytest
 
-from apsg import fault, fol, lin, linset, pair, rotation, vec, vecset
-from apsg.config import apsg_conf
+from apsg import cone, dir2, fault, fol, lin, pair
+from apsg.feature._geodata import Cone, Direction, Fault, Foliation, Lineation, Pair
+from apsg.math._vector import Vector2, Vector3
 
-atol = 1e-05  # safe tests
+# ---------------------------------------------------------------------------
+# Vector2
+# ---------------------------------------------------------------------------
 
-# ############################################################################
-# Vectors
-# ############################################################################
 
+class TestVector2:
+    def test_default(self):
+        v = Vector2()
+        assert v.x == 1
+        assert v.y == 0
+
+    def test_from_string(self):
+        assert Vector2("x").x == 1
+        assert Vector2("x").y == 0
+        assert Vector2("y").x == 0
+        assert Vector2("y").y == 1
+        with pytest.raises(TypeError):
+            Vector2("z")
+
+    def test_from_angle(self):
+        v = Vector2(90)
+        assert math.isclose(v.x, 0, abs_tol=1e-10)
+        assert math.isclose(v.y, 1, abs_tol=1e-10)
+
+    def test_from_two_args(self):
+        v = Vector2(3, 4)
+        assert v.x == 3
+        assert v.y == 4
+
+    def test_from_tuple(self):
+        v = Vector2((3, 4))
+        assert v.x == 3
+        assert v.y == 4
+
+    def test_from_vector2(self):
+        v = Vector2(Vector2(3, 4))
+        assert v.x == 3
+        assert v.y == 4
+
+    def test_angle_zero(self):
+        assert Vector2(0) == Vector2(1, 0)
+
+    def test_repr(self):
+        assert repr(Vector2(3, 4)).startswith("Vector2(")
+
+    def test_magnitude(self, v2):
+        assert math.isclose(v2.magnitude(), 5)
+
+    def test_abs(self, v2):
+        assert math.isclose(abs(v2), 5)
+
+    def test_normalized(self, v2):
+        n = v2.normalized()
+        assert math.isclose(n.magnitude(), 1)
+
+    def test_uv_alias(self, v2):
+        assert v2.uv() == v2.normalized()
+
+    def test_dot(self):
+        assert math.isclose(Vector2(1, 0).dot(Vector2(0, 1)), 0)
+        assert math.isclose(Vector2(1, 0).dot(Vector2(1, 0)), 1)
+        assert math.isclose(Vector2(3, 4).dot(Vector2(2, 3)), 18)
+
+    def test_cross(self):
+        assert math.isclose(Vector2(1, 0).cross(Vector2(0, 1)), 1)
+        assert math.isclose(Vector2(0, 1).cross(Vector2(1, 0)), -1)
+        assert math.isclose(Vector2(1, 1).cross(Vector2(2, 2)), 0)
+
+    def test_angle_between(self):
+        a = Vector2(1, 0)
+        b = Vector2(0, 1)
+        assert math.isclose(a.angle(b), 90)
 
-class TestVector:
-    @pytest.fixture
-    def x(self):
-        return vec(1, 0, 0)
+    def test_add(self):
+        assert Vector2(1, 2) + Vector2(3, 4) == Vector2(4, 6)
+
+    def test_sub(self):
+        assert Vector2(3, 5) - Vector2(1, 2) == Vector2(2, 3)
+
+    def test_mul(self):
+        assert Vector2(1, 2) * 3 == Vector2(3, 6)
+
+    def test_rmul(self):
+        assert 3 * Vector2(1, 2) == Vector2(3, 6)
 
-    @pytest.fixture
-    def y(self):
-        return vec(0, 1, 0)
+    def test_truediv(self):
+        v = Vector2(4, 8) / 2
+        assert v == Vector2(2, 4)
 
-    @pytest.fixture
-    def z(self):
-        return vec(0, 0, 1)
+    def test_neg(self):
+        assert -Vector2(1, 2) == Vector2(-1, -2)
 
-    def test_that_vec_could_be_instatiated_from_single_ot_three_args(self):
-        lhs = vec([1, 2, 3])
-        rhs = vec(1, 2, 3)
+    def test_pos(self):
+        assert +Vector2(1, 2) == Vector2(1, 2)
 
-        current = lhs == rhs
-        expects = True
+    def test_eq(self):
+        assert Vector2(1, 2) == Vector2(1, 2)
+        assert Vector2(1, 2) != Vector2(1, 3)
 
-        assert current == expects
+    def test_matmul(self):
+        r = Vector2(1, 2) @ Vector2(3, 4)
+        assert math.isclose(r, 11)
 
-    def test_that_vec_string_gets_three_digits_when_vec2dd_settings_is_false(self):
-        apsg_conf.vec2geo = False
+    def test_is_unit(self):
+        assert Vector2(1, 0).is_unit()
+        assert not Vector2(3, 4).is_unit()
+
+    def test_project(self):
+        v = Vector2(3, 4).project(Vector2(1, 0))
+        assert v == Vector2(3, 0)
 
-        v = vec(1, 2, 3)
+    def test_reject(self):
+        v = Vector2(3, 4).reject(Vector2(1, 0))
+        assert v == Vector2(0, 4)
 
-        current = str(v)
-        expects = "Vector3(1, 2, 3)"
+    def test_direction(self):
+        assert math.isclose(Vector2(1, 0).direction, 0)
+        assert math.isclose(Vector2(0, 1).direction, 90)
 
-        assert current == expects
+    def test_transform(self):
+        F = [[1, 0], [0, -1]]
+        u = Vector2(1, 1)
+        assert u.transform(F) == Vector2(1, -1)
 
-    def test_that_vec_string_gets_dip_and_dir_when_vec2dd_settings_is_true(self):
-        apsg_conf.vec2geo = True
+    def test_transform_norm(self):
+        F = [[2, 0], [0, 2]]
+        u = Vector2(1, 0)
+        r = u.transform(F, norm=True)
+        assert math.isclose(r.magnitude(), 1)
 
-        v = vec(1, 2, 3)
+    def test_to_json(self):
+        v = Vector2(3, 4)
+        j = v.to_json()
+        assert j["datatype"] == "Vector2"
+        assert j["args"] == ((3, 4),)
 
-        current = str(v)
-        expects = "V:63/53"
+    def test_to_json_with_attrs(self):
+        v = Vector2(1, 2, label="test")
+        j = v.to_json()
+        assert j["kwargs"] == {"label": "test"}
 
-        assert current == expects
+    def test_random(self):
+        v = Vector2.random()
+        assert isinstance(v, Vector2)
+        assert math.isclose(abs(v), 1, abs_tol=1e-10)
 
-        apsg_conf.vec2geo = False
+    def test_unit_x(self):
+        assert Vector2.unit_x() == Vector2(1, 0)
 
-    # ``==`` operator
+    def test_unit_y(self):
+        assert Vector2.unit_y() == Vector2(0, 1)
 
-    def test_that_equality_operator_is_reflexive(self):
-        u = vec(1, 2, 3)
+    def test_copy(self):
+        v = Vector2(3, 4)
+        c = v.copy()
+        assert c == v
+        assert c is not v
 
-        assert u == u
+    def test_hash(self):
+        assert hash(Vector2(1, 0)) == hash(Vector2(1, 0))
 
-    def test_that_equality_operator_is_symetric(self):
-        u = vec(1, 2, 3)
-        v = vec(1, 2, 3)
+    def test_bad_args(self):
+        with pytest.raises(TypeError):
+            Vector2(1, 2, 3)
 
-        assert u == v and v == u
 
-    def test_that_equality_operator_is_transitive(self):
-        u = vec(1, 2, 3)
-        v = vec(1, 2, 3)
-        w = vec(1, 2, 3)
+# ---------------------------------------------------------------------------
+# Direction (2D axial vector)
+# ---------------------------------------------------------------------------
 
-        assert u == v and v == w and u == w
 
-    def test_that_equality_operator_precision_limits(self):
-        """
-        This is not the best method how to test a floating point precision limits,
-        but I will keep it here for a future work.
-        """
-        lhs = vec([1.00000000000000001] * 3)
-        rhs = vec([1.00000000000000009] * 3)
+class TestDirection:
+    def test_default(self):
+        d = Direction()
+        assert d.direction == 0
 
-        assert lhs == rhs
+    def test_from_angle(self):
+        d = Direction(90)
+        assert math.isclose(d.direction, 90)
 
-    # ``!=`` operator
+    def test_from_two_args(self):
+        d = Direction(1, 1)
+        assert math.isclose(d.direction, 45)
 
-    def test_inequality_operator(self):
-        lhs = vec(1, 2, 3)
-        rhs = vec(3, 2, 1)
+    def test_from_string_x(self):
+        assert Direction("x") == Direction(0)
 
-        assert lhs != rhs
+    def test_from_string_y(self):
+        assert Direction("y") == Direction(90)
 
-    # ``hash`` method
+    def test_repr(self):
+        assert repr(Direction(45)) == "D:45"
 
-    def test_that_hash_is_same_for_identical_vectors(self):
-        lhs = vec(1, 2, 3)
-        rhs = vec(1, 2, 3)
+    def test_axial_eq(self):
+        assert Direction(45) == Direction(225)
 
-        assert hash(lhs) == hash(rhs)
+    def test_axial_dot_abs(self):
+        a = Direction(45)
+        b = Direction(225)
+        assert a.dot(b) >= 0
 
-    def test_that_hash_is_not_same_for_different_vectors(self):
-        lhs = vec(1, 2, 3)
-        rhs = vec(3, 2, 1)
+    def test_to_json(self):
+        d = Direction(45)
+        j = d.to_json()
+        assert j["datatype"] == "Direction"
+        assert len(j["args"]) == 1
 
-        assert not hash(lhs) == hash(rhs)
+    def test_aliases(self):
+        assert dir2 is Direction
 
-    # ``upper`` property
 
-    def test_that_vector_is_upper(self):
-        v = vec(0, 0, -1)
+# ---------------------------------------------------------------------------
+# Vector3
+# ---------------------------------------------------------------------------
 
-        assert v.is_upper()
 
-    def test_that_vector_is_not_upper(self):
-        v = vec(0, 0, 1)
+class TestVector3:
+    def test_default(self):
+        v = Vector3()
+        assert v.x == 1
+        assert v.y == 0
+        assert v.z == 0
 
-        assert not v.is_upper()
+    def test_from_string_x(self):
+        assert Vector3("x") == Vector3(1, 0, 0)
 
-    # ``abs`` operator
+    def test_from_string_y(self):
+        assert Vector3("y") == Vector3(0, 1, 0)
 
-    def test_absolute_value(self):
-        current = abs(vec(1, 2, 3))
-        expects = 3.7416573867739413
+    def test_from_string_z(self):
+        assert Vector3("z") == Vector3(0, 0, 1)
 
-        assert current == expects
+    def test_from_string_bad(self):
+        with pytest.raises(TypeError):
+            Vector3("w")
 
-    # ``uv`` property
+    def test_from_three_args(self):
+        v = Vector3(1, 2, 3)
+        assert v.x == 1
+        assert v.y == 2
+        assert v.z == 3
 
-    def test_that_vector_is_normalized(self):
-        current = vec(1, 2, 3).normalized()
-        current_alias = vec(1, 2, 3).uv()
-        expects = vec(0.26726124191242442, 0.5345224838248488, 0.8017837257372732)
+    def test_from_two_args_geo(self):
+        v = Vector3(0, 90)
+        assert math.isclose(v.x, 0, abs_tol=1e-10)
+        assert math.isclose(v.y, 0, abs_tol=1e-10)
+        assert math.isclose(v.z, 1, abs_tol=1e-10)
 
-        assert current == current_alias == expects
+    def test_from_tuple(self):
+        v = Vector3((1, 2, 3))
+        assert v == Vector3(1, 2, 3)
 
-    # ``geo`` property
+    def test_from_vector3(self):
+        v = Vector3(Vector3(1, 2, 3))
+        assert v == Vector3(1, 2, 3)
 
-    def test_geo_property(self):
-        v = vec(1, 0, 0)
+    def test_repr(self):
+        assert repr(Vector3(1, 2, 3)).startswith("Vector3(")
+
+    def test_magnitude(self):
+        assert math.isclose(Vector3(1, 2, 3).magnitude(), math.sqrt(14))
+
+    def test_normalized(self):
+        n = Vector3(3, 0, 0).normalized()
+        assert n == Vector3(1, 0, 0)
+
+    def test_dot(self):
+        assert math.isclose(Vector3(1, 0, 0).dot(Vector3(0, 1, 0)), 0)
+        assert math.isclose(Vector3(1, 2, 3).dot(Vector3(4, 5, 6)), 32)
+
+    def test_cross(self):
+        assert Vector3(1, 0, 0).cross(Vector3(0, 1, 0)) == Vector3(0, 0, 1)
+        assert Vector3(0, 1, 0).cross(Vector3(1, 0, 0)) == Vector3(0, 0, -1)
+
+    def test_cross_pow_operator(self):
+        r = Vector3(1, 0, 0) ** Vector3(0, 1, 0)
+        assert r == Vector3(0, 0, 1)
+
+    def test_pow_scalar(self):
+        r = Vector3(2, 3, 4) ** 2
+        assert r == Vector3(4, 9, 16)
+
+    def test_angle(self):
+        a = Vector3(1, 0, 0)
+        b = Vector3(0, 1, 0)
+        assert math.isclose(a.angle(b), 90)
+        assert math.isclose(a.angle(a), 0)
 
-        current = v.geo
-        expects = (0.0, 0.0)
+    def test_add(self):
+        assert Vector3(1, 2, 3) + Vector3(4, 5, 6) == Vector3(5, 7, 9)
 
-        assert current == expects
+    def test_sub(self):
+        assert Vector3(5, 7, 9) - Vector3(4, 5, 6) == Vector3(1, 2, 3)
+
+    def test_mul(self):
+        assert Vector3(1, 2, 3) * 2 == Vector3(2, 4, 6)
 
-    # ``aslin`` property
+    def test_neg(self):
+        assert -Vector3(1, -2, 3) == Vector3(-1, 2, -3)
+
+    def test_eq(self):
+        assert Vector3(1, 2, 3) == Vector3(1, 2, 3)
+        assert Vector3(1, 2, 3) != Vector3(1, 2, 4)
+
+    def test_matmul_vector(self):
+        r = Vector3(1, 2, 3) @ Vector3(4, 5, 6)
+        assert math.isclose(r, 32)
+
+    def test_matmul_matrix(self):
+        M = [[1, 0, 0], [0, 2, 0], [0, 0, 3]]
+        r = Vector3(1, 2, 3) @ M
+        assert isinstance(r, Vector3)
 
-    def test_lin_conversion(self):
-        assert str(lin(vec(1, 1, 1))) == str(lin(45, 35))  # `Vec` to `lin`
-        assert str(lin(vec(lin(110, 37)))) == str(
-            lin(110, 37)
-        )  # `lin` to `Vec` to `lin`
+    def test_lower(self):
+        assert Vector3(0, 0, -1).lower() == Vector3(0, 0, 1)
+        assert Vector3(0, 0, 1).lower() == Vector3(0, 0, 1)
 
-    # ``asfol`` property
+    def test_is_upper(self):
+        assert Vector3(0, 0, -1).is_upper()
+        assert not Vector3(0, 0, 1).is_upper()
 
-    def test_fol_conversion(self):
-        assert str(fol(vec(1, 1, 1))) == str(fol(225, 55))  # `Vec` to `fol`
-        assert str(fol(vec(fol(213, 52)))) == str(
-            fol(213, 52)
-        )  # `fol` to `Vec` to `fol`
-
-    # ``asvec`` property
-
-    def test_vec_geo_conversion(self):
-        assert str(vec(lin(120, 10))) == str(vec(120, 10))
-
-    def test_vec_scalar_multiplication(self):
-        assert abs(vec(10 * vec(120, 50))) == 10
-
-    # ``angle`` property
-    def test_that_angle_between_vectors_is_0_degrees_when_they_are_collinear(self):
-        lhs = vec(1, 0, 0)
-        rhs = vec(2, 0, 0)
-
-        current = lhs.angle(rhs)
-        expects = 0
-
-        assert current == expects
-
-    def test_that_angle_between_vectors_is_90_degrees_when_they_are_perpendicular(self):
-        lhs = vec(1, 0, 0)
-        rhs = vec(0, 1, 1)
-
-        current = lhs.angle(rhs)
-        expects = 90  # degrees
-
-        assert current == expects
-
-    def test_that_angle_between_vectors_is_180_degrees_when_they_are_opposite(self):
-        lhs = vec(1, 0, 0)
-        rhs = vec(-1, 0, 0)
-
-        current = lhs.angle(rhs)
-        expects = 180  # degrees
-
-        assert current == expects
-
-    # ``cross`` method
-
-    def test_that_vector_product_is_anticommutative(self):
-        lhs = vec(1, 0, 0)
-        rhs = vec(0, 1, 0)
-
-        assert lhs.cross(rhs) == -rhs.cross(lhs)
-
-    def test_that_vector_product_is_distributive_over_addition(self):
-        x = vec("X")
-        y = vec("Y")
-        z = vec("Z")
-
-        assert x.cross(y + z) == x.cross(y) + x.cross(z)
-
-    def test_that_vector_product_is_zero_vector_when_they_are_collinear(self):
-        lhs = vec(1, 0, 0)
-        rhs = vec(2, 0, 0)
-
-        current = lhs.cross(rhs)
-        expects = vec(0, 0, 0)
-
-        assert current == expects
-
-    def test_that_vector_product_is_zero_vector_when_they_are_opposite(self):
-
-        lhs = vec(1, 0, 0)
-        rhs = vec(-1, 0, 0)
-
-        current = lhs.cross(rhs)
-        expects = vec(0, 0, 0)
-
-        assert current == expects
-
-    def test_vector_product_of_orthonormal_vectors(self):
-        e1 = vec(1, 0, 0)
-        e2 = vec(0, 1, 0)
-
-        current = e1.cross(e2)
-        expects = vec(0, 0, 1)
-
-        assert current == expects
-
-    # ``dot`` method
-
-    def test_scalar_product_of_same_vectors(self):
-        i = vec(1, 2, 3)
-
-        assert np.isclose(i.dot(i), abs(i) ** 2, atol=atol)
-
-    def test_scalar_product_of_orthonornal_vectors(self):
-        i = vec(1, 0, 0)
-        j = vec(0, 1, 0)
-
-        assert np.isclose(i.dot(j), 0, atol=atol)
-
-    # ``rotate`` method
-
-    def test_rotation_by_90_degrees_around_axis(self, z):
-        v = vec(1, 1, 1)
-        current = v.rotate(z, 90)
-        expects = vec(-1, 1, 1)
-
-        assert current == expects
-
-    def test_rotation_by_180_degrees_around_axis(self, z):
-        v = vec(1, 1, 1)
-        current = v.rotate(z, 180)
-        expects = vec(-1, -1, 1)
-
-        assert current == expects
-
-    def test_rotation_by_360_degrees_around_axis(self, z):
-        v = vec(1, 1, 1)
-        current = v.rotate(z, 360)
-        expects = vec(1, 1, 1)
-
-        assert current == expects
-
-    # ``proj`` method
-
-    def test_projection_of_xy_onto(self, z):
-        xz = vec(1, 0, 1)
-        current = xz.proj(z)
-        expects = vec(0, 0, 1)
-
-        assert current == expects
-
-    # ``H`` method
-
-    def test_mutual_rotation(self, x, y, z):
-        current = rotation.from_two_vectors(x, y)
-        expects = rotation.from_axisangle(z, 90)
-
-        assert current == expects
-
-    # ``transform`` method
-
-    def test_transform_method(self, x, y, z):
-        F = rotation.from_axisangle(z, 90)
-        current = x.transform(F)
-        expects = y
-
-        assert current == expects
-
-    def test_add_operator(self):
-        lhs = vec(1, 1, 1)
-        rhs = vec(1, 1, 1)
-
-        current = lhs + rhs
-        expects = vec(2, 2, 2)
-
-        assert current == expects
-
-    def test_sub_operator(self):
-        lhs = vec(1, 2, 3)
-        rhs = vec(3, 1, 2)
-
-        current = lhs - rhs
-        expects = vec(-2, 1, 1)
-
-        assert current == expects
-
-    def test_pow_operator_with_scalar(self):
-        lhs = vec(1, 2, 3)
-        rhs = 2
-
-        current = lhs**rhs
-        expects = vec(1, 4, 9)
-
-        assert current == expects
-
-    def test_length_method(self):
-        w = vec(1, 2, 3)
-
-        assert len(w) == 3
-
-
-# ############################################################################
-# lineation
-# ############################################################################
-
-
-class Testlineation:
-    """
-    The lineation is represented as axial (pseudo) vector.
-    """
-
-    @pytest.fixture
-    def x(self):
-        return lin.unit_x()
-
-    def test_str(self, x):
-        assert str(x) == "L:0/0"
-
-    def test_equality_for_oposite_dir(self):
-        l1 = lin.random()
-        assert l1 == -l1
-
-    def test_anlge_for_oposite_dir(self):
-        l1 = lin.random()
-        assert np.isclose(l1.angle(-l1), 0, atol=atol)
-
-    def test_that_azimuth_0_is_same_as_360(self):
-        assert lin(0, 20) == lin(360, 20)
-
-    def test_scalar_product(self):
-        l1 = lin.random()
-        assert np.isclose(l1.dot(l1), 1, atol=atol)
-
-    def test_cross_product(self):
-        l1 = lin.random()
-        l2 = lin.random()
-        p = l1.cross(l2)
-
-        assert np.allclose([p.angle(l1), p.angle(l2)], [90, 90])
-
-    def test_mutual_rotation(self):
-        l1 = lin.random()
-        l2 = lin.random()
-        F = rotation.from_two_vectors(l1, l2)
-
-        assert l1.transform(F) == l2
-
-    def test_angle_under_rotation(self):
-        l1 = lin.random()
-        l2 = lin.random()
-        D = rotation.from_axisangle(lin(45, 45), 60)
-
-        assert np.isclose(
-            l1.angle(l2), l1.transform(D).angle(l2.transform(D)), atol=atol
-        )
-
-    def test_add_operator__simple(self):
-        l1 = lin.random()
-        l2 = lin.random()
-
-        assert l1 + l2 == l1 + (-l2)
-
-        # Anyway, axial add is commutative.
-        assert l1 + l2 == l2 + l1
-
-    def test_sub_operator__simple(self):
-        l1 = lin.random()
-        l2 = lin.random()
-
-        assert l1 - l2 == l1 - (-l2)
-
-        # Anyway, axial sub is commutative.
-        assert l1 - l2 == l2 - l1
-
-    def test_geo_property(self):
-        l1 = lin(120, 30)
-        assert lin(*l1.geo) == l1
-
-
-# ############################################################################
-# foliation
-# ############################################################################
-
-
-class Testfoliation:
-    """
-    The foliation is represented as axial (pseudo) vector.
-    """
-
-    @pytest.fixture
-    def x(self):
-        return fol(0, 0)
-
-    def test_str(self, x):
-        assert str(x) == "S:0/0"
-
-    def test_equality_for_oposite_dir(self):
-        f = fol.random()
-        assert f == -f
-
-    def test_anlge_for_oposite_dir(self):
-        f = fol.random()
-        assert np.isclose(f.angle(-f), 0, atol=atol)
-
-    def test_that_azimuth_0_is_same_as_360(self):
-        assert fol(0, 20) == fol(360, 20)
-
-    def test_scalar_product(self):
-        f = fol.random()
-        assert np.isclose(f.dot(f), 1, atol=atol)
-
-    def test_cross_product(self):
-        f1 = fol.random()
-        f2 = fol.random()
-        p = f1**f2
-
-        assert np.allclose([p.angle(f1), p.angle(f2)], [90, 90])
-
-    def test_foliation_product(self):
-        f1 = fol.random()
-        f2 = fol.random()
-        p = f1.cross(f2)
-
-        assert np.allclose([p.angle(f1), p.angle(f2)], [90, 90])
-
-    def test_foliation_product_operator(self):
-        f1 = fol.random()
-        f2 = fol.random()
-
-        assert f1.cross(f2) == f1**f2
-
-    def test_mutual_rotation(self):
-        f1 = fol.random()
-        f2 = fol.random()
-        F = rotation.from_two_vectors(f1, f2)
-
-        assert f1.transform(F) == f2
-
-    def test_angle_under_rotation(self):
-        f1 = fol.random()
-        f2 = fol.random()
-        D = rotation.from_axisangle(lin(45, 45), 60)
-
-        assert np.isclose(
-            f1.angle(f2), f1.transform(D).angle(f2.transform(D)), atol=atol
-        )
-
-    def test_add_operator__simple(self):
-        f1 = fol.random()
-        f2 = fol.random()
-
-        assert f1 + f2 == f1 + (-f2)
-
-        # Anyway, axial add is commutative.
-        assert f1 + f2 == f2 + f1
-
-    def test_sub_operator__simple(self):
-        f1 = fol.random()
-        f2 = fol.random()
-
-        assert f1 - f2 == f1 - (-f2)
-
-        # Anyway, axial sub is commutative.
-        assert f1 - f2 == f2 - f1
-
-    def test_geo_property(self):
-        f = fol(120, 30)
-
-        assert fol(*f.geo) == f
-
-
-# ############################################################################
-# FeatureSets
-# ############################################################################
-
-
-class TestVector3Set:
-    def test_rdegree_under_rotation(self):
-        g = vecset.random_fisher()
-        assert np.isclose(g.rotate(lin(45, 45), 90).rdegree(), g.rdegree(), atol=atol)
-
-    def test_resultant_rdegree(self):
-        g = vecset.from_array([45, 135, 225, 315], [45, 45, 45, 45])
-        c1 = g.R().uv() == vec(0, 90)
-        c2 = np.isclose(abs(g.R()), np.sqrt(8), atol=atol)
-        c3 = np.isclose((g.rdegree() / 100 + 1) ** 2, 2, atol=atol)
-        assert c1 and c2 and c3
-
-    def test_group_type_error(self):
-        with pytest.raises(Exception) as exc:
-            vecset([1, 2, 3])
-            assert "Data must be instances of Vector3" == str(exc.exception)
-
-    def test_centered_group(self):
-        g = vecset.random_fisher(position=lin(40, 50))
-        gc = g.centered()
-        el = gc.ortensor().eigenlins()
-        assert el[0] == vec("x") and el[1] == vec("y") and el[2] == vec("z")
-
-
-class TestLineationSet:
-    def test_rdegree_under_rotation(self):
-        g = linset.random_fisher()
-        assert np.allclose(g.rotate(lin(45, 45), 90).rdegree(), g.rdegree())
-
-    def test_resultant_rdegree(self):
-        g = linset.from_array([45, 135, 225, 315], [45, 45, 45, 45])
-        c1 = g.R().uv() == lin(0, 90)
-        c2 = np.isclose(abs(g.R()), np.sqrt(8), atol=atol)
-        c3 = np.isclose((g.rdegree() / 100 + 1) ** 2, 2, atol=atol)
-        assert c1 and c2 and c3
-
-    def test_group_type_error(self):
-        with pytest.raises(Exception) as exc:
-            linset([1, 2, 3])
-            assert "Data must be instances of Lineation" == str(exc.exception)
-
-    def test_group_heterogenous_error(self):
-        with pytest.raises(Exception) as exc:
-            linset([fol(10, 10), lin(20, 20)])
-            assert "Data must be instances of Lineation" == str(exc.exception)
-
-    def test_centered_group(self):
-        g = linset.random_fisher(position=lin(40, 50))
-        gc = g.centered()
-        el = gc.ortensor().eigenlins()
-        assert el[0] == vec("x") and el[1] == vec("y") and el[2] == vec("z")
-
-
-# ############################################################################
-# pair
-# ############################################################################
-
-
-class Testpair:
-    def test_pair_misfit(self):
-        p = pair.random()
-        assert np.isclose(p.misfit, 0, atol=atol)
-
-    def test_pair_rotate(self):
-        p = pair.random()
-        pr = p.rotate(lin(45, 45), 120)
-        assert np.allclose([p.fvec.angle(p.lvec), pr.fvec.angle(pr.lvec)], [90, 90])
-
-
-# ############################################################################
-# fault
-# ############################################################################
-
-
-class Testfault:
-    def test_fault_flip(self):
-        f = fault(90, 30, 110, 28, -1)
-        fr = f.rotate(f.rax, 180)
-        assert (f.p == fr.p) and (f.t == fr.t)
-
-    def test_fault_rotation_sense(self):
-        f = fault(90, 30, 110, 28, -1)
-        assert repr(f.rotate(lin(220, 10), 60)) == "F:343/37-301/29 N"
-
-    def test_fault_t_axis(self):
-        f = fault(150, 60, 150, 60, 1)
-        assert f.t == lin(150, 15)
-
-    def test_fault_p_axis(self):
-        f = fault(150, 30, 150, 30, -1)
-        assert f.p == lin(330, 15)
+    def test_geo(self):
+        v = Vector3(0, 90)
+        azi, inc = v.geo
+        assert math.isclose(azi, 0)
+        assert math.isclose(inc, 90)
+
+    def test_rotate(self):
+        v = Vector3(1, 0, 0)
+        r = v.rotate(Vector3(0, 0, 1), 90)
+        assert r == Vector3(0, 1, 0)
+
+    def test_project(self):
+        v = Vector3(3, 4, 0).project(Vector3(1, 0, 0))
+        assert v == Vector3(3, 0, 0)
+
+    def test_reject(self):
+        v = Vector3(3, 4, 0).reject(Vector3(1, 0, 0))
+        assert v == Vector3(0, 4, 0)
+
+    def test_transform(self):
+        F = [[1, 0, 0], [0, -1, 0], [0, 0, 1]]
+        u = Vector3(1, 1, 1)
+        assert u.transform(F) == Vector3(1, -1, 1)
+
+    def test_transform_norm(self):
+        F = [[2, 0, 0], [0, 2, 0], [0, 0, 2]]
+        u = Vector3(1, 0, 0)
+        r = u.transform(F, norm=True)
+        assert math.isclose(r.magnitude(), 1)
+
+    def test_is_unit(self):
+        assert Vector3(1, 0, 0).is_unit()
+        assert not Vector3(1, 2, 3).is_unit()
+
+    def test_to_json(self):
+        v = Vector3(1, 2, 3)
+        j = v.to_json()
+        assert j["datatype"] == "Vector3"
+        assert j["args"] == ((1, 2, 3),)
+
+    def test_random(self):
+        v = Vector3.random()
+        assert isinstance(v, Vector3)
+        assert math.isclose(abs(v), 1, abs_tol=1e-10)
+
+    def test_unit_x(self):
+        assert Vector3.unit_x() == Vector3(1, 0, 0)
+
+    def test_unit_y(self):
+        assert Vector3.unit_y() == Vector3(0, 1, 0)
+
+    def test_unit_z(self):
+        assert Vector3.unit_z() == Vector3(0, 0, 1)
+
+    def test_slerp(self):
+        a = Vector3(1, 0, 0)
+        b = Vector3(0, 1, 0)
+        r = a.slerp(b, 0.5)
+        assert math.isclose(abs(r), 1, abs_tol=1e-10)
+        assert math.isclose(r.angle(a), 45)
+
+
+# ---------------------------------------------------------------------------
+# Lineation
+# ---------------------------------------------------------------------------
+
+
+class TestLineation:
+    def test_default(self):
+        v = Lineation()
+        azi, inc = v.geo
+        assert math.isclose(azi, 0)
+        assert math.isclose(inc, 0)
+
+    def test_from_two_args(self):
+        v = Lineation(110, 26)
+        azi, inc = v.geo
+        assert math.isclose(azi, 110)
+        assert math.isclose(inc, 26)
+
+    def test_from_three_args(self):
+        v = Lineation(0, 1, 0)
+        assert v == Lineation(90, 0)
+
+    def test_from_string_x(self):
+        assert Lineation("x") == Lineation(0, 0)
+
+    def test_from_string_y(self):
+        assert Lineation("y") == Lineation(90, 0)
+
+    def test_from_string_z(self):
+        assert Lineation("z") == Lineation(0, 90)
+
+    def test_repr(self):
+        v = Lineation(110, 26)
+        assert repr(v).startswith("L:")
+
+    def test_geo(self):
+        v = Lineation(110, 26)
+        azi, inc = v.geo
+        assert math.isclose(azi, 110)
+        assert math.isclose(inc, 26)
+
+    def test_cross_returns_foliation(self):
+        l1 = Lineation(0, 0)
+        l2 = Lineation(90, 0)
+        f = l1.cross(l2)
+        assert isinstance(f, Foliation)
+
+    def test_cross_result(self):
+        l1 = Lineation(0, 0)
+        l2 = Lineation(90, 0)
+        f = l1.cross(l2)
+        _, inc = f.geo
+        assert math.isclose(inc, 0)
+
+    def test_pow_operator(self):
+        l1 = Lineation(0, 0)
+        l2 = Lineation(90, 0)
+        f = l1**l2
+        assert isinstance(f, Foliation)
+
+    def test_axial_eq_accepts_negative(self):
+        l1 = Lineation(110, 26)
+        l2 = Lineation(290, -26)
+        assert l1 == l2
+
+    def test_to_json(self):
+        v = Lineation(110, 26)
+        j = v.to_json()
+        assert j["datatype"] == "Lineation"
+        assert len(j["args"]) == 2
+
+    def test_magnitude(self):
+        v = Lineation(110, 26)
+        assert math.isclose(v.magnitude(), 1, abs_tol=1e-10)
+
+    def test_dot(self):
+        l1 = Lineation(0, 0)
+        l2 = Lineation(90, 0)
+        assert math.isclose(l1.dot(l2), 0, abs_tol=1e-10)
+
+    def test_aliases(self):
+        assert lin is Lineation
+
+
+# ---------------------------------------------------------------------------
+# Foliation
+# ---------------------------------------------------------------------------
+
+
+class TestFoliation:
+    def test_default(self):
+        f = Foliation()
+        azi, inc = f.geo
+        assert math.isclose(azi, 180, abs_tol=1e-10)
+        assert math.isclose(inc, 0, abs_tol=1e-10)
+
+    def test_from_two_args_dd(self):
+        f = Foliation(250, 30)
+        azi, inc = f.geo
+        assert math.isclose(azi, 250, abs_tol=1e-10)
+        assert math.isclose(inc, 30, abs_tol=1e-10)
+
+    def test_from_three_args(self):
+        f = Foliation(0, 0, 1)
+        azi, inc = f.geo
+        assert math.isclose(azi, 180, abs_tol=1e-10)
+        assert math.isclose(inc, 0, abs_tol=1e-10)
+
+    def test_from_string_x(self):
+        f = Foliation("x")
+        assert isinstance(f, Foliation)
+
+    def test_from_string_y(self):
+        f = Foliation("z")
+        assert isinstance(f, Foliation)
+
+    def test_from_string_z(self):
+        f = Foliation("y")
+        assert isinstance(f, Foliation)
+
+    def test_from_string_bad(self):
+        with pytest.raises(TypeError):
+            Foliation("w")
+
+    def test_repr(self):
+        f = Foliation(250, 30)
+        assert repr(f).startswith("S:")
+
+    def test_geo(self):
+        f = Foliation(250, 30)
+        azi, inc = f.geo
+        assert math.isclose(azi, 250, abs_tol=1e-10)
+        assert math.isclose(inc, 30, abs_tol=1e-10)
+
+    def test_cross_returns_lineation(self):
+        f1 = Foliation(0, 90)
+        f2 = Foliation(90, 90)
+        v = f1.cross(f2)
+        assert isinstance(v, Lineation)
+
+    def test_cross_result(self):
+        f1 = Foliation(0, 90)
+        f2 = Foliation(90, 90)
+        v = f1.cross(f2)
+        azi, inc = v.geo
+        assert math.isclose(inc, 90, abs_tol=1e-10)
+
+    def test_pow_operator(self):
+        f1 = Foliation(0, 90)
+        f2 = Foliation(90, 90)
+        v = f1**f2
+        assert isinstance(v, Lineation)
+
+    def test_dipvec(self):
+        f = Foliation(250, 30)
+        v = f.dipvec()
+        assert isinstance(v, Vector3)
+        assert math.isclose(abs(v), 1, abs_tol=1e-10)
+
+    def test_strike(self):
+        f = Foliation(250, 30)
+        s = f.strike()
+        assert isinstance(s, Direction)
+        strike = s.direction
+        expected = (250 - 90) % 360
+        assert math.isclose(strike, expected)
+
+    def test_pole(self):
+        f = Foliation(250, 30)
+        p = f.pole()
+        assert isinstance(p, Vector3)
+
+    def test_rake(self):
+        f = Foliation(250, 30)
+        r = f.rake(45)
+        assert isinstance(r, Vector3)
+        assert math.isclose(abs(r), 1, abs_tol=1e-10)
+
+    def test_transform(self):
+        F = [[1, 0, 0], [0, -1, 0], [0, 0, 1]]
+        f = Foliation(45, 20)
+        r = f.transform(F)
+        azi, inc = r.geo
+        assert math.isclose(azi, 315)
+        assert math.isclose(inc, 20)
+
+    def test_to_json(self):
+        f = Foliation(250, 30)
+        j = f.to_json()
+        assert j["datatype"] == "Foliation"
+        assert len(j["args"]) == 2
+
+    def test_axial_eq(self):
+        f1 = Foliation(250, 90)
+        f2 = Foliation(70, 90)
+        assert f1 == f2
+
+    def test_aliases(self):
+        assert fol is Foliation
+
+
+# ---------------------------------------------------------------------------
+# Pair
+# ---------------------------------------------------------------------------
+
+
+class TestPair:
+    def test_default(self):
+        p = Pair()
+        assert isinstance(p.fvec, Vector3)
+        assert isinstance(p.lvec, Vector3)
+
+    def test_from_four_args(self):
+        p = Pair(140, 30, 110, 26)
+        fazi, finc = p.fol.geo
+        lazi, linc = p.lin.geo
+        assert math.isclose(fazi, 140, abs_tol=1)
+        assert math.isclose(lazi, 110, abs_tol=1)
+
+    def test_from_fol_lin(self):
+        f = Foliation(140, 30)
+        v = Lineation(110, 26)
+        p = Pair(f, v)
+        assert isinstance(p, Pair)
+
+    def test_from_tuple_six(self):
+        p = Pair((1, 0, 0, 0, 1, 0))
+        assert isinstance(p, Pair)
+
+    def test_from_tuple_four(self):
+        p = Pair((140, 30, 110, 26))
+        assert isinstance(p, Pair)
+
+    def test_from_pair(self):
+        p1 = Pair(140, 30, 110, 26)
+        p2 = Pair(p1)
+        assert p1 == p2
+
+    def test_repr(self):
+        p = Pair(140, 30, 110, 26)
+        assert repr(p).startswith("P:")
+
+    def test_fol_property(self):
+        p = Pair(140, 30, 110, 26)
+        assert isinstance(p.fol, Foliation)
+
+    def test_lin_property(self):
+        p = Pair(140, 30, 110, 26)
+        assert isinstance(p.lin, Lineation)
+
+    def test_rax(self):
+        p = Pair(140, 30, 110, 26)
+        assert isinstance(p.rax, Vector3)
+
+    def test_rake(self):
+        p = Pair(140, 30, 110, 26)
+        assert isinstance(p.rake, float)
+
+    def test_misfit(self):
+        p = Pair(140, 30, 110, 26)
+        assert isinstance(p.misfit, float)
+
+    def test_rotate(self):
+        p = Pair(140, 30, 110, 26)
+        axis = Lineation(40, 50)
+        r = p.rotate(axis, 120)
+        assert isinstance(r, Pair)
+
+    def test_transform(self):
+        F = [[2, 0, 0], [0, 1, 0], [0, 0, 1]]
+        p = Pair(140, 30, 110, 26)
+        r = p.transform(F)
+        assert isinstance(r, Pair)
+
+    def test_eq(self):
+        p1 = Pair(140, 30, 110, 26)
+        p2 = Pair(140, 30, 110, 26)
+        assert p1 == p2
+
+    def test_to_json(self):
+        p = Pair(140, 30, 110, 26)
+        j = p.to_json()
+        assert j["datatype"] == "Pair"
+        assert len(j["args"]) == 4
+
+    def test_random(self):
+        p = Pair.random()
+        assert isinstance(p, Pair)
+
+    def test_bad_args(self):
+        with pytest.raises(TypeError):
+            Pair(1, "bad")
+
+    def test_misfit_warning(self):
+        with pytest.warns(UserWarning, match="Misfit angle"):
+            Pair(0, 0, 90, 80)
+
+    def test_aliases(self):
+        assert pair is Pair
+
+
+# ---------------------------------------------------------------------------
+# Fault
+# ---------------------------------------------------------------------------
+
+
+class TestFault:
+    def test_default(self):
+        f = Fault()
+        assert isinstance(f.fvec, Vector3)
+        assert isinstance(f.lvec, Vector3)
+
+    def test_from_five_args(self):
+        f = Fault(140, 30, 110, 26, -1)
+        fazi, finc = f.fol.geo
+        lazi, linc = f.lin.geo
+        assert math.isclose(fazi, 140, abs_tol=1)
+        assert math.isclose(lazi, 110, abs_tol=1)
+        assert f.sense == -1
+
+    def test_from_five_args_dip_slip(self):
+        f = Fault(140, 30, 110, 26, 1)
+        assert f.sense == 1
+
+    def test_from_pair_with_sense(self):
+        p = Pair(140, 30, 110, 26)
+        f = Fault(p, -1)
+        assert f.sense == -1
+
+    def test_from_fol_lin_sense(self):
+        f = Foliation(140, 30)
+        v = Lineation(110, 26)
+        fault = Fault(f, v, -1)
+        assert fault.sense == -1
+
+    def test_from_three_args_rake(self):
+        f = Fault(140, 30, 45)
+        assert isinstance(f, Fault)
+
+    def test_from_five_tuple(self):
+        f = Fault((140, 30, 110, 26, -1))
+        assert f.sense == -1
+
+    def test_sense_str(self):
+        f = Fault(140, 30, 110, 26, -1)
+        assert isinstance(f.sense_str, str)
+
+    def test_calc_sense_string_s(self):
+        f = Foliation(140, 30)
+        v = Lineation(110, 26)
+        res = Fault.calc_sense(f, v, "s")
+        assert isinstance(res, int)
+
+    def test_calc_sense_string_d(self):
+        f = Foliation(140, 30)
+        v = Lineation(110, 26)
+        res = Fault.calc_sense(f, v, "d")
+        assert isinstance(res, int)
+
+    def test_calc_sense_string_n(self):
+        f = Foliation(140, 30)
+        v = Lineation(110, 26)
+        res = Fault.calc_sense(f, v, "n")
+        assert res == 1
+
+    def test_calc_sense_string_r(self):
+        f = Foliation(140, 30)
+        v = Lineation(110, 26)
+        res = Fault.calc_sense(f, v, "r")
+        assert res == -1
+
+    def test_p_vector(self):
+        f = Fault(140, 30, 110, 26, -1)
+        p = f.p_vector()
+        assert isinstance(p, Vector3)
+
+    def test_t_vector(self):
+        f = Fault(140, 30, 110, 26, -1)
+        t = f.t_vector()
+        assert isinstance(t, Vector3)
+
+    def test_p_property(self):
+        f = Fault(140, 30, 110, 26, -1)
+        assert isinstance(f.p, Lineation)
+
+    def test_t_property(self):
+        f = Fault(140, 30, 110, 26, -1)
+        assert isinstance(f.t, Lineation)
+
+    def test_m_property(self):
+        f = Fault(140, 30, 110, 26, -1)
+        assert isinstance(f.m, Foliation)
+
+    def test_d_property(self):
+        f = Fault(140, 30, 110, 26, -1)
+        assert isinstance(f.d, Foliation)
+
+    def test_repr(self):
+        f = Fault(140, 30, 110, 26, -1)
+        assert repr(f).startswith("F:")
+
+    def test_eq(self):
+        f1 = Fault(140, 30, 110, 26, -1)
+        f2 = Fault(140, 30, 110, 26, -1)
+        assert f1 == f2
+
+    def test_to_json(self):
+        f = Fault(140, 30, 110, 26, -1)
+        j = f.to_json()
+        assert j["datatype"] == "Fault"
+        assert len(j["args"]) == 5
+
+    def test_random(self):
+        f = Fault.random()
+        assert isinstance(f, Fault)
+
+    def test_bad_args(self):
+        with pytest.raises(TypeError):
+            Fault(1, 2, 3, 4, 5, 6)
+
+    def test_aliases(self):
+        assert fault is Fault
+
+
+# ---------------------------------------------------------------------------
+# Cone
+# ---------------------------------------------------------------------------
+
+
+class TestCone:
+    def test_default(self):
+        c = Cone()
+        assert isinstance(c.axis, Vector3)
+        assert isinstance(c.secant, Vector3)
+        assert c.revangle == 360
+
+    def test_from_five_args(self):
+        c = Cone(140, 30, 110, 26, 360)
+        assert isinstance(c.axis, Vector3)
+        assert isinstance(c.secant, Vector3)
+        assert c.revangle == 360
+
+    def test_from_five_args_short(self):
+        c = Cone(140, 30, 110, 26)
+        assert isinstance(c.axis, Vector3)
+        assert c.revangle == 360
+
+    def test_from_two_vectors(self):
+        a = Lineation(140, 30)
+        s = Lineation(110, 26)
+        c = Cone(a, s, 360)
+        assert isinstance(c, Cone)
+
+    def test_from_two_args_apical(self):
+        a = Lineation(140, 30)
+        c = Cone(a, 20)
+        assert isinstance(c, Cone)
+        assert math.isclose(c.apical_angle(), 20)
+
+    def test_from_cone(self):
+        c1 = Cone(140, 30, 110, 26, 360)
+        c2 = Cone(c1)
+        assert c1 == c2
+
+    def test_repr(self):
+        c = Cone(140, 30, 110, 26, 360)
+        assert repr(c).startswith("C:")
+
+    def test_apical_angle(self):
+        a = Lineation(0, 90)
+        s = Lineation(0, 0)
+        c = Cone(a, s, 360)
+        assert math.isclose(c.apical_angle(), 90)
+
+    def test_rotated_secant(self):
+        c = Cone(0, 90, 0, 0, 180)
+        rs = c.rotated_secant
+        assert isinstance(rs, Vector3)
+
+    def test_rotate(self):
+        c = Cone(140, 30, 110, 26, 360)
+        axis = Lineation(40, 50)
+        r = c.rotate(axis, 120)
+        assert isinstance(r, Cone)
+
+    def test_eq(self):
+        c1 = Cone(140, 30, 110, 26, 360)
+        c2 = Cone(140, 30, 110, 26, 360)
+        assert c1 == c2
+
+    def test_to_json(self):
+        c = Cone(140, 30, 110, 26, 360)
+        j = c.to_json()
+        assert j["datatype"] == "Cone"
+        assert len(j["args"]) == 5
+
+    def test_random(self):
+        c = Cone.random()
+        assert isinstance(c, Cone)
+
+    def test_bad_args(self):
+        with pytest.raises(TypeError):
+            Cone(1, 2, 3, 4, 5, 6)
+
+    def test_aliases(self):
+        assert cone is Cone
+
+
+# ---------------------------------------------------------------------------
+# Cross-feature: JSON round-trip via feature_from_json
+# ---------------------------------------------------------------------------
+
+
+class TestJSONRoundtrip:
+    def test_lineation(self):
+        from apsg.feature import feature_from_json
+
+        v = Lineation(110, 26)
+        j = v.to_json()
+        l2 = feature_from_json(j)
+        assert v == l2
+
+    def test_foliation(self):
+        from apsg.feature import feature_from_json
+
+        f = Foliation(250, 30)
+        j = f.to_json()
+        f2 = feature_from_json(j)
+        assert f == f2
+
+    def test_direction(self):
+        from apsg.feature import feature_from_json
+
+        d = Direction(45)
+        j = d.to_json()
+        d2 = feature_from_json(j)
+        assert d == d2
+
+    def test_pair(self):
+        from apsg.feature import feature_from_json
+
+        p = Pair(140, 30, 110, 26)
+        j = p.to_json()
+        p2 = feature_from_json(j)
+        assert p == p2
+
+    def test_fault(self):
+        from apsg.feature import feature_from_json
+
+        f = Fault(140, 30, 110, 26, -1)
+        j = f.to_json()
+        f2 = feature_from_json(j)
+        assert f == f2
+
+    def test_cone(self):
+        from apsg.feature import feature_from_json
+
+        c = Cone(140, 30, 110, 26, 360)
+        j = c.to_json()
+        c2 = feature_from_json(j)
+        assert c == c2

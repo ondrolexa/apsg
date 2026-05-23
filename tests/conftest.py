@@ -1,36 +1,34 @@
-"""
-Several test helper functions.
-"""
-
 import pytest
 
-
-class Helpers:
-    @staticmethod
-    def help_me():
-        return "no"
-
-    @staticmethod
-    def is_hashable(obj):
-        try:
-            hash(obj)
-            return True
-        except TypeError:
-            return False
-
-    @staticmethod
-    def has_same_hash_when_value_objects_are_equals(lhs, rhs):
-        if lhs != rhs:
-            raise Exception("Objects have to be equal!")
-        return hash(lhs == rhs)
-
-    @staticmethod
-    def has_not_same_hash_when_value_objects_are_not_equals(lhs, rhs):
-        if lhs == rhs:
-            raise Exception("Objects have not to be equal!")
-        return hash(lhs != rhs)
+from apsg.feature._geodata import Foliation, Lineation, Pair
+from apsg.math._vector import Vector2, Vector3
 
 
 @pytest.fixture
-def helpers():
-    return Helpers
+def v2():
+    return Vector2(3, 4)
+
+
+@pytest.fixture
+def v2_unit():
+    return Vector2(1, 0)
+
+
+@pytest.fixture
+def v3():
+    return Vector3(1, 2, 3)
+
+
+@pytest.fixture
+def fol():
+    return Foliation(250, 30)
+
+
+@pytest.fixture
+def lin():
+    return Lineation(110, 26)
+
+
+@pytest.fixture
+def pair():
+    return Pair(140, 30, 110, 26)

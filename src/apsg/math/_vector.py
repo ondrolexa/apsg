@@ -132,16 +132,6 @@ class Vector(ABC):
         """Return vector rejection on the vector other"""
         return self - self.project(other)
 
-    @ensure_first_arg_same
-    def slerp(self, other, t):
-        """Return a spherical linear interpolation between self and other vector
-
-        Note that for non-unit vectors the interpolation is not uniform
-        """
-        a, b = Vector3(self), Vector3(other)
-        theta = a.angle(b)
-        return type(self)(a * sind((1 - t) * theta) + b * sind(t * theta)) / sind(theta)
-
     @property
     def x(self):
         """Return x-component of the vector"""
@@ -186,7 +176,7 @@ class Vector2(Vector):
     def __init__(self, *args, **kwargs):
         if len(args) == 0:
             coords = (1, 0)
-        if len(args) == 1:
+        elif len(args) == 1:
             if np.asarray(args[0]).shape == Vector2.__shape__:
                 coords = tuple(c.item() for c in np.asarray(args[0]))
             elif isinstance(args[0], str):
@@ -495,6 +485,16 @@ class Vector3(Vector):
             -self.x * other.z + self.z * other.x,
             self.x * other.y - self.y * other.x,
         )
+
+    @ensure_first_arg_same
+    def slerp(self, other, t):
+        """Return a spherical linear interpolation between self and other vector
+
+        Note that for non-unit vectors the interpolation is not uniform
+        """
+        a, b = Vector3(self), Vector3(other)
+        theta = a.angle(b)
+        return type(self)(a * sind((1 - t) * theta) + b * sind(t * theta)) / sind(theta)
 
     def lower(self):
         """Change vector direction to point towards positive Z direction"""

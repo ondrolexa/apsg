@@ -221,7 +221,7 @@ class Matrix2(Matrix):
             raise TypeError("Provided attributes are not serializable.")
 
     @classmethod
-    def from_comp(cls, xx=0, xy=0, yx=0, yy=0):
+    def from_comp(cls, **kwargs):
         """Return ``Matrix2`` defined by individual components. Default is zero
         matrix.
 
@@ -239,7 +239,10 @@ class Matrix2(Matrix):
              [0. 0.]]
 
         """
-
+        xx = kwargs.get("xx", 0)
+        xy = kwargs.get("xy", 0)
+        yx = kwargs.get("yx", 0)
+        yy = kwargs.get("yy", 0)
         return cls([[xx, xy], [yx, yy]])
 
     def __len__(self):

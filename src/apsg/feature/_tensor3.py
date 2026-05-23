@@ -561,7 +561,7 @@ class Stress3(Tensor3):
         Note that stress tensor is always symmetrical.
 
         Keyword Args:
-          xx, xy, xz, yy, yz, zz (float): tensor components
+          xx, xy|yx, xz|zx, yy, yz|zy, zz (float): tensor components
 
         Example:
           >>> S = stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
@@ -1117,33 +1117,6 @@ class Ellipsoid(Tensor3):
         """
 
         return 7.5 * float(np.sum((np.array(self.eigenvalues()) - 1 / 3) ** 2))
-
-    @property
-    def aMAD_l(self) -> float:
-        """
-        Return approximate angular deviation from the major axis along E1.
-        """
-
-        return float(atand(np.sqrt((1 - self.E1) / self.E1)))
-
-    @property
-    def aMAD_p(self) -> float:
-        """
-        Return approximate deviation from the plane normal to E3.
-        """
-
-        return float(atand(np.sqrt(self.E3 / (1 - self.E3))))
-
-    @property
-    def aMAD(self) -> float:
-        """
-        Return approximate deviation according to shape
-        """
-
-        if self.shape > 1:
-            return self.aMAD_l
-        else:
-            return self.aMAD_p
 
     @property
     def MAD_l(self) -> float:
