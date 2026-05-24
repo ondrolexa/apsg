@@ -72,14 +72,14 @@ class FabricPlot(object):
             facecolor=apsg_conf.facecolor,
         )
         if hasattr(self.fig.canvas.manager, "set_window_title"):
-            self.fig.canvas.manager.set_window_title(self.window_title)
+            self.fig.canvas.manager.set_window_title(self.window_title)  # ty: ignore
 
     def _render(self):
-        self._draw_layout()
+        self._draw_layout()  # ty: ignore
         self._plot_artists()
-        h, lbls = self.ax.get_legend_handles_labels()
+        h, lbls = self.ax.get_legend_handles_labels()  # ty: ignore
         if h:
-            self._lgd = self.ax.legend(
+            self._lgd = self.ax.legend(  # ty: ignore
                 h,
                 lbls,
                 prop={"size": 11},
@@ -161,7 +161,7 @@ class VollmerPlot(FabricPlot):
 
     def _draw_layout(self):
         self.ax = self.fig.add_subplot(111)
-        self.ax.format_coord = self.format_coord
+        self.ax.format_coord = self.format_coord  # ty: ignore
         self.ax.set_aspect("equal")
         self.ax.set_autoscale_on(False)
 
@@ -320,7 +320,7 @@ class RamsayPlot(FabricPlot):
 
     def _draw_layout(self):
         self.ax = self.fig.add_subplot(111)
-        self.ax.format_coord = self.format_coord
+        self.ax.format_coord = self.format_coord  # ty: ignore
         self.ax.set_aspect("equal")
         self.ax.set_autoscale_on(True)
         self.ax.spines["top"].set_color("none")
@@ -340,7 +340,9 @@ class RamsayPlot(FabricPlot):
         self.ax.set_ylim(0, mx)
         self.ax.plot([0, mx], [0, mx], "k", lw=0.5)
         box = self.ax.get_position()
-        self.ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        self.ax.set_position(
+            [box.x0, box.y0, box.width * 0.8, box.height]  # ty: ignore
+        )
 
     ########################################
     # PLOTTING METHODS                     #
@@ -413,7 +415,7 @@ class FlinnPlot(FabricPlot):
 
     def _draw_layout(self):
         self.ax = self.fig.add_subplot(111)
-        self.ax.format_coord = self.format_coord
+        self.ax.format_coord = self.format_coord  # ty: ignore
         self.ax.set_aspect("equal")
         self.ax.set_autoscale_on(True)
         self.ax.spines["top"].set_color("none")
@@ -433,7 +435,9 @@ class FlinnPlot(FabricPlot):
         self.ax.set_ylim(1, mx)
         self.ax.plot([1, mx], [1, mx], "k", lw=0.5)
         box = self.ax.get_position()
-        self.ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        self.ax.set_position(
+            [box.x0, box.y0, box.width * 0.8, box.height]  # ty: ignore
+        )
 
     ########################################
     # PLOTTING METHODS                     #
@@ -506,13 +510,13 @@ class HsuPlot(FabricPlot):
 
     def _draw_layout(self):
         self.ax = self.fig.add_subplot(111, polar=True)
-        self.ax.format_coord = self.format_coord
-        self.ax.set_theta_zero_location("N")
-        self.ax.set_theta_direction(-1)
-        self.ax.set_thetamin(-30)
-        self.ax.set_thetamax(30)
+        self.ax.format_coord = self.format_coord  # ty: ignore
+        self.ax.set_theta_zero_location("N")  # ty: ignore
+        self.ax.set_theta_direction(-1)  # ty: ignore
+        self.ax.set_thetamin(-30)  # ty: ignore
+        self.ax.set_thetamax(30)  # ty: ignore
         self.ax.set_xticks([-np.pi / 6, -np.pi / 12, 0, np.pi / 12, np.pi / 6])
-        self.ax.set_xticklabels([-1, -0.5, 0, 0.5, 1])
+        self.ax.set_xticklabels([-1, -0.5, 0, 0.5, 1])  # ty: ignore
         self.ax.set_title(r"$\nu$")
         self.ax.set_ylabel(r"$\bar{\varepsilon}_s$")
         if self._kwargs["grid"]:

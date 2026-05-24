@@ -222,7 +222,7 @@ class Vector2(Vector):
     @property
     def direction(self):
         """Returns direction of the vector in degrees"""
-        return atan2d(self.y, self.x)
+        return atan2d(self.y, self.x) % 360
 
     @ensure_first_arg_same
     def dot(self, other):

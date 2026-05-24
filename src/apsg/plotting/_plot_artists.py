@@ -23,13 +23,13 @@ class StereoNet_Artists:
 
     def update_kwargs(self, style):
         self.kwargs = getattr(apsg_conf, style).copy()
-        self.kwargs["label"] = self.stereonet_method
+        self.kwargs["label"] = self.stereonet_method  # ty: ignore
 
     def to_json(self):
         return dict(
             factory=self.factory,
-            stereonet_method=self.stereonet_method,
-            args=tuple([obj.to_json() for obj in self.args]),
+            stereonet_method=self.stereonet_method,  # ty: ignore
+            args=(obj.to_json() for obj in self.args),  # ty: ignore
             kwargs=self.kwargs.copy(),
         )
 
@@ -312,7 +312,7 @@ class StereoNet_Contour(StereoNet_Artists):
         super().update_kwargs("stereonet_default_contour_kwargs")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
-            self.kwargs["label"] = self.args[0].label()
+            self.kwargs["label"] = self.args[0].label()  # ty: ignore
 
 
 class StereoNetArtistFactory:
@@ -438,7 +438,7 @@ class RosePlot_Artists:
 
     def update_kwargs(self, style):
         self.kwargs = getattr(apsg_conf, style).copy()
-        self.kwargs["label"] = self.roseplot_method
+        self.kwargs["label"] = self.roseplot_method  # ty: ignore
 
 
 class RosePlot_Bar(RosePlot_Artists):
@@ -511,13 +511,13 @@ class FabricPlot_Artists:
 
     def update_kwargs(self, style):
         self.kwargs = getattr(apsg_conf, style).copy()
-        self.kwargs["label"] = self.fabricplot_method
+        self.kwargs["label"] = self.fabricplot_method  # ty: ignore
 
     def to_json(self):
         return dict(
             factory=self.factory,
-            fabricplot_method=self.fabricplot_method,
-            args=tuple([obj.to_json() for obj in self.args]),
+            fabricplot_method=self.fabricplot_method,  # ty: ignore
+            args=(obj.to_json() for obj in self.args),  # ty: ignore
             kwargs=self.kwargs.copy(),
         )
 

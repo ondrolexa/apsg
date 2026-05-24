@@ -382,8 +382,8 @@ class TestVector3Set:
 
     def test_to_lin(self):
         v = Vector3Set([Vector3(0, 0, 1)])
-        l = v.to_lin()
-        assert isinstance(l, LineationSet)
+        v = v.to_lin()
+        assert isinstance(v, LineationSet)
 
     def test_to_fol(self):
         v = Vector3Set([Vector3(0, 0, 1)])
@@ -662,31 +662,31 @@ class TestVector3Set:
 
 class TestLineationSet:
     def test_default(self):
-        l = LineationSet([Lineation(110, 26)])
-        assert len(l) == 1
+        v = LineationSet([Lineation(110, 26)])
+        assert len(v) == 1
 
     def test_type_assertion(self):
         with pytest.raises(AssertionError):
             LineationSet([Vector3(1, 0, 0)])
 
     def test_repr(self):
-        l = LineationSet([Lineation(110, 26)], name="test")
-        assert repr(l) == "L(1) test"
+        v = LineationSet([Lineation(110, 26)], name="test")
+        assert repr(v) == "L(1) test"
 
     def test_inherited_methods(self):
-        l = LineationSet([Lineation(110, 26), Lineation(30, 10)])
-        assert len(l.normalized()) == 2
-        assert isinstance(l.R(), Lineation)
-        assert isinstance(l.to_vec(), Vector3Set)
+        v = LineationSet([Lineation(110, 26), Lineation(30, 10)])
+        assert len(v.normalized()) == 2
+        assert isinstance(v.R(), Lineation)
+        assert isinstance(v.to_vec(), Vector3Set)
 
     def test_from_array(self):
-        l = LineationSet.from_array([110, 30], [26, 10])
-        assert len(l) == 2
+        v = LineationSet.from_array([110, 30], [26, 10])
+        assert len(v) == 2
 
     def test_random_fisher(self):
         np.random.seed(42)
-        l = LineationSet.random_fisher(10, position=Lineation(120, 40))
-        assert len(l) == 10
+        v = LineationSet.random_fisher(10, position=Lineation(120, 40))
+        assert len(v) == 10
 
 
 # ---------------------------------------------------------------------------
@@ -761,9 +761,9 @@ class TestPairSet:
 
     def test_lin_property(self):
         p = PairSet([Pair(140, 30, 110, 26)])
-        l = p.lin
-        assert isinstance(l, LineationSet)
-        assert len(l) == 1
+        v = p.lin
+        assert isinstance(v, LineationSet)
+        assert len(v) == 1
 
     def test_lvec_property(self):
         p = PairSet([Pair(140, 30, 110, 26)])

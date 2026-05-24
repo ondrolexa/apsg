@@ -240,7 +240,7 @@ class StereoNet:
         plt.close(0)  # close previously rendered figure
         self.init_figure()
         self._render()
-        self.ax.format_coord = self.format_coord
+        self.ax.format_coord = self.format_coord  # ty: ignore
         plt.show()
 
     def savefig(self, filename="stereonet.png", **kwargs):
@@ -856,10 +856,10 @@ class StereoNet:
             np.atleast_2d(np.asarray(args[0])).shape[0]
         )
         x_lower, y_lower = self.proj.project_data(
-            *np.vstack(np.atleast_2d(np.asarray(args[0]))).T
+            *np.vstack(np.atleast_2d(np.asarray(args[0]))).T  # ty: ignore
         )
         x_upper, y_upper = self.proj.project_data(
-            *(-np.vstack(np.atleast_2d(np.asarray(args[0]))).T)
+            *(-np.vstack(np.atleast_2d(np.asarray(args[0]))).T)  # ty: ignore
         )
         x = np.hstack((x_lower, x_upper))
         y = np.hstack((y_lower, y_upper))
@@ -870,10 +870,10 @@ class StereoNet:
         sense = sense[inside]
         if len(args) > 1:
             x_lower, y_lower = self.proj.project_data(
-                *np.vstack(np.atleast_2d(np.asarray(args[1]))).T
+                *np.vstack(np.atleast_2d(np.asarray(args[1]))).T  # ty: ignore
             )
             x_upper, y_upper = self.proj.project_data(
-                *(-np.vstack(np.atleast_2d(np.asarray(args[1]))).T)
+                *(-np.vstack(np.atleast_2d(np.asarray(args[1]))).T)  # ty: ignore
             )
             dx = np.hstack((x_lower, x_upper))
             dy = np.hstack((y_lower, y_upper))
