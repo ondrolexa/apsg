@@ -29,7 +29,7 @@ class StereoNet_Artists:
         return dict(
             factory=self.factory,
             stereonet_method=self.stereonet_method,  # ty: ignore
-            args=(obj.to_json() for obj in self.args),  # ty: ignore
+            args=tuple(obj.to_json() for obj in self.args),  # ty: ignore
             kwargs=self.kwargs.copy(),
         )
 
