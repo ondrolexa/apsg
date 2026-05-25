@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from apsg.config import apsg_conf
-from apsg.decorator._decorator import ensure_first_arg_same
 from apsg.helpers._helper import is_jsonable
 from apsg.math._vector import Vector2, Vector3
 
@@ -106,8 +105,14 @@ class Matrix(ABC):
     def __pow__(self, n):
         return type(self)(np.linalg.matrix_power(self, n))
 
-    @ensure_first_arg_same
+    def _ensure_same(self, other):
+        cls = type(self)
+        if np.asarray(other).shape == cls.__shape__:
+            return cls(other)
+        raise TypeError(f"Unsupported argument. Expecting {cls.__name__}")
+
     def __eq__(self, other):
+        other = self._ensure_same(other)
         return np.allclose(self, other)
 
     def __ne__(self, other):
@@ -141,13 +146,13 @@ class Matrix(ABC):
     def T(self):
         return type(self)(np.array(self).T)
 
-    @ensure_first_arg_same
     def transform(self, other):
         """
         Coordinate transformations of matrix
 
         Using rotation matrix it returns ``A' = R * A * R . T``.
         """
+        other = self._ensure_same(other)
         return type(self)(other @ self @ other.T)
 
     @property
@@ -312,9 +317,12 @@ class Matrix2(Matrix):
         """
         U = self._eig[1].T
         if which is None:
-            return self._eig[0] * Vector2(U[0]), self._eig[1] * Vector2(U[1])
+            return (
+                Vector2(self._eig[0][0] * U[0]),
+                Vector2(self._eig[0][1] * U[1]),
+            )
         else:
-            return self._eig[0][which] * Vector2(U[which])
+            return Vector2(self._eig[0][which] * U[which])
 
 
 class Matrix3(Matrix):
@@ -496,9 +504,9 @@ class Matrix3(Matrix):
         U = self._eig[1].T
         if which is None:
             return (
-                self._eig[0] * Vector2(U[0]),
-                self._eig[1] * Vector2(U[1]),
-                self._eig[2] * Vector3(U[2]),
+                Vector3(self._eig[0][0] * U[0]),
+                Vector3(self._eig[0][1] * U[1]),
+                Vector3(self._eig[0][2] * U[2]),
             )
         else:
-            return self._eig[0][which] * Vector2(U[which])
+            return Vector3(self._eig[0][which] * U[which])

@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from apsg.config import apsg_conf
-from apsg.decorator._decorator import ensure_first_arg_same
 from apsg.helpers._helper import is_jsonable
 from apsg.helpers._math import acosd, atan2d, cosd, sind
 from apsg.helpers._notation import (
@@ -41,8 +40,12 @@ class Vector(ABC):
             "kwargs": self._attrs,
         }
 
-    @ensure_first_arg_same
     def __eq__(self, other):
+        cls = type(self)
+        if np.asarray(other).shape == cls.__shape__:
+            other = cls(other)
+        else:
+            return NotImplemented
         return np.allclose(self, other)
 
     def __ne__(self, other):
@@ -114,22 +117,28 @@ class Vector(ABC):
         """Return true if the magnitude is 1"""
         return math.isclose(self.magnitude(), 1)
 
-    @ensure_first_arg_same
+    def _ensure_same(self, other):
+        cls = type(self)
+        if np.asarray(other).shape == cls.__shape__:
+            return cls(other)
+        raise TypeError(f"Unsupported argument. Expecting {cls.__name__}")
+
     def angle(self, other):
         """Return the angle to the vector other"""
+        other = self._ensure_same(other)
         return acosd(self.normalized().dot(other.normalized()))
 
-    @ensure_first_arg_same
     def project(self, other):
         """Return vector projectio on the vector other"""
+        other = self._ensure_same(other)
         n = other.normalized()
         return type(self)(self.dot(n) * n)
 
     proj = project
 
-    @ensure_first_arg_same
     def reject(self, other):
         """Return vector rejection on the vector other"""
+        other = self._ensure_same(other)
         return self - self.project(other)
 
     @property
@@ -224,7 +233,6 @@ class Vector2(Vector):
         """Returns direction of the vector in degrees"""
         return atan2d(self.y, self.x) % 360
 
-    @ensure_first_arg_same
     def dot(self, other):
         """
         Calculate dot product with other vector.
@@ -232,6 +240,7 @@ class Vector2(Vector):
         Args:
             other (Vector2): other vector
         """
+        other = self._ensure_same(other)
         return self.x * other.x + self.y * other.y
 
     def __matmul__(self, other):
@@ -248,7 +257,6 @@ class Vector2(Vector):
         else:
             return float(r)
 
-    @ensure_first_arg_same
     def cross(self, other):
         """Returns the magnitude of the vector that would result from a regular 3D
         cross product of the input vectors, taking their Z values implicitly as 0
@@ -261,7 +269,7 @@ class Vector2(Vector):
         this area is signed and can be used to determine whether rotating from V1 to V2
         moves in an counter clockwise or clockwise direction.
         """
-
+        other = self._ensure_same(other)
         return self.x * other.y - self.y * other.x
 
     @classmethod
@@ -271,9 +279,9 @@ class Vector2(Vector):
         """
         return cls(360 * np.random.rand())
 
-    @ensure_first_arg_same
     def rotate(self, axis, theta):
         """Return the vector rotated through angle theta. Right hand rule applies"""
+        axis = self._ensure_same(axis)
         return NotImplemented
 
     @classmethod
@@ -321,8 +329,12 @@ class Axial2(Vector2):  # Do we need it?
     Note: the angle between axial data cannot be more than 90°
     """
 
-    @ensure_first_arg_same
     def __eq__(self, other):
+        cls = type(self)
+        if np.asarray(other).shape == cls.__shape__:
+            other = cls(other)
+        else:
+            return NotImplemented
         return np.allclose(self, other) or np.allclose(self, -other)
 
     def __add__(self, other):
@@ -442,7 +454,6 @@ class Vector3(Vector):
 
     shape = __shape__
 
-    @ensure_first_arg_same
     def dot(self, other):
         """
         Calculate dot product with other vector.
@@ -450,6 +461,7 @@ class Vector3(Vector):
         Args:
             other (Vector3): other vector
         """
+        other = self._ensure_same(other)
         return self.x * other.x + self.y * other.y + self.z * other.z
 
     def __matmul__(self, other):
@@ -472,7 +484,6 @@ class Vector3(Vector):
         else:
             return type(self)(np.power(self, other))
 
-    @ensure_first_arg_same
     def cross(self, other):
         """
         Calculate cross product with other vector.
@@ -480,18 +491,19 @@ class Vector3(Vector):
         Args:
             other (Vector3): other vector
         """
+        other = self._ensure_same(other)
         return type(self)(
             self.y * other.z - self.z * other.y,
             -self.x * other.z + self.z * other.x,
             self.x * other.y - self.y * other.x,
         )
 
-    @ensure_first_arg_same
     def slerp(self, other, t):
         """Return a spherical linear interpolation between self and other vector
 
         Note that for non-unit vectors the interpolation is not uniform
         """
+        other = self._ensure_same(other)
         a, b = Vector3(self), Vector3(other)
         theta = a.angle(b)
         return type(self)(a * sind((1 - t) * theta) + b * sind(t * theta)) / sind(theta)
@@ -536,11 +548,11 @@ class Vector3(Vector):
         """
         return cls(np.random.randn(3)).normalized()
 
-    @ensure_first_arg_same
     def rotate(self, axis, theta):
         """Return the vector rotated around axis through angle theta. Right-hand rule
         applies
         """
+        axis = self._ensure_same(axis)
         v = Vector3(self)  # ensure vector
         k = Vector3(axis.uv())
         return type(self)(
@@ -549,9 +561,9 @@ class Vector3(Vector):
             + (1 - cosd(theta)) * k * (k.dot(v))
         )
 
-    @ensure_first_arg_same
     def angle(self, other):
         """Return the angle to the vector other"""
+        other = self._ensure_same(other)
         return acosd(np.clip(self.uv().dot(other.uv()), -1, 1))
 
     def transform(self, F, **kwargs):
@@ -589,8 +601,12 @@ class Axial3(Vector3):
     Note: the angle between axial data cannot be more than 90°
     """
 
-    @ensure_first_arg_same
     def __eq__(self, other):
+        cls = type(self)
+        if np.asarray(other).shape == cls.__shape__:
+            other = cls(other)
+        else:
+            return NotImplemented
         return np.allclose(self, other) or np.allclose(self, -other)
 
     def __add__(self, other):

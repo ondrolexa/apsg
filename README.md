@@ -7,7 +7,7 @@
 
 ## :thinking: What is APSG?
 
-APSG is the package for structural geologists. It defines several new python classes to easily manage, analyze and visualize orientational structural geology data.
+APSG is the package for structural geologists. It defines several new python classes to easily manage, analyze and visualize orientation structural geology data.
 
 > [!IMPORTANT]
 > APSG has been significantly refactored from version 1.0 and several changes are
@@ -20,9 +20,9 @@ APSG is the package for structural geologists. It defines several new python cla
 
 ## :hammer_and_wrench: Requirements
 
-You need Python 3.10 or later to run APSG. The package requires [NumPy](https://numpy.org/) and [SciPy](https://www.scipy.org/),
-[Matplotlib](https://matplotlib.org/), [SciPy](https://scipy.org/), [SQLAlchemy](https://www.sqlalchemy.org/)
-and [pandas](https://pandas.pydata.org/).
+You need Python 3.10 or later to run APSG. The package requires [NumPy](https://numpy.org/),
+[SciPy](https://scipy.org/), [Matplotlib](https://matplotlib.org/), [SQLAlchemy](https://www.sqlalchemy.org/),
+[pandas](https://pandas.pydata.org/) and [pygeomag](https://github.com/boxpet/pygeomag).
 
 ## :rocket: How to install
 
@@ -48,17 +48,16 @@ and install latest stable version of **apsg** using pip within the environment:
 
     pip install apsg
 
-To include jupyterlab and pyqt5 in installation, use `extra` option:
-
-## I'm using conda or mamba to manage environments
+To include jupyterlab and pyqt6 in installation, use `extra` option:
 
     pip install apsg[extra]
 
-or install **master** with:
+Or install **master** with:
 
     pip install git+https://github.com/ondrolexa/apsg.git
 
 Alternatively, you can clone the repository and do a local install (recommended for dev):
+
     git clone https://github.com/ondrolexa/apsg.git
     cd apsg
     pip install -e .[dev]
@@ -69,9 +68,9 @@ To upgrade an existing version of APSG from PyPI, execute:
 
     pip install apsg --upgrade --no-deps
 
-#### Comments on system-wide instalations on Debian systems
+#### Comments on system-wide installations on Debian systems
 
-Latest Debian-based systems does not allow to install non-debian packages system-wide.
+Latest Debian-based systems do not allow installing non-Debian packages system-wide.
 However, installing all requirements allows to force install APSG system-wide without troubles.
 
 Install requirements using apt:
@@ -84,14 +83,14 @@ and then install apsg using pip:
 
 ### I'm using conda or mamba to manage environments
 
-If you have already have conda or mamba installed, you can create environment with:
+If you already have conda or mamba installed, you can create environment with:
 
     conda config --add channels conda-forge
-    conda create -n apsg python apsg jupyterlab pyqt
+    conda create -n apsg python apsg jupyterlab pyqt6
 
 or using mamba
 
-    mamba create -n apsg python apsg jupyterlab pyqt
+    mamba create -n apsg python apsg jupyterlab pyqt6
 
 #### Current release info
 
@@ -109,7 +108,7 @@ Most discussion happens on [Github](https://github.com/ondrolexa/apsg). Feel fre
 
 ## :coin: Donate
 
-APSG is an open-source project, available for you for free. It took a lot of time and resources to build this software. If you find this software useful and want to support its future development please consider donating me.
+APSG is an open-source project, available for you for free. It took a lot of time and resources to build this software. If you find this software useful and want to support its future development please consider donating to me.
 
 [![Donate via PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=QTYZWVUNDUAH8&item_name=APSG+development+donation&currency_code=EUR&source=url)
 

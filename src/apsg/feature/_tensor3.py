@@ -6,7 +6,6 @@ from pygeomag import GeoMag
 from scipy import linalg as spla
 from scipy.spatial.transform import Rotation
 
-from apsg.decorator._decorator import ensure_arguments
 from apsg.feature._geodata import Fault, Foliation, Lineation, Pair
 from apsg.helpers._math import atand
 from apsg.math._matrix import Matrix3
@@ -38,12 +37,12 @@ class DeformationGradient3(Matrix3):
         Keyword Args:
             xx (float): tensor component F_xx
             xy (float): tensor component F_xy
-            xz (float): tensor component F_xz
+            ``xz`` (float): tensor component F_xz
             yx (float): tensor component F_yx
             yy (float): tensor component F_yy
-            yz (float): tensor component F_yz
-            zx (float): tensor component F_zx
-            zy (float): tensor component F_zy
+            ``yz`` (float): tensor component F_yz
+            ``zx`` (float): tensor component F_zx
+            ``zy`` (float): tensor component F_zy
             zz (float): tensor component F_zz
 
         Example:
@@ -205,7 +204,6 @@ class Rotation3(DeformationGradient3):
         return Rotation.from_matrix(self).as_quat(canonical=True)
 
     @classmethod
-    @ensure_arguments(Pair)
     def from_pair(cls, p):
         """Return ``Rotation3`` representing rotation defined by ``Pair``.
 
@@ -218,6 +216,10 @@ class Rotation3(DeformationGradient3):
           >>> p = pair(40, 20, 75, 16)
           >>> F = defgrad.from_pair(p)
         """
+        try:
+            p = Pair(p)
+        except Exception:
+            raise TypeError("Unsupported argument for from_pair. Expecting Pair")
         return cls(
             np.asarray(
                 [
@@ -229,7 +231,6 @@ class Rotation3(DeformationGradient3):
         )
 
     @classmethod
-    @ensure_arguments(Vector3)
     def from_axisangle(cls, vector, theta):
         """Return ``Rotation3`` representing rotation around axis.
 
@@ -240,12 +241,16 @@ class Rotation3(DeformationGradient3):
         Example:
           >>> F = rotation.from_axisangle(lin(120, 30), 45)
         """
-
+        try:
+            vector = Vector3(vector)
+        except Exception:
+            raise TypeError(
+                "Unsupported argument for from_axisangle. Expecting Vector3"
+            )
         rotvec = theta * np.array(vector.uv())
         return cls(Rotation.from_rotvec(rotvec, degrees=True).as_matrix())
 
     @classmethod
-    @ensure_arguments(Vector3, Vector3)
     def from_two_vectors(cls, v1, v2):
         """Return ``Rotation3`` representing rotation around axis perpendicular
         to both vectors and rotate v1 to v2.
@@ -257,10 +262,21 @@ class Rotation3(DeformationGradient3):
         Example:
           >>> F = rotation.from_two_vectors(lin(120, 30), lin(210, 60))
         """
+        try:
+            v1 = Vector3(v1)
+        except Exception:
+            raise TypeError(
+                "Unsupported first argument for from_two_vectors. Expecting Vector3"
+            )
+        try:
+            v2 = Vector3(v2)
+        except Exception:
+            raise TypeError(
+                "Unsupported second argument for from_two_vectors. Expecting Vector3"
+            )
         return cls.from_axisangle(v1.cross(v2), v1.angle(v2))
 
     @classmethod
-    @ensure_arguments(Vector3, Vector3, Vector3)
     def from_vectors_axis(cls, v1, v2, a):
         """
         Return ``Rotation3`` representing rotation of vector v1 to v2 around
@@ -286,6 +302,24 @@ class Rotation3(DeformationGradient3):
             L:31/30
 
         """
+        try:
+            v1 = Vector3(v1)
+        except Exception:
+            raise TypeError(
+                "Unsupported first argument for from_vectors_axis. Expecting Vector3"
+            )
+        try:
+            v2 = Vector3(v2)
+        except Exception:
+            raise TypeError(
+                "Unsupported second argument for from_vectors_axis. Expecting Vector3"
+            )
+        try:
+            a = Vector3(a)
+        except Exception:
+            raise TypeError(
+                "Unsupported third argument for from_vectors_axis. Expecting Vector3"
+            )
         n = v1.cross(v2).cross(v1.slerp(v2, 0.5))
         a_fix = a.reject(n).normalized()
         v1p = v1.reject(a_fix)

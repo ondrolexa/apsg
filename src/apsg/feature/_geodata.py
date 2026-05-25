@@ -2,7 +2,6 @@ import warnings
 
 import numpy as np
 
-from apsg.decorator._decorator import ensure_arguments, ensure_first_arg_same
 from apsg.helpers._helper import is_jsonable
 from apsg.helpers._math import atan2d
 from apsg.helpers._notation import (
@@ -304,11 +303,16 @@ class Pair:
         lazi, linc = self.lin.geo
         return f"P:{fazi:.0f}/{finc:.0f}-{lazi:.0f}/{linc:.0f}"
 
-    @ensure_first_arg_same
     def __eq__(self, other):
         """
         Return `True` if pairs are equal, otherwise `False`.
         """
+        cls = type(self)
+        if not isinstance(other, cls):
+            if np.asarray(other).shape == cls.__shape__:
+                other = cls(other)
+            else:
+                return NotImplemented
         return (self.fvec == other.fvec) and (self.lvec == other.lvec)
 
     def __ne__(self, other):
@@ -345,7 +349,6 @@ class Pair:
         fol = lin.cross(p)
         return cls(fol, lin)
 
-    @ensure_arguments(Vector3)
     def rotate(self, axis, phi):
         """Rotates ``Pair`` by angle `phi` about `axis`.
 
@@ -359,6 +362,10 @@ class Pair:
             P:210/83-287/60
 
         """
+        try:
+            axis = Vector3(axis)
+        except Exception:
+            raise TypeError("Unsupported argument for rotate. Expecting Vector3")
         return type(self)(self.fvec.rotate(axis, phi), self.lvec.rotate(axis, phi))
 
     @property
@@ -536,11 +543,16 @@ class Fault(Pair):
         # schar = [" ", "+", "-"][self.sense]
         return f"F:{fazi:.0f}/{finc:.0f}-{lazi:.0f}/{linc:.0f} {schar}"
 
-    @ensure_first_arg_same
     def __eq__(self, other):
         """
         Return `True` if pairs are equal, otherwise `False`.
         """
+        cls = type(self)
+        if not isinstance(other, cls):
+            if np.asarray(other).shape == cls.__shape__:
+                other = cls(other)
+            else:
+                return NotImplemented
         return (
             (self.fvec == other.fvec)
             and (self.lvec == other.lvec)
@@ -728,8 +740,13 @@ class Cone:
         azi, inc = vec2geo_linear(self.axis)
         return f"C:{azi:.0f}/{inc:.0f} [{self.apical_angle():g}]"
 
-    @ensure_first_arg_same
     def __eq__(self, other):
+        cls = type(self)
+        if not isinstance(other, cls):
+            if np.asarray(other).shape == cls.__shape__:
+                other = cls(other)
+            else:
+                return NotImplemented
         return (
             (self.axis == other.axis)
             and (self.secant == other.secant)
@@ -765,7 +782,6 @@ class Cone:
         axis, secant = Vector3.random(), Vector3.random()
         return cls(axis, secant, 360)
 
-    @ensure_arguments(Vector3)
     def rotate(self, axis, phi):
         """Rotates ``Cone`` by angle `phi` about `axis`.
 
@@ -779,6 +795,10 @@ class Cone:
             C:210/83-287/60
 
         """
+        try:
+            axis = Vector3(axis)
+        except Exception:
+            raise TypeError("Unsupported argument for rotate. Expecting Vector3")
         return type(self)(
             self.axis.rotate(axis, phi), self.secant.rotate(axis, phi), self.revangle
         )

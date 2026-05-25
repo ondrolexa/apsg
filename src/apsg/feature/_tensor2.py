@@ -3,7 +3,6 @@ import math
 import numpy as np
 from scipy import linalg as spla
 
-from apsg.decorator._decorator import ensure_arguments
 from apsg.helpers._math import atan2d, cosd, sind
 from apsg.math._matrix import Matrix2
 from apsg.math._vector import Vector2
@@ -115,7 +114,7 @@ class Rotation2(DeformationGradient2):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not np.allclose(np.dot(np.transpose(self), self), np.eye(2)):
-            raise TypeError("Not valid arguments for Rotation3")
+            raise TypeError("Not valid arguments for Rotation2")
         # fix improper rotations
         if np.allclose(-1, np.linalg.det(self)):
             U, S, Vt = np.linalg.svd(self)
@@ -147,7 +146,6 @@ class Rotation2(DeformationGradient2):
         return cls([[c, -s], [s, c]])
 
     @classmethod
-    @ensure_arguments(Vector2, Vector2)
     def from_two_vectors(cls, v1, v2):
         """Return ``rotation2`` representing rotation around axis perpendicular
         to both vectors and rotate v1 to v2.
@@ -164,6 +162,18 @@ class Rotation2(DeformationGradient2):
            [ 0.707  0.707]]
 
         """
+        try:
+            v1 = Vector2(v1)
+        except Exception:
+            raise TypeError(
+                "Unsupported first argument for from_two_vectors. Expecting Vector2"
+            )
+        try:
+            v2 = Vector2(v2)
+        except Exception:
+            raise TypeError(
+                "Unsupported second argument for from_two_vectors. Expecting Vector2"
+            )
         return cls.from_angle(v1.angle(v2))
 
 

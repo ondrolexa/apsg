@@ -168,7 +168,7 @@ class TestRotation2:
         assert R.is_rotation()
 
     def test_invalid_raises(self):
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="Rotation2"):
             Rotation2([[2, 0], [0, 1]])
 
     def test_repr(self):
@@ -438,6 +438,20 @@ class TestEllipse:
     def test_repr(self):
         E = Ellipse([[8, 0], [0, 2]])
         assert repr(E).startswith("Ellipse")
+
+    def test_scaled_eigenvectors(self):
+        E = Ellipse([[8, 0], [0, 2]])
+        v = E.scaled_eigenvectors()
+        assert len(v) == 2
+        assert isinstance(v[0], Vector2)
+        assert isinstance(v[1], Vector2)
+
+    def test_scaled_eigenvectors_single(self):
+        E = Ellipse([[8, 0], [0, 2]])
+        v0 = E.scaled_eigenvectors(which=0)
+        assert isinstance(v0, Vector2)
+        v1 = E.scaled_eigenvectors(which=1)
+        assert isinstance(v1, Vector2)
 
     def test_lowercase_alias(self):
         assert ellipse is Ellipse
@@ -1051,6 +1065,23 @@ class TestEllipsoid:
         v = E.eigenvectors()
         assert len(v) == 3
         assert isinstance(v[0], Vector3)
+
+    def test_scaled_eigenvectors(self):
+        E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
+        v = E.scaled_eigenvectors()
+        assert len(v) == 3
+        assert isinstance(v[0], Vector3)
+        assert isinstance(v[1], Vector3)
+        assert isinstance(v[2], Vector3)
+
+    def test_scaled_eigenvectors_single(self):
+        E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
+        v0 = E.scaled_eigenvectors(which=0)
+        assert isinstance(v0, Vector3)
+        v1 = E.scaled_eigenvectors(which=1)
+        assert isinstance(v1, Vector3)
+        v2 = E.scaled_eigenvectors(which=2)
+        assert isinstance(v2, Vector3)
 
     def test_eigenlins(self):
         E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])

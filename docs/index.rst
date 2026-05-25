@@ -51,6 +51,12 @@ names and aliases of most commonly used classes.
    * - vec
      - Vector3
      - A class to represent a 3D vector
+   * - matrix
+     - Matrix3
+     - A class to represent a 3x3 matrix
+   * - matrix2
+     - Matrix2
+     - A class to represent a 2x2 matrix
    * - lin
      - Lineation
      - A class to represent non-oriented (axial) linear feature
@@ -64,6 +70,9 @@ names and aliases of most commonly used classes.
      - Fault
      - The class to store pair of planar and linear features
        together with sense of movement
+   * - dir2
+     - Direction
+     - A class to represent a 2D direction
    * - cone
      - Cone
      - The class to store cone with given axis, secant line and
@@ -89,6 +98,12 @@ names and aliases of most commonly used classes.
    * - coneset
      - ConeSet
      - Class to store set of ``Cone`` features
+   * - dir2set
+     - Direction2Set
+     - Class to store set of ``Direction`` features
+   * - cluster
+     - ClusterSet
+     - Class to store set of clustered features
    * - defgrad2
      - DeformationGradient2
      - The class to represent 2D deformation gradient tensor
@@ -101,12 +116,24 @@ names and aliases of most commonly used classes.
    * - velgrad
      - VelocityGradient3
      - The class to represent 3D velocity gradient tensor
+   * - rotation2
+     - Rotation2
+     - The class to represent 2D rotation tensor
+   * - rotation
+     - Rotation3
+     - The class to represent 3D rotation tensor
    * - stress2
      - Stress2
      - The class to represent 2D stress tensor
    * - stress
      - Stress3
      - The class to represent 3D stress tensor
+   * - stressset
+     - Stress3Set
+     - Class to store set of ``Stress3`` features
+   * - G
+     - G
+     - Function to perform shape analysis
    * - ellipse
      - Ellipse
      - The class to represent 2D ellipse

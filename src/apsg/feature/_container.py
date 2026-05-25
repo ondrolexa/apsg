@@ -261,13 +261,14 @@ class Vector2Set(FeatureSet):
         Args:
             level: confidence level. Default 0.95 for 95 %
 
-        fisher_statistics returns dictionary with keys:
-            `k`     estimated precision parameter,
-            `csd`   estimated angular standard deviation
-            `alpha` half-angle (degrees) of the confidence cone around
-                    the mean direction
-            `uniform` Rayleigh test to test uniformity for critical value
-                    with α = 1 - level. Default 5%
+        Returns:
+            dict with keys:
+            ``k`` estimated precision parameter,
+            ``csd`` estimated angular standard deviation,
+            ``alpha`` half-angle (degrees) of the confidence cone around
+            the mean direction,
+            ``uniform`` Rayleigh test to test uniformity for critical value
+            with α = 1 - level. Default 5%
         """
 
         def kappa_estimate(N, R):
@@ -596,16 +597,18 @@ class Vector3Set(FeatureSet):
         Args:
             level: confidence level. Default 0.95 for 95 %
 
-        fisher_statistics returns dictionary with keys:
-            `mu`    mean axis of fitted distribution,
-            `k`     estimated precision parameter,
-            `csd`   estimated angular standard deviation
-            `alpha` half-angle (degrees) of the confidence cone around
-                    the mean direction
-            `uniform` Rayleigh test to test uniformity for critical value
-                    with α = 1 - level. Default 5%
+        Returns:
+            dict with keys:
+            ``mu`` mean axis of fitted distribution,
+            ``k`` estimated precision parameter,
+            ``csd`` estimated angular standard deviation,
+            ``alpha`` half-angle (degrees) of the confidence cone around
+            the mean direction,
+            ``uniform`` Rayleigh test to test uniformity for critical value
+            with α = 1 - level. Default 5%
 
-        Note: Calculated alpha for level 0.95 means, you can be 95% confident that
+        Note:
+            Calculated alpha for level 0.95 means, you can be 95% confident that
             the true population mean axis lies within alpha degrees of the mu.
         """
 
@@ -698,13 +701,15 @@ class Vector3Set(FeatureSet):
         Args:
             level: confidence level. Default 0.95 for 95 %
 
-        watson_statistics returns dictionary with keys:
-            `mu`    mean axis of fitted distribution,
-            `k`     estimated precision parameter,
-            `alpha` half-angle (degrees) of the confidence cone around
-                    the mean direction
+        Returns:
+            dict with keys:
+            ``mu`` mean axis of fitted distribution,
+            ``k`` estimated precision parameter,
+            ``alpha`` half-angle (degrees) of the confidence cone around
+            the mean direction
 
-        Note: Calculated alpha for level 0.95 means, you can be 95% confident that
+        Note:
+            Calculated alpha for level 0.95 means, you can be 95% confident that
             the true population mean axis lies within alpha degrees of the mu.
         """
 
