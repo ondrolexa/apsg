@@ -33,4 +33,10 @@ jobs:
 
             - name: Run Python tests
               run: |
-                  python -m pytest
+                  python -m pytest --cov --cov-branch --cov-report=xml
+
+            - name: Upload coverage reports to Codecov
+              uses: codecov/codecov-action@v5
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  slug: ondrolexa/apsg

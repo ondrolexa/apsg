@@ -11,7 +11,7 @@ class Matrix(ABC):
     """Abstarct base class for Matrix2 and Matrix3"""
 
     __slots__ = ("_coefs", "_attrs", "_cache")
-    __shape__ = (0, 0)
+    __shape__ = None
 
     @abstractmethod
     def __init__(self, *args, **kwargs):

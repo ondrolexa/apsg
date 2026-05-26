@@ -16,6 +16,7 @@ class Vector(ABC):
     """Abstract base class for Vector2 and Vector3"""
 
     __slots__ = ("_coords", "_attrs")
+    __shape__ = None
 
     @abstractmethod
     def __init__(self, *args, **kwargs):
@@ -54,11 +55,11 @@ class Vector(ABC):
     def __nonzero__(self):
         return any(self._coords)
 
-    #    def __getitem__(self, key):
-    #        return self._coords[key]
+    def __getitem__(self, key):
+        return self._coords[key]
 
-    #    def __iter__(self):
-    #        return iter(self._coords)
+    def __iter__(self):
+        return iter(self._coords)
 
     def __add__(self, other):
         return type(self)(np.add(self, other))

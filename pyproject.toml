@@ -19,7 +19,7 @@ dependencies = ["numpy", "matplotlib>=3.9", "scipy", "sqlalchemy", "pandas", "py
 
 [project.optional-dependencies]
 extra = ["jupyterlab", "pyqt6"]
-tests = ["pytest"]
+tests = ["pytest", "pytest-cov"]
 docs = [
     "sphinx",
     "sphinx_rtd_theme",
