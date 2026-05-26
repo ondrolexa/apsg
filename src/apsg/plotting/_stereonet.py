@@ -59,7 +59,7 @@ class StereoNet:
     """
 
     def __init__(self, **kwargs):
-        self._kwargs = apsg_conf.stereonet_default_kwargs.copy()
+        self._kwargs = apsg_conf.stereonet.copy()
         self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
         self._kwargs["title"] = kwargs.get("title", None)
         self.grid = StereoGrid(**self._kwargs)
@@ -838,7 +838,7 @@ class StereoNet:
 
     def _fault(self, *args, **kwargs):
         h = self._great_circle(*[arg.fol for arg in args], **kwargs)
-        quiver_kwargs = apsg_conf.stereonet_default_arrow_kwargs
+        quiver_kwargs = apsg_conf.stereonet_arrow.copy()
         quiver_kwargs["pivot"] = "tail"
         quiver_kwargs["color"] = h[0].get_color()
         for arg in args:
@@ -846,7 +846,7 @@ class StereoNet:
 
     def _hoeppner(self, *args, **kwargs):
         h = self._line(*[arg.fol for arg in args], **kwargs)
-        quiver_kwargs = apsg_conf.stereonet_default_arrow_kwargs
+        quiver_kwargs = apsg_conf.stereonet_arrow.copy()
         quiver_kwargs["color"] = h[0].get_color()
         for arg in args:
             self._arrow(arg.fol, arg.lin, sense=arg.sense, **quiver_kwargs)

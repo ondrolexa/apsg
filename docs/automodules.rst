@@ -12,4 +12,5 @@ APSG provides following modules:
    apsg.pandas
    apsg.database
    apsg.math
+   apsg.config
    apsg.helpers

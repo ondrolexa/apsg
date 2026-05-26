@@ -42,7 +42,7 @@ class StereoNet_Point(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_point_kwargs")
+        super().update_kwargs("stereonet_point")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
@@ -59,7 +59,7 @@ class StereoNet_Pole(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_pole_kwargs")
+        super().update_kwargs("stereonet_pole")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
@@ -76,7 +76,7 @@ class StereoNet_Vector(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_vector_kwargs")
+        super().update_kwargs("stereonet_vector")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
@@ -93,7 +93,7 @@ class StereoNet_Scatter(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_scatter_kwargs")
+        super().update_kwargs("stereonet_scatter")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
@@ -127,7 +127,7 @@ class StereoNet_Great_Circle(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_great_circle_kwargs")
+        super().update_kwargs("stereonet_great_circle")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
@@ -144,7 +144,7 @@ class StereoNet_Arc(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_arc_kwargs")
+        super().update_kwargs("stereonet_arc")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
@@ -161,7 +161,7 @@ class StereoNet_Arc(StereoNet_Artists):
 #         self.parse_kwargs(kwargs)
 
 #     def parse_kwargs(self, kwargs):
-#         super().update_kwargs("stereonet_default_cone_kwargs")
+#         super().update_kwargs("stereonet_cone")
 #         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
 #         self.kwargs["angle"] = np.atleast_1d(kwargs["angle"]).tolist()
 #         nof = np.vstack(self.args).shape[0]
@@ -190,7 +190,7 @@ class StereoNet_Cone(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_cone_kwargs")
+        super().update_kwargs("stereonet_cone")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
@@ -207,7 +207,7 @@ class StereoNet_Pair(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_pair_kwargs")
+        super().update_kwargs("stereonet_pair")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
@@ -224,7 +224,7 @@ class StereoNet_Fault(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_fault_kwargs")
+        super().update_kwargs("stereonet_fault")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
@@ -241,7 +241,7 @@ class StereoNet_Hoeppner(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_hoeppner_kwargs")
+        super().update_kwargs("stereonet_hoeppner")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
@@ -258,7 +258,7 @@ class StereoNet_Arrow(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_arrow_kwargs")
+        super().update_kwargs("stereonet_arrow")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
@@ -278,7 +278,7 @@ class StereoNet_Tensor(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_tensor_kwargs")
+        super().update_kwargs("stereonet_tensor")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             self.kwargs["label"] = self.args[0].label()
@@ -292,7 +292,7 @@ class StereoNet_Stress(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_stress_kwargs")
+        super().update_kwargs("stereonet_stress")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             self.kwargs["label"] = self.args[0].label()
@@ -309,7 +309,7 @@ class StereoNet_Contour(StereoNet_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_default_contour_kwargs")
+        super().update_kwargs("stereonet_contour")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             self.kwargs["label"] = self.args[0].label()  # ty: ignore
@@ -449,7 +449,7 @@ class RosePlot_Bar(RosePlot_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("roseplot_default_bar_kwargs")
+        super().update_kwargs("roseplot_bar")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
 
 
@@ -461,7 +461,7 @@ class RosePlot_Pdf(RosePlot_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("roseplot_default_pdf_kwargs")
+        super().update_kwargs("roseplot_pdf")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if self.kwargs["color"] is None:
             del self.kwargs["color"]
@@ -475,7 +475,7 @@ class RosePlot_Muci(RosePlot_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("roseplot_default_muci_kwargs")
+        super().update_kwargs("roseplot_muci")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
 
 
@@ -530,7 +530,7 @@ class FabricPlot_Point(FabricPlot_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("fabricplot_default_point_kwargs")
+        super().update_kwargs("fabricplot_point")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
@@ -547,7 +547,7 @@ class FabricPlot_Path(FabricPlot_Artists):
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        super().update_kwargs("fabricplot_default_path_kwargs")
+        super().update_kwargs("fabricplot_path")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:

@@ -11,3 +11,4 @@ Tutorials
     notebooks/04_apsg_fabricplots
     notebooks/05_apsg_pandas
     notebooks/06_apsg_various
+    notebooks/07_apsg_database

@@ -1,8 +1,11 @@
 #!/bin/bash
+set -e
 
-jupyter nbconvert --to notebook --inplace --execute 01_apsg_basics.ipynb
-jupyter nbconvert --to notebook --inplace --execute 02_apsg_tensors.ipynb
-jupyter nbconvert --to notebook --inplace --execute 03_apsg_stereonet.ipynb
-jupyter nbconvert --to notebook --inplace --execute 04_apsg_fabricplots.ipynb
-jupyter nbconvert --to notebook --inplace --execute 05_apsg_pandas.ipynb
-jupyter nbconvert --to notebook --inplace --execute 06_apsg_various.ipynb
+PYTHON=".venv/bin/python"
+[ -x "$PYTHON" ] || PYTHON="$(dirname "$0")/../../.venv/bin/python"
+[ -x "$PYTHON" ] || PYTHON="python3"
+
+for nb in 0*.ipynb; do
+    echo "=== $nb ==="
+    "$PYTHON" -m jupyter nbconvert --to notebook --inplace --execute "$nb"
+done

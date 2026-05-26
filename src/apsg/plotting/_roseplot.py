@@ -44,7 +44,7 @@ class RosePlot(object):
     """
 
     def __init__(self, **kwargs):
-        self._kwargs = apsg_conf.roseplot_default_kwargs.copy()
+        self._kwargs = apsg_conf.roseplot.copy()
         self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
         self._artists = []
 

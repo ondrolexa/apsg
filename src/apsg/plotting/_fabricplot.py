@@ -17,7 +17,7 @@ class FabricPlot(object):
     """
 
     def __init__(self, **kwargs):
-        self._kwargs = apsg_conf.fabricplot_default_kwargs.copy()
+        self._kwargs = apsg_conf.fabricplot.copy()
         self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
         self._artists = []
 

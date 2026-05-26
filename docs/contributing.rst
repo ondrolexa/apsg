@@ -55,32 +55,42 @@ If you are proposing a feature:
 Get Started!
 ------------
 
-Ready to contribute? Here's how to set up `apsg` for local development.
+Ready to contribute? Here's how to set up ``apsg`` for local development.
 
-1. Fork the `apsg` repo on GitHub.
-2. Clone your fork locally with SSH or HTTPS::
+1. Fork the ``apsg`` repo on GitHub.
 
-    $ git clone git@github.com:ondrolexa/apsg.git
+2. Clone your fork locally::
 
-    $ git clone https://github.com/ondrolexa/apsg.git
+    $ git clone git@github.com:YOURUSER/apsg.git
 
-3. Install your local copy and activate the virtual environment via `pipenv`.
+3. Create a virtual environment and install APSG with dev dependencies::
 
-    $ cd apsg/
-    $ pipenv shell
-    $ pipenv install --dev
+    $ python -m venv .venv
+    $ source .venv/bin/activate
+    $ pip install -e .[dev]
 
-4. Create a branch for local development::
+4. Install pre-commit hooks to run linters and tests automatically::
+
+    $ pre-commit install
+
+5. Create a branch for local development::
 
     $ git checkout -b name-of-your-bugfix-or-feature
 
-6. Now you can make your changes locally.
+6. Make your changes locally.
 
-7. When you're done making changes, check that your changes pass flake8 and the tests, including testing other Python versions with tox::
+7. Run tests and check code style::
 
-    $ flake8 apsg tests
-    $ python setup.py test
-    $ tox
+    # Run tests
+    $ pytest
+
+    # Run linters via pre-commit
+    $ pre-commit run --all-files
+
+    # Build the documentation
+    $ cd docs
+    $ rm -rf _build
+    $ python -m sphinx -b html . _build
 
 8. Commit your changes and push your branch to GitHub::
 
@@ -98,7 +108,5 @@ Before you submit a pull request, check that it meets these guidelines:
 1. The pull request should include tests.
 2. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
-   feature to the list in README.rst.
-3. The pull request should work for Python 2.7, 3.5, and 3.6, and for PyPy.
-   Check https://travis-ci.org/ondrolexa/apsg/pull_requests
-   and make sure that the tests pass for all supported Python versions.
+   feature to the list in ``README.md``.
+3. The pull request should work for Python 3.10 or later.

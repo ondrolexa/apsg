@@ -10,4 +10,5 @@ Development Lead
 Contributors
 ------------
 
-* David Landa <david.landa@natur.cuni.cz>
+If you want to see your name here, do not hesitate to contribute following the
+steps described in the :doc:`contributing` guide.
