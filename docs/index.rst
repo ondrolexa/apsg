@@ -2,7 +2,7 @@
 Welcome to APSG's documentation!
 ================================
 
-.. image:: https://ondrolexa.github.io/apsg/apsg_banner.svg
+.. image:: https://github.com/ondrolexa/apsg/raw/refs/heads/master/docs/images/apsg_banner.svg
    :width: 300
    :alt: APSG logo
 

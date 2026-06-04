@@ -1,4 +1,4 @@
-<img src="https://ondrolexa.github.io/apsg/apsg_banner.svg" alt="APSG logo" width="300px"/>
+<img src="https://github.com/ondrolexa/apsg/raw/refs/heads/master/docs/images/apsg_banner.svg" alt="APSG logo" width="300px"/>
 
 [![PyPI - Version](https://img.shields.io/pypi/v/apsg)](https://pypi.org/project/apsg)
 [![Conda](https://img.shields.io/conda/v/conda-forge/apsg)](https://anaconda.org/conda-forge/apsg)
