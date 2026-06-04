@@ -10,14 +10,7 @@
 
 APSG is the package for structural geologists. It defines several new python classes to easily manage, analyze and visualize orientation structural geology data.
 
-> [!IMPORTANT]
-> APSG has been significantly refactored from version 1.0 and several changes are
-> breaking backward compatibility. The main APSG namespace provides often-used
-> classes in lowercase names as aliases to `PascalCase` convention used in
-> modules to provide a simplified interface for users. The `PascalCase` names of
-> classes use longer and plain English names instead acronyms for better readability.
->
-> Check [documentation](https://apsg.readthedocs.org) for more details.
+Check ``CHANGELOG.md`` for recent updates.
 
 ## :hammer_and_wrench: Requirements
 
@@ -101,7 +94,7 @@ or using mamba
 
 ## :blue_book: Documentation
 
-Explore all the features of APSG. You can find detailed documentation [here](https://apsg.readthedocs.org).
+You can explore all the features of APSG in [documentation](https://apsg.readthedocs.org).
 
 ## :computer: Contributing
 

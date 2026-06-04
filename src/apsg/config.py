@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field, asdict
 from collections.abc import Mapping
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
 
@@ -66,11 +66,6 @@ class StereonetConfig(BaseConfig):
 
 @dataclass
 class StereonetPointConfig(StereonetMarkerConfig):
-    pass
-
-
-@dataclass
-class StereonetPoleConfig(StereonetMarkerConfig):
     pass
 
 
@@ -284,7 +279,6 @@ class AppConfig(BaseConfig):
     facecolor: str = "white"
     stereonet: StereonetConfig = field(default_factory=StereonetConfig)
     stereonet_point: StereonetPointConfig = field(default_factory=StereonetPointConfig)
-    stereonet_pole: StereonetPoleConfig = field(default_factory=StereonetPoleConfig)
     stereonet_vector: StereonetVectorConfig = field(
         default_factory=StereonetVectorConfig
     )

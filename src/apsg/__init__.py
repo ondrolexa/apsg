@@ -120,9 +120,21 @@ from apsg.plotting import (
     VollmerPlot,
     quicknet,
 )
+from apsg.plotting import (
+    StereoNetStyleFactory as fabricplot_styles,
+)
+from apsg.plotting import (
+    StereoNetStyleFactory as roseplot_styles,
+)
+from apsg.plotting import (
+    StereoNetStyleFactory as stereonet_styles,
+)
 
 __all__ = (
     "apsg_conf",
+    "stereonet_styles",
+    "roseplot_styles",
+    "fabricplot_styles",
     "vec",
     "vec2",
     "matrix",
@@ -170,6 +182,6 @@ __all__ = (
     "quicknet",
 )
 
-__version__ = "1.4.1"
+__version__ = "1.5.0"
 __author__ = "Ondrej Lexa"
 __email__ = "lexa.ondrej@gmail.com"

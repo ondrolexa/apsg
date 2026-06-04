@@ -20,8 +20,9 @@ from apsg.feature._tensor3 import Stress3
 from apsg.math._vector import Vector3
 from apsg.plotting._plot_artists import StereoNetArtistFactory
 from apsg.plotting._stereogrid import StereoGrid
+from apsg.plotting._styles import StereoNetStyle
 
-__all__ = ["StereoNet"]
+__all__ = ["StereoNet", "quicknet"]
 
 
 class StereoNet:
@@ -54,7 +55,7 @@ class StereoNet:
         >>> l = linset.random_fisher(position=lin(120, 40))
         >>> s = StereoNet(title="Random linear features")
         >>> s.contour(l)
-        >>> s.line(l)
+        >>> s.point(l)
         >>> s.show()
     """
 
@@ -259,12 +260,36 @@ class StereoNet:
         plt.close(0)
 
     ########################################
+    # STYLED PLOTTING                      #
+    ########################################
+
+    def plot(self, style, *args):
+        """
+        Plot features using apsg styles
+
+        Args:
+            style: apsg plotting style. See stereonet_styles
+            *arg: any number of features to be plotted
+
+        Note:
+            Features in args are automatically filtered by style to accept only compatible features
+
+        """
+        assert issubclass(
+            type(style), StereoNetStyle
+        ), "Style must StereoNetStyle object"
+
+        artist = style.create_artist(*args)
+        if len(artist.args) > 0:
+            self._artists.append(artist)
+
+    ########################################
     # PLOTTING METHODS                     #
     ########################################
 
-    def line(self, *args, **kwargs):
+    def point(self, *args, **kwargs):
         """
-        Plot linear feature(s) as point(s)
+        Plot linear feature(s) or poles of planar features as point(s)
 
         Args:
             Vector3 or Vector3Set like feature(s)
@@ -287,30 +312,8 @@ class StereoNet:
         except TypeError as err:
             print(err)
 
-    def pole(self, *args, **kwargs):
-        """
-        Plot pole of planar feature(s) as point(s)
-
-        Args:
-            Foliation or FoliationSet feature(s)
-
-        Keyword Args:
-            alpha (scalar): Set the alpha value. Default None
-            color (color): Set the color of the point. Default None
-            mec (color): Set the edge color. Default None
-            mfc (color): Set the face color. Default None
-            mew (float): Set the marker edge width. Default 1
-            ms (float): Set the marker size. Default 6
-            marker (str): Marker style string. Default "o"
-            ls (str): Line style string (only for multiple features).
-                Default None
-
-        """
-        try:
-            artist = StereoNetArtistFactory.create_pole(*args, **kwargs)
-            self._artists.append(artist)
-        except TypeError as err:
-            print(err)
+    # backward compatibility
+    line = pole = point
 
     def vector(self, *args, **kwargs):
         """
@@ -605,27 +608,27 @@ class StereoNet:
             show_data (bool): Show data as points. Default False
             data_kws (dict): arguments passed to point factory when `show_data` True
         """
-        try:
-            artist = StereoNetArtistFactory.create_contour(*args, **kwargs)
-            # ad-hoc density calculation needed to access correct grid properties
-            if len(args) > 0:
-                self.grid.calculate_density(
-                    args[0],
-                    method=artist.kwargs.get("method"),
-                    n_max=artist.kwargs.get("n_max"),
-                    sigma=artist.kwargs.get("sigma"),
-                    sigmanorm=artist.kwargs.get("sigmanorm"),
-                    trimzero=artist.kwargs.get("trimzero"),
-                )
-            self._artists.append(artist)
-        except TypeError as err:
-            print(err)
+        # try:
+        artist = StereoNetArtistFactory.create_contour(*args, **kwargs)
+        # ad-hoc density calculation needed to access correct grid properties
+        if len(args) > 0:
+            self.grid.calculate_density(
+                args[0],
+                method=artist.kwargs.get("method"),
+                n_max=artist.kwargs.get("n_max"),
+                sigma=artist.kwargs.get("sigma"),
+                sigmanorm=artist.kwargs.get("sigmanorm"),
+                trimzero=artist.kwargs.get("trimzero"),
+            )
+        self._artists.append(artist)
+        # except TypeError as err:
+        #    print(err)
 
     ########################################
     # PLOTTING ROUTINES                    #
     ########################################
 
-    def _line(self, *args, **kwargs):
+    def _point(self, *args, **kwargs):
         x_lower, y_lower = self.proj.project_data(*np.vstack(args).T)
         x_upper, y_upper = self.proj.project_data(*(-np.vstack(args).T))
         handles = self.ax.plot(
@@ -827,7 +830,7 @@ class StereoNet:
     def _pair(self, *args, **kwargs):
         line_marker = kwargs.pop("line_marker")
         h = self._great_circle(*[arg.fol for arg in args], **kwargs)
-        self._line(
+        self._point(
             *[arg.lin for arg in args],
             marker=line_marker,
             ls="none",
@@ -845,7 +848,7 @@ class StereoNet:
             self._arrow(arg.lin, sense=arg.sense, **quiver_kwargs)
 
     def _hoeppner(self, *args, **kwargs):
-        h = self._line(*[arg.fol for arg in args], **kwargs)
+        h = self._point(*[arg.fol for arg in args], **kwargs)
         quiver_kwargs = apsg_conf.stereonet_arrow.copy()
         quiver_kwargs["color"] = h[0].get_color()
         for arg in args:
@@ -909,15 +912,15 @@ class StereoNet:
                 del kwargs["color"]
             if selkw["label"] != "_tensor":
                 selkw["label"] = "S1"
-                self._line(lins[0], color=kwargs.get("color", "red"), **selkw)
+                self._point(lins[0], color=kwargs.get("color", "red"), **selkw)
                 selkw["label"] = "S2"
-                self._line(lins[1], color=kwargs.get("color", "green"), **selkw)
+                self._point(lins[1], color=kwargs.get("color", "green"), **selkw)
                 selkw["label"] = "S3"
-                self._line(lins[2], color=kwargs.get("color", "blue"), **selkw)
+                self._point(lins[2], color=kwargs.get("color", "blue"), **selkw)
             else:
-                self._line(lins[0], color=kwargs.get("color", "red"), **selkw)
-                self._line(lins[1], color=kwargs.get("color", "green"), **selkw)
-                self._line(lins[2], color=kwargs.get("color", "blue"), **selkw)
+                self._point(lins[0], color=kwargs.get("color", "red"), **selkw)
+                self._point(lins[1], color=kwargs.get("color", "green"), **selkw)
+                self._point(lins[2], color=kwargs.get("color", "blue"), **selkw)
 
     def _stress(self, *args, **kwargs):
         selkw = {
@@ -929,15 +932,15 @@ class StereoNet:
             del kwargs["color"]
         if selkw["label"] != "_stress":
             selkw["label"] = "σ1"
-            self._line(lins[2], color=kwargs.get("color", "red"), **selkw)
+            self._point(lins[2], color=kwargs.get("color", "red"), **selkw)
             selkw["label"] = "σ2"
-            self._line(lins[1], color=kwargs.get("color", "green"), **selkw)
+            self._point(lins[1], color=kwargs.get("color", "green"), **selkw)
             selkw["label"] = "σ3"
-            self._line(lins[0], color=kwargs.get("color", "blue"), **selkw)
+            self._point(lins[0], color=kwargs.get("color", "blue"), **selkw)
         else:
-            self._line(lins[2], color=kwargs.get("color", "red"), **selkw)
-            self._line(lins[1], color=kwargs.get("color", "green"), **selkw)
-            self._line(lins[0], color=kwargs.get("color", "blue"), **selkw)
+            self._point(lins[2], color=kwargs.get("color", "red"), **selkw)
+            self._point(lins[1], color=kwargs.get("color", "green"), **selkw)
+            self._point(lins[0], color=kwargs.get("color", "blue"), **selkw)
 
     def _contour(self, *args, **kwargs):
         method = kwargs.pop("method")
@@ -977,7 +980,7 @@ class StereoNet:
             cl.set_clip_path(self.primitive)
         if show_data:
             artist = StereoNetArtistFactory.create_point(*args[0], **data_kws)
-            self._line(*artist.args, **artist.kwargs)
+            self._point(*artist.args, **artist.kwargs)
         if colorbar:
             self.fig.colorbar(cf, ax=self.ax, shrink=0.5, anchor=(0.0, 0.3))
         # plt.colorbar(cf, format="%3.2f", spacing="proportional")
@@ -1022,11 +1025,11 @@ def quicknet(*args, **kwargs):
         if isinstance(arg, Vector3):
             if isinstance(arg, Foliation):
                 if fol_as_pole:
-                    s.pole(arg, **kwargs)
+                    s.point(arg, **kwargs)
                 else:
                     s.great_circle(arg, **kwargs)
             elif isinstance(arg, Lineation):
-                s.line(arg, **kwargs)
+                s.point(arg, **kwargs)
             else:
                 s.vector(arg, **kwargs)
         elif isinstance(arg, Fault):
@@ -1038,11 +1041,11 @@ def quicknet(*args, **kwargs):
         elif isinstance(arg, Vector3Set):
             if isinstance(arg, FoliationSet):
                 if fol_as_pole:
-                    s.pole(arg, **kwargs)
+                    s.point(arg, **kwargs)
                 else:
                     s.great_circle(arg, **kwargs)
             elif isinstance(arg, LineationSet):
-                s.line(arg, **kwargs)
+                s.point(arg, **kwargs)
             else:
                 s.vector(arg, **kwargs)
         elif isinstance(arg, FaultSet):

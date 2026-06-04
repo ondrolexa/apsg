@@ -110,20 +110,11 @@ class StereoGrid:
             # Calculate the complex spherical harmonic for positive m
             # Check for the modern SciPy 1.15+ function
             if hasattr(scipy.special, "sph_harm_y"):
-                # sph_harm_y signature: (n, m, theta, phi, *, diff_order=0, normalization='full')
-                # By default, it uses 'full' normalization and includes the Condon-Shortley phase.
-                Y_complex = scipy.special.sph_harm_y(
-                    n, abs(m), polar, azimuthal, normalization="full"
-                )
+                Y_complex = scipy.special.sph_harm_y(n, abs(m), polar, azimuthal)
 
             else:
                 # Fallback for older SciPy versions using legacy sph_harm
                 # Legacy signature: sph_harm(m, n, phi, theta)
-                # CRITICAL NOTE: Legacy SciPy swaps the physical meaning of the angle arguments!
-                # Legacy 'theta' is azimuthal (phi), and legacy 'phi' is polar (theta).
-
-                # Legacy sph_harm already includes the Condon-Shortley phase and
-                # is fully normalized by default.
                 Y_complex = scipy.special.sph_harm(abs(m), n, azimuthal, polar)
 
             # Standard conversion from complex to real spherical harmonics

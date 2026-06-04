@@ -8,6 +8,7 @@ from apsg.config import apsg_conf
 from apsg.feature import feature_from_json
 from apsg.math._vector import Axial2
 from apsg.plotting._plot_artists import RosePlotArtistFactory
+from apsg.plotting._styles import RosePlotStyle
 
 __all__ = ["RosePlot"]
 
@@ -159,6 +160,28 @@ class RosePlot(object):
         self._render()
         self.fig.savefig(filename, **kwargs)
         plt.close(0)
+
+    ########################################
+    # STYLED PLOTTING                      #
+    ########################################
+
+    def plot(self, style, *args):
+        """
+        Plot features using apsg styles
+
+        Args:
+            style: apsg plotting style. See roseplot_styles
+            *arg: any number of features to be plotted
+
+        Note:
+            Features in args are automatically filtered by style to accept only compatible features
+
+        """
+        assert issubclass(type(style), RosePlotStyle), "Style must RosePlotStyle object"
+
+        artist = style.create_artist(*args)
+        if len(artist.args) > 0:
+            self._artists.append(artist)
 
     ########################################
     # PLOTTING METHODS                     #

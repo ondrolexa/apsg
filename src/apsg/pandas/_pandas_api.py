@@ -489,13 +489,13 @@ class FolAccessor(VectorSetBaseAccessor):
         if snet is None:
             s = StereoNet()
             if aspole:
-                s.pole(self.G, **kwargs)
+                s.point(self.G, **kwargs)
             else:
                 s.great_circle(self.G, **kwargs)
             s.show()
         else:
             if aspole:
-                snet.pole(self.G, **kwargs)
+                snet.point(self.G, **kwargs)
             else:
                 snet.great_circle(self.G, **kwargs)
 
@@ -522,10 +522,10 @@ class LinAccessor(VectorSetBaseAccessor):
         """Plot lins as line on StereoNet"""
         if snet is None:
             s = StereoNet()
-            s.line(self.G, **kwargs)
+            s.point(self.G, **kwargs)
             s.show()
         else:
-            snet.line(self.G, **kwargs)
+            snet.point(self.G, **kwargs)
 
 
 @pd.api.extensions.register_dataframe_accessor("fault")

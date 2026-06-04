@@ -37,7 +37,7 @@ class StereoNet_Artists:
 class StereoNet_Point(StereoNet_Artists):
     def __init__(self, factory, *args, **kwargs):
         super().__init__(factory, *args, **kwargs)
-        self.stereonet_method = "_line"
+        self.stereonet_method = "_point"
         self.args = args
         self.parse_kwargs(kwargs)
 
@@ -49,23 +49,6 @@ class StereoNet_Point(StereoNet_Artists):
                 self.kwargs["label"] = self.args[0].label()
             else:
                 self.kwargs["label"] = f"Linear ({len(self.args)})"
-
-
-class StereoNet_Pole(StereoNet_Artists):
-    def __init__(self, factory, *args, **kwargs):
-        super().__init__(factory, *args, **kwargs)
-        self.stereonet_method = "_line"
-        self.args = args
-        self.parse_kwargs(kwargs)
-
-    def parse_kwargs(self, kwargs):
-        super().update_kwargs("stereonet_pole")
-        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
-        if not isinstance(self.kwargs["label"], str):
-            if len(self.args) == 1:
-                self.kwargs["label"] = self.args[0].label()
-            else:
-                self.kwargs["label"] = f"Pole ({len(self.args)})"
 
 
 class StereoNet_Vector(StereoNet_Artists):
@@ -322,13 +305,6 @@ class StereoNetArtistFactory:
             return StereoNet_Point("create_point", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet point")
-
-    @staticmethod
-    def create_pole(*args, **kwargs):
-        if all([issubclass(type(arg), (Foliation, FoliationSet)) for arg in args]):
-            return StereoNet_Pole("create_pole", *args, **kwargs)
-        else:
-            raise TypeError("Not valid arguments for Stereonet pole")
 
     @staticmethod
     def create_scatter(*args, **kwargs):

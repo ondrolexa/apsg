@@ -17,15 +17,15 @@ Stereonet plots::
     >>> lins = linset.random_fisher(kappa=100, n=20)
     >>> f = fols.data[0]
     >>> s = StereoNet(title="My data")
-    >>> s.pole(fols)
-    >>> s.line(lins)
+    >>> s.point(fols)
+    >>> s.point(lins)
     >>> s.great_circle(f)
     >>> s.show()
 
 Customize plot appearance::
 
     >>> s = StereoNet(title="Custom", kind="equal-angle", hemisphere="upper")
-    >>> s.line(lins, marker="s", mfc="red", ms=8)
+    >>> s.point(lins, marker="s", mfc="red", ms=8)
     >>> s.contour(fols, levels=4, cmap="Blues", colorbar=True)
     >>> s.show()
 
