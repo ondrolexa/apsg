@@ -208,7 +208,7 @@ class Matrix2(Matrix):
 
     """
 
-    __slots__ = ("_coefs", "_attrs")
+    __slots__ = ("_coefs", "_attrs", "_cache")
     __shape__ = (2, 2)
 
     def __init__(self, *args, **kwargs):
@@ -347,7 +347,7 @@ class Matrix3(Matrix):
 
     """
 
-    __slots__ = ("_coefs", "_attrs")
+    __slots__ = ("_coefs", "_attrs", "_cache")
     __shape__ = (3, 3)
 
     def __init__(self, *args, **kwargs):

@@ -32,7 +32,7 @@ from sqlalchemy.orm import (
 
 from apsg.feature._container import FaultSet, FoliationSet, LineationSet, PairSet
 from apsg.feature._geodata import Fault, Foliation, Lineation, Pair
-from apsg.pandas import pd, FolArray, LinArray
+from apsg.pandas import FolArray, LinArray, pd
 
 
 class Base(DeclarativeBase):
@@ -816,7 +816,7 @@ class SDBSession:
                 item = dict(
                     site=row.site.name,
                     x_coord=row.site.x_coord,
-                    y_coord=row.site.x_coord,
+                    y_coord=row.site.y_coord,
                     unit=row.site.unit.name,
                 )
                 if apsg:

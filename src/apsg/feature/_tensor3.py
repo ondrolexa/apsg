@@ -11,8 +11,6 @@ from apsg.helpers._math import atand
 from apsg.math._matrix import Matrix3
 from apsg.math._vector import Vector3
 
-geo_mag = GeoMag(high_resolution=True)
-
 
 class DeformationGradient3(Matrix3):
     """
@@ -385,6 +383,7 @@ class Rotation3(DeformationGradient3):
             S:25/48
 
         """
+        geo_mag = GeoMag(high_resolution=True)
         if year is None:
             year = datetime.now().year + datetime.now().month / 12
         result = geo_mag.calculate(
@@ -874,8 +873,10 @@ class Stress3(Tensor3):
 
         """
         Se = self.effective(fp)
+
         sn, tau = Se.stress_comp(n)
-        return (Se.sigma1 - abs(sn)) / (Se.sigma1 - Se.sigma3)
+        denom = Se.sigma1 - Se.sigma3
+        return np.where(np.isclose(denom, 0), np.nan, (Se.sigma1 - abs(sn)) / denom)
 
     @property
     def shape_ratio(self):

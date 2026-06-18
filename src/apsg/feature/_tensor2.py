@@ -119,7 +119,7 @@ class Rotation2(DeformationGradient2):
         if np.allclose(-1, np.linalg.det(self)):
             U, S, Vt = np.linalg.svd(self)
             # Ensure a proper rotation (det=1)
-            coefs = U @ np.diag([1, 1, np.linalg.det(U @ Vt)]) @ Vt
+            coefs = U @ np.diag([1, np.linalg.det(U @ Vt)]) @ Vt
             self._coefs = tuple(coefs[0]), tuple(coefs[1])
 
     def angle(self):
@@ -601,4 +601,8 @@ class OrientationTensor2(Ellipse):
 
         """
 
-        return cls(np.dot(np.array(g).T, np.array(g)) / len(g))
+        axes = np.array(g)
+        norms = np.linalg.norm(axes, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        unit_axes = axes / norms
+        return cls(np.dot(unit_axes.T, unit_axes) / len(unit_axes))

@@ -1,12 +1,12 @@
 import math
-import numpy as np
 
+import numpy as np
+from scipy.optimize import minimize_scalar
 from scipy.special import gamma as gamma_fun
 from scipy.special import iv as modified_bessel_2ndkind
 from scipy.special import ivp as modified_bessel_2ndkind_derivative
-from scipy.stats import uniform
 from scipy.stats import norm as gauss
-from scipy.optimize import minimize_scalar
+from scipy.stats import uniform
 
 
 def vonMisesFisher(mu, kappa, num_samples):
@@ -327,7 +327,7 @@ class KentDistribution(object):
                 while True:
                     dk = (
                         (-1 * j - 0.25)
-                        * np.exp(np.log(b) * 2 * j + np.og(0.5 * k) * (-2 * j - 1.5))
+                        * np.exp(np.log(b) * 2 * j + np.log(0.5 * k) * (-2 * j - 1.5))
                         * Imb2(2 * j + 0.5, k)
                     )
                     dk += np.exp(

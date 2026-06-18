@@ -532,6 +532,10 @@ class Fault(Pair):
                 res = 1
             elif sense.lower() == "r":
                 res = -1
+            else:
+                raise ValueError(
+                    f"Invallid sense '{sense}'. Must be one of 's', 'd', 'n', 'r'."
+                )
             return res
         else:
             return int(sense)

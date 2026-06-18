@@ -7,11 +7,11 @@ from datetime import datetime
 
 import numpy as np
 
+from apsg.feature._container import Vector3Set
+from apsg.feature._geodata import Foliation, Lineation, Pair
+from apsg.feature._tensor3 import DeformationGradient3
 from apsg.helpers._helper import eformat
 from apsg.math._vector import Vector3
-from apsg.feature._geodata import Lineation, Foliation, Pair
-from apsg.feature._container import Vector3Set
-from apsg.feature._tensor3 import DeformationGradient3
 
 __all__ = ("Core",)
 
@@ -189,6 +189,7 @@ class Core(object):
             d = f.read().splitlines()
 
         from io import StringIO
+
         import pandas as pd
 
         headspec = [
@@ -412,7 +413,7 @@ class Core(object):
         """
         data = getattr(self, kind)
         if not origin:
-            r = data.R(mean=True) / len(data)
+            r = data.R(mean=True)
             data = Vector3Set([v - r for v in data])
         ot = data.ortensor()
         if ot.shape > 1:

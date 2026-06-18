@@ -6,8 +6,9 @@ API to read data from PySDB database
 
 import sqlite3
 from os.path import isfile
-from apsg.feature._geodata import Lineation, Foliation
-from apsg.feature._container import LineationSet, FoliationSet
+
+from apsg.feature._container import FoliationSet, LineationSet
+from apsg.feature._geodata import Foliation, Lineation
 
 
 class SDB:
@@ -40,13 +41,12 @@ class SDB:
     INNER JOIN units ON units.id = sites.id_units
     ORDER BY sites.name"""
 
-    def __new__(cls, sdb_file):
+    def __init__(self, sdb_file):
         assert isfile(sdb_file), "Database does not exists."
-        cls.conn = sqlite3.connect(sdb_file)
-        cls.conn.row_factory = sqlite3.Row
-        cls.conn.execute("pragma encoding='UTF-8'")
-        cls.conn.execute(SDB._SELECT + " LIMIT 1")
-        return super(SDB, cls).__new__(cls)
+        self.conn = sqlite3.connect(sdb_file)
+        self.conn.row_factory = sqlite3.Row
+        self.conn.execute("pragma encoding='UTF-8'")
+        self.conn.execute(SDB._SELECT + " LIMIT 1")
 
     def __repr__(self):
         return "PySDB database version: {}".format(self.meta("version"))

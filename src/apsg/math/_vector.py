@@ -213,7 +213,7 @@ class Vector2(Vector):
         return f"Vector2({round(self.x, n):g}, {round(self.y, n):g})"
 
     def __len__(self):
-        return 3
+        return 2
 
     def __neg__(self):
         return type(self)(-self.x, -self.y)

@@ -263,6 +263,7 @@ class Vector2Set(FeatureSet):
 
         Returns:
             dict with keys:
+            ``mu`` mean axis of fitted distribution,
             ``k`` estimated precision parameter,
             ``csd`` estimated angular standard deviation,
             ``alpha`` half-angle (degrees) of the confidence cone around
@@ -295,10 +296,18 @@ class Vector2Set(FeatureSet):
             cos_theta = 1.0 - ((N - R) / R) * (alpha ** (-exponent) - 1.0)
             return acosd(np.clip(cos_theta, -1.0, 1.0))
 
-        stats = {"k": np.inf, "alpha": 0, "csd": 0, "uniform": False}
+        stats = {
+            "mu": Vector2(0, 0),
+            "k": np.inf,
+            "alpha": 0,
+            "csd": 0,
+            "uniform": False,
+        }
         N = len(self)
-        R = abs(self.normalized().R())
+        Rv = self.normalized().R()
+        R = abs(Rv)
         if N != R:
+            stats["mu"] = Vector2(Rv.normalized())
             stats["k"] = kappa_estimate(N, R)
             stats["csd"] = 81 / np.sqrt(stats["k"])
             stats["alpha"] = confidence_cone(N, R, level)
@@ -667,11 +676,13 @@ class Vector3Set(FeatureSet):
             "uniform": False,
         }
         N = len(self)
-        R = abs(self.normalized().R())
+        Rv = self.normalized().R()
+        R = abs(Rv)
         if R < N:
-            stats["mu"] = Vector3(self.normalized().R().normalized())
+            stats["mu"] = Vector3(Rv.normalized())
             stats["k"] = kappa_estimate(N, R)
-            stats["csd"] = 81 / np.sqrt(stats["k"])
+            k = stats["k"]
+            stats["csd"] = 81 / np.sqrt(k) if k > 0 else np.inf
             stats["alpha"] = confidence_cone(N, R, level)
             stats["uniform"] = bool(R <= np.sqrt(-N / 2.0 * np.log(1 - level)))
         return stats
@@ -871,6 +882,10 @@ class Vector3Set(FeatureSet):
         rng = np.random.default_rng(random_state)
         match method:
             case "hotelling":
+                if n + m <= 4:
+                    raise ValueError(
+                        "Hotelling requires sum of lengths of dataset to be greater than 4"
+                    )
                 mean_diff = self.R() / n - other.R() / m
                 # Pooled covariance matrix
                 S_X = np.cov(self, rowvar=False)
@@ -1444,8 +1459,8 @@ class PairSet(FeatureSet):
                 )
 
     @classmethod
-    def from_array(cls, fazis, fincs, lazis, lincs, senses=[], name="Default"):
-        """Create ``FaultSet`` from arrays of azimuths, inclinations and senses
+    def from_array(cls, fazis, fincs, lazis, lincs, senses=None, name="Default"):
+        """Create ``PairSet`` from arrays of azimuths, inclinations and senses
 
         Args:
           fazis: list or array of azimuths
@@ -1492,12 +1507,10 @@ class FaultSet(PairSet):
         """Return array of sense characters"""
         return np.array([f.sense_str for f in self])
 
-    @property
     def p_vector(self, ptangle=90):
         """Return p-axes of FaultSet as Vector3Set"""
         return Vector3Set([e.p_vector(ptangle) for e in self], name=self.name)
 
-    @property
     def t_vector(self, ptangle=90):
         """Return t-axes of FaultSet as Vector3Set"""
         return Vector3Set([e.t_vector(ptangle) for e in self], name=self.name)
@@ -1705,7 +1718,7 @@ class FaultSet(PairSet):
                     )
 
     @classmethod
-    def from_array(cls, fazis, fincs, lazis, lincs, senses=[], name="Default"):
+    def from_array(cls, fazis, fincs, lazis, lincs, senses=None, name="Default"):
         """Create ``FaultSet`` from arrays of azimuths, inclinations and senses
 
         Args:
@@ -1718,7 +1731,8 @@ class FaultSet(PairSet):
         Keyword Args:
           name: name of ``FaultSet`` object. Default is 'Default'
         """
-
+        if senses is None:
+            senses = []
         return cls(
             [
                 cls.__feature_class__(fazi, finc, lazi, linc, sense)

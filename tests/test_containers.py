@@ -891,12 +891,12 @@ class TestFaultSet:
 
     def test_p_vector(self):
         f = FaultSet([Fault(140, 30, 110, 26, -1)])
-        pv = f.p_vector
+        pv = f.p_vector()
         assert isinstance(pv, Vector3Set)
 
     def test_t_vector(self):
         f = FaultSet([Fault(140, 30, 110, 26, -1)])
-        tv = f.t_vector
+        tv = f.t_vector()
         assert isinstance(tv, Vector3Set)
 
     def test_p_property(self):

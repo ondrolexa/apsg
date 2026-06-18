@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
@@ -317,3 +318,13 @@ class AppConfig(BaseConfig):
 
 
 apsg_conf = AppConfig()
+
+
+@contextmanager
+def apsg_conf_context(**kwargs):
+    saved = apsg_conf.copy()
+    apsg_conf.update(kwargs)
+    try:
+        yield
+    finally:
+        apsg_conf.update(saved)

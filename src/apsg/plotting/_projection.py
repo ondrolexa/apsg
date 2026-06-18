@@ -330,5 +330,5 @@ class EqualAngleProj(Projection):
     def _inverse(self, X, Y):
         x = 2.0 * Y / (1.0 + X * X + Y * Y)
         y = 2.0 * X / (1.0 + X * X + Y * Y)
-        z = (1.0 - X * X + Y * Y) / (1.0 + X * X + Y * Y)
+        z = (1.0 - X * X - Y * Y) / (1.0 + X * X + Y * Y)
         return x, y, z

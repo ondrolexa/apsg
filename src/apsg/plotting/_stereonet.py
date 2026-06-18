@@ -947,7 +947,7 @@ class StereoNet:
         n_max = kwargs.pop("n_max")
         sigma = kwargs.pop("sigma")
         trimzero = kwargs.pop("trimzero")
-        sigmanorm = (kwargs.pop("sigmanorm"),)
+        sigmanorm = kwargs.pop("sigmanorm")
         colorbar = kwargs.pop("colorbar")
         _ = kwargs.pop("label")
         clines = kwargs.pop("clines")
