@@ -151,7 +151,7 @@ class Rotation3(DeformationGradient3):
       ``Rotation3`` object
 
     Example:
-      >>> R = rotation.from_axis_angle(lin(120, 60), 50)
+      >>> R = rotation.from_axisangle(lin(120, 60), 50)
     """
 
     def __init__(self, *args, **kwargs):

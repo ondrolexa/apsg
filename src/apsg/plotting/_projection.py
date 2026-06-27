@@ -17,7 +17,7 @@ class Projection:
             "overlay_resolution", 361
         )  # number of grid lines points
         self.overlay_cross_size = kwargs.get("overlay_cross_size", 3)
-        self.R = np.array(Rotation3.from_pair(self.overlay_position))
+        self.R = np.asarray(Rotation3.from_pair(self.overlay_position))
         self.Ri = np.linalg.inv(self.R)
 
     def project_data(self, x, y, z, clip_inside=True):
