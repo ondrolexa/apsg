@@ -144,7 +144,7 @@ class StereoGrid:
             if n_max % 2 != 0:
                 raise ValueError("n_max must be an even integer for axial data.")
             # Calculate ODF spherical harmonic coefficients for axial unit vectors.
-            azi, inc = features.geo
+            azi, inc = features.to_lin().geo
             azimuthal = np.deg2rad(azi)
             polar = np.deg2rad(90 - inc)
             coeffs = {}

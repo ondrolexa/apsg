@@ -2,7 +2,6 @@ import math
 from datetime import datetime
 
 import numpy as np
-from pygeomag import GeoMag
 from scipy import linalg as spla
 from scipy.spatial.transform import Rotation
 
@@ -383,6 +382,8 @@ class Rotation3(DeformationGradient3):
             S:25/48
 
         """
+        from pygeomag import GeoMag
+
         geo_mag = GeoMag(high_resolution=True)
         if year is None:
             year = datetime.now().year + datetime.now().month / 12

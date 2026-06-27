@@ -4,7 +4,6 @@ from os.path import basename
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from scipy import stats
 from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
 from scipy.integrate import quad
@@ -53,6 +52,8 @@ class FeatureSet:
         }
 
     def attrs(self):
+        import pandas as pd
+
         return pd.DataFrame([item._attrs for item in self.data])
 
     def label(self):
