@@ -251,7 +251,16 @@ class VelocityGradient2(Matrix2):
 
 
 class Tensor2(Matrix2):
-    pass
+    @property
+    def _eig(self):
+        if "eig" not in self._cache:
+            evals, evecs = np.linalg.eigh(np.asarray(self._coefs))
+            idx = evals.argsort()[::-1]
+            evals = evals[idx]
+            evals[np.isclose(evals, np.zeros_like(evals))] = 0
+            evecs = evecs[:, idx]
+            self._cache["eig"] = evals, evecs
+        return self._cache["eig"]
 
 
 class Stress2(Tensor2):

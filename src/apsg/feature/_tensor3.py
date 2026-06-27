@@ -519,6 +519,17 @@ class VelocityGradient3(Matrix3):
 
 
 class Tensor3(Matrix3):
+    @property
+    def _eig(self):
+        if "eig" not in self._cache:
+            evals, evecs = np.linalg.eigh(np.asarray(self._coefs))
+            idx = evals.argsort()[::-1]
+            evals = evals[idx]
+            evals[np.isclose(evals, np.zeros_like(evals))] = 0
+            evecs = evecs[:, idx]
+            self._cache["eig"] = evals, evecs
+        return self._cache["eig"]
+
     def eigenlins(self, which=None):
         """Return eigenvectors as ``Lineation`` objects.
 
