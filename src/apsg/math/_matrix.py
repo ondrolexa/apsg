@@ -47,9 +47,7 @@ class Matrix(ABC):
 
     def __array__(self, dtype=None, copy=None):
         if "array" not in self._cache:
-            arr = np.array(self._coefs)
-            arr.flags.writeable = False
-            self._cache["array"] = arr
+            self._cache["array"] = np.array(self._coefs)
         cached = self._cache["array"]
         if dtype is not None and np.dtype(dtype) != cached.dtype:
             return cached.astype(dtype)
