@@ -32,7 +32,7 @@ class TestVector2Set:
         assert len(v) == 3
 
     def test_type_assertion(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             Vector2Set([Vector3(1, 0, 0)])
 
     def test_repr(self):
@@ -307,7 +307,7 @@ class TestDirection2Set:
         assert len(d) == 2
 
     def test_type_assertion(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             Direction2Set([Vector2(1, 0)])
 
     def test_repr(self):
@@ -336,7 +336,7 @@ class TestVector3Set:
         assert len(v) == 3
 
     def test_type_assertion(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             Vector3Set([Vector2(1, 0)])
 
     def test_repr(self):
@@ -666,7 +666,7 @@ class TestLineationSet:
         assert len(v) == 1
 
     def test_type_assertion(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             LineationSet([Vector3(1, 0, 0)])
 
     def test_repr(self):
@@ -700,7 +700,7 @@ class TestFoliationSet:
         assert len(f) == 1
 
     def test_type_assertion(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             FoliationSet([Vector3(1, 0, 0)])
 
     def test_repr(self):
@@ -737,7 +737,7 @@ class TestPairSet:
         assert len(p) == 1
 
     def test_type_assertion(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             PairSet([Vector3(1, 0, 0)])
 
     def test_repr(self):
@@ -864,7 +864,7 @@ class TestFaultSet:
         assert len(f) == 1
 
     def test_type_assertion(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             FaultSet([Vector3(1, 0, 0)])
 
     def test_repr(self):

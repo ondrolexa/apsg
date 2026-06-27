@@ -77,12 +77,6 @@ class Vector(ABC):
 
     __rmul__ = __mul__
 
-    def __div__(self, other):
-        return type(self)(np.divide(self, other))
-
-    def __rdiv__(self, other):
-        return type(self)(np.divide(other, self))
-
     def __floordiv__(self, other):
         return type(self)(np.floor_divide(self, other))
 
@@ -203,10 +197,11 @@ class Vector2(Vector):
         else:
             raise TypeError(f"Not valid arguments for {type(self).__name__}")
         self._coords = tuple(coords)
-        if is_jsonable(kwargs):
+        self._attrs = {}
+        if kwargs:
+            if not is_jsonable(kwargs):
+                raise TypeError("Provided attributes are not serializable.")
             self._attrs = kwargs
-        else:
-            raise TypeError("Provided attributes are not serializable.")
 
     def __repr__(self):
         n = apsg_conf.ndigits
@@ -280,10 +275,10 @@ class Vector2(Vector):
         """
         return cls(360 * np.random.rand())
 
-    def rotate(self, axis, theta):
-        """Return the vector rotated through angle theta. Right hand rule applies"""
-        axis = self._ensure_same(axis)
-        return NotImplemented
+    def rotate(self, theta):
+        """Return the vector rotated counter-clockwise by angle theta in degrees."""
+        c, s = cosd(theta), sind(theta)
+        return type(self)(c * self.x - s * self.y, s * self.x + c * self.y)
 
     @classmethod
     def unit_x(cls):
@@ -417,10 +412,11 @@ class Vector3(Vector):
         else:
             raise TypeError(f"Not valid arguments for {type(self).__name__}")
         self._coords = tuple(coords)
-        if is_jsonable(kwargs):
+        self._attrs = {}
+        if kwargs:
+            if not is_jsonable(kwargs):
+                raise TypeError("Provided attributes are not serializable.")
             self._attrs = kwargs
-        else:
-            raise TypeError("Provided attributes are not serializable.")
 
     @property
     def z(self):

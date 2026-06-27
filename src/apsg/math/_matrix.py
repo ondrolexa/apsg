@@ -30,7 +30,7 @@ class Matrix(ABC):
 
     def __repr__(self):
         n = apsg_conf.ndigits
-        return f"{self.label()}\n{str(np.asarray(self._coefs).round(n))}"
+        return f"{self.label()}\n{str(np.asarray(self).round(n))}"
 
     def label(self):
         return self.__class__.__name__
@@ -46,7 +46,14 @@ class Matrix(ABC):
         }
 
     def __array__(self, dtype=None, copy=None):
-        return np.array(self._coefs, dtype=dtype)
+        if "array" not in self._cache:
+            arr = np.array(self._coefs)
+            arr.flags.writeable = False
+            self._cache["array"] = arr
+        cached = self._cache["array"]
+        if dtype is not None and np.dtype(dtype) != cached.dtype:
+            return cached.astype(dtype)
+        return cached
 
     def __nonzero__(self):
         return not np.allclose(self, np.zeros(self.__shape__))
@@ -67,12 +74,6 @@ class Matrix(ABC):
 
     __rmul__ = __mul__
 
-    def __div__(self, other):
-        return type(self)(np.divide(self, other))
-
-    def __rdiv__(self, other):
-        return type(self)(np.divide(other, self))
-
     def __floordiv__(self, other):
         return type(self)(np.floor_divide(self, other))
 
@@ -85,7 +86,7 @@ class Matrix(ABC):
     def __rtruediv__(self, other):
         return type(self)(np.true_divide(other, self))
 
-    pos__ = __copy__
+    __pos__ = __copy__
 
     def __getitem__(self, key):
         if isinstance(key, tuple):
@@ -96,11 +97,6 @@ class Matrix(ABC):
     def __iter__(self):
         # what we want to iterate?
         return iter(self._coefs)
-
-    def __mul__(self, other):
-        return type(self)(np.multiply(self, other))
-
-    __rmul__ = __mul__
 
     def __pow__(self, n):
         return type(self)(np.linalg.matrix_power(self, n))
@@ -158,7 +154,7 @@ class Matrix(ABC):
     @property
     def _eig(self):
         if "eig" not in self._cache:
-            evals, evecs = np.linalg.eig(np.asarray(self._coefs))
+            evals, evecs = np.linalg.eig(np.asarray(self))
             idx = evals.argsort()[::-1]
             evals = evals[idx]
             # round very small numbers to zero
@@ -220,10 +216,10 @@ class Matrix2(Matrix):
         else:
             raise TypeError("Not valid arguments for Matrix2")
         self._coefs = tuple(coefs[0]), tuple(coefs[1])
-        if is_jsonable(kwargs):
+        if kwargs:
+            if not is_jsonable(kwargs):
+                raise TypeError("Provided attributes are not serializable.")
             self._attrs = kwargs
-        else:
-            raise TypeError("Provided attributes are not serializable.")
 
     @classmethod
     def from_comp(cls, **kwargs):
@@ -359,10 +355,10 @@ class Matrix3(Matrix):
         else:
             raise TypeError("Not valid arguments for Matrix3")
         self._coefs = tuple(coefs[0]), tuple(coefs[1]), tuple(coefs[2])
-        if is_jsonable(kwargs):
+        if kwargs:
+            if not is_jsonable(kwargs):
+                raise TypeError("Provided attributes are not serializable.")
             self._attrs = kwargs
-        else:
-            raise TypeError("Provided attributes are not serializable.")
 
     @classmethod
     def from_comp(cls, **kwargs):

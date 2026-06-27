@@ -184,7 +184,6 @@ class StereoNet:
 
     def init_figure(self):
         self.fig = plt.figure(
-            0,
             figsize=apsg_conf.figsize,
             dpi=apsg_conf.dpi,
             facecolor=apsg_conf.facecolor,

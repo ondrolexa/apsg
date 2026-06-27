@@ -142,12 +142,15 @@ class Vector2Set(FeatureSet):
 
     def __init__(self, data, name="Default"):
         super().__init__(data, name=name)
-        assert all(
-            [isinstance(obj, Vector2) for obj in data]
-        ), "Data must be instances of Vector2"
+        if not all(isinstance(obj, Vector2) for obj in data):
+            raise TypeError("Data must be instances of Vector2")
 
     def __repr__(self):
         return f"V2({len(self)}) {self.name}"
+
+    def __array__(self, dtype=None, copy=None):
+        out = np.column_stack([self.x, self.y])
+        return out if dtype is None else out.astype(dtype)
 
     def __abs__(self):
         """Returns array of euclidean norms"""
@@ -360,17 +363,14 @@ class Vector2Set(FeatureSet):
         resultant.
 
         """
-        v = Vector2Set(self)
-        v_data = list(v)
-        alldone = np.all(v.angle(v.R()) <= 90)
-        while not alldone:
-            ang = v.angle(v.R())
-            for ix, do in enumerate(ang > 90):
-                if do:
-                    v_data[ix] = -v_data[ix]
-                v = Vector2Set(v_data)
-                alldone = np.all(v.angle(v.R()) <= 90)
-        return type(self)([self.__feature_class__(vec) for vec in v], name=self.name)
+        arr = np.array(self)
+        while True:
+            resultant = arr.sum(axis=0)
+            needs_flip = (arr @ resultant) < 0
+            if not needs_flip.any():
+                break
+            arr[needs_flip] *= -1
+        return type(self)([self.__feature_class__(row) for row in arr], name=self.name)
 
     @classmethod
     def from_directions(cls, angles, name="Default"):
@@ -447,9 +447,8 @@ class Direction2Set(Vector2Set):
 
     def __init__(self, data, name="Default"):
         super().__init__(data, name=name)
-        assert all(
-            [isinstance(obj, Direction) for obj in data]
-        ), "Data must be instances of Direction"
+        if not all(isinstance(obj, Direction) for obj in data):
+            raise TypeError("Data must be instances of Direction")
 
     def __repr__(self):
         return f"D2({len(self)}) {self.name}"
@@ -464,12 +463,15 @@ class Vector3Set(FeatureSet):
 
     def __init__(self, data, name="Default"):
         super().__init__(data, name=name)
-        assert all(
-            [isinstance(obj, Vector3) for obj in data]
-        ), "Data must be instances of Vector3"
+        if not all(isinstance(obj, Vector3) for obj in data):
+            raise TypeError("Data must be instances of Vector3")
 
     def __repr__(self):
         return f"V3({len(self)}) {self.name}"
+
+    def __array__(self, dtype=None, copy=None):
+        out = np.column_stack([self.x, self.y, self.z])
+        return out if dtype is None else out.astype(dtype)
 
     def __abs__(self):
         """Returns array of euclidean norms"""
@@ -833,17 +835,14 @@ class Vector3Set(FeatureSet):
         resultant.
 
         """
-        v = Vector3Set(self)
-        v_data = list(v)
-        alldone = np.all(v.angle(v.R()) <= 90)
-        while not alldone:
-            ang = v.angle(v.R())
-            for ix, do in enumerate(ang > 90):
-                if do:
-                    v_data[ix] = -v_data[ix]
-                v = Vector3Set(v_data)
-                alldone = np.all(v.angle(v.R()) <= 90)
-        return type(self)([self.__feature_class__(vec) for vec in v], name=self.name)
+        arr = np.array(self)
+        while True:
+            resultant = arr.sum(axis=0)
+            needs_flip = (arr @ resultant) < 0
+            if not needs_flip.any():
+                break
+            arr[needs_flip] *= -1
+        return type(self)([self.__feature_class__(row) for row in arr], name=self.name)
 
     def similarity(self, other, **kwargs):
         """Tests whether two sets of 3D vectors are sampled from the same distribution.
@@ -1226,9 +1225,8 @@ class LineationSet(Vector3Set):
 
     def __init__(self, data, name="Default"):
         super().__init__(data, name=name)
-        assert all(
-            [isinstance(obj, Lineation) for obj in data]
-        ), "Data must be instances of Lineation"
+        if not all(isinstance(obj, Lineation) for obj in data):
+            raise TypeError("Data must be instances of Lineation")
 
     def __repr__(self):
         return f"L({len(self)}) {self.name}"
@@ -1243,9 +1241,8 @@ class FoliationSet(Vector3Set):
 
     def __init__(self, data, name="Default"):
         super().__init__(data, name=name)
-        assert all(
-            [isinstance(obj, Foliation) for obj in data]
-        ), "Data must be instances of Foliation"
+        if not all(isinstance(obj, Foliation) for obj in data):
+            raise TypeError("Data must be instances of Foliation")
 
     def __repr__(self):
         return f"S({len(self)}) {self.name}"
@@ -1268,9 +1265,8 @@ class PairSet(FeatureSet):
 
     def __init__(self, data, name="Default"):
         super().__init__(data, name=name)
-        assert all(
-            [isinstance(obj, Pair) for obj in data]
-        ), "Data must be instances of Pair"
+        if not all(isinstance(obj, Pair) for obj in data):
+            raise TypeError("Data must be instances of Pair")
 
     def __repr__(self):
         return f"P({len(self)}) {self.name}"
@@ -1444,7 +1440,7 @@ class PairSet(FeatureSet):
         n = apsg_conf.ndigits
 
         with open(filename, "w", newline="") as csvfile:
-            fieldnames = ["azi", "inc", "lazi", "linc"]
+            fieldnames = ["fazi", "finc", "lazi", "linc"]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             for dt in self:
@@ -1491,9 +1487,8 @@ class FaultSet(PairSet):
 
     def __init__(self, data, name="Default"):
         super().__init__(data, name=name)
-        assert all(
-            [isinstance(obj, Fault) for obj in data]
-        ), "Data must be instances of Fault"
+        if not all(isinstance(obj, Fault) for obj in data):
+            raise TypeError("Data must be instances of Fault")
 
     def __repr__(self):
         return f"F({len(self)}) {self.name}"
@@ -1762,41 +1757,40 @@ class FaultSet(PairSet):
             """
             Linear inversion for the deviatoric stress tensor components.
             """
-            A = []
-            d = []
+            faults = list(faults)
+            n = len(faults)
+            A = np.empty((3 * n, 5))
+            d = np.empty(3 * n)
 
-            for f in faults:
+            for i, f in enumerate(faults):
                 nx, ny, nz = f.fvec._coords
                 sx, sy, sz = f.lvec._coords
                 # Design matrix for: s11, s12, s13, s22, s23
-                M = np.array(
+                A[3 * i : 3 * i + 3] = [
                     [
-                        [
-                            nx * (1 - 2 * nx**2),
-                            ny * (1 - 2 * nx**2),
-                            nz * (1 - 2 * nx**2),
-                            -nx * ny**2,
-                            -2 * nx * ny * nz,
-                        ],
-                        [
-                            -ny * nx**2,
-                            nx * (1 - 2 * ny**2),
-                            -2 * nx * ny * nz,
-                            ny * (1 - 2 * ny**2),
-                            nz * (1 - 2 * ny**2),
-                        ],
-                        [
-                            -nz * nx**2,
-                            -2 * nx * ny * nz,
-                            nx * (1 - 2 * nz**2),
-                            -nz * ny**2,
-                            ny * (1 - 2 * nz**2),
-                        ],
-                    ]
-                )
-                A.extend(M)
-                d.extend([sx, sy, sz])
-            x, _, _, _ = np.linalg.lstsq(np.array(A), np.array(d), rcond=None)
+                        nx * (1 - 2 * nx**2),
+                        ny * (1 - 2 * nx**2),
+                        nz * (1 - 2 * nx**2),
+                        -nx * ny**2,
+                        -2 * nx * ny * nz,
+                    ],
+                    [
+                        -ny * nx**2,
+                        nx * (1 - 2 * ny**2),
+                        -2 * nx * ny * nz,
+                        ny * (1 - 2 * ny**2),
+                        nz * (1 - 2 * ny**2),
+                    ],
+                    [
+                        -nz * nx**2,
+                        -2 * nx * ny * nz,
+                        nx * (1 - 2 * nz**2),
+                        -nz * ny**2,
+                        ny * (1 - 2 * nz**2),
+                    ],
+                ]
+                d[3 * i : 3 * i + 3] = [sx, sy, sz]
+            x, _, _, _ = np.linalg.lstsq(A, d, rcond=None)
             # Trace-free: s33 = -(s11 + s22)
             s11, s12, s13, s22, s23 = x
             s33 = -(s11 + s22)
@@ -1831,9 +1825,8 @@ class ConeSet(FeatureSet):
 
     def __init__(self, data, name="Default"):
         super().__init__(data, name=name)
-        assert all(
-            [isinstance(obj, Cone) for obj in data]
-        ), "Data must be instances of Cone"
+        if not all(isinstance(obj, Cone) for obj in data):
+            raise TypeError("Data must be instances of Cone")
 
     def __repr__(self):
         return f"C({len(self)}) {self.name}"
@@ -1848,9 +1841,8 @@ class EllipseSet(FeatureSet):
 
     def __init__(self, data, name="Default"):
         super().__init__(data, name=name)
-        assert all(
-            [isinstance(obj, Ellipse) for obj in data]
-        ), "Data must be instances of Ellipse"
+        if not all(isinstance(obj, Ellipse) for obj in data):
+            raise TypeError("Data must be instances of Ellipse")
 
     def __repr__(self):
         return f"E2({len(self)}) {self.name}"
@@ -1923,9 +1915,8 @@ class OrientationTensor2Set(EllipseSet):
 
     def __init__(self, data, name="Default"):
         super().__init__(data, name=name)
-        assert all(
-            [isinstance(obj, OrientationTensor2) for obj in data]
-        ), "Data must be instances of OrientationTensor2"
+        if not all(isinstance(obj, OrientationTensor2) for obj in data):
+            raise TypeError("Data must be instances of OrientationTensor2")
 
     def __repr__(self):
         return f"M2({len(self)}) {self.name}"
@@ -1940,9 +1931,8 @@ class EllipsoidSet(FeatureSet):
 
     def __init__(self, data, name="Default"):
         super().__init__(data, name=name)
-        assert all(
-            [isinstance(obj, Ellipsoid) for obj in data]
-        ), "Data must be instances of Ellipsoid"
+        if not all(isinstance(obj, Ellipsoid) for obj in data):
+            raise TypeError("Data must be instances of Ellipsoid")
 
     def __repr__(self):
         return f"E({len(self)}) {self.name}"
@@ -2130,27 +2120,6 @@ class EllipsoidSet(FeatureSet):
         return np.array([e.Intensity for e in self])
 
     @property
-    def aMAD_l(self) -> np.ndarray:
-        """
-        Return approximate angular deviation from the major axis along E1.
-        """
-        return np.array([e.aMAD_l for e in self])
-
-    @property
-    def aMAD_p(self) -> np.ndarray:
-        """
-        Return approximate deviation from the plane normal to E3.
-        """
-        return np.array([e.aMAD_p for e in self])
-
-    @property
-    def aMAD(self) -> np.ndarray:
-        """
-        Return approximate deviation according to the shape
-        """
-        return np.array([e.aMAD for e in self])
-
-    @property
     def MAD_l(self) -> np.ndarray:
         """
         Return maximum angular deviation (MAD) of linearly distributed vectors.
@@ -2192,9 +2161,8 @@ class OrientationTensor3Set(EllipsoidSet):
 
     def __init__(self, data, name="Default"):
         super().__init__(data, name=name)
-        assert all(
-            [isinstance(obj, OrientationTensor3) for obj in data]
-        ), "Data must be instances of OrientationTensor3"
+        if not all(isinstance(obj, OrientationTensor3) for obj in data):
+            raise TypeError("Data must be instances of OrientationTensor3")
 
     def __repr__(self):
         return f"M({len(self)}) {self.name}"
@@ -2209,9 +2177,8 @@ class Stress3Set(FeatureSet):
 
     def __init__(self, data, name="Default"):
         super().__init__(data, name=name)
-        assert all(
-            [isinstance(obj, Stress3) for obj in data]
-        ), "Data must be instances of Stress3"
+        if not all(isinstance(obj, Stress3) for obj in data):
+            raise TypeError("Data must be instances of Stress3")
 
     def __repr__(self):
         return f"Sig({len(self)}) {self.name}"
@@ -2394,6 +2361,27 @@ class ClusterSet(object):
         return type(self.data)([group.R() for group in self.groups])
 
 
+_CONTAINER_REGISTRY: dict = {}
+
+
+def _build_registry():
+    _CONTAINER_REGISTRY.update(
+        {
+            Vector3: Vector3Set,
+            Vector2: Vector2Set,
+            Lineation: LineationSet,
+            Foliation: FoliationSet,
+            Pair: PairSet,
+            Fault: FaultSet,
+            Cone: ConeSet,
+            Ellipsoid: EllipsoidSet,
+            OrientationTensor3: OrientationTensor3Set,
+            Ellipse: EllipseSet,
+            OrientationTensor2: OrientationTensor2Set,
+        }
+    )
+
+
 def G(lst, name="Default"):
     """
     Function to create appropriate container (FeatueSet) from list of features.
@@ -2410,33 +2398,17 @@ def G(lst, name="Default"):
         >>> fols = [fol(120,30), fol(130, 40), fol(126, 37)]
         >>> f = G(fols)
     """
-    if hasattr(lst, "__len__"):
-        dtype_cls = type(lst[0])
-        assert all([isinstance(obj, dtype_cls) for obj in lst])
-        if dtype_cls is Vector3:
-            return Vector3Set(lst, name=name)
-        elif dtype_cls is Vector2:
-            return Vector2Set(lst, name=name)
-        elif dtype_cls is Lineation:
-            return LineationSet(lst, name=name)
-        elif dtype_cls is Foliation:
-            return FoliationSet(lst, name=name)
-        elif dtype_cls is Pair:
-            return PairSet(lst, name=name)
-        elif dtype_cls is Fault:
-            return FaultSet(lst, name=name)
-        elif dtype_cls is Cone:
-            return ConeSet(lst, name=name)
-        elif dtype_cls is Ellipsoid:
-            return EllipsoidSet(lst, name=name)
-        elif dtype_cls is OrientationTensor3:
-            return OrientationTensor3Set(lst, name=name)
-        elif dtype_cls is Ellipse:
-            return EllipseSet(lst, name=name)
-        elif dtype_cls is OrientationTensor2:
-            return OrientationTensor2Set(lst, name=name)
-        else:
-            raise TypeError("Wrong datatype to create FeatureSet")
+    if not hasattr(lst, "__len__"):
+        raise TypeError("Wrong datatype to create FeatureSet")
+    if not _CONTAINER_REGISTRY:
+        _build_registry()
+    dtype_cls = type(lst[0])
+    if not all(isinstance(obj, dtype_cls) for obj in lst):
+        raise TypeError("All elements must be of the same type")
+    container_cls = _CONTAINER_REGISTRY.get(dtype_cls)
+    if container_cls is None:
+        raise TypeError("Wrong datatype to create FeatureSet")
+    return container_cls(lst, name=name)
 
 
 def angle_metric(u, v):

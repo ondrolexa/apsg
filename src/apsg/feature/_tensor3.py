@@ -522,7 +522,7 @@ class Tensor3(Matrix3):
     @property
     def _eig(self):
         if "eig" not in self._cache:
-            evals, evecs = np.linalg.eigh(np.asarray(self._coefs))
+            evals, evecs = np.linalg.eigh(np.asarray(self))
             idx = evals.argsort()[::-1]
             evals = evals[idx]
             evals[np.isclose(evals, np.zeros_like(evals))] = 0
