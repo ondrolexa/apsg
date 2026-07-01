@@ -12,7 +12,7 @@ jobs:
 
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v6
+              uses: actions/checkout@v7
               with:
                   # setuptools_scm requires a non-shallow clone of the repository
                   fetch-depth: 0
