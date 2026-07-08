@@ -43,8 +43,9 @@ class Vector(ABC):
 
     def __eq__(self, other):
         cls = type(self)
-        if np.asarray(other).shape == cls.__shape__:
-            other = cls(other)
+        other_arr = np.asarray(other)
+        if other_arr.shape == cls.__shape__:
+            other = cls(other_arr)
         else:
             return NotImplemented
         return np.allclose(self, other)
@@ -106,10 +107,12 @@ class Vector(ABC):
 
     def label(self):
         """Return label"""
+
         return str(self)
 
     def is_unit(self):
         """Return true if the magnitude is 1"""
+
         return math.isclose(self.magnitude(), 1)
 
     def _ensure_same(self, other):
@@ -120,11 +123,13 @@ class Vector(ABC):
 
     def angle(self, other):
         """Return the angle to the vector other"""
+
         other = self._ensure_same(other)
         return acosd(self.normalized().dot(other.normalized()))
 
     def project(self, other):
         """Return vector projectio on the vector other"""
+
         other = self._ensure_same(other)
         n = other.normalized()
         return type(self)(self.dot(n) * n)
@@ -133,17 +138,20 @@ class Vector(ABC):
 
     def reject(self, other):
         """Return vector rejection on the vector other"""
+
         other = self._ensure_same(other)
         return self - self.project(other)
 
     @property
     def x(self):
         """Return x-component of the vector"""
+
         return self._coords[0]
 
     @property
     def y(self):
         """Return y-component of the vector"""
+
         return self._coords[1]
 
 
@@ -215,6 +223,7 @@ class Vector2(Vector):
 
     def normalized(self):
         """Returns normalized (unit length) vector"""
+
         d = self.magnitude()
         if d:
             return type(self)(self.x / d, self.y / d)
@@ -227,6 +236,7 @@ class Vector2(Vector):
     @property
     def direction(self):
         """Returns direction of the vector in degrees"""
+
         return atan2d(self.y, self.x) % 360
 
     def dot(self, other):
@@ -235,6 +245,8 @@ class Vector2(Vector):
 
         Args:
             other (Vector2): other vector
+        Returns:
+            Calculate dot product with other vector.
         """
         other = self._ensure_same(other)
         return self.x * other.x + self.y * other.y
@@ -254,40 +266,31 @@ class Vector2(Vector):
             return float(r)
 
     def cross(self, other):
-        """Returns the magnitude of the vector that would result from a regular 3D
-        cross product of the input vectors, taking their Z values implicitly as 0
-        (i.e. treating the 2D space as a plane in the 3D space). The 3D cross
-        product will be perpendicular to that plane, and thus have 0 X & Y components
-        (thus the scalar returned is the Z value of the 3D cross product vector).
-
-        Note that the magnitude of the vector resulting from 3D cross product is also
-        equal to the area of the parallelogram between the two vectors. In addition,
-        this area is signed and can be used to determine whether rotating from V1 to V2
-        moves in an counter clockwise or clockwise direction.
-        """
+        """Returns the magnitude of the vector that would result from a regular 3D"""
         other = self._ensure_same(other)
         return self.x * other.y - self.y * other.x
 
     @classmethod
     def random(cls):
-        """
-        Random 2D vector
-        """
+        """Random 2D vector"""
         return cls(360 * np.random.rand())
 
     def rotate(self, theta):
         """Return the vector rotated counter-clockwise by angle theta in degrees."""
+
         c, s = cosd(theta), sind(theta)
         return type(self)(c * self.x - s * self.y, s * self.x + c * self.y)
 
     @classmethod
     def unit_x(cls):
         """Create unit length vector in x-direction"""
+
         return cls(1, 0)
 
     @classmethod
     def unit_y(cls):
         """Create unit length vector in y-direction"""
+
         return cls(0, 1)
 
     def transform(self, *args, **kwargs):
@@ -299,9 +302,6 @@ class Vector2(Vector):
 
         Keyword Args:
             norm: normalize transformed vectors. [True or False] Default False
-
-        Returns:
-            vector representation of affine transformation (dot product)
             of `self` by `F`
 
         Example:
@@ -311,6 +311,8 @@ class Vector2(Vector):
             >>> u.transform(F)
             Vector2(1, -1)
 
+        Returns:
+            affine transformation of vector `u` by matrix `F`.
         """
         r = Vector2(np.dot(args[0], self))
         if kwargs.get("norm", False):
@@ -327,14 +329,15 @@ class Axial2(Vector2):  # Do we need it?
 
     def __eq__(self, other):
         cls = type(self)
-        if np.asarray(other).shape == cls.__shape__:
-            other = cls(other)
+        other_arr = np.asarray(other)
+        if other_arr.shape == cls.__shape__:
+            other = cls(other_arr)
         else:
             return NotImplemented
         return np.allclose(self, other) or np.allclose(self, -other)
 
     def __add__(self, other):
-        if issubclass(type(other), Vector2):
+        if isinstance(other, Vector2):
             if super().dot(other) < 0:
                 other = -other
         return type(self)(np.add(self, other))
@@ -342,13 +345,13 @@ class Axial2(Vector2):  # Do we need it?
     __radd__ = __add__
 
     def __sub__(self, other):
-        if issubclass(type(other), Vector2):
+        if isinstance(other, Vector2):
             if super().dot(other) < 0:
                 other = -other
         return type(self)(np.subtract(self, other))
 
     def __rsub__(self, other):
-        if issubclass(type(other), Vector2):
+        if isinstance(other, Vector2):
             if super().dot(other) < 0:
                 other = -other
         return type(self)(np.subtract(other, self))
@@ -421,6 +424,7 @@ class Vector3(Vector):
     @property
     def z(self):
         """Return z-component of the vector"""
+
         return self._coords[2]
 
     def __repr__(self):
@@ -442,6 +446,7 @@ class Vector3(Vector):
 
     def normalized(self):
         """Returns normalized (unit length) vector"""
+
         d = self.magnitude()
         if d:
             return type(self)(self.x / d, self.y / d, self.z / d)
@@ -457,6 +462,8 @@ class Vector3(Vector):
 
         Args:
             other (Vector3): other vector
+        Returns:
+            Calculate dot product with other vector.
         """
         other = self._ensure_same(other)
         return self.x * other.x + self.y * other.y + self.z * other.z
@@ -476,7 +483,7 @@ class Vector3(Vector):
             return float(r)
 
     def __pow__(self, other):
-        if issubclass(type(other), Vector3):
+        if isinstance(other, Vector3):
             return self.cross(other)
         else:
             return type(self)(np.power(self, other))
@@ -487,6 +494,8 @@ class Vector3(Vector):
 
         Args:
             other (Vector3): other vector
+        Returns:
+            Calculate cross product with other vector.
         """
         other = self._ensure_same(other)
         return type(self)(
@@ -496,10 +505,7 @@ class Vector3(Vector):
         )
 
     def slerp(self, other, t):
-        """Return a spherical linear interpolation between self and other vector
-
-        Note that for non-unit vectors the interpolation is not uniform
-        """
+        """Return a spherical linear interpolation between self and other vector"""
         other = self._ensure_same(other)
         a, b = Vector3(self), Vector3(other)
         theta = a.angle(b)
@@ -507,6 +513,7 @@ class Vector3(Vector):
 
     def lower(self):
         """Change vector direction to point towards positive Z direction"""
+
         if self.z < 0:
             return -self
         else:
@@ -514,41 +521,39 @@ class Vector3(Vector):
 
     def is_upper(self):
         """Return True if vector points towards negative Z direction"""
+
         return self.z < 0
 
     @property
     def geo(self):
-        """
-        Return tuple of plunge direction and signed plunge
-        """
+        """Return tuple of plunge direction and signed plunge"""
         return vec2geo_linear_signed(self)
 
     @classmethod
     def unit_x(cls):
         """Create unit length vector in x-direction"""
+
         return cls(1, 0, 0)
 
     @classmethod
     def unit_y(cls):
         """Create unit length vector in y-direction"""
+
         return cls(0, 1, 0)
 
     @classmethod
     def unit_z(cls):
         """Create unit length vector in z-direction"""
+
         return cls(0, 0, 1)
 
     @classmethod
     def random(cls):
-        """
-        Create random 3D vector
-        """
+        """Create random 3D vector"""
         return cls(np.random.randn(3)).normalized()
 
     def rotate(self, axis, theta):
-        """Return the vector rotated around axis through angle theta. Right-hand rule
-        applies
-        """
+        """Return the vector rotated around axis through angle theta. Right-hand rule"""
         axis = self._ensure_same(axis)
         v = Vector3(self)  # ensure vector
         k = Vector3(axis.uv())
@@ -560,6 +565,7 @@ class Vector3(Vector):
 
     def angle(self, other):
         """Return the angle to the vector other"""
+
         other = self._ensure_same(other)
         return acosd(np.clip(self.uv().dot(other.uv()), -1, 1))
 
@@ -572,9 +578,6 @@ class Vector3(Vector):
 
         Keyword Args:
             norm: normalize transformed vectors. [True or False] Default False
-
-        Returns:
-            vector representation of affine transformation (dot product)
             of `self` by `F`
 
         Example:
@@ -584,6 +587,8 @@ class Vector3(Vector):
             >>> u.transform(F)
             Vector3(1, -1, 1)
 
+        Returns:
+            affine transformation of vector `u` by matrix `F`.
         """
         r = Vector3(np.dot(F, self))
         if kwargs.get("norm", False):
@@ -600,14 +605,15 @@ class Axial3(Vector3):
 
     def __eq__(self, other):
         cls = type(self)
-        if np.asarray(other).shape == cls.__shape__:
-            other = cls(other)
+        other_arr = np.asarray(other)
+        if other_arr.shape == cls.__shape__:
+            other = cls(other_arr)
         else:
             return NotImplemented
         return np.allclose(self, other) or np.allclose(self, -other)
 
     def __add__(self, other):
-        if issubclass(type(other), Vector3):
+        if isinstance(other, Vector3):
             if super().dot(other) < 0:
                 other = -other
         return type(self)(np.add(self, other))
@@ -615,13 +621,13 @@ class Axial3(Vector3):
     __radd__ = __add__
 
     def __sub__(self, other):
-        if issubclass(type(other), Vector3):
+        if isinstance(other, Vector3):
             if super().dot(other) < 0:
                 other = -other
         return type(self)(np.subtract(self, other))
 
     def __rsub__(self, other):
-        if issubclass(type(other), Vector3):
+        if isinstance(other, Vector3):
             if super().dot(other) < 0:
                 other = -other
         return type(self)(np.subtract(other, self))

@@ -37,7 +37,7 @@ class StereoNetPointStyle(StereoNetStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return StereoNetArtistFactory.create_point(*filtered, **self.kwargs)
 
 
@@ -48,7 +48,7 @@ class StereoNetScatterStyle(StereoNetStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return StereoNetArtistFactory.create_pole(*filtered, **self.kwargs)
 
 
@@ -59,7 +59,7 @@ class StereoNetVectorStyle(StereoNetStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return StereoNetArtistFactory.create_pole(*filtered, **self.kwargs)
 
 
@@ -70,7 +70,7 @@ class StereoNetGreatCircleStyle(StereoNetStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return StereoNetArtistFactory.create_great_circle(*filtered, **self.kwargs)
 
 
@@ -81,7 +81,7 @@ class StereoNetArcStyle(StereoNetStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return StereoNetArtistFactory.create_arc(*filtered, **self.kwargs)
 
 
@@ -92,7 +92,7 @@ class StereoNetConeStyle(StereoNetStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return StereoNetArtistFactory.create_cone(*filtered, **self.kwargs)
 
 
@@ -103,7 +103,7 @@ class StereoNetPairStyle(StereoNetStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return StereoNetArtistFactory.create_pair(*filtered, **self.kwargs)
 
 
@@ -114,7 +114,7 @@ class StereoNetFaultStyle(StereoNetStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return StereoNetArtistFactory.create_fault(*filtered, **self.kwargs)
 
 
@@ -125,7 +125,7 @@ class StereoNetHoeppnerStyle(StereoNetStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return StereoNetArtistFactory.create_hoeppner(*filtered, **self.kwargs)
 
 
@@ -136,7 +136,7 @@ class StereoNetArrowStyle(StereoNetStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return StereoNetArtistFactory.create_arrow(*filtered, **self.kwargs)
 
 
@@ -147,7 +147,7 @@ class StereoNetTensorStyle(StereoNetStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return StereoNetArtistFactory.create_tensor(*filtered, **self.kwargs)
 
 
@@ -158,7 +158,7 @@ class StereoNetStressStyle(StereoNetStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return StereoNetArtistFactory.create_stress(*filtered, **self.kwargs)
 
 
@@ -169,12 +169,11 @@ class StereoNetContourStyle(StereoNetStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return StereoNetArtistFactory.create_contour(*filtered, **self.kwargs)
 
 
 class StereoNetStyleFactory:
-
     @staticmethod
     def point(**kwargs):
         return StereoNetPointStyle(**kwargs)
@@ -249,7 +248,7 @@ class RosePlotBarStyle(RosePlotStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return RosePlotArtistFactory.create_bar(*filtered, **self.kwargs)
 
 
@@ -260,7 +259,7 @@ class RosePlotPdfStyle(RosePlotStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return RosePlotArtistFactory.create_pdf(*filtered, **self.kwargs)
 
 
@@ -271,12 +270,11 @@ class RosePlotMuciStyle(RosePlotStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return RosePlotArtistFactory.create_muci(*filtered, **self.kwargs)
 
 
 class RosePlotStyleFactory:
-
     @staticmethod
     def bar(**kwargs):
         return RosePlotBarStyle(**kwargs)
@@ -309,7 +307,7 @@ class FabricPlotPointStyle(FabricPlotStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return FabricPlotArtistFactory.create_bar(*filtered, **self.kwargs)
 
 
@@ -320,12 +318,11 @@ class FabricPlotPathStyle(FabricPlotStyle):
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
-        filtered = (arg for arg in args if issubclass(type(arg), self._valid))
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
         return FabricPlotArtistFactory.create_pdf(*filtered, **self.kwargs)
 
 
 class FabricPlotStyleFactory:
-
     @staticmethod
     def point(**kwargs):
         return FabricPlotPointStyle(**kwargs)

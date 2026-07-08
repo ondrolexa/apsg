@@ -301,44 +301,44 @@ class StereoNet_Contour(StereoNet_Artists):
 class StereoNetArtistFactory:
     @staticmethod
     def create_point(*args, **kwargs):
-        if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
+        if all([isinstance(arg, (Vector3, Vector3Set)) for arg in args]):
             return StereoNet_Point("create_point", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet point")
 
     @staticmethod
     def create_scatter(*args, **kwargs):
-        if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
+        if all([isinstance(arg, (Vector3, Vector3Set)) for arg in args]):
             return StereoNet_Scatter("create_scatter", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet scatter")
 
     @staticmethod
     def create_vector(*args, **kwargs):
-        if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args]):
+        if all([isinstance(arg, (Vector3, Vector3Set)) for arg in args]):
             return StereoNet_Vector("create_vector", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet vector")
 
     @staticmethod
     def create_great_circle(*args, **kwargs):
-        if all([issubclass(type(arg), (Foliation, FoliationSet)) for arg in args]):
+        if all([isinstance(arg, (Foliation, FoliationSet)) for arg in args]):
             return StereoNet_Great_Circle("create_great_circle", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet great circle")
 
     @staticmethod
     def create_arc(*args, **kwargs):
-        if issubclass(type(args[0]), Vector3Set):
+        if isinstance(args[0], Vector3Set):
             args = args[0].data
-        if all([issubclass(type(arg), Vector3) for arg in args]):
+        if all([isinstance(arg, Vector3) for arg in args]):
             return StereoNet_Arc("create_arc", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet arc")
 
     # @staticmethod
     # def create_cone(*args, **kwargs):
-    #     if all([issubclass(type(arg), (Cone, ConeSet)) for arg in args]):
+    #     if all([isinstance(arg, (Cone, ConeSet)) for arg in args]):
     #         if "angle" in kwargs:
     #             return StereoNet_Cone("create_cone", *args, **kwargs)
     #         else:
@@ -348,49 +348,49 @@ class StereoNetArtistFactory:
 
     @staticmethod
     def create_cone(*args, **kwargs):
-        if all([issubclass(type(arg), (Cone, ConeSet)) for arg in args]):
+        if all([isinstance(arg, (Cone, ConeSet)) for arg in args]):
             return StereoNet_Cone("create_cone", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet cone")
 
     @staticmethod
     def create_pair(*args, **kwargs):
-        if all([issubclass(type(arg), (Pair, PairSet)) for arg in args]):
+        if all([isinstance(arg, (Pair, PairSet)) for arg in args]):
             return StereoNet_Pair("create_pair", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet pair")
 
     @staticmethod
     def create_fault(*args, **kwargs):
-        if all([issubclass(type(arg), (Fault, FaultSet)) for arg in args]):
+        if all([isinstance(arg, (Fault, FaultSet)) for arg in args]):
             return StereoNet_Fault("create_fault", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet fault")
 
     @staticmethod
     def create_hoeppner(*args, **kwargs):
-        if all([issubclass(type(arg), (Fault, FaultSet)) for arg in args]):
+        if all([isinstance(arg, (Fault, FaultSet)) for arg in args]):
             return StereoNet_Hoeppner("create_hoeppner", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet heoppner")
 
     @staticmethod
     def create_arrow(*args, **kwargs):
-        if all([issubclass(type(arg), (Vector3, Vector3Set)) for arg in args[:2]]):
+        if all([isinstance(arg, (Vector3, Vector3Set)) for arg in args[:2]]):
             return StereoNet_Arrow("create_arrow", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet arrow")
 
     @staticmethod
     def create_tensor(*args, **kwargs):
-        if all([issubclass(type(arg), Tensor3) for arg in args[:1]]):
+        if all([isinstance(arg, Tensor3) for arg in args[:1]]):
             return StereoNet_Tensor("create_tensor", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet arrow")
 
     @staticmethod
     def create_stress(*args, **kwargs):
-        if all([issubclass(type(arg), Stress3) for arg in args[:1]]):
+        if all([isinstance(arg, Stress3) for arg in args[:1]]):
             return StereoNet_Stress("create_stress", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet arrow")
@@ -399,7 +399,7 @@ class StereoNetArtistFactory:
     def create_contour(*args, **kwargs):
         if len(args) == 0:
             return StereoNet_Contour("create_contour", **kwargs)
-        elif issubclass(type(args[0]), Vector3Set):
+        elif isinstance(args[0], Vector3Set):
             return StereoNet_Contour("create_contour", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet contour")
@@ -458,21 +458,21 @@ class RosePlot_Muci(RosePlot_Artists):
 class RosePlotArtistFactory:
     @staticmethod
     def create_bar(*args, **kwargs):
-        if all([issubclass(type(arg), Vector2Set) for arg in args]):
+        if all([isinstance(arg, Vector2Set) for arg in args]):
             return RosePlot_Bar("create_bar", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Roseplot bar")
 
     @staticmethod
     def create_pdf(*args, **kwargs):
-        if all([issubclass(type(arg), Vector2Set) for arg in args]):
+        if all([isinstance(arg, Vector2Set) for arg in args]):
             return RosePlot_Pdf("create_pdf", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Roseplot pdf")
 
     @staticmethod
     def create_muci(*args, **kwargs):
-        if all([issubclass(type(arg), Vector2Set) for arg in args]):
+        if all([isinstance(arg, Vector2Set) for arg in args]):
             return RosePlot_Muci("create_muci", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Roseplot muci")
@@ -535,14 +535,14 @@ class FabricPlot_Path(FabricPlot_Artists):
 class FabricPlotArtistFactory:
     @staticmethod
     def create_point(*args, **kwargs):
-        if all([issubclass(type(arg), (Ellipsoid, EllipsoidSet)) for arg in args]):
+        if all([isinstance(arg, (Ellipsoid, EllipsoidSet)) for arg in args]):
             return FabricPlot_Point("create_point", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Fabric plot point")
 
     @staticmethod
     def create_path(*args, **kwargs):
-        if all([issubclass(type(arg), EllipsoidSet) for arg in args]):
+        if all([isinstance(arg, EllipsoidSet) for arg in args]):
             return FabricPlot_Path("create_path", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Fabric plot path")

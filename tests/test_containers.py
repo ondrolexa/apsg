@@ -808,7 +808,7 @@ class TestPairSet:
 
     def test_ortensor(self):
         p = PairSet([Pair(140, 30, 110, 26)])
-        ot = p.ortensor
+        ot = p.ortensor()
         assert ot is not None
 
     def test_random(self):

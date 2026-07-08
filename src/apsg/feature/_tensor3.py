@@ -19,9 +19,6 @@ class DeformationGradient3(Matrix3):
       a (3x3 array_like): Input data, that can be converted to
           3x3 2D array. This includes lists, tuples and ndarrays.
 
-    Returns:
-      ``DeformationGradient3`` object
-
     Example:
       >>> F = defgrad(np.diag([2, 1, 0.5]))
     """
@@ -50,6 +47,8 @@ class DeformationGradient3(Matrix3):
              [ 0.   1.   0. ]
              [ 0.  -0.5  1. ]]
 
+        Returns:
+            ``DeformationGradient3`` defined by individual components.
         """
         xx = kwargs.get("xx", 1)
         xy = kwargs.get("xy", 0)
@@ -79,6 +78,8 @@ class DeformationGradient3(Matrix3):
            [0.    1.145 0.   ]
            [0.    0.    0.382]]
 
+        Returns:
+            isochoric ``DeformationGradient3`` tensor with axial stretches
         """
 
         assert Rxy >= 1, "Rxy must be greater than or equal to 1."
@@ -89,6 +90,7 @@ class DeformationGradient3(Matrix3):
 
     def is_rotation(self):
         """Return True if DeformationGradient3 is rotation"""
+
         return np.allclose(np.dot(np.transpose(self), self), np.eye(3)) & np.allclose(
             1, np.linalg.det(self)
         )
@@ -96,20 +98,19 @@ class DeformationGradient3(Matrix3):
     @property
     def R(self):
         """Return rotation part of ``DeformationGradient3`` from polar decomposition."""
+
         R, _ = spla.polar(self)
         return Rotation3(R)
 
     @property
     def U(self):
-        """Return stretching part of ``DeformationGradient3`` from right polar
-        decomposition."""
+        """Return stretching part of ``DeformationGradient3`` from right polar"""
         _, U = spla.polar(self, "right")
         return DeformationGradient3(U)
 
     @property
     def V(self):
-        """Return stretching part of ``DeformationGradient3`` from left polar
-        decomposition."""
+        """Return stretching part of ``DeformationGradient3`` from left polar"""
         _, V = spla.polar(self, "left")
         return DeformationGradient3(V)
 
@@ -135,6 +136,8 @@ class DeformationGradient3(Matrix3):
              [0.  1.  0. ]
              [0.  0.  0.5]]
 
+        Returns:
+            VelocityGradient3: ``VelocityGradient3`` calculated as matrix logarithm divided by given
         """
         return VelocityGradient3(spla.logm(np.asarray(self)) / time)
 
@@ -146,9 +149,6 @@ class Rotation3(DeformationGradient3):
     Args:
       a (3x3 array_like): Input data, that can be converted to
           3x3 2D array. This includes lists, tuples and ndarrays.
-
-    Returns:
-      ``Rotation3`` object
 
     Example:
       >>> R = rotation.from_axisangle(lin(120, 60), 50)
@@ -167,6 +167,7 @@ class Rotation3(DeformationGradient3):
 
     def axisangle(self):
         """Return rotation as (axis, angle) tuple."""
+
         rotvec = Rotation.from_matrix(self).as_rotvec(degrees=True)
         sign = 1.0
         # if rotvec[2] < 0:
@@ -175,6 +176,7 @@ class Rotation3(DeformationGradient3):
 
     def angle(self):
         """Return rotation angle."""
+
         rotvec = Rotation.from_matrix(self).as_rotvec(degrees=True)
         sign = 1.0
         if rotvec[2] < 0:
@@ -189,6 +191,8 @@ class Rotation3(DeformationGradient3):
         Args:
             seq (str): sequence of axes for rotations. Up to 3 characters belonging to the set
                 {‘X’, ‘Y’, ‘Z’} for intrinsic rotations, or {‘x’, ‘y’, ‘z’} for extrinsic rotations.
+        Returns:
+            rotation as Euler angles specified in degrees.
         """
         return Rotation.from_matrix(self).as_euler(seq, degrees=True)
 
@@ -197,6 +201,8 @@ class Rotation3(DeformationGradient3):
 
         Keyword Args:
             scalar_first (bool): Whether the scalar component goes first or last. Default is False
+        Returns:
+            rotation as quaternion
         """
         return Rotation.from_matrix(self).as_quat(canonical=True)
 
@@ -212,6 +218,8 @@ class Rotation3(DeformationGradient3):
         Example:
           >>> p = pair(40, 20, 75, 16)
           >>> F = defgrad.from_pair(p)
+        Returns:
+            Pair: ``Rotation3`` representing rotation defined by ``Pair``.
         """
         try:
             p = Pair(p)
@@ -237,6 +245,8 @@ class Rotation3(DeformationGradient3):
 
         Example:
           >>> F = rotation.from_axisangle(lin(120, 30), 45)
+        Returns:
+            ``Rotation3`` representing rotation around axis.
         """
         try:
             vector = Vector3(vector)
@@ -258,6 +268,8 @@ class Rotation3(DeformationGradient3):
 
         Example:
           >>> F = rotation.from_two_vectors(lin(120, 30), lin(210, 60))
+        Returns:
+            ``Rotation3`` representing rotation around axis perpendicular
         """
         try:
             v1 = Vector3(v1)
@@ -298,6 +310,8 @@ class Rotation3(DeformationGradient3):
             >>> lin(a_fix)
             L:31/30
 
+        Returns:
+            ``Rotation3`` representing rotation of vector v1 to v2 around
         """
         try:
             v1 = Vector3(v1)
@@ -345,6 +359,8 @@ class Rotation3(DeformationGradient3):
             >>> p1.transform(R) == p2
             True
 
+        Returns:
+            Pair: ``Rotation3`` representing rotation of coordinates from system
         """
 
         if symmetry:
@@ -381,6 +397,8 @@ class Rotation3(DeformationGradient3):
             >>> f.transform(R)
             S:25/48
 
+        Returns:
+            ``Rotation3`` representing rotation of coordinates correcting
         """
         from pygeomag import GeoMag
 
@@ -411,6 +429,8 @@ class Rotation3(DeformationGradient3):
             >>> f.transform(R)
             S:82/23
 
+        Returns:
+            ``Rotation3`` representing rotation of coordinates created
         """
         return cls(Rotation.from_quat(quat, scalar_first=False).as_matrix())
 
@@ -432,6 +452,8 @@ class Rotation3(DeformationGradient3):
             >>> f.transform(R)
             S:74/70
 
+        Returns:
+            ``Rotation3`` representing rotation of coordinates created
         """
         return cls(Rotation.from_euler(seq, angles, degrees=True).as_matrix())
 
@@ -443,9 +465,6 @@ class VelocityGradient3(Matrix3):
     Args:
       a (3x3 array_like): Input data, that can be converted to
           3x3 2D array. This includes lists, tuples and ndarrays.
-
-    Returns:
-      ``VelocityGradient3`` matrix
 
     Example:
       >>> L = velgrad(np.diag([0.1, 0, -0.1]))
@@ -474,6 +493,8 @@ class VelocityGradient3(Matrix3):
              [ 0.   0.   0. ]
              [ 0.  -0.5  0. ]]
 
+        Returns:
+            ``VelocityGradient3`` defined by individual components. Default is zero
         """
         xx = kwargs.get("xx", 0)
         xy = kwargs.get("xy", 0)
@@ -494,6 +515,8 @@ class VelocityGradient3(Matrix3):
             time (float): time of deformation. Default 1
             steps (int): when bigger than 1, will return a list
                          of ``DeformationGradient3`` tensors for each timestep.
+        Returns:
+            DeformationGradient3: ``DeformationGradient3`` tensor accumulated after given time.
         """
         if steps > 1:  # FIX once container for matrix will be implemented
             return [
@@ -504,16 +527,12 @@ class VelocityGradient3(Matrix3):
             return DeformationGradient3(spla.expm(np.asarray(self) * time))
 
     def rate(self):
-        """
-        Return rate of deformation tensor
-        """
+        """Return rate of deformation tensor"""
 
         return type(self)((self + self.T) / 2)
 
     def spin(self):
-        """
-        Return spin tensor
-        """
+        """Return spin tensor"""
 
         return type(self)((self - self.T) / 2)
 
@@ -536,6 +555,8 @@ class Tensor3(Matrix3):
         Args:
             which: if None returns sorted tuple of eigenlins.
                 If int returns given eigen lineation. Default None.
+        Returns:
+            tuple of Lineation: eigenvectors as Lineation objects.
         """
         if which is None:
             return tuple(Lineation(v) for v in self.eigenvectors())
@@ -548,6 +569,8 @@ class Tensor3(Matrix3):
         Args:
             which: if None returns sorted tuple of eigenfols.
                 If int returns given eigen foliation. Default None.
+        Returns:
+            tuple of Foliation: eigenvectors as Foliation objects.
         """
         if which is None:
             return tuple(Foliation(v) for v in self.eigenvectors())
@@ -556,9 +579,7 @@ class Tensor3(Matrix3):
 
     @property
     def pair(self):
-        """
-        Return ``Pair`` representing orientation of principal axes.
-        """
+        """Return ``Pair`` representing orientation of principal axes."""
 
         ev = self.eigenvectors()
         return Pair(ev[2], ev[0])
@@ -591,9 +612,6 @@ class Stress3(Tensor3):
       a (3x3 array_like): Input data, that can be converted to
           3x3 2D array. This includes lists, tuples and ndarrays.
 
-    Returns:
-      ``Stress3`` object
-
     Example:
       >>> S = stress([[-8, 0, 0],[0, -5, 0],[0, 0, -1]])
     """
@@ -616,6 +634,8 @@ class Stress3(Tensor3):
            [ 1. -2.  0.]
            [ 0.  0. 10.]]
 
+        Returns:
+            ``Stress`` tensor. Default is zero tensor.
         """
         xx = kwargs.get("xx", 0)
         xy = kwargs.get("xy", kwargs.get("yx", 0))
@@ -642,6 +662,8 @@ class Stress3(Tensor3):
            [ 0.  -2.5  0. ]
            [ 0.   0.   5. ]]
 
+        Returns:
+            ``Stress`` tensor with given shape ration.
         """
 
         xx = -mag / 2
@@ -651,25 +673,19 @@ class Stress3(Tensor3):
 
     @property
     def mean_stress(self):
-        """
-        Mean stress
-        """
+        """Mean stress"""
 
         return self.I1 / 3
 
     @property
     def hydrostatic(self):
-        """
-        Mean hydrostatic stress tensor component
-        """
+        """Mean hydrostatic stress tensor component"""
 
         return type(self)(np.diag(self.mean_stress * np.ones(3)))
 
     @property
     def deviatoric(self):
-        """
-        A stress deviator tensor component
-        """
+        """A stress deviator tensor component"""
 
         return type(self)(self - self.hydrostatic)
 
@@ -679,116 +695,87 @@ class Stress3(Tensor3):
 
         Args:
             fp (flot): fluid pressure
+        Returns:
+            A effective stress tensor reduced by fluid pressure
         """
 
         return type(self)(self + fp * Stress3())
 
     @property
     def sigma1(self):
-        """
-        A maximum principal stress (max compressive)
-        """
+        """A maximum principal stress (max compressive)"""
 
         return self.E3
 
     @property
     def sigma2(self):
-        """
-        A intermediate principal stress
-        """
+        """A intermediate principal stress"""
 
         return self.E2
 
     @property
     def sigma3(self):
-        """
-        A minimum principal stress (max tensile)
-        """
+        """A minimum principal stress (max tensile)"""
 
         return self.E1
 
     @property
     def sigma1dir(self):
-        """
-        Return unit length vector in direction of maximum
-        principal stress (max compressive)
-        """
+        """Return unit length vector in direction of maximum"""
 
         return self.V3
 
     @property
     def sigma2dir(self):
-        """
-        Return unit length vector in direction of intermediate
-        principal stress
-        """
+        """Return unit length vector in direction of intermediate"""
 
         return self.V2
 
     @property
     def sigma3dir(self):
-        """
-        Return unit length vector in direction of minimum
-        principal stress (max tensile)
-        """
+        """Return unit length vector in direction of minimum"""
 
         return self.V1
 
     @property
     def sigma1vec(self):
-        """
-        Return maximum principal stress vector (max compressive)
-        """
+        """Return maximum principal stress vector (max compressive)"""
 
         return self.E3 * self.V3
 
     @property
     def sigma2vec(self):
-        """
-        Return intermediate principal stress vector
-        """
+        """Return intermediate principal stress vector"""
 
         return self.E2 * self.V2
 
     @property
     def sigma3vec(self):
-        """
-        Return minimum principal stress vector (max tensile)
-        """
+        """Return minimum principal stress vector (max tensile)"""
 
         return self.E1 * self.V1
 
     @property
     def I1(self):
-        """
-        First invariant
-        """
+        """First invariant"""
 
         return float(np.trace(self))
 
     @property
     def I2(self):
-        """
-        Second invariant
-        """
+        """Second invariant"""
 
         return float((self.I1**2 - np.trace(self**2)) / 2)
 
     @property
     def I3(self):
-        """
-        Third invariant
-        """
+        """Third invariant"""
 
         return self.det
 
     @property
     def diagonalized(self):
-        """
-        Returns diagonalized Stress tensor and orthogonal matrix R, which transforms
-        actual coordinate system to the principal one.
-
-        """
+        """Returns diagonalized Stress tensor and orthogonal matrix R, which transforms"""
         return (
             type(self)(np.diag(self.eigenvalues())),
             DeformationGradient3(self.eigenvectors()),
@@ -806,6 +793,8 @@ class Stress3(Tensor3):
           >>> S.cauchy(fol(160, 30))
           Vector3(-2.52, 0.812, 8.66)
 
+        Returns:
+            stress vector associated with plane given by normal vector.
         """
 
         return Vector3(np.dot(self, n.normalized()))
@@ -822,6 +811,8 @@ class Stress3(Tensor3):
           >>> S.fault(fol(160, 30))
           F:160/30-141/29 +
 
+        Returns:
+            Fault: ``Fault`` object derived from given by normal vector.
         """
 
         sn, tau = self.stress_comp(n)
@@ -829,10 +820,7 @@ class Stress3(Tensor3):
         return Fault(n.normalized(), -tau.normalized())
 
     def stress_comp(self, n):
-        """
-        Return normal and shear stress ``Vector3`` components on plane given
-        by normal vector.
-        """
+        """Return normal and shear stress ``Vector3`` components on plane given"""
 
         t = self.cauchy(n)
         sn = t.proj(n)
@@ -840,16 +828,12 @@ class Stress3(Tensor3):
         return sn, t - sn
 
     def normal_stress(self, n):
-        """
-        Return normal stress magnitude on plane given by normal vector.
-        """
+        """Return normal stress magnitude on plane given by normal vector."""
 
         return float(np.dot(n, self.cauchy(n)))
 
     def shear_stress(self, n):
-        """
-        Return shear stress magnitude on plane given by normal vector.
-        """
+        """Return shear stress magnitude on plane given by normal vector."""
 
         sn, tau = self.stress_comp(n)
         return abs(tau)
@@ -865,6 +849,8 @@ class Stress3(Tensor3):
           fp (float): fluid pressure. Default 0
           log (bool): when True, returns logarithm of slip tendency
 
+        Returns:
+            slip tendency calculated as the ratio of shear stress
         """
 
         Se = self.effective(fp)
@@ -883,6 +869,8 @@ class Stress3(Tensor3):
         Keyword Args:
           fp (float): fluid pressure. Default 0
 
+        Returns:
+            dilation tendency of the plane.
         """
         Se = self.effective(fp)
 
@@ -892,9 +880,7 @@ class Stress3(Tensor3):
 
     @property
     def shape_ratio(self):
-        """
-        Return shape ratio R (Gephart & Forsyth 1984)
-        """
+        """Return shape ratio R (Gephart & Forsyth 1984)"""
         return float((self.sigma1 - self.sigma2) / (self.sigma1 - self.sigma3))
 
 
@@ -907,9 +893,6 @@ class Ellipsoid(Tensor3):
     Args:
       matrix (3x3 array_like): Input data, that can be converted to
              3x3 2D matrix. This includes lists, tuples and ndarrays.
-
-    Returns:
-      ``Ellipsoid`` object
 
     Example:
       >>> E = ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
@@ -933,12 +916,13 @@ class Ellipsoid(Tensor3):
         """
         Return deformation tensor from ``Defgrad3``.
 
-        Kwargs:
-            form: 'left' or 'B' for left Cauchy–Green deformation tensor or
-                  Finger deformation tensor
-                  'right' or 'C' for right Cauchy–Green deformation tensor or
-                  Green's deformation tensor.
-                  Default is 'left'.
+        Args:
+            F: DeformationGradient3 tensor
+            form: 'left' or 'B' for left Cauchy–Green (Finger) deformation tensor,
+                  'right' or 'C' for right Cauchy–Green (Green's) deformation tensor.
+                  Default 'left'.
+        Returns:
+            DeformationGradient3: deformation tensor from ``Defgrad3``.
         """
         if form in ("left", "B"):
             return cls(np.dot(F, np.transpose(F)), **kwargs)
@@ -949,16 +933,12 @@ class Ellipsoid(Tensor3):
 
     @classmethod
     def from_stretch(cls, x=1, y=1, z=1, **kwargs) -> "Ellipsoid":
-        """
-        Return diagonal tensor defined by magnitudes of principal stretches.
-        """
+        """Return diagonal tensor defined by magnitudes of principal stretches."""
         return cls([[x * x, 0, 0], [0, y * y, 0], [0, 0, z * z]], **kwargs)
 
     @property
     def kind(self) -> str:
-        """
-        Return descriptive type of ellipsoid
-        """
+        """Return descriptive type of ellipsoid"""
         nu = self.lode
         if np.allclose(self.eoct, 0):
             res = "O"
@@ -976,149 +956,107 @@ class Ellipsoid(Tensor3):
 
     @property
     def strength(self) -> float:
-        """
-        Return the Woodcock strength.
-        """
+        """Return the Woodcock strength."""
         return self.e13
 
     @property
     def shape(self) -> float:
-        """
-        return the Woodcock shape.
-        """
+        """return the Woodcock shape."""
         return self.K
 
     @property
     def S1(self) -> float:
-        """
-        Return the maximum principal stretch.
-        """
+        """Return the maximum principal stretch."""
         return math.sqrt(self.E1)
 
     @property
     def S2(self) -> float:
-        """
-        Return the middle principal stretch.
-        """
+        """Return the middle principal stretch."""
         return math.sqrt(self.E2)
 
     @property
     def S3(self) -> float:
-        """
-        Return the minimum principal stretch.
-        """
+        """Return the minimum principal stretch."""
         return math.sqrt(self.E3)
 
     @property
     def e1(self) -> float:
-        """
-        Return the maximum natural principal strain.
-        """
+        """Return the maximum natural principal strain."""
         return math.log(self.S1)
 
     @property
     def e2(self) -> float:
-        """
-        Return the middle natural principal strain.
-        """
+        """Return the middle natural principal strain."""
         return math.log(self.S2)
 
     @property
     def e3(self) -> float:
-        """
-        Return the minimum natural principal strain.
-        """
+        """Return the minimum natural principal strain."""
         return math.log(self.S3)
 
     @property
     def Rxy(self) -> float:
-        """
-        Return the Rxy ratio.
-        """
+        """Return the Rxy ratio."""
         return self.S1 / self.S2 if self.S2 != 0 else float("inf")
 
     @property
     def Ryz(self) -> float:
-        """
-        Return the Ryz ratio.
-        """
+        """Return the Ryz ratio."""
         return self.S2 / self.S3 if self.S3 != 0 else float("inf")
 
     @property
     def e12(self) -> float:
-        """
-        Return the e1 - e2.
-        """
+        """Return the e1 - e2."""
         return self.e1 - self.e2
 
     @property
     def e13(self) -> float:
-        """
-        Return the e1 - e3.
-        """
+        """Return the e1 - e3."""
         return self.e1 - self.e3
 
     @property
     def e23(self) -> float:
-        """
-        Return the e2 - e3.
-        """
+        """Return the e2 - e3."""
         return self.e2 - self.e3
 
     @property
     def k(self) -> float:
-        """
-        Return the strain symmetry.
-        """
+        """Return the strain symmetry."""
         return (self.Rxy - 1) / (self.Ryz - 1) if self.Ryz > 1 else float("inf")
 
     @property
     def d(self) -> float:
-        """
-        Return the strain intensity.
-        """
+        """Return the strain intensity."""
         return math.sqrt((self.Rxy - 1) ** 2 + (self.Ryz - 1) ** 2)
 
     @property
     def K(self) -> float:
-        """
-        Return the strain symmetry (Ramsay, 1983).
-        """
+        """Return the strain symmetry (Ramsay, 1983)."""
         return self.e12 / self.e23 if self.e23 > 0 else float("inf")
 
     @property
     def D(self) -> float:
-        """
-        Return the strain intensity.
-        """
+        """Return the strain intensity."""
         return self.e12**2 + self.e23**2
 
     @property
     def r(self) -> float:
-        """
-        Return the strain intensity (Watterson, 1968).
-        """
+        """Return the strain intensity (Watterson, 1968)."""
         return self.Rxy + self.Ryz - 1
 
     @property
     def goct(self) -> float:
-        """
-        Return the natural octahedral unit shear (Nadai, 1963).
-        """
+        """Return the natural octahedral unit shear (Nadai, 1963)."""
         return 2 * math.sqrt(self.e12**2 + self.e23**2 + self.e13**2) / 3
 
     @property
     def eoct(self) -> float:
-        """
-        Return the natural octahedral unit strain (Nadai, 1963).
-        """
+        """Return the natural octahedral unit strain (Nadai, 1963)."""
         return math.sqrt(3) * self.goct / 2
 
     @property
     def lode(self) -> float:
-        """
-        Return Lode parameter (Lode, 1926).
-        """
+        """Return Lode parameter (Lode, 1926)."""
         return (
             (2 * self.e2 - self.e1 - self.e3) / (self.e1 - self.e3)
             if (self.e1 - self.e3) > 0
@@ -1127,67 +1065,47 @@ class Ellipsoid(Tensor3):
 
     @property
     def P(self) -> float:
-        """
-        Point index (Vollmer, 1990).
-        """
+        """Point index (Vollmer, 1990)."""
 
         return self.E1 - self.E2
 
     @property
     def G(self) -> float:
-        """
-        Girdle index (Vollmer, 1990).
-        """
+        """Girdle index (Vollmer, 1990)."""
 
         return 2 * (self.E2 - self.E3)
 
     @property
     def R(self) -> float:
-        """
-        Random index (Vollmer, 1990).
-        """
+        """Random index (Vollmer, 1990)."""
 
         return 3 * self.E3
 
     @property
     def B(self) -> float:
-        """
-        Cylindricity index (Vollmer, 1990).
-        """
+        """Cylindricity index (Vollmer, 1990)."""
 
         return self.P + self.G
 
     @property
     def Intensity(self) -> float:
-        """
-        Intensity index (Lisle, 1985).
-        """
+        """Intensity index (Lisle, 1985)."""
 
         return 7.5 * float(np.sum((np.array(self.eigenvalues()) - 1 / 3) ** 2))
 
     @property
     def MAD_l(self) -> float:
-        """
-        Return maximum angular deviation (MAD) of linearly distributed vectors.
-
-        Kirschvink 1980
-        """
+        """Return maximum angular deviation (MAD) of linearly distributed vectors."""
         return float(atand(np.sqrt((self.E2 + self.E3) / self.E1)))
 
     @property
     def MAD_p(self) -> float:
-        """
-        Return maximum angular deviation (MAD) of planarly distributed vectors.
-
-        Kirschvink 1980
-        """
+        """Return maximum angular deviation (MAD) of planarly distributed vectors."""
         return float(atand(np.sqrt(self.E3 / self.E2 + self.E3 / self.E1)))
 
     @property
     def MAD(self) -> float:
-        """
-        Return maximum angular deviation (MAD)
-        """
+        """Return maximum angular deviation (MAD)"""
 
         if self.shape > 1:
             return self.MAD_l
@@ -1206,9 +1124,6 @@ class OrientationTensor3(Ellipsoid):
       matrix (3x3 array_like): Input data, that can be converted to
              3x3 2D matrix. This includes lists, tuples and ndarrays.
              Array could be also ``Group`` (for backward compatibility)
-
-    Returns:
-      ``OrientationTensor3`` object
 
     Example:
       >>> ot = ortensor([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
@@ -1241,6 +1156,8 @@ class OrientationTensor3(Ellipsoid):
           >>> ot.eigenlins()
           (L:119/51, L:341/31, L:237/21)
 
+        Returns:
+            ``Ortensor`` of data in Vector3Set of features
         """
         axes = np.array(g)
         norms = np.linalg.norm(axes, axis=1, keepdims=True)
@@ -1279,6 +1196,8 @@ class OrientationTensor3(Ellipsoid):
            [0.029 0.075 0.332]]
           (S1:0.807, S2:0.579, S3:0.114)
 
+        Returns:
+            Pair: Lisle (1989) ``Ortensor`` of orthogonal data in ``PairSet``
         """
         if shift:
             return cls(

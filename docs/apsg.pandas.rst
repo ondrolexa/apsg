@@ -25,17 +25,22 @@ Convert numerical columns into an APSG feature column using the ``apsg`` accesso
 
     >>> df = df.apsg.create_fols(columns=["azi", "inc"])
 
-Now use column-specific accessors for analysis and plotting::
+Now use the ``G`` Series accessor to retrieve the underlying APSG feature set::
 
-    >>> df.fol.G            # FeatureSet from the fol column
-    >>> df.fol.fisher_k()   # Fisher precision parameter
-    >>> df.fol.ortensor()   # Orientation tensor
+    >>> df.fols.G()              # FeatureSet from the fols column
+    >>> df.fols.G().fisher_statistics()["k"]   # Fisher precision parameter
+    >>> df.fols.G().ortensor()   # Orientation tensor
 
 The same approach works for linear features using ``create_lins``::
 
     >>> df = df.apsg.create_lins(columns=["azi", "inc"], name="lins")
-    >>> df.lin.G
-    >>> df.lin.fisher_k()
+    >>> df.lins.G()
+    >>> df.lins.G().fisher_statistics()["k"]
+
+Column names that are not valid Python identifiers require bracket access::
+
+    >>> df = df.apsg.create_lins(columns=["azi", "inc"], name="my lins")
+    >>> df["my lins"].G()
 
 .. automodule:: apsg.pandas
     :autosummary:

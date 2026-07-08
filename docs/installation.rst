@@ -5,7 +5,7 @@ Installation
 Requirements
 ------------
 
-You need Python 3.10 or later to run APSG. The package requires NumPy, SciPy,
+You need Python 3.12 or later to run APSG. The package requires NumPy, SciPy,
 Matplotlib, SQLAlchemy, pandas and pygeomag.
 
 Create a virtual environment
@@ -59,12 +59,12 @@ with::
 
     pip install git+https://github.com/ondrolexa/apsg.git
 
-Alternatively, clone the repository and do a local install (recommended for
-development)::
+Alternatively, clone the repository and do a local install with
+`uv <https://docs.astral.sh/uv/>`_ (recommended for development)::
 
     git clone https://github.com/ondrolexa/apsg.git
     cd apsg
-    pip install -e .[dev]
+    uv sync --all-extras --dev
 
 Comments on system-wide installations on Debian systems
 -------------------------------------------------------

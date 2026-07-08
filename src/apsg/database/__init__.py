@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from apsg.database._alchemy import (
+from apsg.database._sdbsession import (
     SDBSession,
     Meta,
     Site,
@@ -10,7 +10,6 @@ from apsg.database._alchemy import (
     Tag,
     Unit,
 )
-from apsg.database._sdbread import SDB
 
 __all__ = (
     "SDBSession",
@@ -21,5 +20,4 @@ __all__ = (
     "Attached",
     "Tag",
     "Unit",
-    "SDB",
 )

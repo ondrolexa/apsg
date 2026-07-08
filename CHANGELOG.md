@@ -1,6 +1,7 @@
 # Changelog
 
 ### 1.5.0 (master)
+ * Pandas API refactored
  * StereoNet point method added as replacement for both line and pole
  * StereoNet plot method using styles implemented
  * Rotation classes derived from deformation gradient class implemented

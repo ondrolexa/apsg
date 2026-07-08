@@ -177,7 +177,7 @@ class RosePlot(object):
             Features in args are automatically filtered by style to accept only compatible features
 
         """
-        assert issubclass(type(style), RosePlotStyle), "Style must RosePlotStyle object"
+        assert isinstance(style, RosePlotStyle), "Style must RosePlotStyle object"
 
         artist = style.create_artist(*args)
         if len(artist.args) > 0:

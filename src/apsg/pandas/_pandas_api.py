@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 from pandas.api.extensions import ExtensionArray, ExtensionDtype
@@ -12,7 +14,6 @@ from apsg.feature import (
     Vector3Set,
 )
 from apsg.math import Vector3
-from apsg.plotting import StereoNet
 
 
 @pd.api.extensions.register_extension_dtype
@@ -110,8 +111,13 @@ class Vec3Array(ExtensionArray):
         """
         return Vec3Dtype()
 
-    def __array__(self, dtype=str, copy=None):
-        return np.array([str(f) for f in self._obj], dtype=dtype)
+    def __array__(self, dtype=None, copy=None):
+        if dtype in (None, object):
+            out = np.empty(len(self._obj), dtype=object)
+            for i, e in enumerate(self._obj):
+                out[i] = e
+            return out
+        return np.array(list(self._obj), dtype=dtype)
 
     @classmethod
     def _from_sequence(cls, scalars, dtype=None, copy=False):
@@ -127,10 +133,8 @@ class Vec3Array(ExtensionArray):
         """
         Concatenate multiple arrays of this dtype
         """
-        res = to_concat[0]._obj
-        for other in to_concat[1:]:
-            res += other._obj
-        return cls(res)
+        data = [item for arr in to_concat for item in arr._obj]
+        return cls(data)
 
     @property
     def nbytes(self):
@@ -157,8 +161,9 @@ class Vec3Array(ExtensionArray):
         """
         if isinstance(other, (pd.Index, pd.Series, pd.DataFrame)):
             return NotImplemented
-
-        return self._obj == other._obj
+        if isinstance(other, type(self)):
+            return np.array([a == b for a, b in zip(self._obj, other._obj)])
+        return np.array([a == other for a in self._obj])
 
     def __len__(self):
         return len(self._obj)
@@ -248,6 +253,31 @@ class FaultArray(Vec3Array):
         return FaultDtype()
 
 
+@pd.api.extensions.register_series_accessor("G")
+class GAccessor:
+    """Series accessor returning APSG feature set via ``series.G()``."""
+
+    def __init__(self, pandas_obj):
+        if not isinstance(
+            pandas_obj.array, (Vec3Array, LinArray, FolArray, FaultArray)
+        ):
+            raise AttributeError(
+                "Series must contain an APSG feature array "
+                "(Vec3Array, LinArray, FolArray, or FaultArray)."
+            )
+        self._series = pandas_obj
+
+    def __call__(self):
+        res = self._series.array._obj
+        res.name = self._series.name
+        return res
+
+    def plot(self, **kwargs):
+        from apsg.plotting import quicknet
+
+        quicknet(self(), **kwargs)
+
+
 @pd.api.extensions.register_dataframe_accessor("apsg")
 class APSGAccessor:
     """
@@ -256,6 +286,14 @@ class APSGAccessor:
 
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
+
+    @staticmethod
+    def _warn_on_invalid_name(name):
+        if not name.isidentifier():
+            warnings.warn(
+                f"Column name '{name}' is not a valid Python identifier. "
+                f"Use df['{name}'].G() instead of df.{name}.G()."
+            )
 
     def create_vecs(self, columns=["x", "y", "z"], name="vecs"):
         """Create column with `Vector3` features
@@ -266,8 +304,9 @@ class APSGAccessor:
             name (str): Name of created column. Default 'vecs'
         """
         res = self._obj.copy()
-        seq = [Vector3(*row.values) for _, row in self._obj[columns].iterrows()]
+        seq = [Vector3(*row) for row in self._obj[columns].itertuples(index=False)]
         res[name] = Vec3Array(seq)
+        self._warn_on_invalid_name(name)
         return res
 
     def add_vecs(self, features, name="vecs"):
@@ -276,9 +315,11 @@ class APSGAccessor:
         Keyword Args:
             name (str): Name of created column. Default 'vecs'
         """
-        assert isinstance(features, Vector3Set), "Argument must be Vector3Set"
+        if not isinstance(features, Vector3Set):
+            raise TypeError("Argument must be Vector3Set")
         res = self._obj.copy()
         res[name] = Vec3Array(features.data)
+        self._warn_on_invalid_name(name)
         return res
 
     def create_fols(self, columns=["azi", "inc"], name="fols"):
@@ -290,8 +331,9 @@ class APSGAccessor:
             name (str): Name of created column. Default 'fols'
         """
         res = self._obj.copy()
-        seq = [Foliation(*row.values) for _, row in self._obj[columns].iterrows()]
+        seq = [Foliation(*row) for row in self._obj[columns].itertuples(index=False)]
         res[name] = FolArray(seq)
+        self._warn_on_invalid_name(name)
         return res
 
     def add_fols(self, features, name="fols"):
@@ -300,9 +342,11 @@ class APSGAccessor:
         Keyword Args:
             name (str): Name of created column. Default 'fols'
         """
-        assert isinstance(features, FoliationSet), "Argument must be FoliationSet"
+        if not isinstance(features, FoliationSet):
+            raise TypeError("Argument must be FoliationSet")
         res = self._obj.copy()
         res[name] = FolArray(features.data)
+        self._warn_on_invalid_name(name)
         return res
 
     def create_lins(self, columns=["azi", "inc"], name="lins"):
@@ -314,8 +358,9 @@ class APSGAccessor:
             name (str): Name of created column. Default 'lins'
         """
         res = self._obj.copy()
-        seq = [Lineation(*row.values) for _, row in self._obj[columns].iterrows()]
+        seq = [Lineation(*row) for row in self._obj[columns].itertuples(index=False)]
         res[name] = LinArray(seq)
+        self._warn_on_invalid_name(name)
         return res
 
     def add_lins(self, features, name="lins"):
@@ -324,9 +369,11 @@ class APSGAccessor:
         Keyword Args:
             name (str): Name of created column. Default 'lins'
         """
-        assert isinstance(features, LineationSet), "Argument must be LineationSet"
+        if not isinstance(features, LineationSet):
+            raise TypeError("Argument must be LineationSet")
         res = self._obj.copy()
         res[name] = LinArray(features.data)
+        self._warn_on_invalid_name(name)
         return res
 
     def create_faults(
@@ -335,234 +382,26 @@ class APSGAccessor:
         """Create column with `Fault` features
 
         Keyword Args:
-            columns (list): Columns containing azi and inc.
+            columns (list): Columns containing fault plane (fazi, finc),
+              lineation (lazi, linc) and sense.
               Default ['fazi', 'finc', 'lazi', 'linc', 'sense']
-            name (str): Name of created column. Default 'lins'
+            name (str): Name of created column. Default 'faults'
         """
         res = self._obj.copy()
-        seq = [Fault(*row.values) for _, row in self._obj[columns].iterrows()]
+        seq = [Fault(*row) for row in self._obj[columns].itertuples(index=False)]
         res[name] = FaultArray(seq)
+        self._warn_on_invalid_name(name)
         return res
 
     def add_faults(self, features, name="faults"):
         """Add column with `Fault` features
 
         Keyword Args:
-            name (str): Name of created column. Default 'lins'
+            name (str): Name of created column. Default 'faults'
         """
-        assert isinstance(features, FaultSet), "Argument must be FaultSet"
+        if not isinstance(features, FaultSet):
+            raise TypeError("Argument must be FaultSet")
         res = self._obj.copy()
         res[name] = FaultArray(features.data)
+        self._warn_on_invalid_name(name)
         return res
-
-
-class VectorSetBaseAccessor:
-    """
-    Base class of DataFrame accessors provides methods for FeatureSet
-    """
-
-    def __init__(self, pandas_obj):
-        c = self._validate(pandas_obj)
-        self._obj = pandas_obj
-        self._col = c
-
-    @staticmethod
-    def _validate(obj):
-        return NotImplemented
-
-    @property
-    def G(self):
-        """Get ``FeatureSet``"""
-        res = self._obj[self._col].array._obj
-        res.name = self._col
-        return res
-
-    def R(self):
-        """Return resultant of data in ``FeatureSet``."""
-        return self.G.R()
-
-    def fisher_k(self):
-        """Precision parameter based on Fisher's statistics"""
-        stats = self.G.fisher_statistics()
-        return stats["k"]
-
-    def fisher_csd(self):
-        """Angular standard deviation based on Fisher's statistics"""
-        stats = self.G.fisher_statistics()
-        return stats["csd"]
-
-    def fisher_alpha(self, level=0.95):
-        """Half-angle (degrees) of the confidence cone around
-        the mean direction based on Fisher's statistics
-
-        Args:
-            level: confidence level. Default 0.95 for 95 %
-
-        """
-        stats = self.G.fisher_statistics(level=level)
-        return stats["alpha"]
-
-    def var(self):
-        """Spherical variance based on resultant length (Mardia 1972).
-
-        var = 1 - abs(R) / n
-        """
-        return self.G.var()
-
-    def delta(self):
-        """Cone angle containing ~63% of the data in degrees.
-
-        For enough large sample it approach angular standard deviation (csd)
-        of Fisher statistics
-        """
-        return self.G.delta()
-
-    def rdegree(self):
-        """Degree of preffered orientation of vectors in ``FeatureSet``.
-
-        D = 100 * (2 * abs(R) - n) / n
-        """
-        return self.G.rdegree()
-
-    def ortensor(self):
-        """Return orientation tensor ``Ortensor`` of vectors in ``FeatureSet``."""
-        return self.G.ortensor()
-
-    def contour(self, snet=None, **kwargs):
-        """Plot data contours on StereoNet"""
-        if snet is None:
-            s = StereoNet()
-            s.contour(self.G, **kwargs)
-            s.show()
-        else:
-            snet.contour(self.G, **kwargs)
-
-
-@pd.api.extensions.register_dataframe_accessor("vec")
-class Vec3Accessor(VectorSetBaseAccessor):
-    """
-    `vec` DataFrame accessor provides methods for Vector3Set
-    """
-
-    @staticmethod
-    def _validate(obj):
-        ok = False
-        for c, dtype in zip(obj.columns, obj.dtypes):
-            if dtype == "vec":
-                ok = True
-                break
-        if not ok:
-            raise AttributeError("Must have column with 'vec' dtype.")
-        else:
-            return c
-
-    def plot(self, snet=None, **kwargs):
-        """Plot vecs as vectors on StereoNet"""
-        if snet is None:
-            s = StereoNet()
-            s.vector(self.G, **kwargs)
-            s.show()
-        else:
-            snet.vector(self.G, **kwargs)
-
-
-@pd.api.extensions.register_dataframe_accessor("fol")
-class FolAccessor(VectorSetBaseAccessor):
-    """
-    `fol` DataFrame accessor provides methods for FoliationSet
-    """
-
-    @staticmethod
-    def _validate(obj):
-        ok = False
-        for c, dtype in zip(obj.columns, obj.dtypes):
-            if dtype == "fol":
-                ok = True
-                break
-        if not ok:
-            raise AttributeError("Must have column with 'fol' dtype.")
-        else:
-            return c
-
-    def plot(self, snet=None, aspole=False, **kwargs):
-        """Plot fols as great circles on StereoNet"""
-        if snet is None:
-            s = StereoNet()
-            if aspole:
-                s.point(self.G, **kwargs)
-            else:
-                s.great_circle(self.G, **kwargs)
-            s.show()
-        else:
-            if aspole:
-                snet.point(self.G, **kwargs)
-            else:
-                snet.great_circle(self.G, **kwargs)
-
-
-@pd.api.extensions.register_dataframe_accessor("lin")
-class LinAccessor(VectorSetBaseAccessor):
-    """
-    `lin` DataFrame accessor provides methods for LineationSet
-    """
-
-    @staticmethod
-    def _validate(obj):
-        ok = False
-        for c, dtype in zip(obj.columns, obj.dtypes):
-            if dtype == "lin":
-                ok = True
-                break
-        if not ok:
-            raise AttributeError("Must have column with 'lin' dtype.")
-        else:
-            return c
-
-    def plot(self, snet=None, **kwargs):
-        """Plot lins as line on StereoNet"""
-        if snet is None:
-            s = StereoNet()
-            s.point(self.G, **kwargs)
-            s.show()
-        else:
-            snet.point(self.G, **kwargs)
-
-
-@pd.api.extensions.register_dataframe_accessor("fault")
-class FaultAccessor:
-    """
-    `fault` DataFrame accessor provides methods for FaultSet
-    """
-
-    def __init__(self, pandas_obj):
-        c = self._validate(pandas_obj)
-        self._obj = pandas_obj
-        self._col = c
-
-    @property
-    def G(self):
-        """Get ``FeatureSet``"""
-        res = self._obj[self._col].array._obj
-        res.name = self._col
-        return res
-
-    @staticmethod
-    def _validate(obj):
-        ok = False
-        for c, dtype in zip(obj.columns, obj.dtypes):
-            if dtype == "fault":
-                ok = True
-                break
-        if not ok:
-            raise AttributeError("Must have column with 'fault' dtype.")
-        else:
-            return c
-
-    def plot(self, snet=None, **kwargs):
-        """Plot vecs as vectors on StereoNet"""
-        if snet is None:
-            s = StereoNet()
-            s.fault(self.G, **kwargs)
-            s.show()
-        else:
-            snet.fault(self.G, **kwargs)

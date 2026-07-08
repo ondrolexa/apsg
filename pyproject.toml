@@ -3,7 +3,7 @@ name = "apsg"
 dynamic = ["version"]
 description = "APSG - The package for structural geologists"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
 keywords = ["structural geology", "stereonet", "orientation data"]
@@ -28,7 +28,7 @@ docs = [
     "nbsphinx",
     "autodocsumm",
 ]
-dev = ["apsg[extra,tests,docs]", "black"]
+dev = ["apsg[extra,tests,docs]", "ruff"]
 
 [project.urls]
 Homepage = "https://github.com/ondrolexa/apsg"
@@ -47,13 +47,16 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.dynamic]
 version = { attr = "apsg.__version__" }
 
-[tool.black]
+[tool.ruff]
 line-length = 88
-exclude = '''
-/(
-  \.toml
-  |\.sh
-  |\.git
-  |\.ini
-)/
-'''
+target-version = "py310"
+exclude = [".venv", "docs", ".git"]
+
+[tool.ruff.lint]
+ignore = ["E731", "E741"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.format]
+quote-style = "double"

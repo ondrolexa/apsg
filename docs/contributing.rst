@@ -63,11 +63,9 @@ Ready to contribute? Here's how to set up ``apsg`` for local development.
 
     $ git clone git@github.com:YOURUSER/apsg.git
 
-3. Create a virtual environment and install APSG with dev dependencies::
+3. Install APSG with its dev dependencies using `uv <https://docs.astral.sh/uv/>`_::
 
-    $ python -m venv .venv
-    $ source .venv/bin/activate
-    $ pip install -e .[dev]
+    $ uv sync --all-extras --dev
 
 4. Install pre-commit hooks to run linters and tests automatically::
 
@@ -109,4 +107,4 @@ Before you submit a pull request, check that it meets these guidelines:
 2. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
    feature to the list in ``README.md``.
-3. The pull request should work for Python 3.10 or later.
+3. The pull request should work for Python 3.12 or later.

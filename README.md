@@ -14,7 +14,7 @@ Check ``CHANGELOG.md`` for recent updates.
 
 ## :hammer_and_wrench: Requirements
 
-You need Python 3.10 or later to run APSG. The package requires [NumPy](https://numpy.org/),
+You need Python 3.12 or later to run APSG. The package requires [NumPy](https://numpy.org/),
 [SciPy](https://scipy.org/), [Matplotlib](https://matplotlib.org/), [SQLAlchemy](https://www.sqlalchemy.org/),
 [pandas](https://pandas.pydata.org/) and [pygeomag](https://github.com/boxpet/pygeomag).
 
@@ -50,11 +50,11 @@ Or install **master** with:
 
     pip install git+https://github.com/ondrolexa/apsg.git
 
-Alternatively, you can clone the repository and do a local install (recommended for dev):
+Alternatively, you can clone the repository and do a local install with [uv](https://docs.astral.sh/uv/) (recommended for dev):
 
     git clone https://github.com/ondrolexa/apsg.git
     cd apsg
-    pip install -e .[dev]
+    uv sync --all-extras --dev
 
 #### Upgrading via pip
 

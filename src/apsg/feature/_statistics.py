@@ -161,8 +161,7 @@ class KentDistribution(object):
         for gamma in (gamma1, gamma2, gamma3):
             assert len(gamma) == 3
 
-        self._cached_rvs = np.array([], dtype=np.float64)
-        self._cached_rvs.shape = (0, 3)
+        self._cached_rvs = np.array([], dtype=np.float64).reshape(0, 3)
 
     def __repr__(self):
         return "kent(%s, %s, %s, %s, %s)" % (
@@ -195,7 +194,6 @@ class KentDistribution(object):
                 result /= G(j + 1)
                 result *= G(j + 0.5)
             else:
-
                 while True:
                     a = np.exp(
                         np.log(b) * 2 * j + np.log(0.5 * k) * (-2 * j - 0.5)

@@ -115,21 +115,25 @@ class Matrix(ABC):
     @property
     def xx(self):
         """Return xx-element of the matrix"""
+
         return self._coefs[0][0]
 
     @property
     def xy(self):
         """Return xy-element of the matrix"""
+
         return self._coefs[0][1]
 
     @property
     def yx(self):
         """Return yx-element of the matrix"""
+
         return self._coefs[1][0]
 
     @property
     def yy(self):
         """Return yy-element of the matrix"""
+
         return self._coefs[1][1]
 
     @property
@@ -141,11 +145,7 @@ class Matrix(ABC):
         return type(self)(np.array(self).T)
 
     def transform(self, other):
-        """
-        Coordinate transformations of matrix
-
-        Using rotation matrix it returns ``A' = R * A * R . T``.
-        """
+        """Coordinate transformations of matrix"""
         other = self._ensure_same(other)
         return type(self)(other @ self @ other.T)
 
@@ -168,6 +168,8 @@ class Matrix(ABC):
             which: if None returns sorted tuple of eigenvalues.
                 If int returns given eigenvalue. Default None.
 
+        Returns:
+            eigenvalues
         """
         if which is None:
             return self._eig[0]
@@ -237,6 +239,8 @@ class Matrix2(Matrix):
             [[0. 2.]
              [0. 0.]]
 
+        Returns:
+            ``Matrix2`` defined by individual components. Default is zero
         """
         xx = kwargs.get("xx", 0)
         xy = kwargs.get("xy", 0)
@@ -294,6 +298,8 @@ class Matrix2(Matrix):
         Args:
             which: if None returns sorted tuple of eigenvectors.
                 If int returns given eigenvector. Default None.
+        Returns:
+            eigenvectors as ``Vector2`` objects.
         """
         U = self._eig[1].T
         if which is None:
@@ -308,6 +314,8 @@ class Matrix2(Matrix):
         Args:
             which: if None returns sorted tuple of eigenvectors.
                 If int returns given eigenvector. Default None.
+        Returns:
+            eigenvectors with magnitudes of eigenvalues as
         """
         U = self._eig[1].T
         if which is None:
@@ -381,6 +389,8 @@ class Matrix3(Matrix):
              [ 0.   0.   0. ]
              [ 0.  -0.5  0. ]]
 
+        Returns:
+            ``Matrix3`` defined by individual components. Default is zero
         """
         xx = kwargs.get("xx", 0)
         xy = kwargs.get("xy", 0)
@@ -416,26 +426,31 @@ class Matrix3(Matrix):
     @property
     def xz(self):
         """Return xz-element of the matrix"""
+
         return self._coefs[0][2]
 
     @property
     def yz(self):
         """Return yz-element of the matrix"""
+
         return self._coefs[1][2]
 
     @property
     def zx(self):
         """Return zx-element of the matrix"""
+
         return self._coefs[2][0]
 
     @property
     def zy(self):
         """Return zy-element of the matrix"""
+
         return self._coefs[2][1]
 
     @property
     def zz(self):
         """Return zz-element of the matrix"""
+
         return self._coefs[2][2]
 
     @property
@@ -480,6 +495,8 @@ class Matrix3(Matrix):
         Args:
             which: if None returns sorted tuple of eigenvectors.
                 If int returns given eigenvalue. Default None.
+        Returns:
+            eigenvectors as ``Vector3`` objects.
         """
         U = self._eig[1].T
         if which is None:
@@ -494,6 +511,8 @@ class Matrix3(Matrix):
         Args:
             which: if None returns sorted tuple of eigenvectors.
                 If int returns given eigenvector. Default None.
+        Returns:
+            eigenvectors with magnitudes of eigenvalues as
         """
         U = self._eig[1].T
         if which is None:

@@ -75,6 +75,7 @@ class Lineation(Axial3):
 
     def cross(self, other):
         """Return Foliation defined by two linear features"""
+
         return Foliation(super().cross(other))
 
     __pow__ = cross
@@ -82,10 +83,12 @@ class Lineation(Axial3):
     @property
     def geo(self):
         """Return tuple of plunge direction and plunge"""
+
         return vec2geo_linear(self)
 
     def to_json(self):
         """Return as JSON dict"""
+
         azi, inc = vec2geo_linear_signed(self)
         return {
             "datatype": type(self).__name__,
@@ -156,6 +159,7 @@ class Foliation(Axial3):
 
     def cross(self, other):
         """Return Lineation defined by intersection of planar features"""
+
         return Lineation(super().cross(other))
 
     __pow__ = cross
@@ -163,10 +167,12 @@ class Foliation(Axial3):
     @property
     def geo(self):
         """Return tuple of dip direction and dip"""
+
         return vec2geo_planar(self)
 
     def to_json(self):
         """Return as JSON dict"""
+
         azi, inc = vec2geo_planar_signed(self)
         return {
             "datatype": type(self).__name__,
@@ -176,19 +182,23 @@ class Foliation(Axial3):
 
     def dipvec(self):
         """Return dip vector"""
+
         return Vector3(*vec2geo_planar(self))
 
     def strike(self):
         """Return strike as Direction"""
+
         n = self.uv()
         return Direction((atan2d(n.y, n.x) + 90) % 360)
 
     def pole(self):
         """Return plane normal as vector"""
+
         return Vector3(self)
 
     def rake(self, rake):
         """Return rake vector"""
+
         return Vector3(self.dipvec().rotate(self, rake - 90))
 
     def transform(self, F, **kwargs):
@@ -200,9 +210,6 @@ class Foliation(Axial3):
 
         Keyword Args:
             norm: normalize transformed ``Foliation``. [True or False] Default False
-
-        Returns:
-            vector representation of affine transformation (dot product)
             of `self` by `F`
 
         Example:
@@ -211,6 +218,8 @@ class Foliation(Axial3):
             >>> f = fol(45, 20)
             >>> f.transform(F)
             S:315/20
+        Returns:
+            affine transformation by matrix `F`.
         """
         r = np.dot(self, np.linalg.inv(F))
         if kwargs.get("norm", False):
@@ -263,7 +272,7 @@ class Pair:
     def __init__(self, *args, **kwargs):
         if len(args) == 0:
             fvec, lvec = Vector3(0, 0, 1), Vector3(1, 0, 0)
-        elif len(args) == 1 and issubclass(type(args[0]), Pair):
+        elif len(args) == 1 and isinstance(args[0], Pair):
             fvec, lvec = args[0].fvec, args[0].lvec
         elif len(args) == 1 and np.asarray(args[0]).shape == (4,):
             fazi, finc, lazi, linc = (float(v) for v in args[0])
@@ -271,9 +280,7 @@ class Pair:
         elif len(args) == 1 and np.asarray(args[0]).shape == Pair.__shape__:
             fvec, lvec = Vector3(args[0][:3]), Vector3(args[0][-3:])
         elif len(args) == 2:
-            if issubclass(type(args[0]), Vector3) and issubclass(
-                type(args[1]), Vector3
-            ):
+            if isinstance(args[0], Vector3) and isinstance(args[1], Vector3):
                 fvec, lvec = args
             else:
                 raise TypeError("Not valid arguments for Pair")
@@ -304,9 +311,7 @@ class Pair:
         return f"P:{fazi:.0f}/{finc:.0f}-{lazi:.0f}/{linc:.0f}"
 
     def __eq__(self, other):
-        """
-        Return `True` if pairs are equal, otherwise `False`.
-        """
+        """Return `True` if pairs are equal, otherwise `False`."""
         cls = type(self)
         if not isinstance(other, cls):
             if np.asarray(other).shape == cls.__shape__:
@@ -316,10 +321,7 @@ class Pair:
         return (self.fvec == other.fvec) and (self.lvec == other.lvec)
 
     def __ne__(self, other):
-        """
-        Return `True` if pairs are not equal, otherwise `False`.
-
-        """
+        """Return `True` if pairs are not equal, otherwise `False`."""
         return not self == other
 
     def __array__(self, dtype=None, copy=None):
@@ -327,10 +329,12 @@ class Pair:
 
     def label(self):
         """Return label"""
+
         return str(self)
 
     def to_json(self):
         """Return as JSON dict"""
+
         fazi, finc = vec2geo_planar_signed(self.fvec)
         lazi, linc = vec2geo_linear_signed(self.lvec)
         return {
@@ -341,9 +345,7 @@ class Pair:
 
     @classmethod
     def random(cls):
-        """
-        Random Pair
-        """
+        """Random Pair"""
 
         lin, p = Vector3.random(), Vector3.random()
         fol = lin.cross(p)
@@ -361,10 +363,12 @@ class Pair:
             >>> p.rotate(lin(40, 50), 120)
             P:210/83-287/60
 
+        Returns:
+            Rotates ``Pair`` by angle `phi` about `axis`.
         """
         try:
             axis = Vector3(axis)
-        except Exception:
+        except TypeError:
             raise TypeError("Unsupported argument for rotate. Expecting Vector3")
         return type(self)(self.fvec.rotate(axis, phi), self.lvec.rotate(axis, phi))
 
@@ -374,25 +378,19 @@ class Pair:
 
     @property
     def rake(self):
-        """
-        Return a rake of linear feature on planar feature of ``Pair`` in degrees.
-        """
+        """Return a rake of linear feature on planar feature of ``Pair`` in degrees."""
         return -np.degrees(
             np.atan2(-self.lvec.dot(self.fol.rake(90)), self.lvec.dot(self.fol.rake(0)))
         )
 
     @property
     def fol(self):
-        """
-        Return a planar feature of ``Pair`` as ``Foliation``.
-        """
+        """Return a planar feature of ``Pair`` as ``Foliation``."""
         return Foliation(self.fvec)
 
     @property
     def lin(self):
-        """
-        Return a linear feature of ``Pair`` as ``Lineation``.
-        """
+        """Return a linear feature of ``Pair`` as ``Lineation``."""
         return Lineation(self.lvec)
 
     def transform(self, F, **kwargs):
@@ -403,9 +401,6 @@ class Pair:
 
         Keyword Args:
             norm: normalize transformed vectors. True or False. Default False
-
-        Returns:
-            representation of affine transformation (dot product) of `self`
             by `F`
 
         Example:
@@ -414,6 +409,8 @@ class Pair:
           >>> p.transform(F)
           P:270/30-314/23
 
+        Returns:
+            an affine transformation of ``Pair`` by matrix `F`.
         """
 
         fvec = self.fol.transform(F)
@@ -480,21 +477,17 @@ class Fault(Pair):
             sense = self.calc_sense(fvec, lvec, sense)
             if sense < 0:
                 lvec = -lvec
-        elif len(args) == 1 and issubclass(type(args[0]), Pair):
+        elif len(args) == 1 and isinstance(args[0], Pair):
             fvec, lvec = args[0].fvec, args[0].lvec
-        elif len(args) == 2 and issubclass(type(args[0]), Pair):
+        elif len(args) == 2 and isinstance(args[0], Pair):
             fvec, lvec = args[0].fvec, args[0].lvec
             if Fault(fvec, lvec).sense != self.calc_sense(fvec, lvec, args[1]):
                 lvec = -lvec
         elif len(args) == 2:
-            if issubclass(type(args[0]), Vector3) and issubclass(
-                type(args[1]), Vector3
-            ):
+            if isinstance(args[0], Vector3) and isinstance(args[1], Vector3):
                 fvec, lvec = args[0], args[1]
         elif len(args) == 3:
-            if issubclass(type(args[0]), Vector3) and issubclass(
-                type(args[1]), Vector3
-            ):
+            if isinstance(args[0], Vector3) and isinstance(args[1], Vector3):
                 fvec, lvec = args[0], args[1]
                 if Fault(fvec, lvec).sense != self.calc_sense(fvec, lvec, args[2]):
                     lvec = -lvec
@@ -548,9 +541,7 @@ class Fault(Pair):
         return f"F:{fazi:.0f}/{finc:.0f}-{lazi:.0f}/{linc:.0f} {schar}"
 
     def __eq__(self, other):
-        """
-        Return `True` if pairs are equal, otherwise `False`.
-        """
+        """Return `True` if pairs are equal, otherwise `False`."""
         cls = type(self)
         if not isinstance(other, cls):
             if np.asarray(other).shape == cls.__shape__:
@@ -564,10 +555,7 @@ class Fault(Pair):
         )
 
     def __ne__(self, other):
-        """
-        Return `True` if pairs are not equal, otherwise `False`.
-
-        """
+        """Return `True` if pairs are not equal, otherwise `False`."""
         return not self == other
 
     def __array__(self, dtype=None, copy=None):
@@ -575,6 +563,7 @@ class Fault(Pair):
 
     def to_json(self):
         """Return as JSON dict"""
+
         fazi, finc = vec2geo_planar_signed(self.fvec)
         lazi, linc = vec2geo_linear_signed(self.lvec)
         return {
@@ -585,9 +574,7 @@ class Fault(Pair):
 
     @classmethod
     def random(cls):
-        """
-        Random Fault
-        """
+        """Random Fault"""
         import random
 
         lvec, p = Vector3.random(), Vector3.random()
@@ -614,30 +601,36 @@ class Fault(Pair):
 
     def p_vector(self, ptangle=90):
         """Return P axis as ``Vector3``"""
+
         return self.fvec.rotate(self.lvec.cross(self.fvec), -ptangle / 2)
 
     def t_vector(self, ptangle=90):
         """Return T-axis as ``Vector3``."""
+
         return self.fvec.rotate(self.lvec.cross(self.fvec), ptangle / 2)
 
     @property
     def p(self):
         """Return P-axis as ``Lineation``"""
+
         return Lineation(self.p_vector())
 
     @property
     def t(self):
         """Return T-axis as ``Lineation``"""
+
         return Lineation(self.t_vector())
 
     @property
     def m(self):
         """Return kinematic M-plane as ``Foliation``"""
+
         return Foliation(self.lvec.cross(self.fvec))
 
     @property
     def d(self):
         """Return dihedra plane as ``Fol``"""
+
         return Foliation(self.lvec.cross(self.fvec).cross(self.fvec))
 
     def angular_misfit(self, sigma):
@@ -646,6 +639,8 @@ class Fault(Pair):
         Args:
             sigma (Stress3): Stress tensor
 
+        Returns:
+            Angular misfit (°) between observed slip and predicted shear-traction direction.
         """
         return self.lvec.angle(sigma.fault(self.fvec).lvec)
 
@@ -668,6 +663,10 @@ class Cone:
     - with 5 arguments defining axis `lin(aazi, ainc)`, secant line
       `lin(sazi, sinc)` and angle of revolution
 
+    Args:
+        *args: Variable length argument list. See descriptions above.
+        **kwargs: Additional keyword arguments.
+
     Attributes:
         axis (Vector3): axis of the cone
         secant (Vector3): secant line
@@ -688,7 +687,7 @@ class Cone:
     def __init__(self, *args, **kwargs):
         if len(args) == 0:
             axis, secant, revangle = Vector3(0, 0, 1), Vector3(1, 0, 0), 360
-        elif len(args) == 1 and issubclass(type(args[0]), Cone):
+        elif len(args) == 1 and isinstance(args[0], Cone):
             axis, secant, revangle = args[0].axis, args[0].secant, args[0].revangle
         elif len(args) == 1 and np.asarray(args[0]).shape == (5,):
             aazi, ainc, sazi, sinc, revangle = (float(v) for v in args[0])
@@ -700,12 +699,10 @@ class Cone:
                 args[0][-1],
             )
         elif len(args) == 2:
-            if issubclass(type(args[0]), Vector3) and issubclass(
-                type(args[1]), Vector3
-            ):
+            if isinstance(args[0], Vector3) and isinstance(args[1], Vector3):
                 axis, secant = args
                 revangle = 360
-            elif issubclass(type(args[0]), Vector3) and np.isscalar(args[1]):
+            elif isinstance(args[0], Vector3) and np.isscalar(args[1]):
                 axis = args[0]
                 azi, inc = axis.geo
                 secant = Vector3(azi, inc + args[1])
@@ -713,9 +710,7 @@ class Cone:
             else:
                 raise TypeError("Not valid arguments for Cone")
         elif len(args) == 3:
-            if issubclass(type(args[0]), Vector3) and issubclass(
-                type(args[1]), Vector3
-            ):
+            if isinstance(args[0], Vector3) and isinstance(args[1], Vector3):
                 axis, secant, revangle = args
             else:
                 raise TypeError("Not valid arguments for Cone")
@@ -765,10 +760,12 @@ class Cone:
 
     def label(self):
         """Return label"""
+
         return str(self)
 
     def to_json(self):
         """Return as JSON dict"""
+
         aazi, ainc = vec2geo_linear_signed(self.axis)
         sazi, sinc = vec2geo_linear_signed(self.secant)
         return {
@@ -779,9 +776,7 @@ class Cone:
 
     @classmethod
     def random(cls):
-        """
-        Random Cone
-        """
+        """Random Cone"""
 
         axis, secant = Vector3.random(), Vector3.random()
         return cls(axis, secant, 360)
@@ -798,10 +793,12 @@ class Cone:
             >>> c.rotate(lin(40, 50), 120)
             C:210/83-287/60
 
+        Returns:
+            Rotates ``Cone`` by angle `phi` about `axis`.
         """
         try:
             axis = Vector3(axis)
-        except Exception:
+        except TypeError:
             raise TypeError("Unsupported argument for rotate. Expecting Vector3")
         return type(self)(
             self.axis.rotate(axis, phi), self.secant.rotate(axis, phi), self.revangle
@@ -809,9 +806,11 @@ class Cone:
 
     def apical_angle(self):
         """Return apical angle"""
+
         return self.axis.angle(self.secant)
 
     @property
     def rotated_secant(self):
         """Return revangle rotated secant vector"""
+
         return self.secant.rotate(self.axis, self.revangle)

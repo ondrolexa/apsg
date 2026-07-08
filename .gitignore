@@ -50,6 +50,10 @@ docs/notebooks/.ipynb_checkpoints/
 *~
 
 .pytest_cache/
+.ruff_cache
 
 # virtual environment
 .venv
+
+# uv lockfile (not committed for library project)
+uv.lock
