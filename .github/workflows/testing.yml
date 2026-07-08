@@ -18,9 +18,10 @@ jobs:
               uses: astral-sh/setup-uv@v6
               with:
                   python-version: ${{ matrix.python-version }}
+                  enable-cache: true
 
-            - name: Install Python package
-              run: uv pip install .[tests]
+            - name: Install the project
+              run: uv sync --extra tests
 
             - name: Run Python tests
               run: uv run pytest --cov --cov-branch --cov-report=xml
