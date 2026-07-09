@@ -30,9 +30,9 @@ class Direction(Axial2):
     - with 2 numerical arguments defining vector components
 
     Args:
-        direction (float): plunge direction of linear feature in degrees
+        direction (float): plunge direction of linear feature in degrees.
 
-    Example:
+    Examples:
         >>> dir2()
         >>> dir2('y')
         >>> dir2(45)
@@ -59,10 +59,10 @@ class Lineation(Axial3):
     - with 3 numerical arguments defining vector components
 
     Args:
-        azi (float): plunge direction of linear feature in degrees
-        inc (float): plunge of linear feature in degrees
+        azi (float): plunge direction of linear feature in degrees.
+        inc (float): plunge of linear feature in degrees.
 
-    Example:
+    Examples:
         >>> lin()
         >>> lin('y')
         >>> lin(1,2,-1)
@@ -74,7 +74,7 @@ class Lineation(Axial3):
         return f"L:{azi:.0f}/{inc:.0f}"
 
     def cross(self, other):
-        """Return Foliation defined by two linear features"""
+        """Return Foliation defined by two linear features."""
 
         return Foliation(super().cross(other))
 
@@ -82,12 +82,12 @@ class Lineation(Axial3):
 
     @property
     def geo(self):
-        """Return tuple of plunge direction and plunge"""
+        """Return tuple of plunge direction and plunge."""
 
         return vec2geo_linear(self)
 
     def to_json(self):
-        """Return as JSON dict"""
+        """Return as JSON dict."""
 
         azi, inc = vec2geo_linear_signed(self)
         return {
@@ -114,9 +114,9 @@ class Foliation(Axial3):
 
     Args:
         azi (float): dip direction (or strike) of planar feature in degrees.
-        inc (float): dip of planar feature in degrees
+        inc (float): dip of planar feature in degrees.
 
-    Example:
+    Examples:
         >>> fol()
         >>> fol('y')
         >>> fol(1,2,-1)
@@ -158,7 +158,7 @@ class Foliation(Axial3):
         return f"S:{azi:.0f}/{inc:.0f}"
 
     def cross(self, other):
-        """Return Lineation defined by intersection of planar features"""
+        """Return Lineation defined by intersection of planar features."""
 
         return Lineation(super().cross(other))
 
@@ -166,12 +166,12 @@ class Foliation(Axial3):
 
     @property
     def geo(self):
-        """Return tuple of dip direction and dip"""
+        """Return tuple of dip direction and dip."""
 
         return vec2geo_planar(self)
 
     def to_json(self):
-        """Return as JSON dict"""
+        """Return as JSON dict."""
 
         azi, inc = vec2geo_planar_signed(self)
         return {
@@ -181,23 +181,23 @@ class Foliation(Axial3):
         }
 
     def dipvec(self):
-        """Return dip vector"""
+        """Return dip vector."""
 
         return Vector3(*vec2geo_planar(self))
 
     def strike(self):
-        """Return strike as Direction"""
+        """Return strike as Direction."""
 
         n = self.uv()
         return Direction((atan2d(n.y, n.x) + 90) % 360)
 
     def pole(self):
-        """Return plane normal as vector"""
+        """Return plane normal as vector."""
 
         return Vector3(self)
 
     def rake(self, rake):
-        """Return rake vector"""
+        """Return rake vector."""
 
         return Vector3(self.dipvec().rotate(self, rake - 90))
 
@@ -210,16 +210,15 @@ class Foliation(Axial3):
 
         Keyword Args:
             norm: normalize transformed ``Foliation``. [True or False] Default False
-            of `self` by `F`
 
-        Example:
+        Examples:
             >>> # Reflexion of `y` axis.
             >>> F = [[1, 0, 0], [0, -1, 0], [0, 0, 1]]
             >>> f = fol(45, 20)
             >>> f.transform(F)
             S:315/20
         Returns:
-            affine transformation by matrix `F`.
+            Foliation: The transformed foliation.
         """
         r = np.dot(self, np.linalg.inv(F))
         if kwargs.get("norm", False):
@@ -248,16 +247,16 @@ class Pair:
     - with four numerical arguments defining `fol(fazi, finc)` and `lin(lazi, linc)`
 
     Args:
-        fazi (float): dip azimuth of planar feature in degrees
-        finc (float): dip of planar feature in degrees
-        lazi (float): plunge direction of linear feature in degrees
-        linc (float): plunge of linear feature in degrees
+        fazi (float): dip azimuth of planar feature in degrees.
+        finc (float): dip of planar feature in degrees.
+        lazi (float): plunge direction of linear feature in degrees.
+        linc (float): plunge of linear feature in degrees.
 
     Attributes:
-        fvec (Vector3): corrected vector normal to plane
-        lvec (Vector3): corrected vector of linear feature
+        fvec (Vector3): corrected vector normal to plane.
+        lvec (Vector3): corrected vector of linear feature.
 
-    Example:
+    Examples:
         >>> pair()
         >>> pair(p)
         >>> pair(f, l)
@@ -328,12 +327,12 @@ class Pair:
         return np.hstack((self.fvec, self.lvec)).astype(dtype)
 
     def label(self):
-        """Return label"""
+        """Return label."""
 
         return str(self)
 
     def to_json(self):
-        """Return as JSON dict"""
+        """Return as JSON dict."""
 
         fazi, finc = vec2geo_planar_signed(self.fvec)
         lazi, linc = vec2geo_linear_signed(self.lvec)
@@ -345,7 +344,7 @@ class Pair:
 
     @classmethod
     def random(cls):
-        """Random Pair"""
+        """Random Pair."""
 
         lin, p = Vector3.random(), Vector3.random()
         fol = lin.cross(p)
@@ -358,13 +357,13 @@ class Pair:
             axis (``Vector3``): axis of rotation
             phi (float): angle of rotation in degrees
 
-        Example:
+        Examples:
             >>> p = pair(fol(140, 30), lin(110, 26))
             >>> p.rotate(lin(40, 50), 120)
             P:210/83-287/60
 
         Returns:
-            Rotates ``Pair`` by angle `phi` about `axis`.
+            Pair: The rotated pair.
         """
         try:
             axis = Vector3(axis)
@@ -401,16 +400,15 @@ class Pair:
 
         Keyword Args:
             norm: normalize transformed vectors. True or False. Default False
-            by `F`
 
-        Example:
-          >>> F = defgrad.from_axisangle(lin(0,0), 60)
-          >>> p = pair(90, 90, 0, 50)
-          >>> p.transform(F)
-          P:270/30-314/23
+        Examples:
+            >>> F = defgrad.from_axisangle(lin(0,0), 60)
+            >>> p = pair(90, 90, 0, 50)
+            >>> p.transform(F)
+            P:270/30-314/23
 
         Returns:
-            an affine transformation of ``Pair`` by matrix `F`.
+            Pair: The transformed pair.
         """
 
         fvec = self.fol.transform(F)
@@ -444,20 +442,20 @@ class Fault(Pair):
     - with 5 arguments fazi, finc, lazi, linc, sense
 
     Args:
-        fazi (float): dip azimuth of planar feature in degrees
-        finc (float): dip of planar feature in degrees
-        lazi (float): plunge direction of linear feature in degrees
-        linc (float): plunge of linear feature in degrees
+        fazi (float): dip azimuth of planar feature in degrees.
+        finc (float): dip of planar feature in degrees.
+        lazi (float): plunge direction of linear feature in degrees.
+        linc (float): plunge of linear feature in degrees.
         sense (float or str): sense of movement +/-1 hanging-wall down/up. When str,
             must be one of 's', 'd', 'n', 'r'.
 
 
     Attributes:
-        fvec (Vector3): corrected vector normal to plane
-        lvec (Vector3): corrected vector of linear feature
-        sense (int): sense of movement (+/-1)
+        fvec (Vector3): corrected vector normal to plane.
+        lvec (Vector3): corrected vector of linear feature.
+        sense (int): sense of movement (+/-1).
 
-    Example:
+    Examples:
         >>> f = fault(140, 30, 110, 26, -1)
         >>> f = fault(140, 30, 110, 26, 'r')
         >>> p = pair(140, 30, 110, 26)
@@ -562,7 +560,7 @@ class Fault(Pair):
         return np.hstack((self.fvec, self.lvec, self.sense)).astype(dtype)
 
     def to_json(self):
-        """Return as JSON dict"""
+        """Return as JSON dict."""
 
         fazi, finc = vec2geo_planar_signed(self.fvec)
         lazi, linc = vec2geo_linear_signed(self.lvec)
@@ -574,7 +572,7 @@ class Fault(Pair):
 
     @classmethod
     def random(cls):
-        """Random Fault"""
+        """Random Fault."""
         import random
 
         lvec, p = Vector3.random(), Vector3.random()
@@ -600,7 +598,7 @@ class Fault(Pair):
         return schar
 
     def p_vector(self, ptangle=90):
-        """Return P axis as ``Vector3``"""
+        """Return P axis as ``Vector3``."""
 
         return self.fvec.rotate(self.lvec.cross(self.fvec), -ptangle / 2)
 
@@ -611,25 +609,25 @@ class Fault(Pair):
 
     @property
     def p(self):
-        """Return P-axis as ``Lineation``"""
+        """Return P-axis as ``Lineation``."""
 
         return Lineation(self.p_vector())
 
     @property
     def t(self):
-        """Return T-axis as ``Lineation``"""
+        """Return T-axis as ``Lineation``."""
 
         return Lineation(self.t_vector())
 
     @property
     def m(self):
-        """Return kinematic M-plane as ``Foliation``"""
+        """Return kinematic M-plane as ``Foliation``."""
 
         return Foliation(self.lvec.cross(self.fvec))
 
     @property
     def d(self):
-        """Return dihedra plane as ``Fol``"""
+        """Return dihedra plane as ``Fol``."""
 
         return Foliation(self.lvec.cross(self.fvec).cross(self.fvec))
 
@@ -640,7 +638,7 @@ class Fault(Pair):
             sigma (Stress3): Stress tensor
 
         Returns:
-            Angular misfit (°) between observed slip and predicted shear-traction direction.
+            float: The angular misfit in degrees.
         """
         return self.lvec.angle(sigma.fault(self.fvec).lvec)
 
@@ -672,7 +670,7 @@ class Cone:
         secant (Vector3): secant line
         revangle (float): revolution angle
 
-    Example:
+    Examples:
         >>> cone()
         >>> cone(c)
         >>> cone(a, s, revangle)
@@ -759,12 +757,12 @@ class Cone:
         return np.hstack((self.axis, self.secant, self.revangle)).astype(dtype)
 
     def label(self):
-        """Return label"""
+        """Return label."""
 
         return str(self)
 
     def to_json(self):
-        """Return as JSON dict"""
+        """Return as JSON dict."""
 
         aazi, ainc = vec2geo_linear_signed(self.axis)
         sazi, sinc = vec2geo_linear_signed(self.secant)
@@ -776,7 +774,7 @@ class Cone:
 
     @classmethod
     def random(cls):
-        """Random Cone"""
+        """Random Cone."""
 
         axis, secant = Vector3.random(), Vector3.random()
         return cls(axis, secant, 360)
@@ -788,13 +786,13 @@ class Cone:
             axis (``Vector3``): axis of rotation
             phi (float): angle of rotation in degrees
 
-        Example:
+        Examples:
             >>> c = cone(lin(140, 30), lin(110, 26), 360)
             >>> c.rotate(lin(40, 50), 120)
             C:210/83-287/60
 
         Returns:
-            Rotates ``Cone`` by angle `phi` about `axis`.
+            Cone: The rotated cone.
         """
         try:
             axis = Vector3(axis)
@@ -805,12 +803,12 @@ class Cone:
         )
 
     def apical_angle(self):
-        """Return apical angle"""
+        """Return apical angle."""
 
         return self.axis.angle(self.secant)
 
     @property
     def rotated_secant(self):
-        """Return revangle rotated secant vector"""
+        """Return revangle rotated secant vector."""
 
         return self.secant.rotate(self.axis, self.revangle)

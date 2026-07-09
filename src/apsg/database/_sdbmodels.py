@@ -21,6 +21,8 @@ from sqlalchemy.orm import (
 
 
 class Base(DeclarativeBase):
+    """SQLAlchemy declarative base for all models."""
+
     pass
 
 
@@ -28,6 +30,8 @@ metadata = Base.metadata
 
 
 class Meta(Base):
+    """SQLAlchemy model for database metadata key-value pairs."""
+
     __tablename__ = "meta"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -35,10 +39,13 @@ class Meta(Base):
     value: Mapped[str] = mapped_column(Text)
 
     def __repr__(self):
+        """Return string representation of the meta entry."""
         return "Meta:{}={}".format(self.name, self.value)
 
 
 class Site(Base):
+    """SQLAlchemy model for geological sampling sites."""
+
     __tablename__ = "sites"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -57,6 +64,7 @@ class Site(Base):
     )
 
     def __repr__(self):
+        """Return string representation of the site."""
         return "Site:{} ({})".format(self.name, self.unit.name)
 
 
@@ -76,6 +84,8 @@ tagged = Table(
 
 
 class Attached(Base):
+    """SQLAlchemy model linking planar and linear structural data."""
+
     __tablename__ = "attach"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -98,10 +108,13 @@ class Attached(Base):
     )
 
     def __repr__(self):
+        """Return string representation of the attachment."""
         return "{} - {}".format(self.planar, self.linear)
 
 
 class Structdata(Base):
+    """SQLAlchemy model for structural attitude measurements."""
+
     __tablename__ = "structdata"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -142,12 +155,15 @@ class Structdata(Base):
     )
 
     def __repr__(self):
+        """Return string representation of the measurement."""
         return "{}:{:g}/{:g}".format(
             self.structype.structure, self.azimuth, self.inclination
         )
 
 
 class Structype(Base):
+    """SQLAlchemy model for structure type definitions."""
+
     __tablename__ = "structype"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -163,10 +179,13 @@ class Structype(Base):
     )
 
     def __repr__(self):
+        """Return string representation of the structure type."""
         return "Type:{}".format(self.structure)
 
 
 class Tag(Base):
+    """SQLAlchemy model for tagging structural data."""
+
     __tablename__ = "tags"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -177,10 +196,13 @@ class Tag(Base):
     structdata = relationship("Structdata", secondary=tagged, back_populates="tags")
 
     def __repr__(self):
+        """Return string representation of the tag."""
         return "Tag:{}".format(self.name)
 
 
 class Unit(Base):
+    """SQLAlchemy model for geological units."""
+
     __tablename__ = "units"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -191,4 +213,5 @@ class Unit(Base):
     sites = relationship("Site", back_populates="unit", cascade="all, delete")
 
     def __repr__(self):
+        """Return string representation of the unit."""
         return "Unit:{}".format(self.name)

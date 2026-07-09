@@ -6,32 +6,32 @@ sqrt2 = math.sqrt(2.0)
 
 
 def sind(x):
-    """Calculate sine of angle in degrees"""
+    """Calculate sine of angle in degrees."""
     return math.sin(math.radians(x))
 
 
 def cosd(x):
-    """Calculate cosine of angle in degrees"""
+    """Calculate cosine of angle in degrees."""
     return math.cos(math.radians(x))
 
 
 def tand(x):
-    """Calculate tangent of angle in degrees"""
+    """Calculate tangent of angle in degrees."""
     return math.tan(math.radians(x))
 
 
 def asind(x):
-    """Calculate arc sine in degrees"""
+    """Calculate arc sine in degrees."""
     return math.degrees(math.asin(max(min(x, 1), -1)))
 
 
 def acosd(x):
-    """Calculate arc cosine in degrees"""
+    """Calculate arc cosine in degrees."""
     return math.degrees(math.acos(max(min(x, 1), -1)))
 
 
 def atand(x):
-    """Calculate arc tangent in degrees"""
+    """Calculate arc tangent in degrees."""
     return math.degrees(math.atan(x))
 
 

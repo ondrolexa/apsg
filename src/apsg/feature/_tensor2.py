@@ -13,14 +13,14 @@ class DeformationGradient2(Matrix2):
     The class to represent 2D deformation gradient tensor.
 
     Args:
-      a (2x2 array_like): Input data, that can be converted to
-          2x2 2D array. This includes lists, tuples and ndarrays.
+        a (2x2 array_like): Input data, that can be converted to
+            2x2 2D array. This includes lists, tuples and ndarrays.
 
     Returns:
-      ``DeformationGradient2`` object
+        DeformationGradient2: 2D deformation gradient tensor.
 
-    Example:
-      >>> F = defgrad2(np.diag([2, 0.5]))
+    Examples:
+        >>> F = defgrad2(np.diag([2, 0.5]))
     """
 
     @classmethod
@@ -34,7 +34,7 @@ class DeformationGradient2(Matrix2):
             yx (float): tensor component F_yx
             yy (float): tensor component F_yy
 
-        Example:
+        Examples:
             >>> F = defgrad2.from_comp(xy=2)
             >>> F
             DeformationGradient2
@@ -54,21 +54,21 @@ class DeformationGradient2(Matrix2):
         Default is identity tensor.
 
         Keyword Args:
-          R (float): strain ratio
+            R (float): strain ratio
 
-        Example:
-          >>> F = defgrad2.from_ratio(R=4)
-          >> F
-          DeformationGradient2
-          [[2.  0. ]
-           [0.  0.5]]
+        Examples:
+            >>> F = defgrad2.from_ratio(R=4)
+            >> F
+            DeformationGradient2
+            [[2.  0. ]
+             [0.  0.5]]
 
         """
 
         return cls.from_comp(xx=R ** (1 / 2), yy=R ** (-1 / 2))
 
     def is_rotation(self):
-        """Return True if DeformationGradient3 is rotation"""
+        """Return True if DeformationGradient3 is rotation."""
         return np.allclose(np.dot(np.transpose(self), self), np.eye(2)) & np.allclose(
             1, np.linalg.det(self)
         )
@@ -92,7 +92,7 @@ class DeformationGradient2(Matrix2):
         return DeformationGradient2(V)
 
     def velgrad(self, time=1):
-        """Return ``VelocityGradient2`` for given time"""
+        """Return ``VelocityGradient2`` for given time."""
         return VelocityGradient2(spla.logm(np.asarray(self)) / time)
 
 
@@ -101,14 +101,14 @@ class Rotation2(DeformationGradient2):
     The class to represent 2D rotation matrix.
 
     Args:
-      a (2x2 array_like): Input data, that can be converted to
-          2x2 2D array. This includes lists, tuples and ndarrays.
+        a (2x2 array_like): Input data, that can be converted to
+            2x2 2D array. This includes lists, tuples and ndarrays.
 
     Returns:
-      ``Rotation2`` object
+        Rotation2: 2D rotation matrix.
 
-    Example:
-      >>> R = rotation2.from_angle(lin(120, 60), 50)
+    Examples:
+        >>> R = rotation2.from_angle(lin(120, 60), 50)
     """
 
     def __init__(self, *args, **kwargs):
@@ -131,14 +131,14 @@ class Rotation2(DeformationGradient2):
         """Return ``Rotation2`` representing rotation by angle theta.
 
         Args:
-          theta: Angle of rotation in degrees
+            theta: Angle of rotation in degrees
 
-        Example:
-          >>> F = rotation2.from_angle(45)
-          >>> F
-          Rotation2
-          [[ 0.707 -0.707]
-           [ 0.707  0.707]]
+        Examples:
+            >>> F = rotation2.from_angle(45)
+            >>> F
+            Rotation2
+            [[ 0.707 -0.707]
+             [ 0.707  0.707]]
 
         """
 
@@ -151,15 +151,15 @@ class Rotation2(DeformationGradient2):
         to both vectors and rotate v1 to v2.
 
         Args:
-          v1: ``Vector2`` like object
-          v2: ``Vector2`` like object
+            v1: ``Vector2`` like object
+            v2: ``Vector2`` like object
 
-        Example:
-          >>> F = rotation2.from_two_vectors(vec2(1, 1), vec2(0, 1))
-          >>> F
-          Rotation2
-          [[ 0.707 -0.707]
-           [ 0.707  0.707]]
+        Examples:
+            >>> F = rotation2.from_two_vectors(vec2(1, 1), vec2(0, 1))
+            >>> F
+            Rotation2
+            [[ 0.707 -0.707]
+             [ 0.707  0.707]]
 
         """
         try:
@@ -182,14 +182,14 @@ class VelocityGradient2(Matrix2):
     The class to represent 2D velocity gradient tensor.
 
     Args:
-      a (2x2 array_like): Input data, that can be converted to
-          2x2 2D array. This includes lists, tuples and ndarrays.
+        a (2x2 array_like): Input data, that can be converted to
+            2x2 2D array. This includes lists, tuples and ndarrays.
 
     Returns:
-      ``VelocityGradient2`` object
+        VelocityGradient2: 2D velocity gradient tensor.
 
-    Example:
-      >>> L = velgrad2(np.diag([0.1, -0.1]))
+    Examples:
+        >>> L = velgrad2(np.diag([0.1, -0.1]))
 
     """
 
@@ -204,7 +204,7 @@ class VelocityGradient2(Matrix2):
             yx (float): tensor component L_yx
             yy (float): tensor component L_yy
 
-        Example:
+        Examples:
             >>> L = velgrad2.from_comp(xy=2)
             >>> L
             VelocityGradient2
@@ -226,6 +226,9 @@ class VelocityGradient2(Matrix2):
             time (float): time of deformation. Default 1
             steps (int): when bigger than 1, will return a list
                          of ``DeformationGradient2`` tensors for each timestep.
+
+        Returns:
+            DeformationGradient2: ``DeformationGradient2`` tensor accumulated after given time.
         """
         if steps > 1:  # FIX once container for matrix will be implemented
             return [
@@ -236,16 +239,12 @@ class VelocityGradient2(Matrix2):
             return DeformationGradient2(spla.expm(np.asarray(self) * time))
 
     def rate(self):
-        """
-        Return rate of deformation tensor
-        """
+        """Return rate of deformation tensor."""
 
         return type(self)((self + self.T) / 2)
 
     def spin(self):
-        """
-        Return spin tensor
-        """
+        """Return spin tensor."""
 
         return type(self)((self - self.T) / 2)
 
@@ -268,14 +267,14 @@ class Stress2(Tensor2):
     The class to represent 2D stress tensor.
 
     Args:
-      a (2x2 array_like): Input data, that can be converted to
-          2x2 2D array. This includes lists, tuples and ndarrays.
+        a (2x2 array_like): Input data, that can be converted to
+            2x2 2D array. This includes lists, tuples and ndarrays.
 
     Returns:
-      ``Stress2`` object
+        Stress2: 2D stress tensor.
 
-    Example:
-      >>> S = Stress2([[-8, 0, 0],[0, -5, 0],[0, 0, -1]])
+    Examples:
+        >>> S = Stress2([[-8, 0, 0],[0, -5, 0],[0, 0, -1]])
 
     """
 
@@ -287,14 +286,14 @@ class Stress2(Tensor2):
         Note that stress tensor must be symmetrical.
 
         Keyword Args:
-          xx, xy|yx, yy (float): tensor components
+            xx, xy|yx, yy (float): tensor components
 
-        Example:
-          >>> S = stress2.from_comp(xx=-5, yy=-2, xy=1)
-          >>> S
-          Stress2
-          [[-5.  1.]
-           [ 1. -2.]]
+        Examples:
+            >>> S = stress2.from_comp(xx=-5, yy=-2, xy=1)
+            >>> S
+            Stress2
+            [[-5.  1.]
+             [ 1. -2.]]
         """
         xx = kwargs.get("xx", 0)
         xy = kwargs.get("xy", kwargs.get("yx", 0))
@@ -304,7 +303,7 @@ class Stress2(Tensor2):
     @property
     def mean_stress(self):
         """
-        Mean stress
+        Mean stress.
         """
 
         return self.I1 / 2
@@ -312,7 +311,7 @@ class Stress2(Tensor2):
     @property
     def hydrostatic(self):
         """
-        Mean hydrostatic stress tensor component
+        Mean hydrostatic stress tensor component.
         """
 
         return type(self)(np.diag(self.mean_stress * np.ones(2)))
@@ -320,7 +319,7 @@ class Stress2(Tensor2):
     @property
     def deviatoric(self):
         """
-        A stress deviator tensor component
+        A stress deviator tensor component.
         """
 
         return type(self)(self - self.hydrostatic)
@@ -328,7 +327,7 @@ class Stress2(Tensor2):
     @property
     def sigma1(self):
         """
-        A maximum principal stress (max compressive)
+        A maximum principal stress (max compressive).
         """
 
         return self.E2
@@ -336,7 +335,7 @@ class Stress2(Tensor2):
     @property
     def sigma2(self):
         """
-        A minimum principal stress
+        A minimum principal stress.
         """
 
         return self.E1
@@ -345,7 +344,7 @@ class Stress2(Tensor2):
     def sigma1dir(self):
         """
         Return unit length vector in direction of maximum
-        principal stress (max compressive)
+        principal stress (max compressive).
         """
 
         return self.V2
@@ -354,7 +353,7 @@ class Stress2(Tensor2):
     def sigma2dir(self):
         """
         Return unit length vector in direction of minimum
-        principal stress
+        principal stress.
         """
 
         return self.V1
@@ -362,7 +361,7 @@ class Stress2(Tensor2):
     @property
     def sigma1vec(self):
         """
-        Return maximum principal stress vector (max compressive)
+        Return maximum principal stress vector (max compressive).
         """
 
         return self.E2 * self.V2
@@ -370,7 +369,7 @@ class Stress2(Tensor2):
     @property
     def sigma2vec(self):
         """
-        Return minimum principal stress vector
+        Return minimum principal stress vector.
         """
 
         return self.E1 * self.V1
@@ -378,7 +377,7 @@ class Stress2(Tensor2):
     @property
     def I1(self):
         """
-        First invariant
+        First invariant.
         """
 
         return float(np.trace(self))
@@ -386,7 +385,7 @@ class Stress2(Tensor2):
     @property
     def I2(self):
         """
-        Second invariant
+        Second invariant.
         """
 
         return float((self.I1**2 - np.trace(self**2)) / 2)
@@ -394,7 +393,7 @@ class Stress2(Tensor2):
     @property
     def I3(self):
         """
-        Third invariant
+        Third invariant.
         """
 
         return self.det
@@ -416,13 +415,15 @@ class Stress2(Tensor2):
         Return stress vector associated with plane given by normal vector.
 
         Args:
-          n: normal given as ``Vector2`` object
+            n: normal given as ``Vector2`` object
 
-        Example:
-          >>> S = Stress.from_comp(xx=-5, yy=-2, xy=1)
-          >>> S.cauchy(vec2(1,1))
-          V(-2.520, 0.812, 8.660)
+        Examples:
+            >>> S = Stress.from_comp(xx=-5, yy=-2, xy=1)
+            >>> S.cauchy(vec2(1,1))
+            V(-2.520, 0.812, 8.660)
 
+        Returns:
+            Vector2: stress vector associated with plane given by normal vector.
         """
 
         return Vector2(np.dot(self, n.normalized()))
@@ -431,6 +432,9 @@ class Stress2(Tensor2):
         """
         Return normal and shear stress ``Vector2`` components on plane given
         by normal vector.
+
+        Returns:
+            tuple: normal and shear stress ``Vector2`` components.
         """
 
         t = self.cauchy(n)
@@ -441,6 +445,9 @@ class Stress2(Tensor2):
     def normal_stress(self, n):
         """
         Return normal stress magnitude on plane given by normal vector.
+
+        Returns:
+            float: normal stress magnitude on plane given by normal vector.
         """
 
         return float(np.dot(n, self.cauchy(n)))
@@ -448,6 +455,9 @@ class Stress2(Tensor2):
     def shear_stress(self, n):
         """
         Return shear stress magnitude on plane given by normal vector.
+
+        Returns:
+            float: shear stress magnitude on plane given by normal vector.
         """
 
         sn, tau = self.stress_comp(n)
@@ -456,6 +466,9 @@ class Stress2(Tensor2):
     def signed_shear_stress(self, n):
         """
         Return signed shear stress magnitude on plane given by normal vector.
+
+        Returns:
+            float: signed shear stress magnitude on plane given by normal vector.
         """
         R = Rotation2.from_angle(n.direction)
         return self.transform(R)[1, 0]
@@ -463,24 +476,24 @@ class Stress2(Tensor2):
 
 class Ellipse(Tensor2):
     """
-    The class to represent 2D ellipse
+    The class to represent 2D ellipse.
 
     See following methods and properties for additional operations.
 
     Args:
-      matrix (2x2 array_like): Input data, that can be converted to
-             2x2 2D matrix. This includes lists, tuples and ndarrays.
+        matrix (2x2 array_like): Input data, that can be converted to
+               2x2 2D matrix. This includes lists, tuples and ndarrays.
 
     Returns:
-      ``Ellipse`` object
+        Ellipse: 2D ellipse object.
 
-    Example:
-      >>> E = ellipse([[8, 0], [0, 2]])
-      >>> E
-      Ellipse
-      [[8. 0.]
-       [0. 2.]]
-      (ar:2, ori:0)
+    Examples:
+        >>> E = ellipse([[8, 0], [0, 2]])
+        >>> E
+        Ellipse
+        [[8. 0.]
+         [0. 2.]]
+        (ar:2, ori:0)
 
     """
 
@@ -494,12 +507,15 @@ class Ellipse(Tensor2):
         """
         Return deformation tensor from ``Defgrad2``.
 
-        Kwargs:
+        Args:
             form: 'left' or 'B' for left Cauchy–Green deformation tensor or
                   Finger deformation tensor
                   'right' or 'C' for right Cauchy–Green deformation tensor or
                   Green's deformation tensor.
                   Default is 'left'.
+
+        Returns:
+            Ellipse: deformation tensor from ``Defgrad2``.
         """
         if form in ("left", "B"):
             return cls(np.dot(F, np.transpose(F)), **kwargs)
@@ -573,41 +589,43 @@ class OrientationTensor2(Ellipse):
     See following methods and properties for additional operations.
 
     Args:
-      matrix (2x2 array_like): Input data, that can be converted to
-             2x2 2D matrix. This includes lists, tuples and ndarrays.
-             Array could be also ``Group`` (for backward compatibility)
+        matrix (2x2 array_like): Input data, that can be converted to
+               2x2 2D matrix. This includes lists, tuples and ndarrays.
+               Array could be also ``Group`` (for backward compatibility)
 
     Returns:
-      ``OrientationTensor2`` object
+        OrientationTensor2: 2D orientation tensor object.
 
-    Example:
-      >>> v = vec2set.random(n=1000)
-      >>> ot = v.ortensor()
-      >>> ot
-      OrientationTensor2
-      [[ 0.502 -0.011]
-       [-0.011  0.498]]
-      (ar:1.02, ori:140)
+    Examples:
+        >>> v = vec2set.random(n=1000)
+        >>> ot = v.ortensor()
+        >>> ot
+        OrientationTensor2
+        [[ 0.502 -0.011]
+         [-0.011  0.498]]
+        (ar:1.02, ori:140)
 
     """
 
     @classmethod
     def from_features(cls, g) -> "OrientationTensor2":
         """
-        Return ``Ortensor`` of data in Vector2Set features
+        Return ``Ortensor`` of data in Vector2Set features.
 
         Args:
             g (Vector2Set): Set of features
 
-        Example:
-          >>> v = vec2set.random_vonmises(position=120)
-          >>> ot = v.ortensor()
-          >>> ot
-          OrientationTensor2
-          [[ 0.377 -0.282]
-           [-0.282  0.623]]
-          (ar:2.05, ori:123)
+        Examples:
+            >>> v = vec2set.random_vonmises(position=120)
+            >>> ot = v.ortensor()
+            >>> ot
+            OrientationTensor2
+            [[ 0.377 -0.282]
+             [-0.282  0.623]]
+            (ar:2.05, ori:123)
 
+        Returns:
+            OrientationTensor2: orientation tensor of data in Vector2Set features.
         """
 
         axes = np.array(g)

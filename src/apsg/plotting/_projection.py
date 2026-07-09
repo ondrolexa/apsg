@@ -8,6 +8,7 @@ from apsg.math._vector import Vector3
 
 class Projection:
     def __init__(self, **kwargs):
+        """Initialize projection with rotation, hemisphere, and overlay settings."""
         self.rotate_data = kwargs.get("rotate_data", False)
         self.overlay_position = Pair(kwargs.get("overlay_position", (0, 0, 0, 0)))
         self.clip_pole = kwargs.get("clip_pole", 15)
@@ -21,6 +22,7 @@ class Projection:
         self.Ri = np.linalg.inv(self.R)
 
     def project_data(self, x, y, z, clip_inside=True):
+        """Project spherical coordinates to 2D plot coordinates."""
         if self.rotate_data:
             x, y, z = self.R.dot((x, y, z))
         if self.hemisphere == "upper":
@@ -43,6 +45,7 @@ class Projection:
             return X, Y
 
     def project_data_antipodal(self, x, y, z, clip_inside=True):
+        """Project both hemisphere and antipode to 2D."""
         if self.rotate_data:
             x, y, z = self.R.dot((x, y, z))
         X1, Y1 = self._project(x, y, z)  # ty: ignore
@@ -61,6 +64,7 @@ class Projection:
         return X1, Y1, -X2, -Y2
 
     def inverse_data(self, X, Y):
+        """Inverse project 2D coordinates back to 3D."""
         if X * X + Y * Y > 1.0:
             return None
         x, y, z = self._inverse(X, Y)  # ty: ignore
@@ -69,6 +73,7 @@ class Projection:
         return x, y, z
 
     def project_overlay(self, x, y, z):
+        """Project overlay grid coordinates with rotation applied."""
         x, y, z = self.R.dot((x, y, z))
         X, Y = self._project(x, y, z)  # ty: ignore
         outside = X * X + Y * Y >= 1.0
@@ -77,6 +82,7 @@ class Projection:
         return X, Y
 
     def get_grid_overlay(self):
+        """Return projected grid overlay with latitude, longitude, and principal elements."""
         angles_gc = np.linspace(-90 + 1e-7, 90 - 1e-7, int(self.overlay_resolution / 2))
         angles_gc_clipped = np.linspace(
             -90 + self.clip_pole + 1e-7,
@@ -296,6 +302,7 @@ class EqualAreaProj(Projection):
     netname = "Schmidt net"
 
     def _project(self, x, y, z):
+        """Equal-area (Schmidt) projection of spherical coordinates to 2D."""
         # normalize
         d = np.sqrt(x * x + y * y + z * z)
         if any(d == 0):
@@ -307,6 +314,7 @@ class EqualAreaProj(Projection):
             return y * sqz, x * sqz
 
     def _inverse(self, X, Y):
+        """Inverse equal-area projection from 2D to spherical coordinates."""
         X, Y = X * sqrt2, Y * sqrt2
         x = np.sqrt(1 - (X * X + Y * Y) / 4.0) * Y
         y = np.sqrt(1 - (X * X + Y * Y) / 4.0) * X
@@ -319,6 +327,7 @@ class EqualAngleProj(Projection):
     netname = "Wulff net"
 
     def _project(self, x, y, z):
+        """Equal-angle (Wulff) projection of spherical coordinates to 2D."""
         # normalize
         d = np.sqrt(x * x + y * y + z * z)
         if any(d == 0):
@@ -328,6 +337,7 @@ class EqualAngleProj(Projection):
             return y / (1 + z), x / (1 + z)
 
     def _inverse(self, X, Y):
+        """Inverse equal-angle projection from 2D to spherical coordinates."""
         x = 2.0 * Y / (1.0 + X * X + Y * Y)
         y = 2.0 * X / (1.0 + X * X + Y * Y)
         z = (1.0 - X * X - Y * Y) / (1.0 + X * X + Y * Y)

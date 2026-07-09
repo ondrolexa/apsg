@@ -72,19 +72,19 @@ class StereoGrid:
         return f"StereoGrid {self.proj.__class__.__name__} {self.grid_n} points." + info
 
     def min(self):
-        """Returns minimum value of the grid"""
+        """Returns minimum value of the grid."""
         return self.values.min()
 
     def max(self):
-        """Returns maximum value of the grid"""
+        """Returns maximum value of the grid."""
         return self.values.max()
 
     def min_at(self):
-        """Returns position of minimum value of the grid as ``Lineation``"""
+        """Returns position of minimum value of the grid as ``Lineation``."""
         return Lineation(self.grid[self.values.argmin()])
 
     def max_at(self):
-        """Returns position of maximum value of the grid as ``Lineation``"""
+        """Returns position of maximum value of the grid as ``Lineation``."""
         return Lineation(self.grid[self.values.argmax()])
 
     def calculate_density(self, features, **kwargs):
@@ -99,7 +99,7 @@ class StereoGrid:
                 Default None
             sigmanorm (bool): If True counting is normalized to sigma multiples
                 (for "kamb" method). Default True
-            trimzero: if True, zero contour is not drawn. Default True
+            trimzero (bool): If True, zero contour is not drawn. Default True
 
         """
 
@@ -217,10 +217,10 @@ class StereoGrid:
         Draw filled contours of values using tricontourf.
 
         Keyword Args:
-            levels (int or list): number or values of contours. Default 6
-            cmap: matplotlib colormap used for filled contours. Default "Greys"
+            levels (int or list): Number or values of contours. Default 6
+            cmap (str): Matplotlib colormap used for filled contours. Default "Greys"
             colorbar (bool): Show colorbar. Default False
-            alpha (float): transparency. Default None
+            alpha (float): Transparency. Default None
             antialiased (bool): Default True
         """
         colorbar = kwargs.get("colorbar", False)
@@ -262,13 +262,13 @@ class StereoGrid:
         Draw contour lines of values using tricontour.
 
         Keyword Args:
-            levels (int or list): number or values of contours. Default 6
-            cmap: matplotlib colormap used for filled contours. Default "Greys"
+            levels (int or list): Number or values of contours. Default 6
+            cmap (str): Matplotlib colormap used for filled contours. Default "Greys"
             colorbar (bool): Show colorbar. Default False
-            alpha (float): transparency. Default None
+            alpha (float): Transparency. Default None
             antialiased (bool): Default True
-            linewidths (float): contour lines width
-            linestyles (str): contour lines style
+            linewidths (float): Contour lines width.
+            linestyles (str): Contour lines style.
         """
         colorbar = kwargs.get("colorbar", False)
         parsed = {}
@@ -341,12 +341,12 @@ class StereoGrid:
         """Implementation of Angelier-Mechler dihedra method
 
         Args:
-            faults: ``FaultSet`` of data
+            faults (FaultSet): ``FaultSet`` of data.
 
-        Kwargs:
-            method: 'probability' or 'classic'. Classic method assigns +/-1
-            to individual positions, while 'probability' returns maximum
-            likelihood estimate.
+        Keyword Args:
+            method (str): 'probability' or 'classic'. Classic method assigns +/-1
+                to individual positions, while 'probability' returns maximum
+                likelihood estimate.
             Other kwargs are passed to contourf
 
         """

@@ -13,7 +13,7 @@ from apsg.plotting._styles import RosePlotStyle
 __all__ = ["RosePlot"]
 
 
-class RosePlot(object):
+class RosePlot:
     """
     ``RosePlot`` class for rose histogram plotting.
 
@@ -65,13 +65,13 @@ class RosePlot(object):
             plot_method(*artist.args, **artist.kwargs)
 
     def to_json(self):
-        """Return rose plot as JSON dict"""
+        """Return rose plot as JSON dict."""
         artists = [artist.to_json() for artist in self._artists]
         return dict(kwargs=self._kwargs, artists=artists)
 
     @classmethod
     def from_json(cls, json_dict):
-        """Create rose plot from JSON dict"""
+        """Create rose plot from JSON dict."""
         s = cls(**json_dict["kwargs"])
         s._artists = [roseartist_from_json(artist) for artist in json_dict["artists"]]
         return s
@@ -140,7 +140,7 @@ class RosePlot(object):
         self._render()
 
     def show(self):
-        """Show rose plot"""
+        """Show rose plot."""
         plt.close(0)  # close previously rendered figure
         self.init_figure()
         self._render()

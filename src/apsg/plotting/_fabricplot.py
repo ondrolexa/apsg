@@ -23,7 +23,7 @@ class FabricPlot(object):
         self._artists = []
 
     def clear(self):
-        """Clear fabric plot"""
+        """Clear fabric plot."""
 
         self._artists = []
 
@@ -33,14 +33,14 @@ class FabricPlot(object):
             plot_method(*artist.args, **artist.kwargs)
 
     def to_json(self):
-        """Return fabric plot as JSON dict"""
+        """Return fabric plot as JSON dict."""
 
         artists = [artist.to_json() for artist in self._artists]
         return dict(kwargs=self._kwargs, artists=artists)
 
     @classmethod
     def from_json(cls, json_dict):
-        """Create fabric plot from JSON dict"""
+        """Create fabric plot from JSON dict."""
 
         s = cls(**json_dict["kwargs"])
         s._artists = [fabricartist_from_json(artist) for artist in json_dict["artists"]]
@@ -53,7 +53,7 @@ class FabricPlot(object):
         Args:
             filename (str): name of picke file
         Returns:
-            Save fabric plot to pickle file
+            None: The fabric plot is serialized and written to a pickle file.
         """
         with open(filename, "wb") as f:
             pickle.dump(self.to_json(), f, pickle.HIGHEST_PROTOCOL)
@@ -66,7 +66,7 @@ class FabricPlot(object):
         Args:
             filename (str): name of picke file
         Returns:
-            Load fabric plot from pickle file
+            FabricPlot: Loaded fabric plot instance from pickle file.
         """
         with open(filename, "rb") as f:
             data = pickle.load(f)
@@ -109,13 +109,13 @@ class FabricPlot(object):
         Args:
             fig (Figure): A mtplotlib Figure artist
         Returns:
-            Plot stereonet to already existing figure or subfigure
+            None: The fabric plot is rendered on the provided figure.
         """
         self.fig = fig
         self._render()
 
     def show(self):
-        """Show deformation plot"""
+        """Show deformation plot."""
 
         plt.close(0)  # close previously rendered figure
         self.init_figure()
@@ -131,7 +131,7 @@ class FabricPlot(object):
 
         All others kwargs are passed to matplotlib `Figure.savefig`
         Returns:
-            Save fabric plot figure to graphics file
+            None: The figure is saved to the specified graphics file.
         """
         plt.close(0)  # close previously rendered figure
         self.init_figure()
@@ -145,7 +145,7 @@ class FabricPlot(object):
 
     def plot(self, style, *args):
         """
-        Plot features using apsg styles
+        Plot features using apsg styles.
 
         Args:
             style: apsg plotting style. See fabricplot_styles
@@ -155,7 +155,7 @@ class FabricPlot(object):
             Features in args are automatically filtered by style to accept only compatible features
 
         Returns:
-            Plot features using apsg styles
+            None: Features are plotted using the provided style.
         """
         assert isinstance(style, FabricPlotStyle), "Style must FabricPlotStyle object"
 
@@ -279,7 +279,7 @@ class VollmerPlot(FabricPlot):
     ########################################
 
     def point(self, *args, **kwargs):
-        """Plot ellipsoid as point"""
+        """Plot ellipsoid as point."""
 
         try:
             artist = FabricPlotArtistFactory.create_point(*args, **kwargs)
@@ -288,7 +288,7 @@ class VollmerPlot(FabricPlot):
             print(err)
 
     def path(self, *args, **kwargs):
-        """Plot EllipsoidSet as path"""
+        """Plot EllipsoidSet as path."""
 
         try:
             artist = FabricPlotArtistFactory.create_path(*args, **kwargs)
@@ -388,7 +388,7 @@ class RamsayPlot(FabricPlot):
     ########################################
 
     def point(self, *args, **kwargs):
-        """Plot ellipsoid as point"""
+        """Plot ellipsoid as point."""
 
         try:
             artist = FabricPlotArtistFactory.create_point(*args, **kwargs)
@@ -397,7 +397,7 @@ class RamsayPlot(FabricPlot):
             print(err)
 
     def path(self, *args, **kwargs):
-        """Plot EllipsoidSet as path"""
+        """Plot EllipsoidSet as path."""
 
         try:
             artist = FabricPlotArtistFactory.create_path(*args, **kwargs)
@@ -485,7 +485,7 @@ class FlinnPlot(FabricPlot):
     ########################################
 
     def point(self, *args, **kwargs):
-        """Plot Ellipsoid as point"""
+        """Plot Ellipsoid as point."""
 
         try:
             artist = FabricPlotArtistFactory.create_point(*args, **kwargs)
@@ -494,7 +494,7 @@ class FlinnPlot(FabricPlot):
             print(err)
 
     def path(self, *args, **kwargs):
-        """Plot EllipsoidSet as path"""
+        """Plot EllipsoidSet as path."""
 
         try:
             artist = FabricPlotArtistFactory.create_path(*args, **kwargs)
@@ -570,7 +570,7 @@ class HsuPlot(FabricPlot):
     ########################################
 
     def point(self, *args, **kwargs):
-        """Plot Ellipsoid as point"""
+        """Plot Ellipsoid as point."""
 
         try:
             artist = FabricPlotArtistFactory.create_point(*args, **kwargs)
@@ -579,7 +579,7 @@ class HsuPlot(FabricPlot):
             print(err)
 
     def path(self, *args, **kwargs):
-        """Plot EllipsoidSet as path"""
+        """Plot EllipsoidSet as path."""
 
         try:
             artist = FabricPlotArtistFactory.create_path(*args, **kwargs)

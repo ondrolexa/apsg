@@ -148,14 +148,14 @@ class StereoNet:
             plot_method(*artist.args, **artist.kwargs)
 
     def to_json(self):
-        """Return stereonet as JSON dict"""
+        """Return stereonet as JSON dict."""
 
         artists = [artist.to_json() for artist in self._artists]
         return dict(kwargs=self._kwargs, artists=artists)
 
     @classmethod
     def from_json(cls, json_dict):
-        """Create stereonet from JSON dict"""
+        """Create stereonet from JSON dict."""
 
         s = cls(**json_dict["kwargs"])
         s._artists = [
@@ -170,7 +170,7 @@ class StereoNet:
         Args:
             filename (str): name of picke file
         Returns:
-            Save stereonet to pickle file
+            None: The stereonet is serialized and written to a pickle file.
         """
         with open(filename, "wb") as f:
             pickle.dump(self.to_json(), f, pickle.HIGHEST_PROTOCOL)
@@ -183,7 +183,7 @@ class StereoNet:
         Args:
             filename (str): name of picke file
         Returns:
-            Load stereonet from pickle file
+            StereoNet: Loaded stereonet instance from pickle file.
         """
         with open(filename, "rb") as f:
             data = pickle.load(f)
@@ -230,13 +230,13 @@ class StereoNet:
         Args:
             fig (Figure): A mtplotlib Figure artist
         Returns:
-            Plot stereonet to already existing figure or subfigure
+            None: The stereonet is rendered on the provided figure.
         """
         self.fig = fig
         self._render()
 
     def format_coord(self, x, y):
-        """Format stereonet coordinates"""
+        """Format stereonet coordinates."""
 
         if x is not None and y is not None:
             if (x**2 + y**2) <= 1:
@@ -246,7 +246,7 @@ class StereoNet:
         return ""
 
     def show(self):
-        """Show stereonet"""
+        """Show stereonet."""
 
         plt.close(0)  # close previously rendered figure
         self.init_figure()
@@ -263,7 +263,7 @@ class StereoNet:
 
         All others kwargs are passed to matplotlib `Figure.savefig`
         Returns:
-            Save stereonet figure to graphics file
+            None: The figure is saved to the specified graphics file.
         """
         plt.close(0)  # close previously rendered figure
         self.init_figure()
@@ -277,7 +277,7 @@ class StereoNet:
 
     def plot(self, style, *args):
         """
-        Plot features using apsg styles
+        Plot features using apsg styles.
 
         Args:
             style: apsg plotting style. See stereonet_styles
@@ -287,7 +287,7 @@ class StereoNet:
             Features in args are automatically filtered by style to accept only compatible features
 
         Returns:
-            Plot features using apsg styles
+            None: Features are plotted using the provided style.
         """
         assert isinstance(style, StereoNetStyle), "Style must StereoNetStyle object"
 
@@ -301,7 +301,7 @@ class StereoNet:
 
     def point(self, *args, **kwargs):
         """
-        Plot linear feature(s) or poles of planar features as point(s)
+        Plot linear feature(s) or poles of planar features as point(s).
 
         Args:
             Vector3 or Vector3Set like feature(s)
@@ -318,7 +318,7 @@ class StereoNet:
                 Default None
 
         Returns:
-            Plot linear feature(s) or poles of planar features as point(s)
+            None: Linear features or poles are plotted as points.
         """
         try:
             artist = StereoNetArtistFactory.create_point(*args, **kwargs)
@@ -331,7 +331,7 @@ class StereoNet:
 
     def vector(self, *args, **kwargs):
         """
-        Plot vector feature(s) as point(s)
+        Plot vector feature(s) as point(s).
 
         Note: Markers are filled on lower and open on upper hemisphere.
 
@@ -350,7 +350,7 @@ class StereoNet:
                 Default None
 
         Returns:
-            Plot vector feature(s) as point(s)
+            None: Vector features are plotted as points.
         """
         try:
             artist = StereoNetArtistFactory.create_vector(*args, **kwargs)
@@ -360,7 +360,7 @@ class StereoNet:
 
     def scatter(self, *args, **kwargs):
         """
-        Plot vector-like feature(s) as point(s)
+        Plot vector-like feature(s) as point(s).
 
         Note: This method is using scatter plot to allow variable colors
             or sizes of points
@@ -379,7 +379,7 @@ class StereoNet:
             num (int): NUmber of legend items. Default "auto"
 
         Returns:
-            Plot vector-like feature(s) as point(s)
+            None: Vector-like features are plotted as points with variable properties.
         """
         try:
             artist = StereoNetArtistFactory.create_scatter(*args, **kwargs)
@@ -389,7 +389,7 @@ class StereoNet:
 
     def great_circle(self, *args, **kwargs):
         """
-        Plot planar feature(s) as great circle(s)
+        Plot planar feature(s) as great circle(s).
 
         Note: ``great_circle`` has also alias ``gc``
 
@@ -404,7 +404,7 @@ class StereoNet:
             lw (float): Set line width. Default 1.5
 
         Returns:
-            Plot planar feature(s) as great circle(s)
+            None: Planar features are plotted as great circles.
         """
         try:
             artist = StereoNetArtistFactory.create_great_circle(*args, **kwargs)
@@ -416,7 +416,7 @@ class StereoNet:
 
     def arc(self, *args, **kwargs):
         """
-        Plot arc bewtween vectors along great circle(s)
+        Plot arc between vectors along great circle(s).
 
         Note: You should pass several features in connection order
 
@@ -431,7 +431,7 @@ class StereoNet:
             lw (float): Set line width. Default 1.5
 
         Returns:
-            Plot arc bewtween vectors along great circle(s)
+            None: Arcs are plotted between vectors along great circles.
         """
         try:
             artist = StereoNetArtistFactory.create_arc(*args, **kwargs)
@@ -441,12 +441,7 @@ class StereoNet:
 
     def cone(self, *args, **kwargs):
         """
-        Returns:
-
-        """
-
-        """
-        Plot cone(s) as small circle(s) with given apical angle(s)
+        Plot cone(s) as small circle(s) with given apical angle(s).
 
         Args:
             Cone or ConeSet feature(s)
@@ -458,6 +453,8 @@ class StereoNet:
                 Default "-"
             lw (float): Set line width. Default 1.5
 
+        Returns:
+            None: Cones are plotted as small circles with given apical angles.
         """
         try:
             artist = StereoNetArtistFactory.create_cone(*args, **kwargs)
@@ -467,7 +464,7 @@ class StereoNet:
 
     def pair(self, *args, **kwargs):
         """
-        Plot pair feature(s) as great circle and point
+        Plot pair feature(s) as great circle and point.
 
         Args:
             Pair or PairSet feature(s)
@@ -481,7 +478,7 @@ class StereoNet:
             line_marker (str): Marker style string for point. Default "o"
 
         Returns:
-            Pair: Plot pair feature(s) as great circle and point
+            None: Pair features are plotted as great circle and point.
         """
         try:
             artist = StereoNetArtistFactory.create_pair(*args, **kwargs)
@@ -491,7 +488,7 @@ class StereoNet:
 
     def fault(self, *args, **kwargs):
         """
-        Plot fault feature(s) as great circle and arrow
+        Plot fault feature(s) as great circle and arrow.
 
         Note: Arrow is styled according to default arrow config
 
@@ -506,7 +503,7 @@ class StereoNet:
             lw (float): Set line width. Default 1.5
 
         Returns:
-            Fault: Plot fault feature(s) as great circle and arrow
+            None: Fault features are plotted as great circle and arrow.
         """
         try:
             artist = StereoNetArtistFactory.create_fault(*args, **kwargs)
@@ -516,7 +513,7 @@ class StereoNet:
 
     def hoeppner(self, *args, **kwargs):
         """
-        Plot fault feature(s) on Hoeppner (tangent lineation) plot
+        Plot fault feature(s) on Hoeppner (tangent lineation) plot.
 
         Note: Arrow is styled according to default arrow config
 
@@ -531,7 +528,7 @@ class StereoNet:
             lw (float): Set line width. Default 1.5
 
         Returns:
-            Plot fault feature(s) on Hoeppner (tangent lineation) plot
+            None: Fault features are plotted on Hoeppner plot.
         """
         try:
             artist = StereoNetArtistFactory.create_hoeppner(*args, **kwargs)
@@ -542,7 +539,7 @@ class StereoNet:
     def arrow(self, *args, **kwargs):
         """
         Plot arrow at position of first argument
-        and oriented in direction of second
+        and oriented in direction of second.
 
         Note: You should pass two features
 
@@ -557,7 +554,7 @@ class StereoNet:
             units (str): Arrow size units. Default "dots"
 
         Returns:
-            Plot arrow at position of first argument
+            None: Arrow is plotted at the specified position and direction.
         """
         try:
             artist = StereoNetArtistFactory.create_arrow(*args, **kwargs)
@@ -567,7 +564,7 @@ class StereoNet:
 
     def tensor(self, *args, **kwargs):
         """
-        Plot principal planes or principal directions of tensor
+        Plot principal planes or principal directions of tensor.
 
         Args:
             OrientationTensor3 like feature(s)
@@ -585,7 +582,7 @@ class StereoNet:
             marker (str): Marker style string. Default "o"
 
         Returns:
-            OrientationTensor3: Plot principal planes or principal directions of tensor
+            None: Principal planes or directions of tensor are plotted.
         """
         try:
             artist = StereoNetArtistFactory.create_tensor(*args, **kwargs)
@@ -595,7 +592,7 @@ class StereoNet:
 
     def stress(self, *args, **kwargs):
         """
-        Plot principal stresses of stress tensor
+        Plot principal stresses of stress tensor.
 
         Args:
             Stress3 feature(s)
@@ -611,7 +608,7 @@ class StereoNet:
             marker (str): Marker style string. Default "*"
 
         Returns:
-            Stress3: Plot principal stresses of stress tensor
+            None: Principal stresses are plotted.
         """
         try:
             artist = StereoNetArtistFactory.create_stress(*args, **kwargs)
@@ -646,7 +643,7 @@ class StereoNet:
             show_data (bool): Show data as points. Default False
             data_kws (dict): arguments passed to point factory when `show_data` True
         Returns:
-            Plot filled contours in multiples of uniform distribution.
+            None: Filled contours in multiples of uniform distribution are plotted.
         """
         # try:
         artist = StereoNetArtistFactory.create_contour(*args, **kwargs)
@@ -1050,12 +1047,12 @@ def quicknet(*args, **kwargs):
             False for plotting as great circle. Default `False`
         Additional kwargs are passed to StereoNet method
 
-    Example:
+    Examples:
         >>> l = linset.random_fisher(position=lin(120, 50))
         >>> f = folset.random_fisher(position=lin(300, 40))
         >>> quicknet(f, l)
     Returns:
-        Function to quickly show or save ``StereoNet`` from args
+        None: Quickly shows or saves a ``StereoNet`` figure from the provided arguments.
     """
     savefig = kwargs.get("savefig", False)
     filename = kwargs.get("filename", "stereonet.png")

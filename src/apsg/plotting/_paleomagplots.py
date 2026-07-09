@@ -8,7 +8,10 @@ from apsg.plotting._stereonet import StereoNet
 
 
 def zijderveld_plot(core, kind="geo"):
+    """Create Zijderveld demagnetization diagram."""
+
     def onpick(core, event, fig):
+        """Handle pick event to display selected step index."""
         fig.suptitle("{}".format(core.steps[event.ind[0]]))
         fig.canvas.draw()
 
@@ -44,6 +47,7 @@ def zijderveld_plot(core, kind="geo"):
 
 
 def demag_plot(core):
+    """Create demagnetization intensity decay plot."""
     fig, ax = plt.subplots(figsize=apsg_conf.figsize)
     ax.plot(core.nsteps[0], core.MAG[0] / core.MAG.max(), "k+", markersize=14)
     ax.plot(core.nsteps, core.MAG / core.MAG.max(), "ko-")
@@ -55,6 +59,7 @@ def demag_plot(core):
 
 
 def stereo_plot(core, kind="geo", **kwargs):
+    """Create stereonet projection of paleomagnetic directions."""
     data = getattr(core, kind)
     tt = {
         "V": "Specimen coordinates",

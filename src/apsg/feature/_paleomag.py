@@ -18,26 +18,25 @@ __all__ = ("Core",)
 
 class Core(object):
     """
-    ``Core`` class to store palemomagnetic analysis data
+    ``Core`` class to store palemomagnetic analysis data.
 
     Keyword Args:
-      info:
-      specimen:
-      filename:
-      alpha:
-      beta:
-      strike:
-      dip:
-      volume:
-      date:
-      steps:
-      a95:
-      comments:
-      vectors:
+        info:
+        specimen:
+        filename:
+        alpha:
+        beta:
+        strike:
+        dip:
+        volume:
+        date:
+        steps:
+        a95:
+        comments:
+        vectors:
 
     Returns:
-      ``Core`` object instance
-
+        Core: ``Core`` object instance.
     """
 
     def __init__(self, **kwargs):
@@ -109,8 +108,10 @@ class Core(object):
         """Return ``Core`` instance generated from PMD file.
 
         Args:
-          filename: PMD file
+            filename: PMD file
 
+        Returns:
+            Core: ``Core`` instance generated from PMD file.
         """
         with open(filename, encoding="latin1") as f:
             d = f.read().splitlines()
@@ -146,8 +147,10 @@ class Core(object):
         """Save ``Core`` instance to PMD file.
 
         Args:
-          filename: PMD file
+            filename: PMD file
 
+        Returns:
+            Core: ``Core`` instance saved to PMD file.
         """
         if filename is None:
             filename = self.filename
@@ -179,11 +182,13 @@ class Core(object):
         """Return ``Core`` instance generated from PMD file.
 
         Args:
-          filename: Remasoft rs3 file
+            filename: Remasoft rs3 file
 
-        Kwargs:
-          exclude: Labels to be excluded. Default ['C', 'G']
+        Keyword Args:
+            exclude: Labels to be excluded. Default ['C', 'G']
 
+        Returns:
+            Core: ``Core`` instance generated from RS3 file.
         """
         with open(filename, encoding="windows-1250") as f:
             d = f.read().splitlines()
@@ -282,8 +287,7 @@ class Core(object):
         """Save ``Core`` instance to RS3 file.
 
         Args:
-          filename: RS3 file
-
+            filename: RS3 file
         """
         if filename is None:
             filename = self.filename
@@ -330,7 +334,7 @@ class Core(object):
 
     @property
     def datatable(self):
-        """Return data list of strings"""
+        """Return data list of strings."""
         tb = []
         for step, MAG, V, geo, tilt, a95, comment in zip(
             self.steps,
@@ -358,7 +362,7 @@ class Core(object):
         return tb
 
     def show(self):
-        """Show data"""
+        """Show data."""
         print(
             "site:{} specimen:{} file:{}\nbedding:{} volume:{}m3  {}".format(
                 self.site,
@@ -376,40 +380,43 @@ class Core(object):
 
     @property
     def MAG(self):
-        """Returns numpy array of MAG values"""
+        """Return numpy array of MAG values."""
         return np.array([abs(v) / self.volume for v in self._vectors])
 
     @property
     def nsteps(self):
-        """Returns steps as numpy array of numbers"""
+        """Return steps as numpy array of numbers."""
         pp = [re.findall(r"\d+", str(s)) for s in self.steps]
         return np.array([int(s[0]) if s else 0 for s in pp])
 
     @property
     def V(self):
-        """Returns ``Vector3Set`` of vectors in sample (or core) coordinates system"""
+        """Return ``Vector3Set`` of vectors in sample (or core) coordinates system."""
         return Vector3Set([v / self.volume for v in self._vectors], name=self.specimen)
 
     @property
     def geo(self):
-        """Returns ``Vector3Set`` of vectors in in-situ coordinates system"""
+        """Return ``Vector3Set`` of vectors in in-situ coordinates system."""
         H = DeformationGradient3.from_two_pairs(self.sref, self.gref)
         return self.V.transform(H)
 
     @property
     def tilt(self):
-        """Returns ``Vector3Set`` of vectors in tilt‐corrected coordinates system"""
+        """Return ``Vector3Set`` of vectors in tilt-corrected coordinates system."""
         return self.geo.rotate(
             Lineation(self.bedding.geo[0] - 90, 0), -self.bedding.geo[1]
         )
 
     def pca(self, kind="geo", origin=False):
         """
-        PCA analysis to calculate principal component and MAD
+        PCA analysis to calculate principal component and MAD.
 
         Keyword Args:
             kind (str): "V", "geo" or "tilt". Default "geo"
             origin (bool): Whether to include origin. Default False
+
+        Returns:
+            tuple: principal component and MAD.
         """
         data = getattr(self, kind)
         if not origin:

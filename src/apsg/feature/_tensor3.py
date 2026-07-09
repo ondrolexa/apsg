@@ -16,11 +16,11 @@ class DeformationGradient3(Matrix3):
     The class to represent 3D deformation gradient tensor.
 
     Args:
-      a (3x3 array_like): Input data, that can be converted to
-          3x3 2D array. This includes lists, tuples and ndarrays.
+        a (3x3 array_like): Input data, that can be converted to
+            3x3 2D array. This includes lists, tuples and ndarrays.
 
-    Example:
-      >>> F = defgrad(np.diag([2, 1, 0.5]))
+    Examples:
+        >>> F = defgrad(np.diag([2, 1, 0.5]))
     """
 
     @classmethod
@@ -39,7 +39,7 @@ class DeformationGradient3(Matrix3):
             ``zy`` (float): tensor component F_zy
             zz (float): tensor component F_zz
 
-        Example:
+        Examples:
             >>> F = defgrad.from_comp(xy=1, zy=-0.5)
             >>> F
             DeformationGradient3
@@ -48,7 +48,7 @@ class DeformationGradient3(Matrix3):
              [ 0.  -0.5  1. ]]
 
         Returns:
-            ``DeformationGradient3`` defined by individual components.
+            DeformationGradient3: ``DeformationGradient3`` defined by individual components.
         """
         xx = kwargs.get("xx", 1)
         xy = kwargs.get("xy", 0)
@@ -67,19 +67,19 @@ class DeformationGradient3(Matrix3):
         defined by strain ratios. Default is identity tensor.
 
         Keyword Args:
-          Rxy (float): XY strain ratio
-          Ryz (float): YZ strain ratio
+            Rxy (float): XY strain ratio
+            Ryz (float): YZ strain ratio
 
-        Example:
-          >>> F = defgrad.from_ratios(Rxy=2, Ryz=3)
-          >>> F
-          DeformationGradient3
-          [[2.289 0.    0.   ]
-           [0.    1.145 0.   ]
-           [0.    0.    0.382]]
+        Examples:
+            >>> F = defgrad.from_ratios(Rxy=2, Ryz=3)
+            >>> F
+            DeformationGradient3
+            [[2.289 0.    0.   ]
+             [0.    1.145 0.   ]
+             [0.    0.    0.382]]
 
         Returns:
-            isochoric ``DeformationGradient3`` tensor with axial stretches
+            DeformationGradient3: isochoric ``DeformationGradient3`` tensor with axial stretches.
         """
 
         assert Rxy >= 1, "Rxy must be greater than or equal to 1."
@@ -89,7 +89,7 @@ class DeformationGradient3(Matrix3):
         return cls.from_comp(xx=y * Rxy, yy=y, zz=y / Ryz)
 
     def is_rotation(self):
-        """Return True if DeformationGradient3 is rotation"""
+        """Return True if DeformationGradient3 is rotation."""
 
         return np.allclose(np.dot(np.transpose(self), self), np.eye(3)) & np.allclose(
             1, np.linalg.det(self)
@@ -104,13 +104,15 @@ class DeformationGradient3(Matrix3):
 
     @property
     def U(self):
-        """Return stretching part of ``DeformationGradient3`` from right polar"""
+        """Return stretching part of ``DeformationGradient3`` from right polar."""
+
         _, U = spla.polar(self, "right")
         return DeformationGradient3(U)
 
     @property
     def V(self):
-        """Return stretching part of ``DeformationGradient3`` from left polar"""
+        """Return stretching part of ``DeformationGradient3`` from left polar."""
+
         _, V = spla.polar(self, "left")
         return DeformationGradient3(V)
 
@@ -122,7 +124,7 @@ class DeformationGradient3(Matrix3):
         Keyword Args:
             time (float): total time. Default 1
 
-        Example:
+        Examples:
             >>> F = defgrad.from_comp(xx=2, xy=1, zz=0.5)
             >>> L = F.velgrad(time=10)
             >>> L
@@ -137,7 +139,7 @@ class DeformationGradient3(Matrix3):
              [0.  0.  0.5]]
 
         Returns:
-            VelocityGradient3: ``VelocityGradient3`` calculated as matrix logarithm divided by given
+            VelocityGradient3: ``VelocityGradient3`` calculated as matrix logarithm divided by given time.
         """
         return VelocityGradient3(spla.logm(np.asarray(self)) / time)
 
@@ -147,11 +149,11 @@ class Rotation3(DeformationGradient3):
     The class to represent 3D rotation matrix.
 
     Args:
-      a (3x3 array_like): Input data, that can be converted to
-          3x3 2D array. This includes lists, tuples and ndarrays.
+        a (3x3 array_like): Input data, that can be converted to
+            3x3 2D array. This includes lists, tuples and ndarrays.
 
-    Example:
-      >>> R = rotation.from_axisangle(lin(120, 60), 50)
+    Examples:
+        >>> R = rotation.from_axisangle(lin(120, 60), 50)
     """
 
     def __init__(self, *args, **kwargs):
@@ -190,19 +192,21 @@ class Rotation3(DeformationGradient3):
 
         Args:
             seq (str): sequence of axes for rotations. Up to 3 characters belonging to the set
-                {‘X’, ‘Y’, ‘Z’} for intrinsic rotations, or {‘x’, ‘y’, ‘z’} for extrinsic rotations.
+                {'X', 'Y', 'Z'} for intrinsic rotations, or {'x', 'y', 'z'} for extrinsic rotations.
+
         Returns:
-            rotation as Euler angles specified in degrees.
+            ndarray: rotation as Euler angles specified in degrees.
         """
         return Rotation.from_matrix(self).as_euler(seq, degrees=True)
 
     def quat(self, scalar_first=False):
-        """Return rotation as quaternion
+        """Return rotation as quaternion.
 
         Keyword Args:
             scalar_first (bool): Whether the scalar component goes first or last. Default is False
+
         Returns:
-            rotation as quaternion
+            ndarray: rotation as quaternion.
         """
         return Rotation.from_matrix(self).as_quat(canonical=True)
 
@@ -210,16 +214,17 @@ class Rotation3(DeformationGradient3):
     def from_pair(cls, p):
         """Return ``Rotation3`` representing rotation defined by ``Pair``.
 
-        Rotation bring x-axis to lineation and z-axis to normal to plane
+        Rotation bring x-axis to lineation and z-axis to normal to plane.
 
         Args:
-          p (``Pair``): Pair object
+            p (``Pair``): Pair object
 
-        Example:
-          >>> p = pair(40, 20, 75, 16)
-          >>> F = defgrad.from_pair(p)
+        Examples:
+            >>> p = pair(40, 20, 75, 16)
+            >>> F = defgrad.from_pair(p)
+
         Returns:
-            Pair: ``Rotation3`` representing rotation defined by ``Pair``.
+            Rotation3: ``Rotation3`` representing rotation defined by ``Pair``.
         """
         try:
             p = Pair(p)
@@ -240,13 +245,14 @@ class Rotation3(DeformationGradient3):
         """Return ``Rotation3`` representing rotation around axis.
 
         Args:
-          vector: Rotation axis as ``Vector3`` like object
-          theta: Angle of rotation in degrees
+            vector: Rotation axis as ``Vector3`` like object
+            theta: Angle of rotation in degrees
 
-        Example:
-          >>> F = rotation.from_axisangle(lin(120, 30), 45)
+        Examples:
+            >>> F = rotation.from_axisangle(lin(120, 30), 45)
+
         Returns:
-            ``Rotation3`` representing rotation around axis.
+            Rotation3: ``Rotation3`` representing rotation around axis.
         """
         try:
             vector = Vector3(vector)
@@ -263,13 +269,14 @@ class Rotation3(DeformationGradient3):
         to both vectors and rotate v1 to v2.
 
         Args:
-          v1: ``Vector3`` like object
-          v2: ``Vector3`` like object
+            v1: ``Vector3`` like object
+            v2: ``Vector3`` like object
 
-        Example:
-          >>> F = rotation.from_two_vectors(lin(120, 30), lin(210, 60))
+        Examples:
+            >>> F = rotation.from_two_vectors(lin(120, 30), lin(210, 60))
+
         Returns:
-            ``Rotation3`` representing rotation around axis perpendicular
+            Rotation3: ``Rotation3`` representing rotation around axis perpendicular to both vectors.
         """
         try:
             v1 = Vector3(v1)
@@ -295,11 +302,11 @@ class Rotation3(DeformationGradient3):
         axis is done automatically.
 
         Args:
-          v1: ``Vector3`` like object
-          v2: ``Vector3`` like object
-           a: estimated rotation axis ``Vector3`` like object
+            v1: ``Vector3`` like object
+            v2: ``Vector3`` like object
+            a: estimated rotation axis ``Vector3`` like object
 
-        Example:
+        Examples:
             >>> v1 = lin(130, 49)
             >>> v2 = lin(209, 77)
             >>> a = lin(30, 30)
@@ -311,7 +318,7 @@ class Rotation3(DeformationGradient3):
             L:31/30
 
         Returns:
-            ``Rotation3`` representing rotation of vector v1 to v2 around
+            Rotation3: ``Rotation3`` representing rotation of vector v1 to v2 around axis a.
         """
         try:
             v1 = Vector3(v1)
@@ -343,16 +350,16 @@ class Rotation3(DeformationGradient3):
         Return ``Rotation3`` representing rotation of coordinates from system
         defined by ``Pair`` p1 to system defined by ``Pair`` p2.
 
-        Lineation in pair define x axis and normal to foliation in pair define z axis
+        Lineation in pair define x axis and normal to foliation in pair define z axis.
 
         Args:
             p1 (``Pair``): from
             p2 (``Pair``): to
 
         Keyword Args:
-          symmetry (bool): If True, returns minimum angle rotation of axial pairs
+            symmetry (bool): If True, returns minimum angle rotation of axial pairs
 
-        Example:
+        Examples:
             >>> p1 = pair(58, 36, 81, 34)
             >>> p2 = pair(217,42, 162, 27)
             >>> R = rotation.from_two_pairs(p1, p2)
@@ -360,7 +367,7 @@ class Rotation3(DeformationGradient3):
             True
 
         Returns:
-            Pair: ``Rotation3`` representing rotation of coordinates from system
+            Rotation3: ``Rotation3`` representing rotation of coordinates from system defined by ``Pair``.
         """
 
         if symmetry:
@@ -381,24 +388,24 @@ class Rotation3(DeformationGradient3):
     def from_declination(cls, lat, lon, year=None, alt=0):
         """
         Return ``Rotation3`` representing rotation of coordinates correcting
-        magnetic declination at given coordinates and given time
+        magnetic declination at given coordinates and given time.
 
         Args:
             lat (float): latitude
             lon (float): longitude
 
         Keyword Args:
-          year (float): decimal year
-          alt (float): altitude in km
+            year (float): decimal year
+            alt (float): altitude in km
 
-        Example:
+        Examples:
             >>> R = rotation.from_declination(48.6, 13.2, alt=0.6)
             >>> f = fol(20, 48)
             >>> f.transform(R)
             S:25/48
 
         Returns:
-            ``Rotation3`` representing rotation of coordinates correcting
+            Rotation3: ``Rotation3`` representing rotation of coordinates correcting magnetic declination.
         """
         from pygeomag import GeoMag
 
@@ -422,7 +429,7 @@ class Rotation3(DeformationGradient3):
         Keyword Args:
             scalar_first (bool): Whether the scalar component goes first or last. Default is False
 
-        Example:
+        Examples:
             >>> q = [-0.11543715, 0.19994301, 0.39988603, 0.88701083]
             >>> R = rotation.from_quat(q)
             >>> f = fol(20, 48)
@@ -430,7 +437,7 @@ class Rotation3(DeformationGradient3):
             S:82/23
 
         Returns:
-            ``Rotation3`` representing rotation of coordinates created
+            Rotation3: ``Rotation3`` representing rotation of coordinates created from unit norm quaternion.
         """
         return cls(Rotation.from_quat(quat, scalar_first=False).as_matrix())
 
@@ -442,18 +449,18 @@ class Rotation3(DeformationGradient3):
 
         Args:
             seq (str): sequence of axes for rotations. Up to 3 characters belonging to the set
-                {‘X’, ‘Y’, ‘Z’} for intrinsic rotations, or {‘x’, ‘y’, ‘z’} for extrinsic rotations.
+                {'X', 'Y', 'Z'} for intrinsic rotations, or {'x', 'y', 'z'} for extrinsic rotations.
             angles (array_like): Euler angles specified in degrees. Each character in seq
                 defines one axis around which angles turns.
 
-        Example:
+        Examples:
             >>> R = rotation.from_euler('zxz', [30,-64, 125])
             >>> f = fol(20, 48)
             >>> f.transform(R)
             S:74/70
 
         Returns:
-            ``Rotation3`` representing rotation of coordinates created
+            Rotation3: ``Rotation3`` representing rotation of coordinates created from Euler angles.
         """
         return cls(Rotation.from_euler(seq, angles, degrees=True).as_matrix())
 
@@ -463,11 +470,11 @@ class VelocityGradient3(Matrix3):
     The class to represent 3D velocity gradient tensor.
 
     Args:
-      a (3x3 array_like): Input data, that can be converted to
-          3x3 2D array. This includes lists, tuples and ndarrays.
+        a (3x3 array_like): Input data, that can be converted to
+            3x3 2D array. This includes lists, tuples and ndarrays.
 
-    Example:
-      >>> L = velgrad(np.diag([0.1, 0, -0.1]))
+    Examples:
+        >>> L = velgrad(np.diag([0.1, 0, -0.1]))
     """
 
     @classmethod
@@ -486,7 +493,7 @@ class VelocityGradient3(Matrix3):
             zy (float): tensor component L_zy
             zz (float): tensor component L_zz
 
-        Example:
+        Examples:
             >>> L = velgrad.from_comp(xy=1, zy=-0.5)
             >>> L
             [[ 0.   1.   0. ]
@@ -494,7 +501,7 @@ class VelocityGradient3(Matrix3):
              [ 0.  -0.5  0. ]]
 
         Returns:
-            ``VelocityGradient3`` defined by individual components. Default is zero
+            VelocityGradient3: ``VelocityGradient3`` defined by individual components. Default is zero tensor.
         """
         xx = kwargs.get("xx", 0)
         xy = kwargs.get("xy", 0)
@@ -527,12 +534,12 @@ class VelocityGradient3(Matrix3):
             return DeformationGradient3(spla.expm(np.asarray(self) * time))
 
     def rate(self):
-        """Return rate of deformation tensor"""
+        """Return rate of deformation tensor."""
 
         return type(self)((self + self.T) / 2)
 
     def spin(self):
-        """Return spin tensor"""
+        """Return spin tensor."""
 
         return type(self)((self - self.T) / 2)
 
@@ -555,6 +562,7 @@ class Tensor3(Matrix3):
         Args:
             which: if None returns sorted tuple of eigenlins.
                 If int returns given eigen lineation. Default None.
+
         Returns:
             tuple of Lineation: eigenvectors as Lineation objects.
         """
@@ -569,6 +577,7 @@ class Tensor3(Matrix3):
         Args:
             which: if None returns sorted tuple of eigenfols.
                 If int returns given eigen foliation. Default None.
+
         Returns:
             tuple of Foliation: eigenvectors as Foliation objects.
         """
@@ -609,11 +618,11 @@ class Stress3(Tensor3):
     sigma2dir and sigma3dir.
 
     Args:
-      a (3x3 array_like): Input data, that can be converted to
-          3x3 2D array. This includes lists, tuples and ndarrays.
+        a (3x3 array_like): Input data, that can be converted to
+            3x3 2D array. This includes lists, tuples and ndarrays.
 
-    Example:
-      >>> S = stress([[-8, 0, 0],[0, -5, 0],[0, 0, -1]])
+    Examples:
+        >>> S = stress([[-8, 0, 0],[0, -5, 0],[0, 0, -1]])
     """
 
     @classmethod
@@ -624,18 +633,18 @@ class Stress3(Tensor3):
         Note that stress tensor is always symmetrical.
 
         Keyword Args:
-          xx, xy|yx, xz|zx, yy, yz|zy, zz (float): tensor components
+            xx, xy|yx, xz|zx, yy, yz|zy, zz (float): tensor components
 
-        Example:
-          >>> S = stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
-          >>> S
-          Stress3
-          [[-5.  1.  0.]
-           [ 1. -2.  0.]
-           [ 0.  0. 10.]]
+        Examples:
+            >>> S = stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+            >>> S
+            Stress3
+            [[-5.  1.  0.]
+             [ 1. -2.  0.]
+             [ 0.  0. 10.]]
 
         Returns:
-            ``Stress`` tensor. Default is zero tensor.
+            Stress3: ``Stress`` tensor. Default is zero tensor.
         """
         xx = kwargs.get("xx", 0)
         xy = kwargs.get("xy", kwargs.get("yx", 0))
@@ -651,19 +660,19 @@ class Stress3(Tensor3):
         Return ``Stress`` tensor with given shape ration.
 
         Keyword Args:
-          r (float): shape ratio between 0 and 1. Default 0.5
-          mag (float): magnitude of differential stress. Default 1.
+            r (float): shape ratio between 0 and 1. Default 0.5
+            mag (float): magnitude of differential stress. Default 1.
 
-        Example:
-          >>> S = stress.from_ratio(r=0.25, mag=10)
-          >>> S
-          Stress3
-          [[-5.   0.   0. ]
-           [ 0.  -2.5  0. ]
-           [ 0.   0.   5. ]]
+        Examples:
+            >>> S = stress.from_ratio(r=0.25, mag=10)
+            >>> S
+            Stress3
+            [[-5.   0.   0. ]
+             [ 0.  -2.5  0. ]
+             [ 0.   0.   5. ]]
 
         Returns:
-            ``Stress`` tensor with given shape ration.
+            Stress3: ``Stress`` tensor with given shape ration.
         """
 
         xx = -mag / 2
@@ -673,109 +682,111 @@ class Stress3(Tensor3):
 
     @property
     def mean_stress(self):
-        """Mean stress"""
+        """Mean stress."""
 
         return self.I1 / 3
 
     @property
     def hydrostatic(self):
-        """Mean hydrostatic stress tensor component"""
+        """Mean hydrostatic stress tensor component."""
 
         return type(self)(np.diag(self.mean_stress * np.ones(3)))
 
     @property
     def deviatoric(self):
-        """A stress deviator tensor component"""
+        """A stress deviator tensor component."""
 
         return type(self)(self - self.hydrostatic)
 
     def effective(self, fp):
         """
-        A effective stress tensor reduced by fluid pressure
+        Return effective stress tensor reduced by fluid pressure.
 
         Args:
             fp (flot): fluid pressure
+
         Returns:
-            A effective stress tensor reduced by fluid pressure
+            Stress3: effective stress tensor reduced by fluid pressure.
         """
 
         return type(self)(self + fp * Stress3())
 
     @property
     def sigma1(self):
-        """A maximum principal stress (max compressive)"""
+        """A maximum principal stress (max compressive)."""
 
         return self.E3
 
     @property
     def sigma2(self):
-        """A intermediate principal stress"""
+        """A intermediate principal stress."""
 
         return self.E2
 
     @property
     def sigma3(self):
-        """A minimum principal stress (max tensile)"""
+        """A minimum principal stress (max tensile)."""
 
         return self.E1
 
     @property
     def sigma1dir(self):
-        """Return unit length vector in direction of maximum"""
+        """Return unit length vector in direction of maximum."""
 
         return self.V3
 
     @property
     def sigma2dir(self):
-        """Return unit length vector in direction of intermediate"""
+        """Return unit length vector in direction of intermediate."""
 
         return self.V2
 
     @property
     def sigma3dir(self):
-        """Return unit length vector in direction of minimum"""
+        """Return unit length vector in direction of minimum."""
 
         return self.V1
 
     @property
     def sigma1vec(self):
-        """Return maximum principal stress vector (max compressive)"""
+        """Return maximum principal stress vector (max compressive)."""
 
         return self.E3 * self.V3
 
     @property
     def sigma2vec(self):
-        """Return intermediate principal stress vector"""
+        """Return intermediate principal stress vector."""
 
         return self.E2 * self.V2
 
     @property
     def sigma3vec(self):
-        """Return minimum principal stress vector (max tensile)"""
+        """Return minimum principal stress vector (max tensile)."""
 
         return self.E1 * self.V1
 
     @property
     def I1(self):
-        """First invariant"""
+        """First invariant."""
 
         return float(np.trace(self))
 
     @property
     def I2(self):
-        """Second invariant"""
+        """Second invariant."""
 
         return float((self.I1**2 - np.trace(self**2)) / 2)
 
     @property
     def I3(self):
-        """Third invariant"""
+        """Third invariant."""
 
         return self.det
 
     @property
     def diagonalized(self):
-        """Returns diagonalized Stress tensor and orthogonal matrix R, which transforms"""
+        """Returns diagonalized Stress tensor and orthogonal matrix R, which transforms
+        coordinate system to the principal one."""
         return (
             type(self)(np.diag(self.eigenvalues())),
             DeformationGradient3(self.eigenvectors()),
@@ -786,15 +797,15 @@ class Stress3(Tensor3):
         Return stress vector associated with plane given by normal vector.
 
         Args:
-          n: normal given as ``Vector3`` or ``Foliation`` object
+            n: normal given as ``Vector3`` or ``Foliation`` object
 
-        Example:
-          >>> S = stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
-          >>> S.cauchy(fol(160, 30))
-          Vector3(-2.52, 0.812, 8.66)
+        Examples:
+            >>> S = stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+            >>> S.cauchy(fol(160, 30))
+            Vector3(-2.52, 0.812, 8.66)
 
         Returns:
-            stress vector associated with plane given by normal vector.
+            Vector3: stress vector associated with plane given by normal vector.
         """
 
         return Vector3(np.dot(self, n.normalized()))
@@ -804,12 +815,12 @@ class Stress3(Tensor3):
         Return ``Fault`` object derived from given by normal vector.
 
         Args:
-          n: normal given as ``Vector3`` or ``Foliation`` object
+            n: normal given as ``Vector3`` or ``Foliation`` object
 
-        Example:
-          >>> S = stress.from_comp(xx=-5, yy=-2, zz=10, xy=8)
-          >>> S.fault(fol(160, 30))
-          F:160/30-141/29 +
+        Examples:
+            >>> S = stress.from_comp(xx=-5, yy=-2, zz=10, xy=8)
+            >>> S.fault(fol(160, 30))
+            F:160/30-141/29 +
 
         Returns:
             Fault: ``Fault`` object derived from given by normal vector.
@@ -820,7 +831,12 @@ class Stress3(Tensor3):
         return Fault(n.normalized(), -tau.normalized())
 
     def stress_comp(self, n):
-        """Return normal and shear stress ``Vector3`` components on plane given"""
+        """Return normal and shear stress ``Vector3`` components on plane given
+        by normal vector.
+
+        Returns:
+            tuple: normal and shear stress ``Vector3`` components.
+        """
 
         t = self.cauchy(n)
         sn = t.proj(n)
@@ -828,12 +844,20 @@ class Stress3(Tensor3):
         return sn, t - sn
 
     def normal_stress(self, n):
-        """Return normal stress magnitude on plane given by normal vector."""
+        """Return normal stress magnitude on plane given by normal vector.
+
+        Returns:
+            float: normal stress magnitude on plane given by normal vector.
+        """
 
         return float(np.dot(n, self.cauchy(n)))
 
     def shear_stress(self, n):
-        """Return shear stress magnitude on plane given by normal vector."""
+        """Return shear stress magnitude on plane given by normal vector.
+
+        Returns:
+            float: shear stress magnitude on plane given by normal vector.
+        """
 
         sn, tau = self.stress_comp(n)
         return abs(tau)
@@ -843,14 +867,14 @@ class Stress3(Tensor3):
         Return slip tendency calculated as the ratio of shear stress
         to normal stress acting on the plane.
 
-        Note: Providing fluid pressure effective normal stress is calculated
+        Note: Providing fluid pressure effective normal stress is calculated.
 
         Keyword Args:
-          fp (float): fluid pressure. Default 0
-          log (bool): when True, returns logarithm of slip tendency
+            fp (float): fluid pressure. Default 0
+            log (bool): when True, returns logarithm of slip tendency
 
         Returns:
-            slip tendency calculated as the ratio of shear stress
+            float: slip tendency calculated as the ratio of shear stress to normal stress.
         """
 
         Se = self.effective(fp)
@@ -864,13 +888,13 @@ class Stress3(Tensor3):
         """
         Return dilation tendency of the plane.
 
-        Note: Providing fluid pressure effective stress is used
+        Note: Providing fluid pressure effective stress is used.
 
         Keyword Args:
-          fp (float): fluid pressure. Default 0
+            fp (float): fluid pressure. Default 0
 
         Returns:
-            dilation tendency of the plane.
+            float: dilation tendency of the plane.
         """
         Se = self.effective(fp)
 
@@ -880,7 +904,7 @@ class Stress3(Tensor3):
 
     @property
     def shape_ratio(self):
-        """Return shape ratio R (Gephart & Forsyth 1984)"""
+        """Return shape ratio R (Gephart & Forsyth 1984)."""
         return float((self.sigma1 - self.sigma2) / (self.sigma1 - self.sigma3))
 
 
@@ -891,17 +915,17 @@ class Ellipsoid(Tensor3):
     See following methods and properties for additional operations.
 
     Args:
-      matrix (3x3 array_like): Input data, that can be converted to
-             3x3 2D matrix. This includes lists, tuples and ndarrays.
+        matrix (3x3 array_like): Input data, that can be converted to
+               3x3 2D matrix. This includes lists, tuples and ndarrays.
 
-    Example:
-      >>> E = ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
-      >>> E
-      Ellipsoid
-      [[8 0 0]
-       [0 2 0]
-       [0 0 1]]
-      (S1:2.83, S2:1.41, S3:1)
+    Examples:
+        >>> E = ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
+        >>> E
+        Ellipsoid
+        [[8 0 0]
+         [0 2 0]
+         [0 0 1]]
+        (S1:2.83, S2:1.41, S3:1)
 
     """
 
@@ -921,8 +945,9 @@ class Ellipsoid(Tensor3):
             form: 'left' or 'B' for left Cauchy–Green (Finger) deformation tensor,
                   'right' or 'C' for right Cauchy–Green (Green's) deformation tensor.
                   Default 'left'.
+
         Returns:
-            DeformationGradient3: deformation tensor from ``Defgrad3``.
+            Ellipsoid: deformation tensor from ``Defgrad3``.
         """
         if form in ("left", "B"):
             return cls(np.dot(F, np.transpose(F)), **kwargs)
@@ -938,7 +963,7 @@ class Ellipsoid(Tensor3):
 
     @property
     def kind(self) -> str:
-        """Return descriptive type of ellipsoid"""
+        """Return descriptive type of ellipsoid."""
         nu = self.lode
         if np.allclose(self.eoct, 0):
             res = "O"
@@ -961,7 +986,7 @@ class Ellipsoid(Tensor3):
 
     @property
     def shape(self) -> float:
-        """return the Woodcock shape."""
+        """Return the Woodcock shape."""
         return self.K
 
     @property
@@ -1105,7 +1130,7 @@ class Ellipsoid(Tensor3):
 
     @property
     def MAD(self) -> float:
-        """Return maximum angular deviation (MAD)"""
+        """Return maximum angular deviation (MAD)."""
 
         if self.shape > 1:
             return self.MAD_l
@@ -1121,43 +1146,43 @@ class OrientationTensor3(Ellipsoid):
     See following methods and properties for additional operations.
 
     Args:
-      matrix (3x3 array_like): Input data, that can be converted to
-             3x3 2D matrix. This includes lists, tuples and ndarrays.
-             Array could be also ``Group`` (for backward compatibility)
+        matrix (3x3 array_like): Input data, that can be converted to
+               3x3 2D matrix. This includes lists, tuples and ndarrays.
+               Array could be also ``Group`` (for backward compatibility)
 
-    Example:
-      >>> ot = ortensor([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
-      >>> ot
-      OrientationTensor3
-      [[8 0 0]
-       [0 2 0]
-       [0 0 1]]
-      (S1:2.83, S2:1.41, S3:1)
+    Examples:
+        >>> ot = ortensor([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
+        >>> ot
+        OrientationTensor3
+        [[8 0 0]
+         [0 2 0]
+         [0 0 1]]
+        (S1:2.83, S2:1.41, S3:1)
 
     """
 
     @classmethod
     def from_features(cls, g) -> "OrientationTensor3":
         """
-        Return ``Ortensor`` of data in Vector3Set of features
+        Return ``Ortensor`` of data in Vector3Set of features.
 
         Args:
             g (Vector3Set): Set of features
 
-        Example:
-          >>> g = linset.random_fisher(position=lin(120,50))
-          >>> ot = ortensor.from_features(g)
-          >>> ot
-          OrientationTensor3
-          [[ 0.126 -0.149 -0.202]
-           [-0.149  0.308  0.373]
-           [-0.202  0.373  0.566]]
-          (S1:0.955, S2:0.219, S3:0.2)
-          >>> ot.eigenlins()
-          (L:119/51, L:341/31, L:237/21)
+        Examples:
+            >>> g = linset.random_fisher(position=lin(120,50))
+            >>> ot = ortensor.from_features(g)
+            >>> ot
+            OrientationTensor3
+            [[ 0.126 -0.149 -0.202]
+             [-0.149  0.308  0.373]
+             [-0.202  0.373  0.566]]
+            (S1:0.955, S2:0.219, S3:0.2)
+            >>> ot.eigenlins()
+            (L:119/51, L:341/31, L:237/21)
 
         Returns:
-            ``Ortensor`` of data in Vector3Set of features
+            OrientationTensor3: orientation tensor of data in Vector3Set of features.
         """
         axes = np.array(g)
         norms = np.linalg.norm(axes, axis=1, keepdims=True)
@@ -1168,7 +1193,7 @@ class OrientationTensor3(Ellipsoid):
     @classmethod
     def from_pairs(cls, p, shift=True) -> "OrientationTensor3":
         """
-        Return Lisle (1989) ``Ortensor`` of orthogonal data in ``PairSet``
+        Return Lisle (1989) ``Ortensor`` of orthogonal data in ``PairSet``.
 
         Lisle, R. (1989). The Statistical Analysis of Orthogonal Orientation Data.
             The Journal of Geology, 97(3), 360-364.
@@ -1183,21 +1208,21 @@ class OrientationTensor3(Ellipsoid):
         Keyword Args:
             shift (bool): When True the tensor is shifted. Default True
 
-        Example:
-          >>> p = pairset([pair(109, 82, 21, 10),
-                           pair(118, 76, 30, 11),
-                           pair(97, 86, 7, 3),
-                           pair(109, 75, 23, 14)])
-          >>> ot = ortensor.from_pairs(p)
-          >>> ot
-          OrientationTensor3
-          [[0.577 0.192 0.029]
-           [0.192 0.092 0.075]
-           [0.029 0.075 0.332]]
-          (S1:0.807, S2:0.579, S3:0.114)
+        Examples:
+            >>> p = pairset([pair(109, 82, 21, 10),
+                             pair(118, 76, 30, 11),
+                             pair(97, 86, 7, 3),
+                             pair(109, 75, 23, 14)])
+            >>> ot = ortensor.from_pairs(p)
+            >>> ot
+            OrientationTensor3
+            [[0.577 0.192 0.029]
+             [0.192 0.092 0.075]
+             [0.029 0.075 0.332]]
+            (S1:0.807, S2:0.579, S3:0.114)
 
         Returns:
-            Pair: Lisle (1989) ``Ortensor`` of orthogonal data in ``PairSet``
+            OrientationTensor3: Lisle (1989) orientation tensor of orthogonal data in ``PairSet``.
         """
         if shift:
             return cls(

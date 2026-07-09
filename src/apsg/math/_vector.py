@@ -13,7 +13,7 @@ from apsg.helpers._notation import (
 
 
 class Vector(ABC):
-    """Abstract base class for Vector2 and Vector3"""
+    """Abstract base class for Vector2 and Vector3."""
 
     __slots__ = ("_coords", "_attrs")
     __shape__ = None
@@ -106,12 +106,12 @@ class Vector(ABC):
         pass
 
     def label(self):
-        """Return label"""
+        """Return label."""
 
         return str(self)
 
     def is_unit(self):
-        """Return true if the magnitude is 1"""
+        """Return true if the magnitude is 1."""
 
         return math.isclose(self.magnitude(), 1)
 
@@ -122,13 +122,13 @@ class Vector(ABC):
         raise TypeError(f"Unsupported argument. Expecting {cls.__name__}")
 
     def angle(self, other):
-        """Return the angle to the vector other"""
+        """Return the angle to the vector other."""
 
         other = self._ensure_same(other)
         return acosd(self.normalized().dot(other.normalized()))
 
     def project(self, other):
-        """Return vector projectio on the vector other"""
+        """Return vector projection on the vector other."""
 
         other = self._ensure_same(other)
         n = other.normalized()
@@ -137,20 +137,20 @@ class Vector(ABC):
     proj = project
 
     def reject(self, other):
-        """Return vector rejection on the vector other"""
+        """Return vector rejection on the vector other."""
 
         other = self._ensure_same(other)
         return self - self.project(other)
 
     @property
     def x(self):
-        """Return x-component of the vector"""
+        """Return x-component of the vector."""
 
         return self._coords[0]
 
     @property
     def y(self):
-        """Return y-component of the vector"""
+        """Return y-component of the vector."""
 
         return self._coords[1]
 
@@ -173,7 +173,7 @@ class Vector2(Vector):
     Args:
         ang (float): angle between 'x' axis and vector in degrees
 
-    Example:
+    Examples:
         >>> vec2()
         >>> vec2(1, -1)
         >>> vec2('y')
@@ -222,7 +222,7 @@ class Vector2(Vector):
         return type(self)(-self.x, -self.y)
 
     def normalized(self):
-        """Returns normalized (unit length) vector"""
+        """Returns normalized (unit length) vector."""
 
         d = self.magnitude()
         if d:
@@ -235,7 +235,7 @@ class Vector2(Vector):
 
     @property
     def direction(self):
-        """Returns direction of the vector in degrees"""
+        """Returns direction of the vector in degrees."""
 
         return atan2d(self.y, self.x) % 360
 
@@ -245,8 +245,9 @@ class Vector2(Vector):
 
         Args:
             other (Vector2): other vector
+
         Returns:
-            Calculate dot product with other vector.
+            float: Dot product of the two vectors.
         """
         other = self._ensure_same(other)
         return self.x * other.x + self.y * other.y
@@ -266,13 +267,13 @@ class Vector2(Vector):
             return float(r)
 
     def cross(self, other):
-        """Returns the magnitude of the vector that would result from a regular 3D"""
+        """Returns the scalar magnitude of the 2D cross product."""
         other = self._ensure_same(other)
         return self.x * other.y - self.y * other.x
 
     @classmethod
     def random(cls):
-        """Random 2D vector"""
+        """Create random 2D vector."""
         return cls(360 * np.random.rand())
 
     def rotate(self, theta):
@@ -283,13 +284,13 @@ class Vector2(Vector):
 
     @classmethod
     def unit_x(cls):
-        """Create unit length vector in x-direction"""
+        """Create unit length vector in x-direction."""
 
         return cls(1, 0)
 
     @classmethod
     def unit_y(cls):
-        """Create unit length vector in y-direction"""
+        """Create unit length vector in y-direction."""
 
         return cls(0, 1)
 
@@ -302,9 +303,8 @@ class Vector2(Vector):
 
         Keyword Args:
             norm: normalize transformed vectors. [True or False] Default False
-            of `self` by `F`
 
-        Example:
+        Examples:
             # Reflexion of `y` axis.
             >>> F = [[1, 0], [0, -1]]
             >>> u = vec2([1, 1])
@@ -312,7 +312,7 @@ class Vector2(Vector):
             Vector2(1, -1)
 
         Returns:
-            affine transformation of vector `u` by matrix `F`.
+            Vector2: Affine transformation of vector `u` by matrix `F`.
         """
         r = Vector2(np.dot(args[0], self))
         if kwargs.get("norm", False):
@@ -379,7 +379,7 @@ class Vector3(Vector):
         azi (float): plunge direction of linear feature in degrees
         inc (float): plunge of linear feature in degrees
 
-    Example:
+    Examples:
         >>> vec()
         >>> vec(1,2,-1)
         >>> vec('y')
@@ -423,7 +423,7 @@ class Vector3(Vector):
 
     @property
     def z(self):
-        """Return z-component of the vector"""
+        """Return z-component of the vector."""
 
         return self._coords[2]
 
@@ -445,7 +445,7 @@ class Vector3(Vector):
         return math.sqrt(self.x**2 + self.y**2 + self.z**2)
 
     def normalized(self):
-        """Returns normalized (unit length) vector"""
+        """Returns normalized (unit length) vector."""
 
         d = self.magnitude()
         if d:
@@ -462,8 +462,9 @@ class Vector3(Vector):
 
         Args:
             other (Vector3): other vector
+
         Returns:
-            Calculate dot product with other vector.
+            float: Dot product of the two vectors.
         """
         other = self._ensure_same(other)
         return self.x * other.x + self.y * other.y + self.z * other.z
@@ -494,8 +495,9 @@ class Vector3(Vector):
 
         Args:
             other (Vector3): other vector
+
         Returns:
-            Calculate cross product with other vector.
+            Vector3: Cross product of the two vectors.
         """
         other = self._ensure_same(other)
         return type(self)(
@@ -505,14 +507,14 @@ class Vector3(Vector):
         )
 
     def slerp(self, other, t):
-        """Return a spherical linear interpolation between self and other vector"""
+        """Return a spherical linear interpolation between self and other vector."""
         other = self._ensure_same(other)
         a, b = Vector3(self), Vector3(other)
         theta = a.angle(b)
         return type(self)(a * sind((1 - t) * theta) + b * sind(t * theta)) / sind(theta)
 
     def lower(self):
-        """Change vector direction to point towards positive Z direction"""
+        """Change vector direction to point towards positive Z direction."""
 
         if self.z < 0:
             return -self
@@ -520,40 +522,40 @@ class Vector3(Vector):
             return self
 
     def is_upper(self):
-        """Return True if vector points towards negative Z direction"""
+        """Return True if vector points towards negative Z direction."""
 
         return self.z < 0
 
     @property
     def geo(self):
-        """Return tuple of plunge direction and signed plunge"""
+        """Return tuple of plunge direction and signed plunge."""
         return vec2geo_linear_signed(self)
 
     @classmethod
     def unit_x(cls):
-        """Create unit length vector in x-direction"""
+        """Create unit length vector in x-direction."""
 
         return cls(1, 0, 0)
 
     @classmethod
     def unit_y(cls):
-        """Create unit length vector in y-direction"""
+        """Create unit length vector in y-direction."""
 
         return cls(0, 1, 0)
 
     @classmethod
     def unit_z(cls):
-        """Create unit length vector in z-direction"""
+        """Create unit length vector in z-direction."""
 
         return cls(0, 0, 1)
 
     @classmethod
     def random(cls):
-        """Create random 3D vector"""
+        """Create random 3D vector."""
         return cls(np.random.randn(3)).normalized()
 
     def rotate(self, axis, theta):
-        """Return the vector rotated around axis through angle theta. Right-hand rule"""
+        """Return the vector rotated around axis through angle theta. Right-hand rule."""
         axis = self._ensure_same(axis)
         v = Vector3(self)  # ensure vector
         k = Vector3(axis.uv())
@@ -564,7 +566,7 @@ class Vector3(Vector):
         )
 
     def angle(self, other):
-        """Return the angle to the vector other"""
+        """Return the angle to the vector other."""
 
         other = self._ensure_same(other)
         return acosd(np.clip(self.uv().dot(other.uv()), -1, 1))
@@ -578,9 +580,8 @@ class Vector3(Vector):
 
         Keyword Args:
             norm: normalize transformed vectors. [True or False] Default False
-            of `self` by `F`
 
-        Example:
+        Examples:
             # Reflexion of `y` axis.
             >>> F = [[1, 0, 0], [0, -1, 0], [0, 0, 1]]
             >>> u = Vector3([1, 1, 1])
@@ -588,7 +589,7 @@ class Vector3(Vector):
             Vector3(1, -1, 1)
 
         Returns:
-            affine transformation of vector `u` by matrix `F`.
+            Vector3: Affine transformation of vector `u` by matrix `F`.
         """
         r = Vector3(np.dot(F, self))
         if kwargs.get("norm", False):

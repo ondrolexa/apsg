@@ -95,7 +95,7 @@ class SDBSession:
         autocommit(bool): if True, each operation is autocommitted.
             Default False
 
-    Example:
+    Examples:
         >>> db = SDBSession('database.sdb', create=True)
 
     """
@@ -159,35 +159,35 @@ class SDBSession:
 
     def commit(self):
         """
-        commit session
+        Commit session.
 
         """
         self.session.commit()
 
     def rollback(self):
         """
-        rollback session
+        Rollback session.
 
         """
         self.session.rollback()
 
     def add(self, obj):
         """
-        add to session
+        Add to session.
 
         """
         self.session.add(obj)
 
     def add_all(self, list_obj):
         """
-        add to session
+        Add all to session.
 
         """
         self.session.add_all(list_obj)
 
     def meta(self, name, **kwargs):
         """
-        Query Meta when no kwargs or insert/update when kwargs provided
+        Query Meta when no kwargs or insert/update when kwargs provided.
 
         Args:
             name (str): meta name
@@ -212,7 +212,7 @@ class SDBSession:
 
     def site(self, name, **kwargs):
         """
-        Query Site when no kwargs or insert/update when kwargs provided
+        Query Site when no kwargs or insert/update when kwargs provided.
 
         Args:
             name (str): site name
@@ -245,7 +245,7 @@ class SDBSession:
 
     def unit(self, name, **kwargs):
         """
-        Query Unit when no kwargs or insert/update when kwargs provided
+        Query Unit when no kwargs or insert/update when kwargs provided.
 
         Args:
             name (str): unit name
@@ -302,7 +302,7 @@ class SDBSession:
 
     def tag(self, name, **kwargs):
         """
-        Query Tag when no kwargs or insert/update when kwargs provided
+        Query Tag when no kwargs or insert/update when kwargs provided.
 
         Args:
             name (str): tag name
@@ -330,7 +330,7 @@ class SDBSession:
 
     def structype(self, structure, **kwargs):
         """
-        Query Structype when no kwargs or insert/update when kwargs provided
+        Query Structype when no kwargs or insert/update when kwargs provided.
 
         Args:
             structure (str): label used for structure
@@ -519,21 +519,21 @@ class SDBSession:
 
     def sites(self):
         """
-        Returns list of all Site instances
+        Returns list of all Site instances.
 
         """
         return self.session.query(Site).all()
 
     def units(self, **kwargs):
         """
-        Returns list of all Unit instances
+        Returns list of all Unit instances.
 
         """
         return self.session.query(Unit).all()
 
     def structypes(self, planar=None):
         """
-        Returns list of Structype instances
+        Returns list of Structype instances.
 
         Keyword Args:
             planar (int): 0 for linear, 1 for planar, None for all. Default None
@@ -547,17 +547,17 @@ class SDBSession:
 
     def tags(self):
         """
-        Returns list of all Tag instances
+        Returns list of all Tag instances.
 
         """
         return self.session.query(Tag).all()
 
     def structdata(self, structype):
         """
-        Returns list of all Structdata instances of given structype
+        Returns list of all Structdata instances of given structype.
 
         Args:
-          structype (str | Structype):  structure to retrieve
+            structype (str | Structype): structure to retrieve.
 
         """
         if isinstance(structype, str):
@@ -575,21 +575,21 @@ class SDBSession:
         """Method to retrieve data from SDB database as ``pandas.DataFrame``.
 
         Args:
-          structype (str | Structype):  structure to retrieve
-          site (dict): keyword args passed to filter site
-          unit (dict): keyword args passed to filter unit
-          tag (dict): keyword args passed to filter tag
-          store (list): list of properties to be included in dataframe.
-              Available values:"id", "x_coord", "y_coord", "site", "unit", "tags"
-              or "geo". Default []
-          expand_tags (bool): If True tags are one hot encoded. Default False
-          apsg (bool): If True structural data are added as APSG features.
-              Default False.
+            structype (str | Structype): structure to retrieve.
+            site (dict): keyword args passed to filter site.
+            unit (dict): keyword args passed to filter unit.
+            tag (dict): keyword args passed to filter tag.
+            store (list): list of properties to be included in dataframe.
+                Available values:"id", "x_coord", "y_coord", "site", "unit", "tags"
+                or "geo". Default [].
+            expand_tags (bool): If True tags are one hot encoded. Default False.
+            apsg (bool): If True structural data are added as APSG features.
+                Default False.
 
-        Example:
-          >> df = db.df("S2")
-          >> df = db.df("S2", unit=dict(name="Main unit"))
-          >> df = db.df("S2", tag=dict(name="AP"))
+        Examples:
+            >> df = db.df("S2")
+            >> df = db.df("S2", unit=dict(name="Main unit"))
+            >> df = db.df("S2", tag=dict(name="AP"))
 
         """
         site = kwargs.get("site", {})
@@ -674,18 +674,18 @@ class SDBSession:
         """Method to retrieve data from SDB database to ``FeatureSet``.
 
         Args:
-          structype (str | Structype):  structure to retrieve
-          site (dict): keyword args passed to filter site
-          unit (dict): keyword args passed to filter unit
-          tag (dict): keyword args passed to filter tag
-          store (list): list of properties to be stored in feature as _attrs
-              Available values:"id", "x_coord", "y_coord", "site", "unit", "tags"
-              or "geo". Default []
+            structype (str | Structype): structure to retrieve.
+            site (dict): keyword args passed to filter site.
+            unit (dict): keyword args passed to filter unit.
+            tag (dict): keyword args passed to filter tag.
+            store (list): list of properties to be stored in feature as _attrs.
+                Available values:"id", "x_coord", "y_coord", "site", "unit", "tags"
+                or "geo". Default [].
 
-        Example:
-          >> g = db.getset("S2")
-          >> g = db.getset("S2", unit=dict(name="Main unit"))
-          >> g = db.getset("S2", tag=dict(name="AP"))
+        Examples:
+            >> g = db.getset("S2")
+            >> g = db.getset("S2", unit=dict(name="Main unit"))
+            >> g = db.getset("S2", tag=dict(name="AP"))
 
         """
         site = kwargs.get("site", {})
@@ -761,14 +761,14 @@ class SDBSession:
         """Method to retrieve data from SDB database to ``PairSet``.
 
         Args:
-          ptype (str | Structype):  planar structure to retrieve
-          ltype (str | Structype):  linear structure to retrieve
+            ptype (str | Structype): planar structure to retrieve.
+            ltype (str | Structype): linear structure to retrieve.
 
         Keyword Args:
-          site (dict): keyword args passed to filter site
-          unit (dict): keyword args passed to filter unit
-          ptag (dict): keyword args passed to filter planar tag
-          ltag (dict): keyword args passed to filter linear tag
+            site (dict): keyword args passed to filter site.
+            unit (dict): keyword args passed to filter unit.
+            ptag (dict): keyword args passed to filter planar tag.
+            ltag (dict): keyword args passed to filter linear tag.
 
         """
         if isinstance(ptype, str):
@@ -825,16 +825,16 @@ class SDBSession:
         """Method to retrieve data from SDB database to ``FaultSet``.
 
         Args:
-          ptype (str | Structype):  planar structure to retrieve
-          ltype (str | Structype):  linear structure to retrieve
-          sense (float or str): sense of movement +/-1 hanging-wall down/up. When str,
-              must be one of 's', 'd', 'n', 'r'.
+            ptype (str | Structype): planar structure to retrieve.
+            ltype (str | Structype): linear structure to retrieve.
+            sense (float or str): sense of movement +/-1 hanging-wall down/up. When str,
+                must be one of 's', 'd', 'n', 'r'.
 
         Keyword Args:
-          site (dict): keyword args passed to filter site
-          unit (dict): keyword args passed to filter unit
-          ptag (dict): keyword args passed to filter planar tag
-          ltag (dict): keyword args passed to filter linear tag
+            site (dict): keyword args passed to filter site.
+            unit (dict): keyword args passed to filter unit.
+            ptag (dict): keyword args passed to filter planar tag.
+            ltag (dict): keyword args passed to filter linear tag.
 
         """
         if isinstance(ptype, str):
