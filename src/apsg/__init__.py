@@ -111,6 +111,9 @@ from apsg.math import (
     Vector3 as vec,
 )
 from apsg.plotting import (
+    FabricPlotStyleFactory as fabricplot_styles,
+)
+from apsg.plotting import (
     FlinnPlot,
     HsuPlot,
     RamsayPlot,
@@ -121,10 +124,7 @@ from apsg.plotting import (
     quicknet,
 )
 from apsg.plotting import (
-    StereoNetStyleFactory as fabricplot_styles,
-)
-from apsg.plotting import (
-    StereoNetStyleFactory as roseplot_styles,
+    RosePlotStyleFactory as roseplot_styles,
 )
 from apsg.plotting import (
     StereoNetStyleFactory as stereonet_styles,

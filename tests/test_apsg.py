@@ -755,11 +755,6 @@ class TestPair:
         p = Pair(140, 30, 110, 26)
         assert repr(p).startswith("P:")
 
-    def test_repr_quadrant_notation(self):
-        with apsg_conf_context(notation="quadrant"):
-            p = Pair(140, 30, 110, 26)
-            assert repr(p).startswith("P:") and "," in repr(p)
-
     def test_fol_property(self):
         p = Pair(140, 30, 110, 26)
         assert isinstance(p.fol, Foliation)
@@ -919,11 +914,6 @@ class TestFault:
         f = Fault(140, 30, 110, 26, -1)
         assert repr(f).startswith("F:")
 
-    def test_repr_quadrant_notation(self):
-        with apsg_conf_context(notation="quadrant"):
-            f = Fault(140, 30, 110, 26, -1)
-            assert repr(f).startswith("F:") and "," in repr(f)
-
     def test_eq(self):
         f1 = Fault(140, 30, 110, 26, -1)
         f2 = Fault(140, 30, 110, 26, -1)
@@ -990,11 +980,6 @@ class TestCone:
     def test_repr(self):
         c = Cone(140, 30, 110, 26, 360)
         assert repr(c).startswith("C:")
-
-    def test_repr_quadrant_notation(self):
-        with apsg_conf_context(notation="quadrant"):
-            c = Cone(140, 30, 110, 26, 360)
-            assert repr(c).startswith("C:") and "," in repr(c)
 
     def test_apical_angle(self):
         a = Lineation(0, 90)

@@ -1,20 +1,21 @@
 # Changelog
 
 ### 1.5.0 (master)
+ * notations refactored, including quadrant
  * Pandas API refactored
- * StereoNet point method added as replacement for both line and pole
+ * StereoNet point method added as a replacement for both line and pole
  * StereoNet plot method using styles implemented
- * Rotation classes derived from deformation gradient class implemented
+ * Rotation classes derived from the deformation gradient class are implemented
  * align method added to featureset to find best rotation
  * Watson statistics added
- * Spherical harmonics are used as default contouring method. Keyword mathod added.
+ * Spherical harmonics are used as the default contouring method. Keyword method added.
  * Fisher statistics improved
- * similary test for vecset implemented
+ * similarly test for vecset implemented
  * stress inversion method added to faultset
  * angular_misfit method added to Fault and FaultSet
  * Roseplot weighting fixed
- * strike method added to planara features
- * from_declination added to defgrad to create rotation correcting magnetic declination
+ * strike method added to planar features
+ * from_declination added to defgrad to create rotation to correct magnetic declination
  * defgrad from_euler, from_quat, euler and quat methods added
  * scaled_eigenvectors bug fixed
  * docs updated

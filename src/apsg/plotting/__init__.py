@@ -9,7 +9,11 @@ from apsg.plotting._plot_artists import (
 from apsg.plotting._roseplot import RosePlot
 from apsg.plotting._stereogrid import StereoGrid
 from apsg.plotting._stereonet import StereoNet, quicknet
-from apsg.plotting._styles import StereoNetStyleFactory
+from apsg.plotting._styles import (
+    FabricPlotStyleFactory,
+    RosePlotStyleFactory,
+    StereoNetStyleFactory,
+)
 
 __all__ = (
     "StereoNet",
@@ -24,4 +28,6 @@ __all__ = (
     "RosePlotArtistFactory",
     "FabricPlotArtistFactory",
     "StereoNetStyleFactory",
+    "RosePlotStyleFactory",
+    "FabricPlotStyleFactory",
 )

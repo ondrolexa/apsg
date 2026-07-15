@@ -324,7 +324,7 @@ class StereoNet_Contour(StereoNet_Artists):
         super().update_kwargs("stereonet_contour")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
-            self.kwargs["label"] = self.args[0].label()  # ty: ignore
+            self.kwargs["label"] = self.args[0].label()
 
 
 class StereoNetArtistFactory:
