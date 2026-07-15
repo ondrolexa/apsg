@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from apsg.config import apsg_conf
+from apsg.config import apsg_conf, apsg_conf_context
 from apsg.feature import (
     ClusterSet as cluster,
 )
@@ -132,6 +132,7 @@ from apsg.plotting import (
 
 __all__ = (
     "apsg_conf",
+    "apsg_conf_context",
     "stereonet_styles",
     "roseplot_styles",
     "fabricplot_styles",

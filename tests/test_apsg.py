@@ -3,8 +3,108 @@ import math
 import pytest
 
 from apsg import cone, dir2, fault, fol, lin, pair
+from apsg.config import apsg_conf_context
 from apsg.feature._geodata import Cone, Direction, Fault, Foliation, Lineation, Pair
+from apsg.helpers._notation import (
+    azi2bearing,
+    bearing2azi,
+    format_quadrant_linear,
+    format_quadrant_planar,
+    parse_quadrant_linear,
+    parse_quadrant_planar,
+)
 from apsg.math._vector import Vector2, Vector3
+
+# ---------------------------------------------------------------------------
+# Quadrant notation helpers
+# ---------------------------------------------------------------------------
+
+
+class TestQuadrantNotation:
+    @pytest.mark.parametrize(
+        "azi,bearing",
+        [
+            (0, "N0E"),
+            (10, "N10E"),
+            (45, "N45E"),
+            (90, "N90E"),
+            (91, "S89E"),
+            (135, "S45E"),
+            (180, "S0E"),
+            (181, "S1W"),
+            (225, "S45W"),
+            (270, "S90W"),
+            (271, "N89W"),
+            (315, "N45W"),
+            (360, "N0E"),
+        ],
+    )
+    def test_azi2bearing(self, azi, bearing):
+        assert azi2bearing(azi) == bearing
+
+    @pytest.mark.parametrize(
+        "bearing,azi",
+        [
+            ("N0E", 0),
+            ("N45E", 45),
+            ("N90E", 90),
+            ("S45E", 135),
+            ("S0E", 180),
+            ("S45W", 225),
+            ("S90W", 270),
+            ("N45W", 315),
+        ],
+    )
+    def test_bearing2azi(self, bearing, azi):
+        assert math.isclose(bearing2azi(bearing), azi)
+
+    def test_bearing2azi_bad_string(self):
+        with pytest.raises(ValueError):
+            bearing2azi("X45E")
+
+    def test_bearing2azi_bad_angle(self):
+        with pytest.raises(ValueError):
+            bearing2azi("N91E")
+
+    @pytest.mark.parametrize(
+        "s,strike,dip",
+        [
+            ("N30E,40NW", 210, 40),
+            ("N80W,75SW", 100, 75),
+        ],
+    )
+    def test_parse_quadrant_planar(self, s, strike, dip):
+        got_strike, got_dip = parse_quadrant_planar(s)
+        assert math.isclose(got_strike, strike)
+        assert math.isclose(got_dip, dip)
+
+    @pytest.mark.parametrize("s", ["N30E,40NW", "N80W,75SW", "N45W,20NE"])
+    def test_format_quadrant_planar_roundtrip(self, s):
+        # Round-trips exactly for strike bearings already given in the canonical
+        # N-quadrant form; a strike is an axial line, so an S-quadrant input
+        # bearing describing the same plane is canonicalized to its N-quadrant
+        # equivalent on formatting (see test_format_quadrant_planar_canonicalizes_strike).
+        assert format_quadrant_planar(*parse_quadrant_planar(s)) == s
+
+    def test_format_quadrant_planar_canonicalizes_strike(self):
+        # 'S45E,20NE' and 'N45W,20NE' describe the identical plane (strike is a
+        # bidirectional line); formatting always prefers the N-quadrant bearing.
+        assert (
+            format_quadrant_planar(*parse_quadrant_planar("S45E,20NE")) == "N45W,20NE"
+        )
+
+    def test_parse_quadrant_planar_bad_string(self):
+        with pytest.raises(ValueError):
+            parse_quadrant_planar("not a measurement")
+
+    @pytest.mark.parametrize("s", ["N45E,30", "S10W,10"])
+    def test_format_quadrant_linear_roundtrip(self, s):
+        assert format_quadrant_linear(*parse_quadrant_linear(s)) == s
+
+    def test_parse_quadrant_linear_bad_string(self):
+        with pytest.raises(ValueError):
+            parse_quadrant_linear("not a measurement")
+
 
 # ---------------------------------------------------------------------------
 # Vector2
@@ -420,9 +520,20 @@ class TestLineation:
     def test_from_string_z(self):
         assert Lineation("z") == Lineation(0, 90)
 
+    def test_from_quadrant_string(self):
+        assert Lineation("N45E,30") == Lineation(45, 30)
+
+    def test_from_string_bad(self):
+        with pytest.raises(TypeError):
+            Lineation("w")
+
     def test_repr(self):
         v = Lineation(110, 26)
         assert repr(v).startswith("L:")
+
+    def test_repr_quadrant_notation(self):
+        with apsg_conf_context(notation="quadrant"):
+            assert repr(Lineation(45, 30)) == "L:N45E,30"
 
     def test_geo(self):
         v = Lineation(110, 26)
@@ -513,9 +624,22 @@ class TestFoliation:
         with pytest.raises(TypeError):
             Foliation("w")
 
+    def test_from_quadrant_string(self):
+        with apsg_conf_context(notation="rhr"):
+            assert Foliation("N30E,40NW") == Foliation(210, 40)
+
+    def test_from_quadrant_string_bad(self):
+        with pytest.raises(TypeError):
+            Foliation("N30E,40")
+
     def test_repr(self):
         f = Foliation(250, 30)
         assert repr(f).startswith("S:")
+
+    def test_repr_quadrant_notation(self):
+        with apsg_conf_context(notation="quadrant"):
+            assert repr(Foliation("N30E,40NW")) == "S:N30E,40NW"
+            assert repr(Foliation("N80W,75SW")) == "S:N80W,75SW"
 
     def test_geo(self):
         f = Foliation(250, 30)
@@ -630,6 +754,11 @@ class TestPair:
     def test_repr(self):
         p = Pair(140, 30, 110, 26)
         assert repr(p).startswith("P:")
+
+    def test_repr_quadrant_notation(self):
+        with apsg_conf_context(notation="quadrant"):
+            p = Pair(140, 30, 110, 26)
+            assert repr(p).startswith("P:") and "," in repr(p)
 
     def test_fol_property(self):
         p = Pair(140, 30, 110, 26)
@@ -790,6 +919,11 @@ class TestFault:
         f = Fault(140, 30, 110, 26, -1)
         assert repr(f).startswith("F:")
 
+    def test_repr_quadrant_notation(self):
+        with apsg_conf_context(notation="quadrant"):
+            f = Fault(140, 30, 110, 26, -1)
+            assert repr(f).startswith("F:") and "," in repr(f)
+
     def test_eq(self):
         f1 = Fault(140, 30, 110, 26, -1)
         f2 = Fault(140, 30, 110, 26, -1)
@@ -856,6 +990,11 @@ class TestCone:
     def test_repr(self):
         c = Cone(140, 30, 110, 26, 360)
         assert repr(c).startswith("C:")
+
+    def test_repr_quadrant_notation(self):
+        with apsg_conf_context(notation="quadrant"):
+            c = Cone(140, 30, 110, 26, 360)
+            assert repr(c).startswith("C:") and "," in repr(c)
 
     def test_apical_angle(self):
         a = Lineation(0, 90)

@@ -18,17 +18,19 @@ classifiers = [
 dependencies = ["numpy", "matplotlib>=3.9", "scipy", "sqlalchemy", "pandas", "pygeomag"]
 
 [project.optional-dependencies]
-extra = ["jupyterlab", "pyqt6"]
+lab = ["jupyterlab"]
 tests = ["pytest", "pytest-cov"]
 docs = [
-    "sphinx",
-    "sphinx_rtd_theme",
-    "readthedocs-sphinx-search",
-    "ipykernel",
+    "sphinx>=7.0",
+    "shibuya",
+    "sphinx-copybutton",
+    "sphinx-design",
     "nbsphinx",
+    "pandoc",
+    "ipykernel",
     "autodocsumm",
 ]
-dev = ["apsg[extra,tests,docs]", "ruff"]
+dev = ["apsg[lab,tests,docs]", "ruff"]
 
 [project.urls]
 Homepage = "https://github.com/ondrolexa/apsg"

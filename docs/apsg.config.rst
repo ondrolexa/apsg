@@ -64,7 +64,7 @@ AppConfig
       - Description
     * - ``notation``
       - ``"dd"``
-      - Notation for geological measurements (``"dd"`` or ``"rhr"``)
+      - Notation for geological measurements (``"dd"``, ``"rhr"`` or ``"quadrant"``)
     * - ``vec2geo``
       - ``False``
       - Represent ``Vector3`` using geological notation

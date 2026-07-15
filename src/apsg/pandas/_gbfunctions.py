@@ -1,8 +1,9 @@
 """
-GroupBy helper functions for APSG feature columns.
+GroupBy helper functions for APSG feature accessors.
 
-Each function takes a ``pd.Series`` sub-group (from ``df.groupby(...)["col"]``),
-calls ``.G()`` to obtain a ``FeatureSet``, then chains APSG methods on it.
+Each function takes a ``FeatureSet`` directly (the argument
+``df.<accessor>.groupby(by).apply/transform/aggregate(func)`` passes to
+``func`` for each group), and chains APSG methods on it.
 
 Import via::
 
@@ -13,43 +14,42 @@ write their own:
 
 ::
 
-    def my_apply_func(series):
+    def my_apply_func(fs):
         \"""Compute … for each group.
 
         Args:
-            series (pd.Series): Sub-group Series containing an APSG feature
-                array (Vec3Array, LinArray, FolArray, or FaultArray).
+            fs (FeatureSet): Vector3Set/Vector2Set/LineationSet/FoliationSet/
+                FaultSet group.
 
         Returns:
             Lineation: Single scalar per group.
 
         Examples:
-            >>> df.groupby("group")["col"].G.apply(my_apply_func)
+            >>> df.lin.groupby("group").apply(my_apply_func)
         \"""
-        return series.G().some_method()
+        return fs.some_method()
 
 
-    def my_transform_func(series):
+    def my_transform_func(fs):
         \"""Compute … per element within each group.
 
         Args:
-            series (pd.Series): Sub-group Series containing an APSG feature
-                array.
+            fs (FeatureSet): the group's FeatureSet.
 
         Returns:
             numpy.ndarray: Same-length array of per-element results.
 
         Examples:
-            >>> df.groupby("group")["col"].G.transform(my_transform_func)
+            >>> df.lin.groupby("group").transform(my_transform_func)
         \"""
-        return series.G().some_elementwise_method()
+        return fs.some_elementwise_method()
 
 
     # Functions with extra parameters pass through *args / **kwargs.
-    def my_param_func(series, alpha):
-        return series.G().some_method(alpha=alpha)
+    def my_param_func(fs, alpha):
+        return fs.some_method(alpha=alpha)
 
-    >>> df.groupby("group")["col"].G.apply(my_param_func, alpha=95)
+    >>> df.lin.groupby("group").apply(my_param_func, alpha=95)
 """
 
 # ---------------------------------------------------------------------------
@@ -71,40 +71,40 @@ from apsg.feature import (
 # ---------------------------------------------------------------------------
 
 
-def resultant(series):
+def resultant(fs):
     """Resultant vector of a group.
 
     Args:
-        series (pd.Series): Sub-group Series containing an APSG feature
-            array (Vec3Array, LinArray, FolArray, or FaultArray).
+        fs (FeatureSet): Vector3Set/Vector2Set/LineationSet/FoliationSet/
+            FaultSet group.
 
     Returns:
-        Vector3 | Lineation | Foliation | Fault: Resultant of the group.
-        The return type matches the input feature type
+        Vector3 | Vector2 | Lineation | Foliation | Fault: Resultant of the
+        group. The return type matches the input feature type
         (e.g. ``LineationSet.R()`` returns ``Lineation``).
 
     Examples:
-        >>> df.groupby("structure")["lins"].G.apply(gbf.resultant)
+        >>> df.lin.groupby("structure").apply(gbf.resultant)
     """
-    return series.G().R()
+    return fs.R()
 
 
-def resultant_magnitude(series):
+def resultant_magnitude(fs):
     """Length (magnitude) of the resultant vector of a group.
 
     Args:
-        series (pd.Series): Sub-group Series containing an APSG feature array.
+        fs (FeatureSet): the group's FeatureSet.
 
     Returns:
         float: Magnitude of the resultant.
 
     Examples:
-        >>> df.groupby("structure")["lins"].G.apply(gbf.resultant_magnitude)
+        >>> df.lin.groupby("structure").apply(gbf.resultant_magnitude)
     """
-    return abs(series.G().R())
+    return abs(fs.R())
 
 
-def mean(series):
+def mean(fs):
     """Mean orientation of a group.
 
     The mean is computed differently based on the feature type:
@@ -119,8 +119,7 @@ def mean(series):
     - ``Fault``: raises ``TypeError``
 
     Args:
-        series (pd.Series): Sub-group Series containing an APSG feature
-            array.
+        fs (FeatureSet): the group's FeatureSet.
 
     Returns:
         Vector2 | Vector3 | Lineation | Foliation | float:
@@ -128,26 +127,25 @@ def mean(series):
         feature type (see description above).
 
     Raises:
-        TypeError: If the series contains Fault or unsupported feature data.
+        TypeError: If `fs` is a FaultSet or an unsupported feature type.
 
     Examples:
-        >>> df.groupby("structure")["vecs"].G.apply(gbf.mean)
-        >>> df.groupby("structure")["dirs"].G.apply(gbf.mean)
-        >>> df.groupby("structure")["lins"].G.apply(gbf.mean)
-        >>> df.groupby("structure")["fols"].G.apply(gbf.mean)
+        >>> df.vec.groupby("structure").apply(gbf.mean)
+        >>> df.dir.groupby("structure").apply(gbf.mean)
+        >>> df.lin.groupby("structure").apply(gbf.mean)
+        >>> df.fol.groupby("structure").apply(gbf.mean)
     """
-    data = series.G()
-    if isinstance(data, Direction2Set):
-        return data.ortensor().orientation
-    if isinstance(data, LineationSet):
-        return data.ortensor().eigenlins(which=0)
-    if isinstance(data, FoliationSet):
-        return data.ortensor().eigenfols(which=0)
-    if isinstance(data, (Vector2Set, Vector3Set)):
-        return data.R(mean=True)
-    if isinstance(data, FaultSet):
+    if isinstance(fs, Direction2Set):
+        return fs.ortensor().orientation
+    if isinstance(fs, LineationSet):
+        return fs.ortensor().eigenlins(which=0)
+    if isinstance(fs, FoliationSet):
+        return fs.ortensor().eigenfols(which=0)
+    if isinstance(fs, (Vector2Set, Vector3Set)):
+        return fs.R(mean=True)
+    if isinstance(fs, FaultSet):
         raise TypeError("mean is not defined for Fault data")
-    raise TypeError(f"mean is not defined for {type(data).__name__}")
+    raise TypeError(f"mean is not defined for {type(fs).__name__}")
 
 
 # ---------------------------------------------------------------------------
@@ -155,33 +153,31 @@ def mean(series):
 # ---------------------------------------------------------------------------
 
 
-def angle_to_mean(series):
+def angle_to_mean(fs):
     """Per-element angular distance (in degrees) to the group mean.
 
     The mean is computed via :func:`mean`, which dispatches based on
-    the feature type in the series.
+    the feature type of `fs`.
 
     Args:
-        series (pd.Series): Sub-group Series containing an APSG feature
-            array.
+        fs (FeatureSet): the group's FeatureSet.
 
     Returns:
         numpy.ndarray: Array of angles in degrees, one per element in the
         group.
 
     Raises:
-        TypeError: If the series contains Fault or unsupported data.
+        TypeError: If `fs` is a FaultSet or unsupported feature type.
 
     Examples:
-        >>> df.groupby("structure")["lins"].G.transform(gbf.angle_to_mean)
-        >>> df.groupby("structure")["vecs"].G.transform(gbf.angle_to_mean)
-        >>> df.groupby("structure")["dirs"].G.transform(gbf.angle_to_mean)
+        >>> df.lin.groupby("structure").transform(gbf.angle_to_mean)
+        >>> df.vec.groupby("structure").transform(gbf.angle_to_mean)
+        >>> df.dir.groupby("structure").transform(gbf.angle_to_mean)
     """
-    data = series.G()
-    m = mean(series)
-    if isinstance(data, Direction2Set):
+    m = mean(fs)
+    if isinstance(fs, Direction2Set):
         m = Direction(m)
-    return data.angle(m)
+    return fs.angle(m)
 
 
 # ---------------------------------------------------------------------------
@@ -189,7 +185,7 @@ def angle_to_mean(series):
 # ---------------------------------------------------------------------------
 
 
-def eigenlin(series, which=0):
+def eigenlin(fs, which=0):
     """N-th eigenvector of the orientation tensor as a ``Lineation``.
 
     This is a generalised version of :func:`mean` for Lineation data that accepts
@@ -197,7 +193,7 @@ def eigenlin(series, which=0):
     groupby functions with additional arguments.
 
     Args:
-        series (pd.Series): Sub-group Series containing an APSG feature array.
+        fs (FeatureSet): the group's FeatureSet.
         which (int, optional): Eigenvector index:
             0 = major, 1 = intermediate, 2 = minor. Defaults to 0.
 
@@ -205,14 +201,14 @@ def eigenlin(series, which=0):
         Lineation: The requested eigenvector.
 
     Examples:
-        >>> df.groupby("structure")["lins"].G.apply(gbf.eigenlin)
-        >>> df.groupby("structure")["lins"].G.apply(gbf.eigenlin, which=1)
+        >>> df.lin.groupby("structure").apply(gbf.eigenlin)
+        >>> df.lin.groupby("structure").apply(gbf.eigenlin, which=1)
 
         Aggregate with multiple ``which`` values via lambdas:
 
-        >>> df.groupby("group")["lins"].G.aggregate([
+        >>> df.lin.groupby("group").aggregate([
         ...     ("major", lambda s: gbf.eigenlin(s, which=0)),
         ...     ("minor", lambda s: gbf.eigenlin(s, which=2)),
         ... ])
     """
-    return series.G().ortensor().eigenlins(which=which)
+    return fs.ortensor().eigenlins(which=which)

@@ -8,14 +8,13 @@ from apsg import (
     dir2set,
     fault,
     fol,
+    folset,
     lin,
+    linset,
     vec,
     vec2,
     vec2set,
     vecset,
-    folset,
-    linset,
-    faultset,
 )
 from apsg.pandas import (
     DirArray,
@@ -26,7 +25,6 @@ from apsg.pandas import (
     Vec3Array,
     gbf,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -87,16 +85,6 @@ def dir_df():
 
 
 @pytest.fixture
-def vec2set_f():
-    return vec2set([vec2(1, 0), vec2(0, 1)])
-
-
-@pytest.fixture
-def dir2set_f():
-    return dir2set([dir2(0), dir2(90)])
-
-
-@pytest.fixture
 def vec2_array():
     return Vec2Array([vec2(1, 0), vec2(0, 1)])
 
@@ -104,31 +92,6 @@ def vec2_array():
 @pytest.fixture
 def dir_array():
     return DirArray([dir2(0), dir2(90)])
-
-
-@pytest.fixture
-def vecset_f():
-    return vecset([vec(1, 0, 0), vec(0, 1, 0)])
-
-
-@pytest.fixture
-def folset_f():
-    return folset([fol(250, 30), fol(100, 60)])
-
-
-@pytest.fixture
-def linset_f():
-    return linset([lin(110, 26), lin(200, 45)])
-
-
-@pytest.fixture
-def faultset_f():
-    return faultset(
-        [
-            fault(140, 30, 110, 26, -1),
-            fault(250, 45, 200, 30, 1),
-        ]
-    )
 
 
 @pytest.fixture
@@ -285,350 +248,6 @@ class TestFaultArray:
 
 
 # ---------------------------------------------------------------------------
-# APSGAccessor (.apsg)
-# ---------------------------------------------------------------------------
-
-
-class TestAPSGAccessor:
-    def test_create_vecs(self, vec_df):
-        res = vec_df.apsg.create_vecs()
-        assert "vecs" in res.columns
-        assert isinstance(res["vecs"].array, Vec3Array)
-
-    def test_create_vecs_custom_columns(self, geo_df):
-        res = geo_df.apsg.create_vecs(columns=["azi", "inc"], name="v")
-        assert "v" in res.columns
-        assert len(res) == 2
-
-    def test_create_vecs_custom_name(self, vec_df):
-        res = vec_df.apsg.create_vecs(name="myvecs")
-        assert "myvecs" in res.columns
-
-    def test_add_vecs(self, vec_df, vecset_f):
-        res = vec_df.apsg.add_vecs(vecset_f)
-        assert "vecs" in res.columns
-        assert isinstance(res["vecs"].array, Vec3Array)
-
-    def test_add_vecs_bad_type(self, vec_df):
-        with pytest.raises(TypeError, match="must be Vector3Set"):
-            vec_df.apsg.add_vecs("not_a_set")
-
-    def test_create_fols(self, geo_df):
-        res = geo_df.apsg.create_fols()
-        assert "fols" in res.columns
-        assert isinstance(res["fols"].array, FolArray)
-
-    def test_add_fols(self, geo_df, folset_f):
-        res = geo_df.apsg.add_fols(folset_f)
-        assert "fols" in res.columns
-
-    def test_add_fols_bad_type(self, geo_df):
-        with pytest.raises(TypeError, match="must be FoliationSet"):
-            geo_df.apsg.add_fols("bad")
-
-    def test_create_lins(self, geo_df):
-        res = geo_df.apsg.create_lins()
-        assert "lins" in res.columns
-        assert isinstance(res["lins"].array, LinArray)
-
-    def test_add_lins(self, geo_df, linset_f):
-        res = geo_df.apsg.add_lins(linset_f)
-        assert "lins" in res.columns
-
-    def test_add_lins_bad_type(self, geo_df):
-        with pytest.raises(TypeError, match="must be LineationSet"):
-            geo_df.apsg.add_lins("bad")
-
-    def test_create_faults(self, fault_df):
-        res = fault_df.apsg.create_faults()
-        assert "faults" in res.columns
-        assert isinstance(res["faults"].array, FaultArray)
-
-    def test_add_faults(self, fault_df, faultset_f):
-        res = fault_df.apsg.add_faults(faultset_f)
-        assert "faults" in res.columns
-
-    def test_add_faults_bad_type(self, fault_df):
-        with pytest.raises(TypeError, match="must be FaultSet"):
-            fault_df.apsg.add_faults("bad")
-
-    def test_create_does_not_mutate_original(self, vec_df):
-        orig_cols = list(vec_df.columns)
-        _ = vec_df.apsg.create_vecs()
-        assert list(vec_df.columns) == orig_cols
-
-    def test_add_does_not_mutate_original(self, vec_df, vecset_f):
-        orig_cols = list(vec_df.columns)
-        _ = vec_df.apsg.add_vecs(vecset_f)
-        assert list(vec_df.columns) == orig_cols
-
-
-# ---------------------------------------------------------------------------
-# GAccessor — Series accessor .G()
-# ---------------------------------------------------------------------------
-
-
-class TestVec3Accessor:
-    def test_G(self, vec_df):
-        s = vec_df.apsg.create_vecs()["vecs"]
-        g = s.G()
-        assert isinstance(g, vecset)
-        assert g.name == "vecs"
-
-    def test_G_fails_on_non_feature_series(self):
-        s = pd.Series([1, 2, 3])
-        with pytest.raises(AttributeError, match="APSG feature array"):
-            s.G()
-
-    def test_R(self, vec_df):
-        s = vec_df.apsg.create_vecs()["vecs"]
-        r = s.G().R()
-        assert isinstance(r, vec)
-
-    def test_fisher_k(self, geo_df):
-        s = geo_df.apsg.create_lins()["lins"]
-        k = s.G().fisher_statistics()["k"]
-        assert isinstance(k, float)
-
-    def test_fisher_csd(self, geo_df):
-        s = geo_df.apsg.create_lins()["lins"]
-        csd = s.G().fisher_statistics()["csd"]
-        assert isinstance(csd, float)
-
-    def test_fisher_alpha(self, geo_df):
-        s = geo_df.apsg.create_lins()["lins"]
-        alpha = s.G().fisher_statistics()["alpha"]
-        assert isinstance(alpha, float)
-
-    def test_fisher_alpha_custom_level(self, geo_df):
-        s = geo_df.apsg.create_lins()["lins"]
-        alpha = s.G().fisher_statistics(level=0.99)["alpha"]
-        assert isinstance(alpha, float)
-
-    def test_var(self, geo_df):
-        s = geo_df.apsg.create_lins()["lins"]
-        v = s.G().var()
-        assert isinstance(v, float)
-
-    def test_delta(self, geo_df):
-        s = geo_df.apsg.create_lins()["lins"]
-        d = s.G().delta()
-        assert isinstance(d, float)
-
-    def test_rdegree(self, geo_df):
-        s = geo_df.apsg.create_lins()["lins"]
-        r = s.G().rdegree()
-        assert isinstance(r, float)
-
-    def test_ortensor(self, geo_df):
-        s = geo_df.apsg.create_lins()["lins"]
-        ot = s.G().ortensor()
-        assert ot is not None
-
-
-class TestFolAccessor:
-    def test_G(self, geo_df):
-        s = geo_df.apsg.create_fols()["fols"]
-        g = s.G()
-        assert isinstance(g, folset)
-        assert g.name == "fols"
-
-    def test_R(self, geo_df):
-        s = geo_df.apsg.create_fols()["fols"]
-        r = s.G().R()
-        assert isinstance(r, fol)
-
-    def test_stat_methods(self, geo_df):
-        s = geo_df.apsg.create_fols()["fols"]
-        assert isinstance(s.G().R(), fol)
-        assert isinstance(s.G().fisher_statistics()["k"], float)
-
-
-class TestLinAccessor:
-    def test_G(self, geo_df):
-        s = geo_df.apsg.create_lins()["lins"]
-        g = s.G()
-        assert isinstance(g, linset)
-        assert g.name == "lins"
-
-    def test_R(self, geo_df):
-        s = geo_df.apsg.create_lins()["lins"]
-        r = s.G().R()
-        assert isinstance(r, lin)
-
-    def test_stat_methods(self, geo_df):
-        s = geo_df.apsg.create_lins()["lins"]
-        assert isinstance(s.G().R(), lin)
-        assert isinstance(s.G().fisher_statistics()["k"], float)
-
-
-class TestFaultAccessor:
-    def test_G(self, fault_df):
-        s = fault_df.apsg.create_faults()["faults"]
-        g = s.G()
-        assert isinstance(g, faultset)
-        assert g.name == "faults"
-
-    def test_ortensor(self, fault_df):
-        s = fault_df.apsg.create_faults()["faults"]
-        ot = s.G().ortensor()
-        assert ot is not None
-
-
-# ---------------------------------------------------------------------------
-# Multi-column scenario
-# ---------------------------------------------------------------------------
-
-
-class TestMultiColumn:
-    def test_two_lin_columns(self, geo_df):
-        df = geo_df.apsg.create_lins(name="L1").apsg.create_lins(name="L2")
-        assert isinstance(df.L1.G(), linset)
-        assert isinstance(df.L2.G(), linset)
-        assert df.L1.G().name == "L1"
-        assert df.L2.G().name == "L2"
-
-    def test_lin_and_fol(self, geo_df):
-        df = geo_df.apsg.create_lins(name="L1").apsg.create_fols(name="F1")
-        assert isinstance(df.L1.G(), linset)
-        assert isinstance(df.F1.G(), folset)
-
-    def test_mixed_types(self, vec_df, geo_df):
-        df = pd.concat([vec_df, geo_df], axis=1)
-        df = df.apsg.create_vecs(name="V").apsg.create_lins(name="L")
-        assert isinstance(df.V.G(), vecset)
-        assert isinstance(df.L.G(), linset)
-
-
-# ---------------------------------------------------------------------------
-# Invalid name warning
-# ---------------------------------------------------------------------------
-
-
-class TestInvalidNameWarning:
-    def test_bracket_access_on_non_identifier_name(self, geo_df):
-        df = geo_df.apsg.create_lins(name="my lins")
-        g = df["my lins"].G()
-        assert isinstance(g, linset)
-
-
-# ---------------------------------------------------------------------------
-# GAccessorGroupBy — SeriesGroupBy accessor .G.apply()
-# ---------------------------------------------------------------------------
-
-
-class TestGAccessorGroupBy:
-    def test_apply_lin(self, structure_df):
-        df = structure_df.apsg.create_lins()
-
-        def first_lin(s):
-            return s.G().ortensor().eigenlins(which=0)
-
-        result = df.groupby("structure")["lins"].G.apply(first_lin)
-        assert result.dtype.name == "lin"
-
-    def test_apply_fol(self, structure_df):
-        df = structure_df.apsg.create_fols()
-
-        def first_fol(s):
-            return s.G().ortensor().eigenfols(which=0)
-
-        result = df.groupby("structure")["fols"].G.apply(first_fol)
-        assert result.dtype.name == "fol"
-
-    def test_apply_vec(self, structure_df):
-        df = structure_df.apsg.create_vecs(columns=["azi", "inc"])
-
-        def first_vec(s):
-            return s.G().R()
-
-        result = df.groupby("structure")["vecs"].G.apply(first_vec)
-        assert result.dtype.name == "vec"
-
-    def test_apply_non_apsg_result(self, structure_df):
-        df = structure_df.apsg.create_lins()
-        result = df.groupby("structure")["lins"].G.apply(lambda s: len(s))
-        assert result.dtype.name == "int64"
-
-    def test_apply_empty_group(self, structure_df):
-        df = structure_df.apsg.create_lins()
-        sub = df[df["structure"] == "L3"]
-        result = sub.groupby("structure")["lins"].G.apply(lambda s: s.G().R())
-        assert isinstance(result, pd.Series)
-
-    def test_apply_axis_label_preserved(self, structure_df):
-        df = structure_df.apsg.create_lins()
-        result = df.groupby("structure")["lins"].G.apply(lambda s: s.G().R())
-        assert list(result.index) == ["L3", "S1"]
-
-    def test_apply_with_args(self, structure_df):
-        df = structure_df.apsg.create_lins()
-
-        def pick(s, which):
-            return s.G().ortensor().eigenlins(which=which)
-
-        result = df.groupby("structure")["lins"].G.apply(pick, which=0)
-        assert result.dtype.name == "lin"
-
-    # ------------------------------------------------------------------ #
-    # aggregate / agg
-    # ------------------------------------------------------------------ #
-
-    def test_aggregate_lin(self, structure_df):
-        df = structure_df.apsg.create_lins()
-
-        def first_lin(s):
-            return s.G().ortensor().eigenlins(which=0)
-
-        result = df.groupby("structure")["lins"].G.aggregate(first_lin)
-        assert result.dtype.name == "lin"
-
-    def test_aggregate_non_apsg_result(self, structure_df):
-        df = structure_df.apsg.create_lins()
-        result = df.groupby("structure")["lins"].G.aggregate(len)
-        assert result.dtype.name == "int64"
-
-    def test_agg_lin(self, structure_df):
-        df = structure_df.apsg.create_lins()
-
-        def first_lin(s):
-            return s.G().ortensor().eigenlins(which=0)
-
-        result = df.groupby("structure")["lins"].G.agg(first_lin)
-        assert result.dtype.name == "lin"
-
-    def test_agg_list_of_functions(self, structure_df):
-        df = structure_df.apsg.create_lins()
-        result = df.groupby("structure")["lins"].G.agg([len, "count"])
-        assert isinstance(result, pd.DataFrame)
-        assert list(result.columns) == ["len", "count"]
-
-    # ------------------------------------------------------------------ #
-    # transform
-    # ------------------------------------------------------------------ #
-
-    def test_transform_scalar_result(self, structure_df):
-        df = structure_df.apsg.create_lins()
-
-        def my_transform_scalar(s):
-            return s.G().angle(s.G().R())
-
-        result = df.groupby("structure")["lins"].G.transform(my_transform_scalar)
-        assert result.dtype.name == "float64"
-        assert len(result) == len(df)
-
-    def test_transform_vector_result(self, structure_df):
-        df = structure_df.apsg.create_lins()
-
-        def my_transform_vector(s):
-            return s.G().cross(s.G().R())
-
-        result = df.groupby("structure")["lins"].G.transform(my_transform_vector)
-        assert result.dtype.name == "fol"
-        assert len(result) == len(df)
-
-
-# ---------------------------------------------------------------------------
 # Vec2Array — extension array
 # ---------------------------------------------------------------------------
 
@@ -746,256 +365,491 @@ class TestDirArray:
 
 
 # ---------------------------------------------------------------------------
-# Vec2Accessor — G accessor
+# VecAccessor (.vec)
+# ---------------------------------------------------------------------------
+
+
+class TestVecAccessor:
+    def test_default_call(self, vec_df):
+        fs = vec_df.vec()
+        assert isinstance(fs, vecset)
+        assert len(fs) == 2
+
+    def test_set_columns_custom(self, geo_df):
+        # vec accessor can be repointed at azi/inc-named columns too
+        geo_df.vec.set_columns(x="azi", y="inc", z="azi")
+        fs = geo_df.vec()
+        assert isinstance(fs, vecset)
+        assert len(fs) == 2
+
+    def test_set_columns_invalid_kwarg_raises(self, vec_df):
+        with pytest.raises(TypeError, match="Unknown column parameter"):
+            vec_df.vec.set_columns(bogus="x")
+
+    def test_set_columns_sticks_across_accesses(self, vec_df):
+        vec_df.vec.set_columns(x="y", y="x", z="z")
+        assert vec_df.vec._columns == {"x": "y", "y": "x", "z": "z"}
+
+    def test_set_columns_independent_per_copy(self, vec_df):
+        other = vec_df.copy()
+        other.vec.set_columns(x="y")
+        assert vec_df.vec._columns["x"] == "x"
+        assert other.vec._columns["x"] == "y"
+
+    def test_nan_row_skipped(self):
+        df = pd.DataFrame({"x": [1.0, np.nan], "y": [0.0, 1.0], "z": [0.0, 0.0]})
+        fs = df.vec()
+        assert len(fs) == 1
+
+    def test_plot_default(self, vec_df):
+        p = vec_df.vec.plot(show=False)
+        assert p is not None
+
+    def test_plot_custom_kind(self, vec_df):
+        p = vec_df.vec.plot(kind="vector", show=False)
+        assert p is not None
+
+
+# ---------------------------------------------------------------------------
+# Vec2Accessor (.vec2)
 # ---------------------------------------------------------------------------
 
 
 class TestVec2Accessor:
-    def test_G(self, vec2_df):
-        s = vec2_df.apsg.create_vecs2()["vecs2"]
-        g = s.G()
-        assert isinstance(g, vec2set)
-
-    def test_G_create(self, vec2_df):
-        s = vec2_df.apsg.create_vecs2()["vecs2"]
-        assert isinstance(s.array, Vec2Array)
-        assert len(s) == 2
-
-    def test_G_add(self, vec2set_f):
-        df = pd.DataFrame({"id": [1, 2]})
-        df = df.apsg.add_vecs2(vec2set_f)
-        assert isinstance(df.vecs2.array, Vec2Array)
-        assert len(df.vecs2) == 2
+    def test_default_call(self, vec2_df):
+        fs = vec2_df.vec2()
+        assert isinstance(fs, vec2set)
+        assert len(fs) == 2
 
     def test_R(self, vec2_df):
-        s = vec2_df.apsg.create_vecs2()["vecs2"]
-        r = s.G().R()
+        r = vec2_df.vec2().R()
         assert isinstance(r, vec2)
 
     def test_var(self, vec2_df):
-        s = vec2_df.apsg.create_vecs2()["vecs2"]
-        v = s.G().var()
+        v = vec2_df.vec2().var()
         assert isinstance(v, float)
 
     def test_ortensor(self, vec2_df):
-        s = vec2_df.apsg.create_vecs2()["vecs2"]
-        ot = s.G().ortensor()
+        ot = vec2_df.vec2().ortensor()
         assert ot is not None
+
+    def test_plot_default(self, vec2_df):
+        p = vec2_df.vec2.plot(show=False)
+        assert p is not None
+
+    def test_plot_kind(self, vec2_df):
+        p = vec2_df.vec2.plot(kind="pdf", show=False)
+        assert p is not None
+
+    def test_plot_kws(self, vec2_df):
+        p = vec2_df.vec2.plot(plot_kws={"bins": 12}, kind="bar", show=False)
+        assert p is not None
 
 
 # ---------------------------------------------------------------------------
-# DirAccessor — G accessor
+# DirAccessor (.dir)
 # ---------------------------------------------------------------------------
 
 
 class TestDirAccessor:
-    def test_G(self, dir_df):
-        s = dir_df.apsg.create_dirs()["dirs"]
-        g = s.G()
-        assert isinstance(g, dir2set)
-
-    def test_G_create(self, dir_df):
-        s = dir_df.apsg.create_dirs()["dirs"]
-        assert isinstance(s.array, DirArray)
-        assert len(s) == 2
-
-    def test_G_add(self, dir2set_f):
-        df = pd.DataFrame({"id": [1, 2]})
-        df = df.apsg.add_dirs(dir2set_f)
-        assert isinstance(df.dirs.array, DirArray)
-        assert len(df.dirs) == 2
+    def test_default_call(self, dir_df):
+        fs = dir_df.dir()
+        assert isinstance(fs, dir2set)
+        assert len(fs) == 2
 
     def test_R(self, dir_df):
-        s = dir_df.apsg.create_dirs()["dirs"]
-        r = s.G().R()
+        r = dir_df.dir().R()
         assert isinstance(r, dir2)
 
     def test_var(self, dir_df):
-        s = dir_df.apsg.create_dirs()["dirs"]
-        v = s.G().var()
+        v = dir_df.dir().var()
         assert isinstance(v, float)
 
+    def test_plot_default(self, dir_df):
+        p = dir_df.dir.plot(show=False)
+        assert p is not None
+
+    def test_plot_kind(self, dir_df):
+        p = dir_df.dir.plot(kind="bar", show=False)
+        assert p is not None
+
+    def test_plot_kws(self, dir_df):
+        p = dir_df.dir.plot(plot_kws={"bins": 12}, show=False)
+        assert p is not None
+
 
 # ---------------------------------------------------------------------------
-# Vec2 GroupBy
+# FolAccessor (.fol)
 # ---------------------------------------------------------------------------
+
+
+class TestFolAccessor:
+    def test_default_call(self, geo_df):
+        fs = geo_df.fol()
+        assert isinstance(fs, folset)
+        assert len(fs) == 2
+
+    def test_R(self, geo_df):
+        r = geo_df.fol().R()
+        assert isinstance(r, fol)
+
+    def test_stat_methods(self, geo_df):
+        assert isinstance(geo_df.fol().R(), fol)
+        assert isinstance(geo_df.fol().fisher_statistics()["k"], float)
+
+    def test_set_columns_and_wide_format(self):
+        df = pd.DataFrame(
+            {"S1_azi": [10], "S1_inc": [20], "S2_azi": [30], "S2_inc": [40]}
+        )
+        df.fol.set_columns(azi="S1_azi", inc="S1_inc")
+        s1 = df.fol()
+        df.fol.set_columns(azi="S2_azi", inc="S2_inc")
+        s2 = df.fol()
+        assert list(s1) == [fol(10, 20)]
+        assert list(s2) == [fol(30, 40)]
+
+    def test_plot_default(self, geo_df):
+        p = geo_df.fol.plot(show=False)
+        assert p is not None
+
+    def test_plot_kind(self, geo_df):
+        p = geo_df.fol.plot(kind="pole", show=False)
+        assert p is not None
+
+
+# ---------------------------------------------------------------------------
+# LinAccessor (.lin)
+# ---------------------------------------------------------------------------
+
+
+class TestLinAccessor:
+    def test_default_call(self, geo_df):
+        fs = geo_df.lin()
+        assert isinstance(fs, linset)
+        assert len(fs) == 2
+
+    def test_name_defaults_to_accessor_name(self, geo_df):
+        assert geo_df.lin().name == "lin"
+
+    def test_name_override(self, geo_df):
+        assert geo_df.lin(name="custom").name == "custom"
+
+    def test_R(self, geo_df):
+        r = geo_df.lin().R()
+        assert isinstance(r, lin)
+
+    def test_stat_methods(self, geo_df):
+        assert isinstance(geo_df.lin().R(), lin)
+        assert isinstance(geo_df.lin().fisher_statistics()["k"], float)
+        assert isinstance(geo_df.lin().fisher_statistics(level=0.99)["alpha"], float)
+        assert isinstance(geo_df.lin().var(), float)
+        assert isinstance(geo_df.lin().delta(), float)
+        assert isinstance(geo_df.lin().rdegree(), float)
+        assert geo_df.lin().ortensor() is not None
+
+    def test_set_columns_custom(self):
+        df = pd.DataFrame({"trend": [110, 200], "plunge": [26, 45]})
+        df.lin.set_columns(azi="trend", inc="plunge")
+        fs = df.lin()
+        assert isinstance(fs, linset)
+        assert len(fs) == 2
+
+    def test_set_columns_invalid_kwarg_raises(self, geo_df):
+        with pytest.raises(TypeError, match="Unknown column parameter"):
+            geo_df.lin.set_columns(bogus="azi")
+
+    def test_set_columns_sticks_across_accesses(self, geo_df):
+        geo_df.lin.set_columns(azi="inc")
+        assert geo_df.lin._columns == {"azi": "inc", "inc": "inc"}
+
+    def test_nan_row_skipped(self):
+        df = pd.DataFrame({"azi": [110, np.nan], "inc": [26, 45]})
+        assert len(df.lin()) == 1
+
+    def test_plot_default(self, geo_df):
+        p = geo_df.lin.plot(show=False)
+        assert p is not None
+
+    def test_plot_label_kwarg(self, geo_df):
+        p = geo_df.lin.plot(label="L3", show=False)
+        assert p is not None
+
+
+# ---------------------------------------------------------------------------
+# FaultAccessor (.fault)
+# ---------------------------------------------------------------------------
+
+
+class TestFaultAccessor:
+    def test_default_call(self, fault_df):
+        from apsg import faultset
+
+        fs = fault_df.fault()
+        assert isinstance(fs, faultset)
+        assert len(fs) == 2
+
+    def test_ortensor(self, fault_df):
+        ot = fault_df.fault().ortensor()
+        assert ot is not None
+
+    def test_plot_default(self, fault_df):
+        p = fault_df.fault.plot(show=False)
+        assert p is not None
+
+    def test_plot_kind(self, fault_df):
+        p = fault_df.fault.plot(kind="pair", show=False)
+        assert p is not None
+
+
+# ---------------------------------------------------------------------------
+# GroupBy — apply / transform / aggregate
+# ---------------------------------------------------------------------------
+
+
+class TestLinGroupBy:
+    def test_apply_lin(self, structure_df):
+        def first_lin(fs):
+            return fs.ortensor().eigenlins(which=0)
+
+        result = structure_df.lin.groupby("structure").apply(first_lin)
+        assert result.dtype.name == "lin"
+
+    def test_apply_non_apsg_result(self, structure_df):
+        result = structure_df.lin.groupby("structure").apply(len)
+        assert result.dtype.name == "int64"
+
+    def test_apply_empty_group(self, structure_df):
+        sub = structure_df[structure_df["structure"] == "L3"]
+        result = sub.lin.groupby("structure").apply(lambda fs: fs.R())
+        assert isinstance(result, pd.Series)
+
+    def test_apply_axis_label_preserved(self, structure_df):
+        result = structure_df.lin.groupby("structure").apply(lambda fs: fs.R())
+        assert list(result.index) == ["L3", "S1"]
+
+    def test_apply_with_args(self, structure_df):
+        def pick(fs, which):
+            return fs.ortensor().eigenlins(which=which)
+
+        result = structure_df.lin.groupby("structure").apply(pick, which=0)
+        assert result.dtype.name == "lin"
+
+    def test_apply_multi_column_by(self, structure_df):
+        df = structure_df.copy()
+        df["g2"] = "x"
+        result = df.lin.groupby(["structure", "g2"]).apply(lambda fs: fs.R())
+        assert result.dtype.name == "lin"
+        assert isinstance(result.index, pd.MultiIndex)
+
+    # ------------------------------------------------------------------ #
+    # aggregate / agg
+    # ------------------------------------------------------------------ #
+
+    def test_aggregate_lin(self, structure_df):
+        def first_lin(fs):
+            return fs.ortensor().eigenlins(which=0)
+
+        result = structure_df.lin.groupby("structure").aggregate(first_lin)
+        assert result.dtype.name == "lin"
+
+    def test_aggregate_non_apsg_result(self, structure_df):
+        result = structure_df.lin.groupby("structure").aggregate(len)
+        assert result.dtype.name == "int64"
+
+    def test_agg_lin(self, structure_df):
+        def first_lin(fs):
+            return fs.ortensor().eigenlins(which=0)
+
+        result = structure_df.lin.groupby("structure").agg(first_lin)
+        assert result.dtype.name == "lin"
+
+    def test_agg_list_of_functions(self, structure_df):
+        result = structure_df.lin.groupby("structure").agg([len, "count"])
+        assert isinstance(result, pd.DataFrame)
+        assert list(result.columns) == ["len", "count"]
+
+    def test_agg_list_of_tuples(self, structure_df):
+        result = structure_df.lin.groupby("structure").aggregate(
+            [
+                ("major", lambda fs: gbf.eigenlin(fs, which=0)),
+                ("minor", lambda fs: gbf.eigenlin(fs, which=2)),
+            ]
+        )
+        assert isinstance(result, pd.DataFrame)
+        assert list(result.columns) == ["major", "minor"]
+        assert result["major"].dtype.name == "lin"
+
+    # ------------------------------------------------------------------ #
+    # transform
+    # ------------------------------------------------------------------ #
+
+    def test_transform_scalar_result(self, structure_df):
+        def my_transform_scalar(fs):
+            return fs.angle(fs.R())
+
+        result = structure_df.lin.groupby("structure").transform(my_transform_scalar)
+        assert result.dtype.name == "float64"
+        assert len(result) == len(structure_df)
+
+    def test_transform_vector_result(self, structure_df):
+        def my_transform_vector(fs):
+            return fs.cross(fs.R())
+
+        result = structure_df.lin.groupby("structure").transform(my_transform_vector)
+        assert result.dtype.name == "fol"
+        assert len(result) == len(structure_df)
+
+    def test_transform_length_mismatch_raises(self, structure_df):
+        def bad(fs):
+            return [1]  # structure_df's groups have 3 rows each, so this never matches
+
+        with pytest.raises(ValueError, match="valid"):
+            structure_df.lin.groupby("structure").transform(bad)
 
 
 class TestVec2GroupBy:
     def test_apply_vec2(self, vec2_df):
-        df = vec2_df.apsg.create_vecs2()
+        df = vec2_df.copy()
         df["group"] = ["a", "b"]
-        result = df.groupby("group")["vecs2"].G.apply(lambda s: s.G().R())
+        result = df.vec2.groupby("group").apply(lambda fs: fs.R())
         assert result.dtype.name == "vec2"
         assert len(result) == 2
 
     def test_aggregate_vec2(self, vec2_df):
-        df = vec2_df.apsg.create_vecs2()
+        df = vec2_df.copy()
         df["group"] = ["a", "a"]
-        result = df.groupby("group")["vecs2"].G.aggregate(lambda s: s.G().R())
+        result = df.vec2.groupby("group").aggregate(lambda fs: fs.R())
         assert result.dtype.name == "vec2"
 
     def test_aggregate_non_apsg(self, vec2_df):
-        df = vec2_df.apsg.create_vecs2()
+        df = vec2_df.copy()
         df["group"] = ["a", "b"]
-        result = df.groupby("group")["vecs2"].G.aggregate(len)
+        result = df.vec2.groupby("group").aggregate(len)
         assert result.dtype.name == "int64"
 
     def test_transform(self, vec2_df):
-        df = vec2_df.apsg.create_vecs2()
+        df = vec2_df.copy()
         df["group"] = ["a", "a"]
 
-        def angle_to_r(s):
-            return s.G().angle(s.G().R())
+        def angle_to_r(fs):
+            return fs.angle(fs.R())
 
-        result = df.groupby("group")["vecs2"].G.transform(angle_to_r)
+        result = df.vec2.groupby("group").transform(angle_to_r)
         assert result.dtype.name == "float64"
         assert len(result) == 2
 
 
 # ---------------------------------------------------------------------------
-# gbf.mean
+# Wide-format multiple sequential configs (single-stateful-config model)
+# ---------------------------------------------------------------------------
+
+
+class TestSequentialWideFormat:
+    def test_two_lin_sets_from_one_wide_df(self):
+        df = pd.DataFrame(
+            {
+                "L1_azi": [110, 120],
+                "L1_inc": [26, 30],
+                "L2_azi": [200, 210],
+                "L2_inc": [45, 50],
+            }
+        )
+        df.lin.set_columns(azi="L1_azi", inc="L1_inc")
+        l1 = df.lin(name="L1")
+        df.lin.set_columns(azi="L2_azi", inc="L2_inc")
+        l2 = df.lin(name="L2")
+        assert l1.name == "L1"
+        assert l2.name == "L2"
+        assert list(l1) == [lin(110, 26), lin(120, 30)]
+        assert list(l2) == [lin(200, 45), lin(210, 50)]
+
+
+# ---------------------------------------------------------------------------
+# gbf helpers
 # ---------------------------------------------------------------------------
 
 
 class TestGBFMean:
     def test_mean_vec3(self, vec_df):
-        df = vec_df.apsg.create_vecs()
+        df = vec_df.copy()
         df["g"] = ["a", "a"]
-        result = df.groupby("g")["vecs"].G.apply(gbf.mean)
+        result = df.vec.groupby("g").apply(gbf.mean)
         assert isinstance(result.iloc[0], vec)
 
     def test_mean_vec2(self, vec2_df):
-        df = vec2_df.apsg.create_vecs2()
+        df = vec2_df.copy()
         df["g"] = ["a", "a"]
-        result = df.groupby("g")["vecs2"].G.apply(gbf.mean)
+        result = df.vec2.groupby("g").apply(gbf.mean)
         assert isinstance(result.iloc[0], vec2)
 
     def test_mean_dir(self, dir_df):
-        df = dir_df.apsg.create_dirs()
+        df = dir_df.copy()
         df["g"] = ["a", "a"]
-        result = df.groupby("g")["dirs"].G.apply(gbf.mean)
+        result = df.dir.groupby("g").apply(gbf.mean)
         assert isinstance(result.iloc[0], float)
 
     def test_mean_lin(self, geo_df):
-        df = geo_df.apsg.create_lins()
+        df = geo_df.copy()
         df["g"] = ["a", "a"]
-        result = df.groupby("g")["lins"].G.apply(gbf.mean)
+        result = df.lin.groupby("g").apply(gbf.mean)
         assert isinstance(result.iloc[0], lin)
 
     def test_mean_fol(self, geo_df):
-        df = geo_df.apsg.create_fols()
+        df = geo_df.copy()
         df["g"] = ["a", "a"]
-        result = df.groupby("g")["fols"].G.apply(gbf.mean)
+        result = df.fol.groupby("g").apply(gbf.mean)
         assert isinstance(result.iloc[0], fol)
 
     def test_mean_fault_raises(self, fault_df):
-        df = fault_df.apsg.create_faults()
+        df = fault_df.copy()
         df["g"] = ["a", "a"]
         with pytest.raises(TypeError, match="mean is not defined"):
-            df.groupby("g")["faults"].G.apply(gbf.mean)
+            df.fault.groupby("g").apply(gbf.mean)
 
     def test_mean_custom_function(self, geo_df):
-        df = geo_df.apsg.create_lins()
+        df = geo_df.copy()
         df["g"] = ["a", "a"]
-        result = df.groupby("g")["lins"].G.agg([gbf.mean, gbf.resultant_magnitude])
+        result = df.lin.groupby("g").agg([gbf.mean, gbf.resultant_magnitude])
         assert isinstance(result, pd.DataFrame)
         assert "mean" in result.columns
 
     def test_angle_to_mean_vec3(self, vec_df):
-        df = vec_df.apsg.create_vecs()
+        df = vec_df.copy()
         df["g"] = ["a", "a"]
-        result = df.groupby("g")["vecs"].G.transform(gbf.angle_to_mean)
+        result = df.vec.groupby("g").transform(gbf.angle_to_mean)
         assert isinstance(result, pd.Series)
         assert result.dtype == float
 
     def test_angle_to_mean_vec2(self, vec2_df):
-        df = vec2_df.apsg.create_vecs2()
+        df = vec2_df.copy()
         df["g"] = ["a", "a"]
-        result = df.groupby("g")["vecs2"].G.transform(gbf.angle_to_mean)
+        result = df.vec2.groupby("g").transform(gbf.angle_to_mean)
         assert isinstance(result, pd.Series)
         assert result.dtype == float
 
     def test_angle_to_mean_dir(self, dir_df):
-        df = dir_df.apsg.create_dirs()
+        df = dir_df.copy()
         df["g"] = ["a", "a"]
-        result = df.groupby("g")["dirs"].G.transform(gbf.angle_to_mean)
+        result = df.dir.groupby("g").transform(gbf.angle_to_mean)
         assert isinstance(result, pd.Series)
         assert result.dtype == float
 
     def test_angle_to_mean_lin(self, geo_df):
-        df = geo_df.apsg.create_lins()
+        df = geo_df.copy()
         df["g"] = ["a", "a"]
-        result = df.groupby("g")["lins"].G.transform(gbf.angle_to_mean)
+        result = df.lin.groupby("g").transform(gbf.angle_to_mean)
         assert isinstance(result, pd.Series)
         assert result.dtype == float
 
     def test_angle_to_mean_fol(self, geo_df):
-        df = geo_df.apsg.create_fols()
+        df = geo_df.copy()
         df["g"] = ["a", "a"]
-        result = df.groupby("g")["fols"].G.transform(gbf.angle_to_mean)
+        result = df.fol.groupby("g").transform(gbf.angle_to_mean)
         assert isinstance(result, pd.Series)
         assert result.dtype == float
 
     def test_angle_to_mean_fault_raises(self, fault_df):
-        df = fault_df.apsg.create_faults()
+        df = fault_df.copy()
         df["g"] = ["a", "a"]
         with pytest.raises(TypeError):
-            df.groupby("g")["faults"].G.transform(gbf.angle_to_mean)
-
-
-# ---------------------------------------------------------------------------
-# GAccessor plot
-# ---------------------------------------------------------------------------
-
-
-class TestGAccessorPlot:
-    def test_plot_vec2_default(self, vec2_df):
-        s = vec2_df.apsg.create_vecs2()["vecs2"]
-        p = s.G.plot(show=False)
-        assert p is not None
-
-    def test_plot_vec2_kind(self, vec2_df):
-        s = vec2_df.apsg.create_vecs2()["vecs2"]
-        p = s.G.plot(kind="pdf", show=False)
-        assert p is not None
-
-    def test_plot_vec2_dir_default(self, dir_df):
-        s = dir_df.apsg.create_dirs()["dirs"]
-        p = s.G.plot(show=False)
-        assert p is not None
-
-    def test_plot_vec2_dir_kind(self, dir_df):
-        s = dir_df.apsg.create_dirs()["dirs"]
-        p = s.G.plot(kind="bar", show=False)
-        assert p is not None
-
-    def test_plot_vec2_plot_kws(self, vec2_df):
-        s = vec2_df.apsg.create_vecs2()["vecs2"]
-        p = s.G.plot(plot_kws={"bins": 12}, kind="bar", show=False)
-        assert p is not None
-
-    def test_plot_vec2_dir_plot_kws(self, dir_df):
-        s = dir_df.apsg.create_dirs()["dirs"]
-        p = s.G.plot(plot_kws={"bins": 12}, show=False)
-        assert p is not None
-
-    def test_plot_vec3_default(self, vec_df):
-        s = vec_df.apsg.create_vecs()["vecs"]
-        p = s.G.plot(show=False)
-        assert p is not None
-
-    def test_plot_vec3_kind(self, vec_df):
-        s = vec_df.apsg.create_vecs()["vecs"]
-        p = s.G.plot(kind="vector", show=False)
-        assert p is not None
-
-    def test_plot_foliation(self, geo_df):
-        s = geo_df.apsg.create_fols()["fols"]
-        p = s.G.plot(show=False)
-        assert p is not None
-
-    def test_plot_lineation(self, geo_df):
-        s = geo_df.apsg.create_lins()["lins"]
-        p = s.G.plot(show=False)
-        assert p is not None
+            df.fault.groupby("g").transform(gbf.angle_to_mean)

@@ -42,9 +42,9 @@ and install latest stable version of **apsg** using pip within the environment:
 
     pip install apsg
 
-To include jupyterlab and pyqt6 in installation, use `extra` option:
+To include jupyterlab in installation, use `lab` extra:
 
-    pip install apsg[extra]
+    pip install apsg[lab]
 
 Or install **master** with:
 
@@ -80,11 +80,11 @@ and then install apsg using pip:
 If you already have conda or mamba installed, you can create environment with:
 
     conda config --add channels conda-forge
-    conda create -n apsg python apsg jupyterlab pyqt6
+    conda create -n apsg python apsg jupyterlab
 
 or using mamba
 
-    mamba create -n apsg python apsg jupyterlab pyqt6
+    mamba create -n apsg python apsg jupyterlab
 
 #### Current release info
 

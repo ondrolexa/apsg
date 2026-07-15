@@ -9,9 +9,8 @@ APSG features as pandas extension arrays, enabling seamless integration with Dat
 Usage
 -----
 
-Start by importing ``pd`` from the :mod:`apsg.pandas` submodule and feature aliases from :mod:`apsg`::
+Start by importing ``pd`` from the :mod:`apsg.pandas` submodule::
 
-    >>> from apsg import fol, lin
     >>> from apsg.pandas import pd
 
 Create a DataFrame with numerical columns for azimuth and inclination::
@@ -21,26 +20,21 @@ Create a DataFrame with numerical columns for azimuth and inclination::
     ...     "inc": [38, 42, 36, 54, 41],
     ... })
 
-Convert numerical columns into an APSG feature column using the ``apsg`` accessor::
+Now use the ``fol`` accessor to retrieve the underlying APSG feature set::
 
-    >>> df = df.apsg.create_fols(columns=["azi", "inc"])
+    >>> df.fol()              # FeatureSet from the fols column
+    >>> df.fol().fisher_statistics()["k"]   # Fisher precision parameter
+    >>> df.fol().ortensor()   # Orientation tensor
 
-Now use the ``G`` Series accessor to retrieve the underlying APSG feature set::
+The same approach works for linear features using ``lin`` accessor::
 
-    >>> df.fols.G()              # FeatureSet from the fols column
-    >>> df.fols.G().fisher_statistics()["k"]   # Fisher precision parameter
-    >>> df.fols.G().ortensor()   # Orientation tensor
+    >>> df.lin()
+    >>> df.lin().fisher_statistics()
 
-The same approach works for linear features using ``create_lins``::
+If your columns have different names as default `azi` and `inc`, use `set_columns` method::
 
-    >>> df = df.apsg.create_lins(columns=["azi", "inc"], name="lins")
-    >>> df.lins.G()
-    >>> df.lins.G().fisher_statistics()["k"]
-
-Column names that are not valid Python identifiers require bracket access::
-
-    >>> df = df.apsg.create_lins(columns=["azi", "inc"], name="my lins")
-    >>> df["my lins"].G()
+    >>> df.lin.set_columns(azi="trend", inc="plunge")()
+    >>> df.lin.set_columns(azi="trend", inc="plunge").plot()
 
 .. automodule:: apsg.pandas
     :autosummary:

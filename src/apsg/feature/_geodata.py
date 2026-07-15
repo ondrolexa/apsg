@@ -5,7 +5,12 @@ import numpy as np
 from apsg.helpers._helper import is_jsonable
 from apsg.helpers._math import atan2d
 from apsg.helpers._notation import (
+    fol2vec_rhr,
+    format_linear,
+    format_planar,
     geo2vec_planar,
+    parse_quadrant_linear,
+    parse_quadrant_planar,
     vec2geo_linear,
     vec2geo_linear_signed,
     vec2geo_planar,
@@ -54,6 +59,7 @@ class Lineation(Axial3):
 
         - `l` could be Vector3-like object
         - `l` could be string 'x', 'y' or 'z' - principal axes of coordinate system
+        - `l` could be quadrant notation string, e.g. 'N45E,30'
         - `l` could be tuple of (x, y, z) - vector components
     - with 2 arguments plunge direction and plunge
     - with 3 numerical arguments defining vector components
@@ -67,11 +73,19 @@ class Lineation(Axial3):
         >>> lin('y')
         >>> lin(1,2,-1)
         >>> l = lin(110, 26)
+        >>> l = lin('N45E,30')
     """
 
+    def __init__(self, *args, **kwargs):
+        if len(args) == 1 and isinstance(args[0], str):
+            try:
+                args = parse_quadrant_linear(args[0])
+            except ValueError:
+                pass  # not quadrant text; let Vector3.__init__ handle 'x'/'y'/'z' or raise
+        super().__init__(*args, **kwargs)
+
     def __repr__(self):
-        azi, inc = self.geo
-        return f"L:{azi:.0f}/{inc:.0f}"
+        return f"L:{format_linear(*self.geo)}"
 
     def cross(self, other):
         """Return Foliation defined by two linear features."""
@@ -108,6 +122,7 @@ class Foliation(Axial3):
 
         - `f` could be Vector3-like object
         - `f` could be string 'x', 'y' or 'z' - principal planes of coordinate system
+        - `f` could be quadrant notation string, e.g. 'N30E,40NW'
         - `f` could be tuple of (x, y, z) - vector components
     - with 2 arguments follows active notation. See apsg_conf.notation
     - with 3 numerical arguments defining vector components of plane normal
@@ -121,6 +136,7 @@ class Foliation(Axial3):
         >>> fol('y')
         >>> fol(1,2,-1)
         >>> f = fol(250, 30)
+        >>> f = fol('N30E,40NW')
 
     """
 
@@ -138,7 +154,13 @@ class Foliation(Axial3):
                 elif args[0].lower() == "z":
                     coords = (0, 0, 1)
                 else:
-                    raise TypeError(f"Not valid arguments for {type(self).__name__}")
+                    try:
+                        strike, dip = parse_quadrant_planar(args[0])
+                    except ValueError:
+                        raise TypeError(
+                            f"Not valid arguments for {type(self).__name__}"
+                        ) from None
+                    coords = fol2vec_rhr(strike, dip)
             else:
                 raise TypeError(f"Not valid arguments for {type(self).__name__}")
         elif len(args) == 2:
@@ -154,8 +176,7 @@ class Foliation(Axial3):
             raise TypeError("Provided attributes are not serializable.")
 
     def __repr__(self):
-        azi, inc = self.geo
-        return f"S:{azi:.0f}/{inc:.0f}"
+        return f"S:{format_planar(*self.geo)}"
 
     def cross(self, other):
         """Return Lineation defined by intersection of planar features."""
@@ -305,9 +326,7 @@ class Pair:
             raise TypeError("Provided attributes are not serializable.")
 
     def __repr__(self):
-        fazi, finc = self.fol.geo
-        lazi, linc = self.lin.geo
-        return f"P:{fazi:.0f}/{finc:.0f}-{lazi:.0f}/{linc:.0f}"
+        return f"P:{format_planar(*self.fol.geo)}-{format_linear(*self.lin.geo)}"
 
     def __eq__(self, other):
         """Return `True` if pairs are equal, otherwise `False`."""
@@ -532,11 +551,10 @@ class Fault(Pair):
             return int(sense)
 
     def __repr__(self):
-        fazi, finc = self.fol.geo
-        lazi, linc = self.lin.geo
         schar = self.sense_str
-        # schar = [" ", "+", "-"][self.sense]
-        return f"F:{fazi:.0f}/{finc:.0f}-{lazi:.0f}/{linc:.0f} {schar}"
+        return (
+            f"F:{format_planar(*self.fol.geo)}-{format_linear(*self.lin.geo)} {schar}"
+        )
 
     def __eq__(self, other):
         """Return `True` if pairs are equal, otherwise `False`."""
@@ -735,7 +753,7 @@ class Cone:
 
     def __repr__(self):
         azi, inc = vec2geo_linear(self.axis)
-        return f"C:{azi:.0f}/{inc:.0f} [{self.apical_angle():g}]"
+        return f"C:{format_linear(azi, inc)} [{self.apical_angle():g}]"
 
     def __eq__(self, other):
         cls = type(self)
