@@ -398,7 +398,9 @@ class Pair:
     def rake(self):
         """Return a rake of linear feature on planar feature of ``Pair`` in degrees."""
         return -np.degrees(
-            np.atan2(-self.lvec.dot(self.fol.rake(90)), self.lvec.dot(self.fol.rake(0)))
+            np.arctan2(
+                -self.lvec.dot(self.fol.rake(90)), self.lvec.dot(self.fol.rake(0))
+            )
         )
 
     @property

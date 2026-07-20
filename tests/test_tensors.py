@@ -1107,6 +1107,16 @@ class TestEllipsoid:
     def test_lowercase_alias(self):
         assert ellipsoid is Ellipsoid
 
+    def test_sections(self):
+        E = Ellipsoid([[4, 0, 0], [0, 1, 0], [0, 0, 0.25]])
+        fx = Foliation(Vector3.unit_x())
+        fy = Foliation(Vector3.unit_y())
+        fz = Foliation(Vector3.unit_z())
+        assert E.section(fx).ar == 2
+        assert E.section(fy).ar == 4
+        assert E.section(fz).ar == 2
+        assert isinstance(E.section(fx), Ellipse)
+
 
 # ---------------------------------------------------------------------------
 # OrientationTensor3
