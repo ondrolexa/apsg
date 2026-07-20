@@ -1,6 +1,10 @@
 # Changelog
 
-### 1.5.0 (master)
+### 1.5.1 (master)
+* section method added to Ellipsoid to get planar section as Ellipse
+* bingham method added to StereoNet to draw Bingham confidence ellipse around principal axis, auto-selected between point and girdle fabric mode
+
+### 1.5.0 (Jul 15 2026)
  * notations refactored, including quadrant
  * Pandas API refactored
  * StereoNet point method added as a replacement for both line and pole

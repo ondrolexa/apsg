@@ -22,7 +22,7 @@ from apsg.feature._tensor3 import (
     Rotation3,
     Stress3,
 )
-from apsg.helpers._math import acosd
+from apsg.helpers._math import acosd, asind
 from apsg.math._vector import Axial2, Axial3, Vector2, Vector3
 
 
@@ -760,6 +760,71 @@ class Vector3Set(FeatureSet):
             alpha = np.degrees(np.arcsin(np.sqrt(val)))
         stats = {"mu": ot.eigenvectors(0), "k": kappa, "alpha": alpha}
         return stats
+
+    def bingham_statistics(self, level=0.95, which=None):
+        """Fit Bingham distribution confidence ellipse and return statistics.
+
+        Uses the large-sample approximation of Fisher, Lewis & Embleton (1987)
+        for confidence regions of the principal axes of the orientation tensor,
+        with the Bingham concentration parameters approximated per-axis
+        (Onstott 1980) as kappa_i ~= 1/(2*tau_i), so only the sample
+        eigenvalues and sample size are needed.
+
+        Fisher, N.I., Lewis, T., Embleton, B.J.J. (1987). Statistical Analysis
+            of Spherical Data. Cambridge University Press.
+        Onstott, T.C. (1980). Application of the Bingham distribution function
+            in paleomagnetic studies. Journal of Geophysical Research, 85(B3),
+            1500-1510.
+
+        Args:
+            level: confidence level. Default 0.95 for 95 %.
+            which: index (0, 1 or 2) of the eigenvector the confidence ellipse
+                is centered on. 0 is the major eigenvector, 2 is the minor
+                (pole) eigenvector. Default None, which auto-selects based on
+                fabric shape - the major eigenvector (0) for point-dominated
+                fabrics (``P >= G``), the minor/pole eigenvector (2) for
+                girdle-dominated fabrics (``G > P``), using Vollmer's P and G
+                indices.
+
+        Returns:
+            dict: with keys ``mu`` (center eigenvector), ``axes`` (tuple of
+                the other two eigenvectors, spanning the ellipse), ``gamma``
+                (tuple of the corresponding semi-angles in degrees), ``n``
+                (sample size), ``level`` and ``which`` (the resolved index
+                actually used).
+        """
+
+        if which is None:
+            ot = self.ortensor()
+            which = 0 if ot.P >= ot.G else 2
+        elif which not in (0, 1, 2):
+            raise ValueError("which must be 0, 1 or 2")
+        else:
+            ot = self.ortensor()
+
+        taus = ot.eigenvalues()
+        vecs = ot.eigenvectors()
+        n = len(self)
+        other = [i for i in range(3) if i != which]
+        chi2 = stats.chi2.ppf(level, df=2)
+
+        gammas = []
+        for j in other:
+            diff = abs(taus[which] - taus[j])
+            if diff > 0:
+                val = chi2 * taus[which] * taus[j] / n / diff**2
+            else:
+                val = 1.0
+            gammas.append(asind(np.sqrt(np.clip(val, 0, 1))))
+
+        return {
+            "mu": vecs[which],
+            "axes": (vecs[other[0]], vecs[other[1]]),
+            "gamma": tuple(gammas),
+            "n": n,
+            "level": level,
+            "which": which,
+        }
 
     def var(self):
         """Spherical variance based on resultant length (Mardia 1972)."""

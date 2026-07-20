@@ -1117,6 +1117,20 @@ class TestEllipsoid:
         assert E.section(fz).ar == 2
         assert isinstance(E.section(fx), Ellipse)
 
+    def test_sections_orientation(self):
+        E = Ellipsoid([[4, 0, 0], [0, 1, 0], [0, 0, 0.25]])
+        s = E.section(Foliation(45, 90))
+        assert s.ar == pytest.approx(10**0.5)
+        assert s.orientation == pytest.approx(90)
+
+    def test_sections_accepts_vector3(self):
+        # section() coerces its argument via Foliation(f), so a plain Vector3
+        # (plane normal) is equivalent to the matching Foliation
+        E = Ellipsoid([[4, 0, 0], [0, 1, 0], [0, 0, 0.25]])
+        assert (
+            E.section(Vector3.unit_x()).ar == E.section(Foliation(Vector3.unit_x())).ar
+        )
+
 
 # ---------------------------------------------------------------------------
 # OrientationTensor3

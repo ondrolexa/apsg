@@ -514,6 +514,72 @@ class TestVector3Set:
         assert "k" in s
         assert "alpha" in s
 
+    def test_bingham_statistics(self):
+        np.random.seed(42)
+        v = Vector3Set.random_fisher(100, position=Vector3(0, 0, 1), kappa=20)
+        s = v.bingham_statistics()
+        assert isinstance(s, dict)
+        assert "mu" in s
+        assert "axes" in s
+        assert "gamma" in s
+        assert s["n"] == 100
+        assert s["level"] == 0.95
+        assert s["which"] == 0
+        assert all(0 <= g <= 90 for g in s["gamma"])
+
+    def test_bingham_statistics_shrinks_with_n(self):
+        np.random.seed(42)
+        small = Vector3Set.random_fisher(20, position=Vector3(0, 0, 1), kappa=20)
+        large = Vector3Set.random_fisher(400, position=Vector3(0, 0, 1), kappa=20)
+        assert max(large.bingham_statistics()["gamma"]) < max(
+            small.bingham_statistics()["gamma"]
+        )
+
+    def test_bingham_statistics_which(self):
+        np.random.seed(42)
+        v = Vector3Set.random_fisher(100, position=Vector3(0, 0, 1), kappa=20)
+        ot = v.ortensor()
+        s = v.bingham_statistics(which=2)
+        assert s["mu"] == ot.eigenvectors(2)
+
+    def test_bingham_statistics_invalid_which(self):
+        v = Vector3Set.random_fisher(50, position=Vector3(0, 0, 1), kappa=20)
+        with pytest.raises(ValueError):
+            v.bingham_statistics(which=3)
+
+    def test_bingham_statistics_auto_which_cluster(self):
+        np.random.seed(42)
+        v = Vector3Set.random_fisher(100, position=Vector3(0, 0, 1), kappa=20)
+        ot = v.ortensor()
+        assert ot.P >= ot.G
+        assert v.bingham_statistics()["which"] == 0
+
+    def test_bingham_statistics_auto_which_girdle(self):
+        np.random.seed(42)
+        theta = np.random.uniform(0, 2 * np.pi, 200)
+        spread = np.random.normal(0, 0.05, 200)
+        v = Vector3Set(
+            [Vector3(np.cos(t), np.sin(t), s).uv() for t, s in zip(theta, spread)]
+        )
+        ot = v.ortensor()
+        assert ot.G > ot.P
+        assert v.bingham_statistics()["which"] == 2
+
+    def test_bingham_statistics_degenerate(self):
+        # perfectly symmetric data around one axis -> tau2 == tau3
+        v = Vector3Set(
+            [
+                Vector3(1, 0, 0),
+                Vector3(-1, 0, 0),
+                Vector3(0, 1, 0),
+                Vector3(0, -1, 0),
+                Vector3(0, 0, 1),
+                Vector3(0, 0, -1),
+            ]
+        )
+        s = v.bingham_statistics()
+        assert 90.0 in [round(g, 6) for g in s["gamma"]]
+
     def test_var(self):
         v = Vector3Set([Vector3(1, 0, 0), Vector3(0, 1, 0)])
         var = v.var()

@@ -197,6 +197,25 @@ class StereoNet_Cone(StereoNet_Artists):
                 self.kwargs["label"] = f"Cones ({len(self.args)})"
 
 
+class StereoNet_Bingham(StereoNet_Artists):
+    def __init__(self, factory, *args, **kwargs):
+        """Initialize stereonet Bingham confidence ellipse artist."""
+        super().__init__(factory, *args, **kwargs)
+        self.stereonet_method = "_bingham"
+        self.args = args
+        self.parse_kwargs(kwargs)
+
+    def parse_kwargs(self, kwargs):
+        """Parse and apply Bingham confidence ellipse style kwargs."""
+        super().update_kwargs("stereonet_bingham")
+        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        if not isinstance(self.kwargs["label"], str):
+            if len(self.args) == 1:
+                self.kwargs["label"] = self.args[0].label()
+            else:
+                self.kwargs["label"] = f"Bingham ({len(self.args)})"
+
+
 class StereoNet_Pair(StereoNet_Artists):
     def __init__(self, factory, *args, **kwargs):
         """Initialize stereonet pair artist."""
@@ -387,6 +406,14 @@ class StereoNetArtistFactory:
             return StereoNet_Cone("create_cone", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet cone")
+
+    @staticmethod
+    def create_bingham(*args, **kwargs):
+        """Create stereonet Bingham confidence ellipse artist from Vector3Set data."""
+        if all([isinstance(arg, Vector3Set) for arg in args]):
+            return StereoNet_Bingham("create_bingham", *args, **kwargs)
+        else:
+            raise TypeError("Not valid arguments for Stereonet bingham")
 
     @staticmethod
     def create_pair(*args, **kwargs):

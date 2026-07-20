@@ -110,6 +110,19 @@ class StereoNetConeStyle(StereoNetStyle):
         return StereoNetArtistFactory.create_cone(*filtered, **self.kwargs)
 
 
+class StereoNetBinghamStyle(StereoNetStyle):
+    def __init__(self, **kwargs):
+        """Initialize stereonet Bingham confidence ellipse style."""
+        self._valid = Vector3Set
+        self.kwargs = getattr(apsg_conf, "stereonet_bingham").copy()
+        super().__init__(**kwargs)
+
+    def create_artist(self, *args):
+        """Create stereonet Bingham confidence ellipse artist with configured style."""
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
+        return StereoNetArtistFactory.create_bingham(*filtered, **self.kwargs)
+
+
 class StereoNetPairStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet pair style."""
@@ -233,6 +246,11 @@ class StereoNetStyleFactory:
     def cone(**kwargs):
         """Return StereoNetConeStyle with given kwargs."""
         return StereoNetConeStyle(**kwargs)
+
+    @staticmethod
+    def bingham(**kwargs):
+        """Return StereoNetBinghamStyle with given kwargs."""
+        return StereoNetBinghamStyle(**kwargs)
 
     @staticmethod
     def pair(**kwargs):

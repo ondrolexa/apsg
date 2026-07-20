@@ -616,6 +616,38 @@ class StereoNet:
         except TypeError as err:
             print(err)
 
+    def bingham(self, *args, **kwargs):
+        """
+        Plot Bingham confidence ellipse around a principal axis of orientation data.
+
+        Uses the large-sample eigenvalue method of Fisher, Lewis & Embleton (1987)
+        with the high-concentration approximation of Onstott (1980). See
+        ``Vector3Set.bingham_statistics`` for the underlying statistics.
+
+        Args:
+            Vector3Set like feature(s), e.g. LineationSet or FoliationSet
+
+        Keyword Args:
+            which (int): index (0, 1 or 2) of the eigenvector the ellipse is
+                centered on. 0 is the major eigenvector, 2 is the minor
+                (pole) eigenvector. Default None, which auto-selects the
+                major eigenvector for point-dominated fabrics and the pole
+                eigenvector for girdle-dominated fabrics (Vollmer P vs G).
+            level (float): confidence level. Default 0.95
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color. Default None
+            ls (str): Line style string. Default "--"
+            lw (float): Set line width. Default 1.5
+
+        Returns:
+            None: Bingham confidence ellipse is plotted.
+        """
+        try:
+            artist = StereoNetArtistFactory.create_bingham(*args, **kwargs)
+            self._artists.append(artist)
+        except TypeError as err:
+            print(err)
+
     def contour(self, *args, **kwargs):
         """
         Plot filled contours in multiples of uniform distribution.
@@ -859,6 +891,35 @@ class StereoNet:
                 )
                 X.append(np.hstack((x, np.nan)))
                 Y.append(np.hstack((y, np.nan)))
+        handles = self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
+        for h in handles:
+            h.set_clip_path(self.primitive)
+        return handles
+
+    def _bingham(self, *args, **kwargs):
+        which = kwargs.pop("which")
+        level = kwargs.pop("level")
+        X, Y = [], []
+        for arg in args:
+            stats = arg.bingham_statistics(level=level, which=which)
+            mu = np.asarray(stats["mu"])
+            u = np.asarray(stats["axes"][0])
+            v = np.asarray(stats["axes"][1])
+            g0, g1 = np.radians(stats["gamma"])
+            theta = np.linspace(0, 2 * np.pi, 181)
+            denom = np.sqrt((g1 * np.cos(theta)) ** 2 + (g0 * np.sin(theta)) ** 2)
+            rho = np.divide(g0 * g1, denom, out=np.zeros_like(denom), where=denom > 0)
+            pts = np.cos(rho)[:, None] * mu + np.sin(rho)[:, None] * (
+                np.cos(theta)[:, None] * u + np.sin(theta)[:, None] * v
+            )
+            # plot on lower
+            x, y = self.proj.project_data(*pts.T)
+            X.append(np.hstack((x, np.nan)))
+            Y.append(np.hstack((y, np.nan)))
+            # plot on upper
+            x, y = self.proj.project_data(*(-pts).T)
+            X.append(np.hstack((x, np.nan)))
+            Y.append(np.hstack((y, np.nan)))
         handles = self.ax.plot(np.hstack(X), np.hstack(Y), **kwargs)
         for h in handles:
             h.set_clip_path(self.primitive)

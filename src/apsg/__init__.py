@@ -183,6 +183,6 @@ __all__ = (
     "quicknet",
 )
 
-__version__ = "1.5.0"
+__version__ = "1.5.1"
 __author__ = "Ondrej Lexa"
 __email__ = "lexa.ondrej@gmail.com"
