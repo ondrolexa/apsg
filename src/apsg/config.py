@@ -139,7 +139,7 @@ class StereonetConeConfig(BaseConfig):
 class StereonetBinghamConfig(BaseConfig):
     """Stereonet Bingham confidence ellipse style configuration."""
 
-    which: Any = None
+    which: int = 0
     level: float = 0.95
     alpha: Any = None
     color: Any = None
@@ -219,7 +219,7 @@ class StereonetContourConfig(BaseConfig):
     alpha: Any = None
     antialiased: bool = True
     method: str = "sph"
-    n_max: int = 6
+    n_max: int = 10
     cmap: str = "Greys"
     levels: int = 6
     clines: bool = True

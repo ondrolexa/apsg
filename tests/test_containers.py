@@ -547,24 +547,6 @@ class TestVector3Set:
         with pytest.raises(ValueError):
             v.bingham_statistics(which=3)
 
-    def test_bingham_statistics_auto_which_cluster(self):
-        np.random.seed(42)
-        v = Vector3Set.random_fisher(100, position=Vector3(0, 0, 1), kappa=20)
-        ot = v.ortensor()
-        assert ot.P >= ot.G
-        assert v.bingham_statistics()["which"] == 0
-
-    def test_bingham_statistics_auto_which_girdle(self):
-        np.random.seed(42)
-        theta = np.random.uniform(0, 2 * np.pi, 200)
-        spread = np.random.normal(0, 0.05, 200)
-        v = Vector3Set(
-            [Vector3(np.cos(t), np.sin(t), s).uv() for t, s in zip(theta, spread)]
-        )
-        ot = v.ortensor()
-        assert ot.G > ot.P
-        assert v.bingham_statistics()["which"] == 2
-
     def test_bingham_statistics_degenerate(self):
         # perfectly symmetric data around one axis -> tau2 == tau3
         v = Vector3Set(

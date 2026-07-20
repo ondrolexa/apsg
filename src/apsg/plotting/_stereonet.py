@@ -630,9 +630,7 @@ class StereoNet:
         Keyword Args:
             which (int): index (0, 1 or 2) of the eigenvector the ellipse is
                 centered on. 0 is the major eigenvector, 2 is the minor
-                (pole) eigenvector. Default None, which auto-selects the
-                major eigenvector for point-dominated fabrics and the pole
-                eigenvector for girdle-dominated fabrics (Vollmer P vs G).
+                (pole) eigenvector. Default 0.
             level (float): confidence level. Default 0.95
             alpha (scalar): Set the alpha value. Default None
             color (color): Set the color. Default None
@@ -664,7 +662,7 @@ class StereoNet:
             alpha (float): transparency. Default None
             antialiased (bool): Default True
             n_max (int): maximum harmonic degree i.e. the angular resolution. Must be
-                even number (for "sph" method). Default 6
+                even number (for "sph" method). Default 10
             sigma (float): If None it is automatically calculated (for "kamb" method)
             sigmanorm (bool): If True scaled counts are normalized by sigma
                 (for "kamb" method). Default True

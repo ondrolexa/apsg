@@ -2,7 +2,7 @@
 
 ### 1.5.1 (master)
 * section method added to Ellipsoid to get planar section as Ellipse
-* bingham method added to StereoNet to draw Bingham confidence ellipse around principal axis, auto-selected between point and girdle fabric mode
+* bingham method added to StereoNet to draw Bingham (1964) confidence ellipse around principal axis using the exact F-distribution method of Fisher, Lewis & Embleton (1987)
 
 ### 1.5.0 (Jul 15 2026)
  * notations refactored, including quadrant
