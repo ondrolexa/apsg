@@ -2390,13 +2390,15 @@ class ClusterSet(object):
         )
 
     def cluster(self, **kwargs):
-        """Do clustering on data.
+        """Do clustering of data.
 
         Result is stored as tuple of Groups in ``groups`` property.
 
         Keyword Args:
-            maxclust: number of clusters.
-            distance: maximum cophenetic distance in clusters.
+            maxclust (int): Desired number of clusters. Default 2.
+            angle (float): Forms flat clusters so that the original observations in each
+                cluster have no greater angle. Default is None to use maxclust criterion.
+
         Returns:
             None
         """
@@ -2415,8 +2417,9 @@ class ClusterSet(object):
     def linkage(self, **kwargs):
         """Do linkage of distance matrix.
 
-        Keyword Args:
-            method: The linkage algorithm to use.
+        method (str): Method for calculating the distance between the newly formed
+            cluster and observations. Default is 'average' for UPGMA algorithm.
+
         Returns:
             None
         """
