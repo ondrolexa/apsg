@@ -616,32 +616,41 @@ class StereoNet:
         except TypeError as err:
             print(err)
 
-    def bingham(self, *args, **kwargs):
+    def confidence(self, *args, **kwargs):
         """
-        Plot Bingham confidence ellipse around a principal axis of orientation data.
+        Plot confidence cone or ellipse around orientation data.
 
-        Uses the large-sample eigenvalue method of Fisher, Lewis & Embleton (1987)
-        with the high-concentration approximation of Onstott (1980). See
-        ``Vector3Set.bingham_statistics`` for the underlying statistics.
+        For ``method`` in ``"fisher"``, ``"watson"`` and ``"bootstrap"`` a circular
+        confidence cone (single half-angle) is plotted around the mean direction. For
+        ``method="bingham"`` an elliptical confidence region (two independent semi-angles)
+        is plotted around a chosen eigenvector of the orientation tensor, using the
+        large-sample eigenvalue method of Fisher, Lewis & Embleton (1987). See
+        ``Vector3Set.fisher_statistics``, ``Vector3Set.watson_statistics`` and
+        ``Vector3Set.bingham_statistics`` for the underlying statistics; the bootstrap
+        cone resamples the data with replacement and takes the ``level``-percentile of
+        the angular deviation of the resampled principal eigenvectors from the sample's.
 
         Args:
             Vector3Set like feature(s), e.g. LineationSet or FoliationSet
 
         Keyword Args:
+            method (str): "fisher", "bingham", "watson" or "bootstrap". Default "fisher"
             which (int): index (0, 1 or 2) of the eigenvector the ellipse is
-                centered on. 0 is the major eigenvector, 2 is the minor
-                (pole) eigenvector. Default 0.
+                centered on (``method="bingham"`` only). 0 is the major eigenvector,
+                2 is the minor (pole) eigenvector. Default 0.
             level (float): confidence level. Default 0.95
+            n_resamples (int): number of bootstrap resamples (``method="bootstrap"``
+                only). Default 1000
             alpha (scalar): Set the alpha value. Default None
             color (color): Set the color. Default None
             ls (str): Line style string. Default "--"
             lw (float): Set line width. Default 1.5
 
         Returns:
-            None: Bingham confidence ellipse is plotted.
+            None: Confidence cone or ellipse is plotted.
         """
         try:
-            artist = StereoNetArtistFactory.create_bingham(*args, **kwargs)
+            artist = StereoNetArtistFactory.create_confidence(*args, **kwargs)
             self._artists.append(artist)
         except TypeError as err:
             print(err)
@@ -894,22 +903,51 @@ class StereoNet:
             h.set_clip_path(self.primitive)
         return handles
 
-    def _bingham(self, *args, **kwargs):
+    def _confidence(self, *args, **kwargs):
+        method = kwargs.pop("method")
         which = kwargs.pop("which")
         level = kwargs.pop("level")
+        n_resamples = kwargs.pop("n_resamples")
         X, Y = [], []
         for arg in args:
-            stats = arg.bingham_statistics(level=level, which=which)
-            mu = np.asarray(stats["mu"])
-            u = np.asarray(stats["axes"][0])
-            v = np.asarray(stats["axes"][1])
-            g0, g1 = np.radians(stats["gamma"])
-            theta = np.linspace(0, 2 * np.pi, 181)
-            denom = np.sqrt((g1 * np.cos(theta)) ** 2 + (g0 * np.sin(theta)) ** 2)
-            rho = np.divide(g0 * g1, denom, out=np.zeros_like(denom), where=denom > 0)
-            pts = np.cos(rho)[:, None] * mu + np.sin(rho)[:, None] * (
-                np.cos(theta)[:, None] * u + np.sin(theta)[:, None] * v
-            )
+            if method == "bingham":
+                stats = arg.bingham_statistics(level=level, which=which)
+                mu = np.asarray(stats["mu"])
+                u = np.asarray(stats["axes"][0])
+                v = np.asarray(stats["axes"][1])
+                g0, g1 = np.radians(stats["gamma"])
+                theta = np.linspace(0, 2 * np.pi, 181)
+                denom = np.sqrt((g1 * np.cos(theta)) ** 2 + (g0 * np.sin(theta)) ** 2)
+                rho = np.divide(
+                    g0 * g1, denom, out=np.zeros_like(denom), where=denom > 0
+                )
+                pts = np.cos(rho)[:, None] * mu + np.sin(rho)[:, None] * (
+                    np.cos(theta)[:, None] * u + np.sin(theta)[:, None] * v
+                )
+            else:
+                if method == "fisher":
+                    stats = arg.fisher_statistics(level=level)
+                elif method == "watson":
+                    stats = arg.watson_statistics(level=level)
+                elif method == "bootstrap":
+                    # Bootstrap confidence cone from resampled orientation-tensor eigenvectors
+                    mu = arg.ortensor().eigenvectors(0)
+                    deviations = []
+                    for sample in arg.bootstrap(n=n_resamples):
+                        v = sample.ortensor().eigenvectors(0)
+                        if v.dot(mu) < 0:
+                            v = -v
+                        deviations.append(mu.angle(v))
+                    alpha = float(np.percentile(deviations, 100 * level))
+                    stats = {"mu": mu, "alpha": alpha}
+                else:
+                    raise ValueError(f"Unknown confidence method {method!r}")
+                azi, inc = stats["mu"].geo
+                secant = Vector3(azi, inc + stats["alpha"])
+                angles = np.linspace(0, 360, 360)
+                pts = np.array(
+                    [np.asarray(secant.rotate(stats["mu"], a)) for a in angles]
+                )
             # plot on lower
             x, y = self.proj.project_data(*pts.T)
             X.append(np.hstack((x, np.nan)))

@@ -2,7 +2,11 @@
 
 ### 1.5.1 (master)
 * section method added to Ellipsoid to get planar section as Ellipse
-* bingham method added to StereoNet to draw Bingham (1964) confidence ellipse around principal axis using the exact F-distribution method of Fisher, Lewis & Embleton (1987)
+* confidence method added to StereoNet to draw fisher, bingham, watson or bootstrap confidence cone/ellipse around orientation data (bingham uses the exact F-distribution method of Fisher, Lewis & Embleton (1987)); replaces fisher_cone/fisher_cone_csd (removed from Vector3Set)
+* csd and uniform removed from fisher_statistics; added as separate csd and uniformity_test methods on Vector2Set/Vector3Set, fixing the previous uniformity test which used an incorrect chi-square formula shared (and wrong) for both 2D and 3D data. Direction2Set uses an angle-doubling Rayleigh test and LineationSet/FoliationSet use Watson's U² test instead, since axial data can fool a plain Rayleigh test via antipodal cancellation in the resultant vector
+* random_fisher2 removed from Vector3Set (superseded by the proper von Mises-Fisher sampler in random_fisher)
+* random method added to Vector3Set for uniformly distributed random orientations (i.i.d., unlike the deterministic gss/sfs space-filling samplers)
+* uniform_sfs and uniform_gss renamed to sfs and gss
 
 ### 1.5.0 (Jul 15 2026)
  * notations refactored, including quadrant

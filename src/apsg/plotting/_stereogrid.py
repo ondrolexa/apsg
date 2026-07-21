@@ -45,9 +45,9 @@ class StereoGrid:
         self.grid_n = kwargs.get("grid_n", 2000)
         # grid type
         if kwargs.get("grid_type", "gss") == "gss":
-            self.grid = Vector3Set.uniform_gss(n=self.grid_n)
+            self.grid = Vector3Set.gss(n=self.grid_n)
         else:
-            self.grid = Vector3Set.uniform_sfs(n=self.grid_n)
+            self.grid = Vector3Set.sfs(n=self.grid_n)
         # projection
         kind = str(kwargs.get("kind", "equal-area")).lower()
         if kind in ["equal-area", "schmidt", "earea"]:

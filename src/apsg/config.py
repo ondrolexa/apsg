@@ -136,11 +136,13 @@ class StereonetConeConfig(BaseConfig):
 
 
 @dataclass
-class StereonetBinghamConfig(BaseConfig):
-    """Stereonet Bingham confidence ellipse style configuration."""
+class StereonetConfidenceConfig(BaseConfig):
+    """Stereonet confidence cone/ellipse style configuration."""
 
+    method: str = "fisher"
     which: int = 0
     level: float = 0.95
+    n_resamples: int = 1000
     alpha: Any = None
     color: Any = None
     ls: str = "--"
@@ -357,8 +359,8 @@ class AppConfig(BaseConfig):
         default_factory=StereonetScatterConfig
     )
     stereonet_cone: StereonetConeConfig = field(default_factory=StereonetConeConfig)
-    stereonet_bingham: StereonetBinghamConfig = field(
-        default_factory=StereonetBinghamConfig
+    stereonet_confidence: StereonetConfidenceConfig = field(
+        default_factory=StereonetConfidenceConfig
     )
     stereonet_pair: StereonetPairConfig = field(default_factory=StereonetPairConfig)
     stereonet_fault: StereonetFaultConfig = field(default_factory=StereonetFaultConfig)

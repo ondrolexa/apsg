@@ -25,6 +25,34 @@ from apsg.feature._tensor3 import (
 from apsg.helpers._math import acosd, atand
 from apsg.math._vector import Axial2, Axial3, Vector2, Vector3
 
+_WATSON_U2_ALPHA = np.array([0.005, 0.01, 0.025, 0.05, 0.10])
+_WATSON_U2_CRITICAL = np.array([0.302, 0.267, 0.221, 0.187, 0.152])
+
+
+def _watson_u2_test(w, level=0.95):
+    """Watson's U² one-sample EDF test of uniformity on [0, 1].
+
+    Uses the small-sample-corrected statistic and asymptotic critical values of
+    Stephens (1970), "Use of the Kolmogorov-Smirnov, Cramér-von Mises and Related
+    Statistics Without Extensive Tables," J. R. Statist. Soc. B.
+    """
+    w = np.sort(np.asarray(w, dtype=float))
+    n = len(w)
+    i = np.arange(1, n + 1)
+    u2 = (
+        np.sum((w - (2 * i - 1) / (2 * n)) ** 2)
+        - n * (w.mean() - 0.5) ** 2
+        + 1 / (12 * n)
+    )
+    u2_star = (u2 - 0.1 / n + 0.1 / n**2) * (1.0 + 0.8 / n)
+    alpha = 1.0 - level
+    critical_value = float(np.interp(alpha, _WATSON_U2_ALPHA, _WATSON_U2_CRITICAL))
+    return {
+        "statistic": float(u2_star),
+        "critical_value": critical_value,
+        "uniform": bool(u2_star <= critical_value),
+    }
+
 
 class FeatureSet:
     """
@@ -124,9 +152,9 @@ class FeatureSet:
             >>> l = Vector3Set.random_fisher(n=100, position=lin(120,40))
             >>> sm = [lb.R() for lb in l.bootstrap()]
             >>> l.fisher_statistics()
-            {'k': 19.91236110604979, 'a95': 3.249027370399397, 'csd': 18.15196473425630}
+            {'mu': V:120/40, 'k': 19.91236110604979, 'alpha': 3.249027370399397}
             >>> Vector3Set(sm).fisher_statistics()
-            {'k': 1735.360206701859, 'a95': 0.3393224356447341, 'csd': 1.944420546779801}
+            {'mu': V:120/40, 'k': 1735.360206701859, 'alpha': 0.3393224356447341}
         Returns:
             generator: generator of bootstraped samples from ``FeatureSet``.
         """
@@ -271,9 +299,8 @@ class Vector2Set(FeatureSet):
         Args:
             level: confidence level. Default 0.95 for 95 %.
         Returns:
-            dict: with keys ``mu`` (mean axis), ``k`` (precision parameter),
-                ``csd`` (angular standard deviation), ``alpha`` (confidence cone
-                half-angle), and ``uniform`` (Rayleigh test result).
+            dict: with keys ``mu`` (mean axis), ``k`` (precision parameter), and
+                ``alpha`` (confidence cone half-angle).
         """
 
         def kappa_estimate(N, R):
@@ -303,8 +330,6 @@ class Vector2Set(FeatureSet):
             "mu": Vector2(0, 0),
             "k": np.inf,
             "alpha": 0,
-            "csd": 0,
-            "uniform": False,
         }
         N = len(self)
         Rv = self.normalized().R()
@@ -312,17 +337,49 @@ class Vector2Set(FeatureSet):
         if N != R:
             stats["mu"] = Vector2(Rv.normalized())
             stats["k"] = kappa_estimate(N, R)
-            stats["csd"] = 81 / np.sqrt(stats["k"])
             stats["alpha"] = confidence_cone(N, R, level)
-            stats["uniform"] = bool(R <= np.sqrt(-N / 2.0 * np.log(1 - level)))
         return stats
 
+    def csd(self):
+        """Angular standard deviation based on Fisher's statistics (Fisher, 1953).
+
+        Returns:
+            float: angular standard deviation in degrees.
+        """
+        k = self.fisher_statistics()["k"]
+        return 81 / np.sqrt(k) if k > 0 else np.inf
+
+    def uniformity_test(self, level=0.95):
+        """Rayleigh test of uniformity against a preferred direction.
+
+        Uses the large-sample chi-square approximation ``2 * N * Rbar**2 ~ chi2(df=2)``
+        (Mardia & Jupp, 2000, Directional Statistics, sec. 10.4.1) for planar data.
+
+        Args:
+            level: confidence level for the uniformity decision. Default 0.95 for 95 %.
+
+        Returns:
+            dict: with keys ``R`` (resultant length), ``statistic`` (chi-square
+                statistic), ``p_value``, and ``uniform`` (True if data is consistent
+                with a uniform/random distribution at the given confidence level).
+        """
+        N = len(self)
+        R = abs(self.normalized().R())
+        statistic = 2 * R**2 / N
+        p_value = float(stats.chi2.sf(statistic, df=2))
+        return {
+            "R": R,
+            "statistic": statistic,
+            "p_value": p_value,
+            "uniform": bool(p_value >= 1.0 - level),
+        }
+
     def var(self):
-        """Spherical variance based on resultant length (Mardia 1972)."""
+        """Circular variance based on resultant length (Mardia 1972)."""
         return 1 - abs(self.normalized().R(mean=True))
 
     def delta(self):
-        """Cone angle containing ~63% of the data in degrees."""
+        """Half angle containing ~63% of the data in degrees."""
         return acosd(abs(self.R(mean=True)))
 
     def rdegree(self):
@@ -331,7 +388,7 @@ class Vector2Set(FeatureSet):
         return 100 * (2 * abs(self.normalized().R()) - N) / N
 
     def ortensor(self):
-        """Return orientation tensor ``Ortensor`` of ``Group``."""
+        """Return orientation tensor ``OrientationTensor2`` of ``Vector2Set``."""
 
         return self._ortensor
 
@@ -446,6 +503,22 @@ class Direction2Set(Vector2Set):
 
     def __repr__(self):
         return f"D2({len(self)}) {self.name}"
+
+    def uniformity_test(self, level=0.95):
+        """Rayleigh's uniformity test for axial data, via angle doubling.
+
+        Doubles each direction angle (mod 360°) to map the 180°-periodic axial data
+        onto a full circle before applying the standard circular Rayleigh test - see
+        ``Vector2Set.uniformity_test``.
+
+        Args:
+            level: confidence level for the uniformity decision. Default 0.95.
+
+        Returns:
+            dict: with keys ``R``, ``statistic``, ``p_value`` and ``uniform``.
+        """
+        doubled = Vector2Set([Vector2(2 * e.direction) for e in self])
+        return doubled.uniformity_test(level=level)
 
 
 class Vector3Set(FeatureSet):
@@ -607,9 +680,8 @@ class Vector3Set(FeatureSet):
         Args:
             level: confidence level. Default 0.95 for 95 %.
         Returns:
-            dict: with keys ``mu`` (mean axis), ``k`` (precision parameter),
-                ``csd`` (angular standard deviation), ``alpha`` (confidence cone
-                half-angle), and ``uniform`` (Rayleigh test result).
+            dict: with keys ``mu`` (mean axis), ``k`` (precision parameter), and
+                ``alpha`` (confidence cone half-angle).
 
         Note:
             Calculated alpha for level 0.95 means, you can be 95% confident that
@@ -665,8 +737,6 @@ class Vector3Set(FeatureSet):
             "mu": Vector3(0, 0, 0),
             "k": np.inf,
             "alpha": 0,
-            "csd": 0,
-            "uniform": False,
         }
         N = len(self)
         Rv = self.normalized().R()
@@ -674,28 +744,42 @@ class Vector3Set(FeatureSet):
         if R < N:
             stats["mu"] = Vector3(Rv.normalized())
             stats["k"] = kappa_estimate(N, R)
-            k = stats["k"]
-            stats["csd"] = 81 / np.sqrt(k) if k > 0 else np.inf
             stats["alpha"] = confidence_cone(N, R, level)
-            stats["uniform"] = bool(R <= np.sqrt(-N / 2.0 * np.log(1 - level)))
         return stats
 
-    def fisher_cone(self, level=0.95):
-        """Confidence limit cone based on Fisher's statistics.
-
-        Args:
-            level: confidence level. Default 0.95 for 95 %.
+    def csd(self):
+        """Angular standard deviation based on Fisher's statistics (Fisher, 1953).
 
         Returns:
-            Cone: Confidence cone around the mean direction with given level.
+            float: angular standard deviation in degrees.
         """
-        stats = self.fisher_statistics()
-        return Cone(self.normalized().R(), stats["alpha"])
+        k = self.fisher_statistics()["k"]
+        return 81 / np.sqrt(k) if k > 0 else np.inf
 
-    def fisher_cone_csd(self):
-        """Angular standard deviation cone based on Fisher's statistics."""
-        stats = self.fisher_statistics()
-        return Cone(self.normalized().R(), stats["csd"])
+    def uniformity_test(self, level=0.95):
+        """Rayleigh test of uniformity against a preferred direction.
+
+        Uses the large-sample chi-square approximation ``3 * N * Rbar**2 ~ chi2(df=3)``
+        (Mardia & Jupp, 2000, Directional Statistics, sec. 10.4.1) for spherical data.
+
+        Args:
+            level: confidence level for the uniformity decision. Default 0.95 for 95 %.
+
+        Returns:
+            dict: with keys ``R`` (resultant length), ``statistic`` (chi-square
+                statistic), ``p_value``, and ``uniform`` (True if data is consistent
+                with a uniform/random distribution at the given confidence level).
+        """
+        N = len(self)
+        R = abs(self.normalized().R())
+        statistic = 3 * R**2 / N
+        p_value = float(stats.chi2.sf(statistic, df=3))
+        return {
+            "R": R,
+            "statistic": statistic,
+            "p_value": p_value,
+            "uniform": bool(p_value >= 1.0 - level),
+        }
 
     def watson_statistics(self, level=0.95):
         """Fit Watson distribution and return statistics.
@@ -1120,6 +1204,32 @@ class Vector3Set(FeatureSet):
         )
 
     @classmethod
+    def random(cls, n=100, name="Default"):
+        """Method to create ``Vector3Set`` of features with uniformly distributed
+        random orientation.
+
+        Keyword Args:
+            n: number of objects to be generated.
+            name: name of dataset. Default is 'Default'.
+
+        Examples:
+            >>> np.random.seed(58463123)
+            >>> v = vecset.random(100)
+
+        Returns:
+            Vector3Set: The created feature set.
+        """
+        u1 = np.random.random(n)
+        u2 = np.random.random(n)
+        z = 2 * u2 - 1
+        theta = 2 * np.pi * u1
+        r = np.sqrt(1 - z**2)
+        x = r * np.cos(theta)
+        y = r * np.sin(theta)
+        data = [cls.__feature_class__(v) for v in np.array([x, y, z]).T]
+        return cls(data, name=name)
+
+    @classmethod
     def random_normal(cls, n=100, position=Vector3(0, 0, 1), sigma=20, name="Default"):
         """Method to create ``FeatureSet`` of normaly distributed features.
 
@@ -1170,35 +1280,6 @@ class Vector3Set(FeatureSet):
         return cls([cls.__feature_class__(d) for d in dc], name=name)
 
     @classmethod
-    def random_fisher2(cls, n=100, position=Vector3(0, 0, 1), kappa=20, name="Default"):
-        """Method to create ``FeatureSet`` of vectors distributed according to
-        Fisher distribution.
-
-        Note: For proper von Mises Fisher distrinbution implementation use
-        ``random.fisher`` method.
-
-        Args:
-            n: number of objects to be generated.
-            position: mean orientation given as ``Vector3``. Default Vector3(0, 0, 1).
-            kappa: precision parameter of the distribution. Default 20.
-            name: name of dataset. Default is 'Default'.
-
-        Examples:
-            >>> l = linset.random_fisher2(position=lin(120,50))
-        Returns:
-            FeatureSet: The created feature set.
-        """
-        orig = Vector3(0, 0, 1)
-        ax = orig.cross(position)
-        ang = orig.angle(position)
-        L = np.exp(-2 * kappa)
-        a = np.random.random(n) * (1 - L) + L
-        fac = np.sqrt(-np.log(a) / (2 * kappa))
-        inc = 90 - 2 * np.degrees(np.arcsin(fac))
-        azi = 360 * np.random.random(n)
-        return cls.from_array(azi, inc, name=name).rotate(ax, ang)
-
-    @classmethod
     def random_kent(cls, p, n=100, kappa=20, beta=None, name="Default"):
         """Return ``FeatureSet`` of random vectors sampled from Kent distribution
         (Kent, 1982) - The 5-parameter Fisher–Bingham distribution.
@@ -1223,7 +1304,7 @@ class Vector3Set(FeatureSet):
         return cls([cls.__feature_class__(d) for d in kd.rvs(n)], name=name)
 
     @classmethod
-    def uniform_sfs(cls, n=100, name="Default"):
+    def sfs(cls, n=100, name="Default"):
         """Method to create ``FeatureSet`` of uniformly distributed vectors.
         Spherical Fibonacci Spiral points on a sphere algorithm adopted from
         John Burkardt.
@@ -1235,7 +1316,7 @@ class Vector3Set(FeatureSet):
             name: name of dataset. Default is 'Default'.
 
         Examples:
-            >>> v = vecset.uniform_sfs(300)
+            >>> v = vecset.sfs(300)
             >>> v.ortensor().eigenvalues()
             (0.3334645347163635, 0.33333474915201167, 0.33320071613162483)
         Returns:
@@ -1250,7 +1331,7 @@ class Vector3Set(FeatureSet):
         return cls([cls.__feature_class__(d) for d in dc], name=name)
 
     @classmethod
-    def uniform_gss(cls, n=100, name="Default"):
+    def gss(cls, n=100, name="Default"):
         """Method to create ``FeatureSet`` of uniformly distributed vectors.
         Golden Section Spiral points on a sphere algorithm.
 
@@ -1261,7 +1342,7 @@ class Vector3Set(FeatureSet):
             name: name of dataset. Default is 'Default'.
 
         Examples:
-            >>> v = vecset.uniform_gss(300)
+            >>> v = vecset.gss(300)
             >>> v.ortensor().eigenvalues()
             (0.33335688569571587, 0.33332315115436933, 0.33331996314991513)
         Returns:
@@ -1292,6 +1373,26 @@ class LineationSet(Vector3Set):
     def __repr__(self):
         return f"L({len(self)}) {self.name}"
 
+    def uniformity_test(self, level=0.95):
+        """Watson's U² test of uniformity for axial (spherical) data.
+
+        Rayleigh's test (used by plain ``Vector3Set``) is insensitive to axial/bipolar
+        concentration since the resultant vector cancels for antipodal data. Instead,
+        tests whether ``|xᵢ · v|`` (v = major eigenvector of the orientation tensor) is
+        uniformly distributed on [0, 1] - true for the (folded) z-coordinate of points
+        uniformly distributed on the sphere.
+
+        Args:
+            level: confidence level for the uniformity decision. Default 0.95.
+
+        Returns:
+            dict: with keys ``statistic`` (Watson's U²), ``critical_value`` and
+                ``uniform``.
+        """
+        v = self.ortensor().eigenvectors(0)
+        w = [e.dot(v) for e in self]
+        return _watson_u2_test(w, level=level)
+
 
 class FoliationSet(Vector3Set):
     """
@@ -1307,6 +1408,26 @@ class FoliationSet(Vector3Set):
 
     def __repr__(self):
         return f"S({len(self)}) {self.name}"
+
+    def uniformity_test(self, level=0.95):
+        """Watson's U² test of uniformity for axial (spherical) data.
+
+        Rayleigh's test (used by plain ``Vector3Set``) is insensitive to axial/bipolar
+        concentration since the resultant vector cancels for antipodal data. Instead,
+        tests whether ``|xᵢ · v|`` (v = major eigenvector of the orientation tensor) is
+        uniformly distributed on [0, 1] - true for the (folded) z-coordinate of points
+        uniformly distributed on the sphere.
+
+        Args:
+            level: confidence level for the uniformity decision. Default 0.95.
+
+        Returns:
+            dict: with keys ``statistic`` (Watson's U²), ``critical_value`` and
+                ``uniform``.
+        """
+        v = self.ortensor().eigenvectors(0)
+        w = [e.dot(v) for e in self]
+        return _watson_u2_test(w, level=level)
 
     def dipvec(self):
         """Return ``FeatureSet`` object with plane dip vector."""

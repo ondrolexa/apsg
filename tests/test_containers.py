@@ -205,8 +205,29 @@ class TestVector2Set:
         assert isinstance(s, dict)
         assert "k" in s
         assert "alpha" in s
-        assert "csd" in s
-        assert "uniform" in s
+
+    def test_csd(self):
+        np.random.seed(42)
+        v = Vector2Set.random_vonmises(100, position=0, kappa=20)
+        assert isinstance(v.csd(), float)
+
+    def test_uniformity_test_uniform(self):
+        np.random.seed(42)
+        v = Vector2Set.random(200)
+        s = v.uniformity_test()
+        assert isinstance(s, dict)
+        assert "R" in s
+        assert "statistic" in s
+        assert "p_value" in s
+        assert s["p_value"] > 0.05
+        assert s["uniform"] is True
+
+    def test_uniformity_test_clustered(self):
+        np.random.seed(42)
+        v = Vector2Set.random_vonmises(100, position=0, kappa=20)
+        s = v.uniformity_test()
+        assert s["p_value"] < 0.05
+        assert s["uniform"] is False
 
     def test_var(self):
         v = Vector2Set([Vector2(1, 0), Vector2(0, 1)])
@@ -318,6 +339,29 @@ class TestDirection2Set:
         d = Direction2Set([Direction(45), Direction(135)])
         assert d.to_vec2() is not None
         assert len(d.normalized()) == 2
+
+    def test_uniformity_test_uniform(self):
+        np.random.seed(42)
+        d = Direction2Set([Direction(a) for a in np.random.uniform(0, 180, 200)])
+        s = d.uniformity_test()
+        assert isinstance(s, dict)
+        assert s["p_value"] > 0.05
+        assert s["uniform"] is True
+
+    def test_uniformity_test_clustered_antipodal_mix(self):
+        # A single tight axial cluster around the 10/190 axis, but recorded with
+        # both antipodal representations mixed together (as real field
+        # measurements of an axial feature often are). A naive Rayleigh test on
+        # the raw (undoubled) vectors would report this as uniform (R ~ 0), since
+        # the two antipodal halves cancel in the vector sum.
+        np.random.seed(42)
+        angles = np.concatenate(
+            [np.random.normal(10, 3, 50), np.random.normal(190, 3, 50)]
+        )
+        d = Direction2Set([Direction(a) for a in angles])
+        s = d.uniformity_test()
+        assert s["p_value"] < 0.05
+        assert s["uniform"] is False
 
 
 # ---------------------------------------------------------------------------
@@ -486,24 +530,29 @@ class TestVector3Set:
         assert "mu" in s
         assert "k" in s
         assert "alpha" in s
-        assert "csd" in s
-        assert "uniform" in s
 
-    def test_fisher_cone(self):
+    def test_csd(self):
         np.random.seed(42)
         v = Vector3Set.random_fisher(100, position=Vector3(0, 0, 1), kappa=20)
-        cone = v.fisher_cone()
-        from apsg.feature._geodata import Cone
+        assert isinstance(v.csd(), float)
 
-        assert isinstance(cone, Cone)
+    def test_uniformity_test_uniform(self):
+        np.random.seed(42)
+        v = Vector3Set.gss(200)
+        s = v.uniformity_test()
+        assert isinstance(s, dict)
+        assert "R" in s
+        assert "statistic" in s
+        assert "p_value" in s
+        assert s["p_value"] > 0.05
+        assert s["uniform"] is True
 
-    def test_fisher_cone_csd(self):
+    def test_uniformity_test_clustered(self):
         np.random.seed(42)
         v = Vector3Set.random_fisher(100, position=Vector3(0, 0, 1), kappa=20)
-        cone = v.fisher_cone_csd()
-        from apsg.feature._geodata import Cone
-
-        assert isinstance(cone, Cone)
+        s = v.uniformity_test()
+        assert s["p_value"] < 0.05
+        assert s["uniform"] is False
 
     def test_watson_statistics(self):
         np.random.seed(42)
@@ -631,6 +680,14 @@ class TestVector3Set:
         v = Vector3Set.from_xyz([1, 0], [0, 1], [0, 0])
         assert len(v) == 2
 
+    def test_random(self):
+        np.random.seed(42)
+        v = Vector3Set.random(2000)
+        assert len(v) == 2000
+        eigenvalues = v.ortensor().eigenvalues()
+        for ev in eigenvalues:
+            assert math.isclose(ev, 1 / 3, abs_tol=0.02)
+
     def test_random_normal(self):
         np.random.seed(42)
         v = Vector3Set.random_normal(10, position=Vector3(0, 0, 1), sigma=20)
@@ -641,23 +698,18 @@ class TestVector3Set:
         v = Vector3Set.random_fisher(10, position=Vector3(0, 0, 1), kappa=20)
         assert len(v) == 10
 
-    def test_random_fisher2(self):
-        np.random.seed(42)
-        v = Vector3Set.random_fisher2(10, position=Vector3(0, 0, 1), kappa=20)
-        assert len(v) == 10
-
     def test_random_kent(self):
         np.random.seed(42)
         p = Pair(150, 40, 150, 40)
         v = Vector3Set.random_kent(p, n=10, kappa=30)
         assert len(v) == 10
 
-    def test_uniform_sfs(self):
-        v = Vector3Set.uniform_sfs(100)
+    def test_sfs(self):
+        v = Vector3Set.sfs(100)
         assert len(v) == 100
 
-    def test_uniform_gss(self):
-        v = Vector3Set.uniform_gss(100)
+    def test_gss(self):
+        v = Vector3Set.gss(100)
         assert len(v) == 100
 
     def test_copy(self):
@@ -736,6 +788,26 @@ class TestLineationSet:
         v = LineationSet.random_fisher(10, position=Lineation(120, 40))
         assert len(v) == 10
 
+    def test_uniformity_test_uniform(self):
+        np.random.seed(42)
+        v = LineationSet.gss(200)
+        s = v.uniformity_test()
+        assert isinstance(s, dict)
+        assert "statistic" in s
+        assert "critical_value" in s
+        assert s["uniform"] is True
+
+    def test_uniformity_test_clustered_antipodal_mix(self):
+        # A tight axial cluster around lin(120, 40), with half the vectors
+        # flipped to their antipode (a no-op for axial equality, but exercises
+        # that mixing both antipodal representations doesn't cancel the signal
+        # the way it would for a plain Rayleigh test on the raw resultant).
+        np.random.seed(42)
+        v = LineationSet.random_fisher(100, position=Lineation(120, 40), kappa=50)
+        flipped = LineationSet([-e if i % 2 else e for i, e in enumerate(v)])
+        s = flipped.uniformity_test()
+        assert s["uniform"] is False
+
 
 # ---------------------------------------------------------------------------
 # FoliationSet
@@ -772,6 +844,22 @@ class TestFoliationSet:
         assert len(f.normalized()) == 2
         assert isinstance(f.R(), Foliation)
         assert f.ortensor() is not None
+
+    def test_uniformity_test_uniform(self):
+        np.random.seed(42)
+        f = FoliationSet.gss(200)
+        s = f.uniformity_test()
+        assert isinstance(s, dict)
+        assert "statistic" in s
+        assert "critical_value" in s
+        assert s["uniform"] is True
+
+    def test_uniformity_test_clustered_antipodal_mix(self):
+        np.random.seed(42)
+        f = FoliationSet.random_fisher(100, position=Foliation(250, 30), kappa=50)
+        flipped = FoliationSet([-e if i % 2 else e for i, e in enumerate(f)])
+        s = flipped.uniformity_test()
+        assert s["uniform"] is False
 
 
 # ---------------------------------------------------------------------------

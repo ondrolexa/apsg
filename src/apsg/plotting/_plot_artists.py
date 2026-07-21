@@ -197,23 +197,23 @@ class StereoNet_Cone(StereoNet_Artists):
                 self.kwargs["label"] = f"Cones ({len(self.args)})"
 
 
-class StereoNet_Bingham(StereoNet_Artists):
+class StereoNet_Confidence(StereoNet_Artists):
     def __init__(self, factory, *args, **kwargs):
-        """Initialize stereonet Bingham confidence ellipse artist."""
+        """Initialize stereonet confidence cone/ellipse artist."""
         super().__init__(factory, *args, **kwargs)
-        self.stereonet_method = "_bingham"
+        self.stereonet_method = "_confidence"
         self.args = args
         self.parse_kwargs(kwargs)
 
     def parse_kwargs(self, kwargs):
-        """Parse and apply Bingham confidence ellipse style kwargs."""
-        super().update_kwargs("stereonet_bingham")
+        """Parse and apply confidence cone/ellipse style kwargs."""
+        super().update_kwargs("stereonet_confidence")
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
                 self.kwargs["label"] = self.args[0].label()
             else:
-                self.kwargs["label"] = f"Bingham ({len(self.args)})"
+                self.kwargs["label"] = f"Confidence ({len(self.args)})"
 
 
 class StereoNet_Pair(StereoNet_Artists):
@@ -408,12 +408,12 @@ class StereoNetArtistFactory:
             raise TypeError("Not valid arguments for Stereonet cone")
 
     @staticmethod
-    def create_bingham(*args, **kwargs):
-        """Create stereonet Bingham confidence ellipse artist from Vector3Set data."""
+    def create_confidence(*args, **kwargs):
+        """Create stereonet confidence cone/ellipse artist from Vector3Set data."""
         if all([isinstance(arg, Vector3Set) for arg in args]):
-            return StereoNet_Bingham("create_bingham", *args, **kwargs)
+            return StereoNet_Confidence("create_confidence", *args, **kwargs)
         else:
-            raise TypeError("Not valid arguments for Stereonet bingham")
+            raise TypeError("Not valid arguments for Stereonet confidence")
 
     @staticmethod
     def create_pair(*args, **kwargs):
