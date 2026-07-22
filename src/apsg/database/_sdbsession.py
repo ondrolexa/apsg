@@ -18,16 +18,15 @@ from sqlalchemy.orm import (
 )
 
 from apsg.database._sdbmodels import (
+    Attached,
     Meta,
     Site,
     Structdata,
     Structype,
-    Attached,
     Tag,
     Unit,
     metadata,
 )
-
 from apsg.feature._container import FaultSet, FoliationSet, LineationSet, PairSet
 from apsg.feature._geodata import Fault, Foliation, Lineation, Pair
 from apsg.pandas import FolArray, LinArray, pd
@@ -706,7 +705,7 @@ class SDBSession:
             if "unit" in store:
                 res["unit"] = v.site.unit.name
             if "tags" in store:
-                res["tags"] = [t.name for t in v.tags]
+                res["tags"] = "|".join([t.name for t in v.tags])
             if "geo" in store:
                 res["geo"] = (v.site.x_coord, v.site.y_coord)
             return res
