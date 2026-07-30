@@ -340,6 +340,13 @@ class TestDirection2Set:
         assert d.to_vec2() is not None
         assert len(d.normalized()) == 2
 
+    def test_R_order_independent(self):
+        np.random.seed(1)
+        angles = np.random.uniform(0, 180, 20)
+        d = Direction2Set([Direction(a) for a in angles])
+        shuffled = Direction2Set([Direction(a) for a in angles[::-1]])
+        assert np.allclose(np.array(d.R()), np.array(shuffled.R()))
+
     def test_uniformity_test_uniform(self):
         np.random.seed(42)
         d = Direction2Set([Direction(a) for a in np.random.uniform(0, 180, 200)])
@@ -779,6 +786,12 @@ class TestLineationSet:
         assert isinstance(v.R(), Lineation)
         assert isinstance(v.to_vec(), Vector3Set)
 
+    def test_R_order_independent(self):
+        np.random.seed(42)
+        v = LineationSet.random_fisher(20, position=Lineation(120, 40))
+        shuffled = LineationSet(list(reversed(v)))
+        assert np.allclose(np.array(v.R()), np.array(shuffled.R()))
+
     def test_from_array(self):
         v = LineationSet.from_array([110, 30], [26, 10])
         assert len(v) == 2
@@ -844,6 +857,16 @@ class TestFoliationSet:
         assert len(f.normalized()) == 2
         assert isinstance(f.R(), Foliation)
         assert f.ortensor() is not None
+
+    def test_R_order_independent(self):
+        np.random.seed(1)
+        data = [
+            Foliation(a, i)
+            for a, i in zip(np.random.uniform(0, 360, 20), np.random.uniform(0, 90, 20))
+        ]
+        f = FoliationSet(data)
+        shuffled = FoliationSet(list(reversed(data)))
+        assert np.allclose(np.array(f.R()), np.array(shuffled.R()))
 
     def test_uniformity_test_uniform(self):
         np.random.seed(42)

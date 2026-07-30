@@ -7,6 +7,7 @@
 * random_fisher2 removed from Vector3Set (superseded by the proper von Mises-Fisher sampler in random_fisher)
 * random method added to Vector3Set for uniformly distributed random orientations (i.i.d., unlike the deterministic gss/sfs space-filling samplers)
 * uniform_sfs and uniform_gss renamed to sfs and gss
+* fixed R() on Direction2Set/LineationSet/FoliationSet giving a different resultant depending on the order features were listed in, due to axial addition flipping each vector against a running (order-dependent) partial sum; now uses the halfspace() consensus flip instead, which is order-independent. This also fixes var, delta, rdegree, fisher_statistics, csd, similarity(method="hotelling") and StereoNet.confidence(method="fisher"/"bootstrap") for axial data, which all relied on R()
 
 ### 1.5.0 (Jul 15 2026)
  * notations refactored, including quadrant

@@ -288,7 +288,10 @@ class Vector2Set(FeatureSet):
         Returns:
             Vector2: The resultant vector.
         """
-        R = sum(self)
+        if issubclass(self.__feature_class__, Axial2):
+            R = self.__feature_class__(np.array(self.halfspace()).sum(axis=0))
+        else:
+            R = sum(self)
         if mean:
             R = R / len(self)
         return R
@@ -669,7 +672,10 @@ class Vector3Set(FeatureSet):
         Returns:
             Vector3: The resultant vector.
         """
-        R = sum(self)
+        if issubclass(self.__feature_class__, Axial3):
+            R = self.__feature_class__(np.array(self.halfspace()).sum(axis=0))
+        else:
+            R = sum(self)
         if mean:
             R = R / len(self)
         return R
