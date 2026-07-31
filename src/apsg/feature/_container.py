@@ -1991,9 +1991,8 @@ class FaultSet(PairSet):
             # Trace-free: s33 = -(s11 + s22)
             s11, s12, s13, s22, s23 = x
             s33 = -(s11 + s22)
-            # GEOLOGICAL CONVENTION: Flip signs so compression is positive
             return Stress3(
-                -np.array([[s11, s12, s13], [s12, s22, s23], [s13, s23, s33]])
+                np.array([[s11, s12, s13], [s12, s22, s23], [s13, s23, s33]])
             )
 
         if not bootstrap:
@@ -2316,37 +2315,37 @@ class Stress3Set(FeatureSet):
     def sigma1(self) -> np.ndarray:
         """Return the array of the maximum principal stress (max compressive)."""
 
-        return np.array([e.E3 for e in self])
+        return np.array([e.sigma1 for e in self])
 
     @property
     def sigma2(self) -> np.ndarray:
         """Return the array of the intermediate principal stress (max compressive)."""
 
-        return np.array([e.E2 for e in self])
+        return np.array([e.sigma2 for e in self])
 
     @property
     def sigma3(self) -> np.ndarray:
         """Return the array of the minimum principal stress (max tensile)."""
 
-        return np.array([e.E1 for e in self])
+        return np.array([e.sigma3 for e in self])
 
     @property
     def sigma1dir(self) -> Vector3Set:
         """Return Vector3Set of unit length vector in direction of maximum."""
 
-        return Vector3Set([e.V3 for e in self])
+        return Vector3Set([e.sigma1dir for e in self])
 
     @property
     def sigma2dir(self) -> Vector3Set:
         """Return Vector3Set of unit length vector in direction of intermediate."""
 
-        return Vector3Set([e.V2 for e in self])
+        return Vector3Set([e.sigma2dir for e in self])
 
     @property
     def sigma3dir(self) -> Vector3Set:
         """Return Vector3Set of unit length vector in direction of minimum."""
 
-        return Vector3Set([e.V1 for e in self])
+        return Vector3Set([e.sigma3dir for e in self])
 
 
 class ClusterSet(object):

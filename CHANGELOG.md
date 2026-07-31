@@ -1,6 +1,7 @@
 # Changelog
 
 ### 1.5.1 (master)
+* BREAKING: Stress2/Stress3 now use the geosciences & rock-mechanics sign convention (compression positive, tension negative), replacing the previous continuum-mechanics (tension positive) convention; sigma1/sigma2/sigma3(dir/vec) now map directly to E1/E2/E3. This also fixes Stress3.fault, Stress3.effective (pore pressure now correctly reduces compressive stress), Stress3.dilation_tendency, Stress3.from_ratio, Stress3Set.sigma1/2/3(dir), FaultSet.stress_inversion and the StereoNet stress-axis plotting, which all depended on the old convention
 * section method added to Ellipsoid to get planar section as Ellipse
 * confidence method added to StereoNet to draw fisher, bingham, watson or bootstrap confidence cone/ellipse around orientation data (bingham uses the exact F-distribution method of Fisher, Lewis & Embleton (1987)); replaces fisher_cone/fisher_cone_csd (removed from Vector3Set)
 * csd and uniform removed from fisher_statistics; added as separate csd and uniformity_test methods on Vector2Set/Vector3Set, fixing the previous uniformity test which used an incorrect chi-square formula shared (and wrong) for both 2D and 3D data. Direction2Set uses an angle-doubling Rayleigh test and LineationSet/FoliationSet use Watson's U² test instead, since axial data can fool a plain Rayleigh test via antipodal cancellation in the resultant vector

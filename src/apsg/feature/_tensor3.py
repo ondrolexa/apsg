@@ -599,31 +599,28 @@ class Stress3(Tensor3):
     """
     The class to represent 3D stress tensor.
 
-    The real eigenvalues of the stress tensor are what we call
-    the principal stresses. There are 3 of these in 3D, available
-    as properties E1, E2, and E3 in descending order of magnitude
-    (max, intermediate, and minimum principal stresses) with orientations
-    available as properties V1, V2 and V3. The minimum principal stress
-    is simply the eigenvalue that has the lowest magnitude. Therefore,
-    the maximum principal stress is the most tensile (least compressive)
-    and the minimum principal stress is the least tensile (most compressive).
-    Tensile normal stresses have positive values, and compressive normal
-    stresses have negative values. If the maximum principal stress is <=0
-    and the minimum principal stress is negative then the stresses are
-    completely compressive.
+    Uses the geosciences and rock-mechanics sign convention: normal stress
+    is positive for compression and negative for tension (the opposite of
+    the continuum-mechanics convention). The real eigenvalues of the stress
+    tensor are what we call the principal stresses. There are 3 of these in
+    3D, available as properties E1, E2, and E3 in descending order of
+    magnitude, with orientations available as properties V1, V2 and V3.
+    Because compressive stresses are positive here, E1 is directly the
+    greatest (most compressive) principal stress and E3 the least
+    (most tensile).
 
-    Note: Stress tensor has a special properties sigma1, sigma2 and sigma3
-    to follow common geological terminology. sigma1 is most compressive
-    (least tensile) while sigma3 is most tensile (least compressive).
-    Their orientation could be accessed with properties sigma1dir,
-    sigma2dir and sigma3dir.
+    Note: Stress tensor has special properties sigma1, sigma2 and sigma3
+    to follow common geological terminology - they map directly to E1, E2
+    and E3: sigma1 is the greatest (most compressive) principal stress
+    while sigma3 is the least (most tensile). Their orientation could be
+    accessed with properties sigma1dir, sigma2dir and sigma3dir.
 
     Args:
         a (3x3 array_like): Input data, that can be converted to
             3x3 2D array. This includes lists, tuples and ndarrays.
 
     Examples:
-        >>> S = stress([[-8, 0, 0],[0, -5, 0],[0, 0, -1]])
+        >>> S = stress([[8, 0, 0],[0, 5, 0],[0, 0, 1]])
     """
 
     @classmethod
@@ -637,12 +634,12 @@ class Stress3(Tensor3):
             xx, xy|yx, xz|zx, yy, yz|zy, zz (float): tensor components
 
         Examples:
-            >>> S = stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+            >>> S = stress.from_comp(xx=5, yy=2, zz=-10, xy=1)
             >>> S
             Stress3
-            [[-5.  1.  0.]
-             [ 1. -2.  0.]
-             [ 0.  0. 10.]]
+            [[  5.   1.   0.]
+             [  1.   2.   0.]
+             [  0.   0. -10.]]
 
         Returns:
             Stress3: ``Stress`` tensor. Default is zero tensor.
@@ -668,17 +665,17 @@ class Stress3(Tensor3):
             >>> S = stress.from_ratio(r=0.25, mag=10)
             >>> S
             Stress3
-            [[-5.   0.   0. ]
-             [ 0.  -2.5  0. ]
-             [ 0.   0.   5. ]]
+            [[ 5.   0.   0. ]
+             [ 0.   2.5  0. ]
+             [ 0.   0.  -5. ]]
 
         Returns:
             Stress3: ``Stress`` tensor with given shape ration.
         """
 
-        xx = -mag / 2
-        yy = xx + r * mag
-        zz = mag / 2
+        xx = mag / 2
+        yy = xx - r * mag
+        zz = -mag / 2
         return cls([[xx, 0, 0], [0, yy, 0], [0, 0, zz]])
 
     @property
@@ -710,13 +707,13 @@ class Stress3(Tensor3):
             Stress3: effective stress tensor reduced by fluid pressure.
         """
 
-        return type(self)(self + fp * Stress3())
+        return type(self)(self - fp * Stress3())
 
     @property
     def sigma1(self):
         """A maximum principal stress (max compressive)."""
 
-        return self.E3
+        return self.E1
 
     @property
     def sigma2(self):
@@ -728,13 +725,13 @@ class Stress3(Tensor3):
     def sigma3(self):
         """A minimum principal stress (max tensile)."""
 
-        return self.E1
+        return self.E3
 
     @property
     def sigma1dir(self):
         """Return unit length vector in direction of maximum."""
 
-        return self.V3
+        return self.V1
 
     @property
     def sigma2dir(self):
@@ -746,13 +743,13 @@ class Stress3(Tensor3):
     def sigma3dir(self):
         """Return unit length vector in direction of minimum."""
 
-        return self.V1
+        return self.V3
 
     @property
     def sigma1vec(self):
         """Return maximum principal stress vector (max compressive)."""
 
-        return self.E3 * self.V3
+        return self.E1 * self.V1
 
     @property
     def sigma2vec(self):
@@ -764,7 +761,7 @@ class Stress3(Tensor3):
     def sigma3vec(self):
         """Return minimum principal stress vector (max tensile)."""
 
-        return self.E1 * self.V1
+        return self.E3 * self.V3
 
     @property
     def I1(self):
@@ -801,9 +798,9 @@ class Stress3(Tensor3):
             n: normal given as ``Vector3`` or ``Foliation`` object
 
         Examples:
-            >>> S = stress.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+            >>> S = stress.from_comp(xx=5, yy=2, zz=-10, xy=1)
             >>> S.cauchy(fol(160, 30))
-            Vector3(-2.52, 0.812, 8.66)
+            Vector3(2.178, 0.128, -8.66)
 
         Returns:
             Vector3: stress vector associated with plane given by normal vector.
@@ -819,17 +816,16 @@ class Stress3(Tensor3):
             n: normal given as ``Vector3`` or ``Foliation`` object
 
         Examples:
-            >>> S = stress.from_comp(xx=-5, yy=-2, zz=10, xy=8)
+            >>> S = stress.from_comp(xx=5, yy=2, zz=-10, xy=8)
             >>> S.fault(fol(160, 30))
-            F:160/30-141/29 +
+            F:160/30-205/22 R
 
         Returns:
             Fault: ``Fault`` object derived from given by normal vector.
         """
 
         sn, tau = self.stress_comp(n)
-        # return Fault(sn.normalized(), tau.normalized())
-        return Fault(n.normalized(), -tau.normalized())
+        return Fault(n.normalized(), tau.normalized())
 
     def stress_comp(self, n):
         """Return normal and shear stress ``Vector3`` components on plane given
@@ -899,9 +895,9 @@ class Stress3(Tensor3):
         """
         Se = self.effective(fp)
 
-        sn, tau = Se.stress_comp(n)
+        sn = Se.normal_stress(n)
         denom = Se.sigma1 - Se.sigma3
-        return np.where(np.isclose(denom, 0), np.nan, (Se.sigma1 - abs(sn)) / denom)
+        return np.where(np.isclose(denom, 0), np.nan, (Se.sigma1 - sn) / denom)
 
     @property
     def shape_ratio(self):

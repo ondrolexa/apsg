@@ -266,6 +266,21 @@ class Stress2(Tensor2):
     """
     The class to represent 2D stress tensor.
 
+    Uses the geosciences and rock-mechanics sign convention: normal stress
+    is positive for compression and negative for tension (the opposite of
+    the continuum-mechanics convention). The real eigenvalues of the stress
+    tensor are the principal stresses, available as properties E1 and E2 in
+    descending order of magnitude, with orientations available as V1 and
+    V2. Because compressive stresses are positive here, E1 is directly the
+    greatest (most compressive) principal stress and E2 the least
+    (most tensile).
+
+    Note: Stress tensor has special properties sigma1 and sigma2 to follow
+    common geological terminology - they map directly to E1 and E2: sigma1
+    is the greatest (most compressive) principal stress while sigma2 is the
+    least (most tensile). Their orientation could be accessed with
+    properties sigma1dir and sigma2dir.
+
     Args:
         a (2x2 array_like): Input data, that can be converted to
             2x2 2D array. This includes lists, tuples and ndarrays.
@@ -274,7 +289,7 @@ class Stress2(Tensor2):
         Stress2: 2D stress tensor.
 
     Examples:
-        >>> S = Stress2([[-8, 0, 0],[0, -5, 0],[0, 0, -1]])
+        >>> S = Stress2([[8, 0], [0, 1]])
 
     """
 
@@ -289,11 +304,11 @@ class Stress2(Tensor2):
             xx, xy|yx, yy (float): tensor components
 
         Examples:
-            >>> S = stress2.from_comp(xx=-5, yy=-2, xy=1)
+            >>> S = stress2.from_comp(xx=5, yy=2, xy=1)
             >>> S
             Stress2
-            [[-5.  1.]
-             [ 1. -2.]]
+            [[5. 1.]
+             [1. 2.]]
         """
         xx = kwargs.get("xx", 0)
         xy = kwargs.get("xy", kwargs.get("yx", 0))
@@ -330,7 +345,7 @@ class Stress2(Tensor2):
         A maximum principal stress (max compressive).
         """
 
-        return self.E2
+        return self.E1
 
     @property
     def sigma2(self):
@@ -338,7 +353,7 @@ class Stress2(Tensor2):
         A minimum principal stress.
         """
 
-        return self.E1
+        return self.E2
 
     @property
     def sigma1dir(self):
@@ -347,7 +362,7 @@ class Stress2(Tensor2):
         principal stress (max compressive).
         """
 
-        return self.V2
+        return self.V1
 
     @property
     def sigma2dir(self):
@@ -356,7 +371,7 @@ class Stress2(Tensor2):
         principal stress.
         """
 
-        return self.V1
+        return self.V2
 
     @property
     def sigma1vec(self):
@@ -364,7 +379,7 @@ class Stress2(Tensor2):
         Return maximum principal stress vector (max compressive).
         """
 
-        return self.E2 * self.V2
+        return self.E1 * self.V1
 
     @property
     def sigma2vec(self):
@@ -372,7 +387,7 @@ class Stress2(Tensor2):
         Return minimum principal stress vector.
         """
 
-        return self.E1 * self.V1
+        return self.E2 * self.V2
 
     @property
     def I1(self):
@@ -418,9 +433,9 @@ class Stress2(Tensor2):
             n: normal given as ``Vector2`` object
 
         Examples:
-            >>> S = Stress.from_comp(xx=-5, yy=-2, xy=1)
-            >>> S.cauchy(vec2(1,1))
-            V(-2.520, 0.812, 8.660)
+            >>> S = stress2.from_comp(xx=5, yy=2, xy=1)
+            >>> S.cauchy(vec2(1, 1))
+            Vector2(4.243, 2.121)
 
         Returns:
             Vector2: stress vector associated with plane given by normal vector.

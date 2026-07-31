@@ -244,101 +244,101 @@ class TestStress2:
         assert isinstance(S, Stress2)
 
     def test_from_comp(self):
-        S = Stress2.from_comp(xx=-5, yy=-2, xy=1)
-        assert S.xx == -5
-        assert S.yy == -2
+        S = Stress2.from_comp(xx=5, yy=2, xy=1)
+        assert S.xx == 5
+        assert S.yy == 2
         assert S.xy == 1
         assert S.yx == 1  # symmetric
 
     def test_from_array(self):
-        S = Stress2([[-5, 1], [1, -2]])
-        assert S.xx == -5
+        S = Stress2([[5, 1], [1, 2]])
+        assert S.xx == 5
 
     def test_mean_stress(self):
-        S = Stress2.from_comp(xx=-5, yy=-1)
-        assert math.isclose(S.mean_stress, -3)
+        S = Stress2.from_comp(xx=5, yy=1)
+        assert math.isclose(S.mean_stress, 3)
 
     def test_hydrostatic(self):
-        S = Stress2.from_comp(xx=-5, yy=-1)
+        S = Stress2.from_comp(xx=5, yy=1)
         H = S.hydrostatic
         assert H.xx == H.yy
 
     def test_deviatoric(self):
-        S = Stress2.from_comp(xx=-5, yy=-1)
+        S = Stress2.from_comp(xx=5, yy=1)
         D = S.deviatoric
         assert isinstance(D, Stress2)
 
     def test_sigma1(self):
-        S = Stress2.from_comp(xx=-5, yy=-2, xy=1)
-        # sigma1 is most compressive (most negative)
-        assert S.sigma1 <= S.sigma2
+        S = Stress2.from_comp(xx=5, yy=2, xy=1)
+        # sigma1 is most compressive (greatest positive value)
+        assert S.sigma1 >= S.sigma2
 
     def test_sigma2(self):
-        S = Stress2.from_comp(xx=-5, yy=-2, xy=1)
-        assert S.sigma2 >= S.sigma1
+        S = Stress2.from_comp(xx=5, yy=2, xy=1)
+        assert S.sigma2 <= S.sigma1
 
     def test_sigma1dir(self):
-        S = Stress2.from_comp(xx=-5, yy=-1)
+        S = Stress2.from_comp(xx=5, yy=1)
         d = S.sigma1dir
         assert isinstance(d, Vector2)
 
     def test_sigma2dir(self):
-        S = Stress2.from_comp(xx=-5, yy=-1)
+        S = Stress2.from_comp(xx=5, yy=1)
         d = S.sigma2dir
         assert isinstance(d, Vector2)
 
     def test_sigma1vec(self):
-        S = Stress2.from_comp(xx=-5, yy=-1)
+        S = Stress2.from_comp(xx=5, yy=1)
         v = S.sigma1vec
         assert isinstance(v, Vector2)
 
     def test_sigma2vec(self):
-        S = Stress2.from_comp(xx=-5, yy=-1)
+        S = Stress2.from_comp(xx=5, yy=1)
         v = S.sigma2vec
         assert isinstance(v, Vector2)
 
     def test_I1(self):
-        S = Stress2.from_comp(xx=-5, yy=-2)
-        assert math.isclose(S.I1, -7)
+        S = Stress2.from_comp(xx=5, yy=2)
+        assert math.isclose(S.I1, 7)
 
     def test_I2(self):
-        S = Stress2.from_comp(xx=-5, yy=-2, xy=1)
+        S = Stress2.from_comp(xx=5, yy=2, xy=1)
         assert isinstance(S.I2, float)
 
     def test_I3(self):
-        S = Stress2.from_comp(xx=-5, yy=-2, xy=1)
+        S = Stress2.from_comp(xx=5, yy=2, xy=1)
         assert isinstance(S.I3, float)
 
     def test_diagonalized(self):
-        S = Stress2.from_comp(xx=-5, yy=-2, xy=1)
+        S = Stress2.from_comp(xx=5, yy=2, xy=1)
         D, Rmat = S.diagonalized
         assert isinstance(D, Stress2)
         assert isinstance(Rmat, DeformationGradient2)
         np.testing.assert_array_almost_equal(np.array(D), np.diag(S.eigenvalues()))
 
     def test_cauchy(self):
-        S = Stress2.from_comp(xx=-5, yy=-2, xy=1)
+        S = Stress2.from_comp(xx=5, yy=2, xy=1)
         t = S.cauchy(Vector2(1, 0))
         assert isinstance(t, Vector2)
 
     def test_stress_comp(self):
-        S = Stress2.from_comp(xx=-5, yy=-2, xy=1)
+        S = Stress2.from_comp(xx=5, yy=2, xy=1)
         sn, tau = S.stress_comp(Vector2(1, 0))
         assert isinstance(sn, Vector2)
         assert isinstance(tau, Vector2)
 
     def test_normal_stress(self):
-        S = Stress2.from_comp(xx=-5, yy=-2, xy=1)
+        S = Stress2.from_comp(xx=5, yy=2, xy=1)
         sn = S.normal_stress(Vector2(1, 0))
         assert isinstance(sn, float)
 
     def test_shear_stress(self):
-        S = Stress2.from_comp(xx=-5, yy=-2, xy=1)
+        S = Stress2.from_comp(xx=5, yy=2, xy=1)
         tau = S.shear_stress(Vector2(1, 0))
         assert isinstance(tau, float)
 
     def test_signed_shear_stress(self):
-        S = Stress2.from_comp(xx=-5, yy=-2, xy=1)
+        S = Stress2.from_comp(xx=5, yy=2, xy=1)
         # signed_shear_stress calls DeformationGradient2.from_angle
         # which does not exist; test the property at least returns something
         n = Vector2(1, 0)
@@ -349,18 +349,18 @@ class TestStress2:
         assert isinstance(tau, float)
 
     def test_eigenvalues(self):
-        S = Stress2.from_comp(xx=-5, yy=-1)
+        S = Stress2.from_comp(xx=5, yy=1)
         e = S.eigenvalues()
         assert len(e) == 2
 
     def test_eigenvectors(self):
-        S = Stress2.from_comp(xx=-5, yy=-1)
+        S = Stress2.from_comp(xx=5, yy=1)
         v = S.eigenvectors()
         assert len(v) == 2
         assert isinstance(v[0], Vector2)
 
     def test_E1_E2(self):
-        S = Stress2.from_comp(xx=-5, yy=-1)
+        S = Stress2.from_comp(xx=5, yy=1)
         assert S.E1 >= S.E2
 
     def test_repr(self):
@@ -747,144 +747,147 @@ class TestStress3:
         assert isinstance(S, Stress3)
 
     def test_from_comp(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
-        assert S.xx == -5
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
+        assert S.xx == 5
         assert S.xy == 1
         assert S.yx == 1
 
     def test_from_array(self):
-        S = Stress3([[-5, 1, 0], [1, -2, 0], [0, 0, 10]])
-        assert S.xx == -5
+        S = Stress3([[5, 1, 0], [1, 2, 0], [0, 0, -10]])
+        assert S.xx == 5
 
     def test_from_ratio(self):
         S = Stress3.from_ratio(r=0.5, mag=1)
         assert isinstance(S, Stress3)
 
     def test_mean_stress(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
-        assert math.isclose(S.mean_stress, 1)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
+        assert math.isclose(S.mean_stress, -1)
 
     def test_hydrostatic(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
         H = S.hydrostatic
         assert H.xx == H.yy == H.zz
 
     def test_deviatoric(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
         D = S.deviatoric
         assert isinstance(D, Stress3)
 
     def test_effective(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
         Se = S.effective(fp=2)
         assert isinstance(Se, Stress3)
+        # increasing pore fluid pressure reduces compressive stress
+        assert Se.sigma1 < S.sigma1
+        assert math.isclose(Se.sigma1, S.sigma1 - 2)
 
     def test_sigma1(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
-        # sigma1 is most compressive (most negative)
-        assert S.sigma1 <= S.sigma2 <= S.sigma3
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
+        # sigma1 is most compressive (greatest positive value)
+        assert S.sigma1 >= S.sigma2 >= S.sigma3
 
     def test_sigma2(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
-        assert S.sigma1 <= S.sigma2 <= S.sigma3
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
+        assert S.sigma1 >= S.sigma2 >= S.sigma3
 
     def test_sigma3(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
-        assert S.sigma1 <= S.sigma2 <= S.sigma3
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
+        assert S.sigma1 >= S.sigma2 >= S.sigma3
 
     def test_sigma1dir(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
         d = S.sigma1dir
         assert isinstance(d, Vector3)
 
     def test_sigma2dir(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
         d = S.sigma2dir
         assert isinstance(d, Vector3)
 
     def test_sigma3dir(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
         d = S.sigma3dir
         assert isinstance(d, Vector3)
 
     def test_sigma1vec(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
         v = S.sigma1vec
         assert isinstance(v, Vector3)
 
     def test_sigma2vec(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
         v = S.sigma2vec
         assert isinstance(v, Vector3)
 
     def test_sigma3vec(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
         v = S.sigma3vec
         assert isinstance(v, Vector3)
 
     def test_I1(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
-        assert math.isclose(S.I1, 3)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
+        assert math.isclose(S.I1, -3)
 
     def test_I2(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
         assert isinstance(S.I2, float)
 
     def test_I3(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
         assert isinstance(S.I3, float)
 
     def test_diagonalized(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10)
         D, Rmat = S.diagonalized
         assert isinstance(D, Stress3)
         assert isinstance(Rmat, DeformationGradient3)
 
     def test_cauchy(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
         t = S.cauchy(Foliation(160, 30))
         assert isinstance(t, Vector3)
 
     def test_fault(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=8)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=8)
         f = S.fault(Foliation(160, 30))
         from apsg.feature._geodata import Fault
 
         assert isinstance(f, Fault)
 
     def test_stress_comp(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
         sn, tau = S.stress_comp(Foliation(160, 30))
         assert isinstance(sn, Vector3)
         assert isinstance(tau, Vector3)
 
     def test_normal_stress(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
         sn = S.normal_stress(Foliation(160, 30))
         assert isinstance(sn, float)
 
     def test_shear_stress(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
         tau = S.shear_stress(Foliation(160, 30))
         assert isinstance(tau, float)
 
     def test_slip_tendency(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
         t = S.slip_tendency(Foliation(160, 30))
         assert isinstance(t, float)
 
     def test_slip_tendency_log(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
         t = S.slip_tendency(Foliation(160, 30), log=True)
         assert isinstance(t, float)
 
     def test_slip_tendency_with_fp(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
         t = S.slip_tendency(Foliation(160, 30), fp=2)
         assert isinstance(t, float)
 
     def test_dilation_tendency(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
         t = S.dilation_tendency(Foliation(160, 30))
         assert 0 <= t <= 1
 
@@ -893,19 +896,19 @@ class TestStress3:
         assert 0 <= S.shape_ratio <= 1
 
     def test_eigenlins(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
         lins = S.eigenlins()
         assert len(lins) == 3
         assert isinstance(lins[0], Lineation)
 
     def test_eigenfols(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
         fols = S.eigenfols()
         assert len(fols) == 3
         assert isinstance(fols[0], Foliation)
 
     def test_pair(self):
-        S = Stress3.from_comp(xx=-5, yy=-2, zz=10, xy=1)
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
         p = S.pair
         assert isinstance(p, Pair)
 

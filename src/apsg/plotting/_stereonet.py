@@ -1066,15 +1066,15 @@ class StereoNet:
             del kwargs["color"]
         if selkw["label"] != "_stress":
             selkw["label"] = "σ1"
-            self._point(lins[2], color=kwargs.get("color", "red"), **selkw)
+            self._point(lins[0], color=kwargs.get("color", "red"), **selkw)
             selkw["label"] = "σ2"
             self._point(lins[1], color=kwargs.get("color", "green"), **selkw)
             selkw["label"] = "σ3"
-            self._point(lins[0], color=kwargs.get("color", "blue"), **selkw)
+            self._point(lins[2], color=kwargs.get("color", "blue"), **selkw)
         else:
-            self._point(lins[2], color=kwargs.get("color", "red"), **selkw)
+            self._point(lins[0], color=kwargs.get("color", "red"), **selkw)
             self._point(lins[1], color=kwargs.get("color", "green"), **selkw)
-            self._point(lins[0], color=kwargs.get("color", "blue"), **selkw)
+            self._point(lins[2], color=kwargs.get("color", "blue"), **selkw)
 
     def _contour(self, *args, **kwargs):
         method = kwargs.pop("method")
