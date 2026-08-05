@@ -153,6 +153,13 @@ class Matrix(ABC):
     def _eig(self):
         if "eig" not in self._cache:
             evals, evecs = np.linalg.eig(np.asarray(self))
+            if not np.allclose(evals.imag, 0):
+                raise ValueError(
+                    "Complex eigenvalues are not supported. This matrix has complex "
+                    "eigenvalues; apsg only supports real eigenvalues and eigenvectors."
+                )
+            evals = evals.real
+            evecs = evecs.real
             idx = evals.argsort()[::-1]
             evals = evals[idx]
             # round very small numbers to zero

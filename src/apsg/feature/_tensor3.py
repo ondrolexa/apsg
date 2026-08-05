@@ -144,6 +144,54 @@ class DeformationGradient3(Matrix3):
         """
         return VelocityGradient3(spla.logm(np.asarray(self)) / time)
 
+    def flow_apophyses(self):
+        """
+        Return the flow apophyses as ``Lineation`` objects, ordered from the fabric
+        attractor (greatest eigenvalue) to the fabric repeller (least eigenvalue)
+        (Passchier, 1997; Davis and Titus, 2011).
+
+        Raises:
+            ValueError: if the deformation has complex eigenvalues, in which case no
+                real flow apophyses exist.
+
+        Returns:
+            tuple of Lineation: flow apophyses, ordered from fabric attractor to
+            fabric repeller.
+        """
+        try:
+            eigenvectors = self.eigenvectors()
+        except ValueError:
+            raise ValueError(
+                "no real flow apophysis — deformation has complex eigenvalues, Wk > 1"
+            ) from None
+        return tuple(Lineation(v) for v in eigenvectors)
+
+    @classmethod
+    def from_ellipsoid(cls, E, R=None) -> "DeformationGradient3":
+        """
+        Return ``DeformationGradient3`` recovered from a finite strain ellipsoid (the
+        left Cauchy–Green/Finger tensor FFᵀ, e.g. from ``Ellipsoid.from_defgrad``) up
+        to a rotational ambiguity, as F = Q @ D @ R, where Q and D come from the
+        eigendecomposition of E (Flinn, 1979; Davis and Titus, 2011).
+
+        Args:
+            E (Ellipsoid): finite strain ellipsoid (Finger tensor FFᵀ).
+
+        Keyword Args:
+            R (Rotation3): rotation resolving the ambiguity in F = Q @ D @ R, to be
+                determined from independent data (e.g. paleomagnetic vectors or a
+                known shear-plane orientation). Default is the identity, i.e. the
+                simplest, purely coaxial solution.
+
+        Returns:
+            DeformationGradient3: ``DeformationGradient3`` F = Q @ D @ R.
+        """
+        if R is None:
+            R = Rotation3()
+        Q = np.column_stack(E.eigenvectors())
+        D = np.diag(np.sqrt(E.eigenvalues()))
+        return cls(Q @ D @ np.asarray(R))
+
 
 class Rotation3(DeformationGradient3):
     """
@@ -543,6 +591,46 @@ class VelocityGradient3(Matrix3):
         """Return spin tensor."""
 
         return type(self)((self - self.T) / 2)
+
+    @property
+    def vorticity_vector(self) -> Vector3:
+        """Return the vorticity vector w̄ = curl(ẏ) (Means et al., 1980)."""
+        W = self.spin()
+        return Vector3(2 * W.zy, 2 * W.xz, 2 * W.yx)
+
+    @property
+    def vorticity_scalar(self) -> float:
+        """Return the vorticity scalar, the magnitude of the vorticity vector (Means et al., 1980)."""
+        return abs(self.vorticity_vector)
+
+    @property
+    def kinematic_vorticity(self) -> float:
+        """Return the kinematic vorticity number Wk = ``|W|/|S|`` (Truesdell, 1953; Means et al., 1980)."""
+        S = np.linalg.norm(np.asarray(self.rate()))
+        W = np.linalg.norm(np.asarray(self.spin()))
+        return W / S if S != 0 else float("inf")
+
+    def flow_apophyses(self):
+        """
+        Return the flow apophyses as ``Lineation`` objects, ordered from the fabric
+        attractor (greatest eigenvalue) to the fabric repeller (least eigenvalue)
+        (Passchier, 1997; Davis and Titus, 2011).
+
+        Raises:
+            ValueError: if the deformation has complex eigenvalues, in which case no
+                real flow apophyses exist.
+
+        Returns:
+            tuple of Lineation: flow apophyses, ordered from fabric attractor to
+            fabric repeller.
+        """
+        try:
+            eigenvectors = self.eigenvectors()
+        except ValueError:
+            raise ValueError(
+                "no real flow apophysis — deformation has complex eigenvalues, Wk > 1"
+            ) from None
+        return tuple(Lineation(v) for v in eigenvectors)
 
 
 class Tensor3(Matrix3):

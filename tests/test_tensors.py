@@ -129,6 +129,28 @@ class TestDeformationGradient2:
         j = F.to_json()
         assert j["datatype"] == "DeformationGradient2"
 
+    def test_from_ellipse_coaxial(self):
+        F = DeformationGradient2.from_ratio(R=4)
+        E = Ellipse.from_defgrad(F)
+        F2 = DeformationGradient2.from_ellipse(E)
+        np.testing.assert_array_almost_equal(F2, F)
+
+    def test_from_ellipse_with_rotation(self):
+        R_true = Rotation2.from_angle(30)
+        D = np.diag([2.0, 1.5])
+        F_true = DeformationGradient2(D @ np.asarray(R_true))
+        E = Ellipse.from_defgrad(F_true)
+        F2 = DeformationGradient2.from_ellipse(E, R=R_true)
+        np.testing.assert_array_almost_equal(F2, F_true)
+
+    def test_from_ellipse_default_identity_differs(self):
+        R_true = Rotation2.from_angle(30)
+        D = np.diag([2.0, 1.5])
+        F_true = DeformationGradient2(D @ np.asarray(R_true))
+        E = Ellipse.from_defgrad(F_true)
+        F3 = DeformationGradient2.from_ellipse(E)
+        assert not np.allclose(F3, F_true)
+
     def test_lowercase_alias(self):
         assert defgrad2 is DeformationGradient2
 
@@ -224,6 +246,14 @@ class TestVelocityGradient2:
         D = L.rate()
         W = L.spin()
         np.testing.assert_array_almost_equal(D + W, L)
+
+    def test_vorticity_scalar(self):
+        L = VelocityGradient2.from_comp(xy=1, yx=-1)
+        assert math.isclose(L.vorticity_scalar, 2)
+
+    def test_vorticity_scalar_simple_shear(self):
+        L = VelocityGradient2.from_comp(xy=1)
+        assert math.isclose(L.vorticity_scalar, 1)
 
     def test_repr(self):
         L = VelocityGradient2()
@@ -569,6 +599,55 @@ class TestDeformationGradient3:
         r = F1 @ F2
         assert isinstance(r, DeformationGradient3)
 
+    def test_eigenvalues_complex_raises(self):
+        F = DeformationGradient3(
+            [[0.57, 0.92, -1.61], [-0.51, -0.56, -0.51], [-0.43, 0.35, 0.05]]
+        )
+        with pytest.raises(ValueError):
+            F.E1
+
+    def test_eigenvectors_complex_raises(self):
+        F = DeformationGradient3(
+            [[0.57, 0.92, -1.61], [-0.51, -0.56, -0.51], [-0.43, 0.35, 0.05]]
+        )
+        with pytest.raises(ValueError):
+            F.eigenvectors()
+
+    def test_flow_apophyses(self):
+        F = DeformationGradient3.from_comp(xx=2, yy=3, zz=0.5)
+        apophyses = F.flow_apophyses()
+        assert len(apophyses) == 3
+        assert all(isinstance(a, Lineation) for a in apophyses)
+
+    def test_flow_apophyses_complex_raises(self):
+        F = DeformationGradient3(
+            [[0.57, 0.92, -1.61], [-0.51, -0.56, -0.51], [-0.43, 0.35, 0.05]]
+        )
+        with pytest.raises(ValueError, match="no real flow apophysis"):
+            F.flow_apophyses()
+
+    def test_from_ellipsoid_coaxial(self):
+        F = DeformationGradient3.from_ratios(Rxy=2, Ryz=3)
+        E = Ellipsoid.from_defgrad(F)
+        F2 = DeformationGradient3.from_ellipsoid(E)
+        np.testing.assert_array_almost_equal(F2, F)
+
+    def test_from_ellipsoid_with_rotation(self):
+        R_true = Rotation3.from_axisangle(Vector3(0, 0, 1), 30)
+        D = np.diag([2.0, 1.5, 0.7])
+        F_true = DeformationGradient3(D @ np.asarray(R_true))
+        E = Ellipsoid.from_defgrad(F_true)
+        F2 = DeformationGradient3.from_ellipsoid(E, R=R_true)
+        np.testing.assert_array_almost_equal(F2, F_true)
+
+    def test_from_ellipsoid_default_identity_differs(self):
+        R_true = Rotation3.from_axisangle(Vector3(0, 0, 1), 30)
+        D = np.diag([2.0, 1.5, 0.7])
+        F_true = DeformationGradient3(D @ np.asarray(R_true))
+        E = Ellipsoid.from_defgrad(F_true)
+        F3 = DeformationGradient3.from_ellipsoid(E)
+        assert not np.allclose(F3, F_true)
+
     def test_repr(self):
         F = DeformationGradient3()
         assert repr(F).startswith("DeformationGradient3")
@@ -727,6 +806,61 @@ class TestVelocityGradient3:
         D = L.rate()
         W = L.spin()
         np.testing.assert_array_almost_equal(D + W, L)
+
+    def test_vorticity_vector(self):
+        L = VelocityGradient3.from_comp(xy=1, yx=-1)
+        w = L.vorticity_vector
+        assert isinstance(w, Vector3)
+        assert math.isclose(w.x, 0)
+        assert math.isclose(w.y, 0)
+        assert math.isclose(w.z, -2)
+
+    def test_vorticity_scalar(self):
+        L = VelocityGradient3.from_comp(xy=1, yx=-1)
+        assert math.isclose(L.vorticity_scalar, abs(L.vorticity_vector))
+        assert math.isclose(L.vorticity_scalar, 2)
+
+    def test_kinematic_vorticity_pure_stretching(self):
+        L = VelocityGradient3.from_comp(xx=1, zz=-1)
+        assert math.isclose(L.kinematic_vorticity, 0)
+
+    def test_kinematic_vorticity_pure_rotation(self):
+        L = VelocityGradient3.from_comp(xy=1, yx=-1)
+        assert L.kinematic_vorticity == float("inf")
+
+    def test_kinematic_vorticity_simple_shear(self):
+        L = VelocityGradient3.from_comp(xy=1)
+        assert math.isclose(L.kinematic_vorticity, 1)
+
+    def test_eigenvalues_complex_raises(self):
+        F = DeformationGradient3(
+            [[0.57, 0.92, -1.61], [-0.51, -0.56, -0.51], [-0.43, 0.35, 0.05]]
+        )
+        L = F.velgrad()
+        with pytest.raises(ValueError):
+            L.E1
+
+    def test_eigenvectors_complex_raises(self):
+        F = DeformationGradient3(
+            [[0.57, 0.92, -1.61], [-0.51, -0.56, -0.51], [-0.43, 0.35, 0.05]]
+        )
+        L = F.velgrad()
+        with pytest.raises(ValueError):
+            L.eigenvectors()
+
+    def test_flow_apophyses(self):
+        L = VelocityGradient3.from_comp(xx=1, yy=2, zz=-1)
+        apophyses = L.flow_apophyses()
+        assert len(apophyses) == 3
+        assert all(isinstance(a, Lineation) for a in apophyses)
+
+    def test_flow_apophyses_complex_raises(self):
+        F = DeformationGradient3(
+            [[0.57, 0.92, -1.61], [-0.51, -0.56, -0.51], [-0.43, 0.35, 0.05]]
+        )
+        L = F.velgrad()
+        with pytest.raises(ValueError, match="no real flow apophysis"):
+            L.flow_apophyses()
 
     def test_repr(self):
         L = VelocityGradient3()

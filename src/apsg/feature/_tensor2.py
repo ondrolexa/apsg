@@ -95,6 +95,31 @@ class DeformationGradient2(Matrix2):
         """Return ``VelocityGradient2`` for given time."""
         return VelocityGradient2(spla.logm(np.asarray(self)) / time)
 
+    @classmethod
+    def from_ellipse(cls, E, R=None) -> "DeformationGradient2":
+        """
+        Return ``DeformationGradient2`` recovered from a finite strain ellipse (the
+        left Cauchy–Green/Finger tensor FFᵀ, e.g. from ``Ellipse.from_defgrad``) up
+        to a rotational ambiguity, as F = Q @ D @ R, where Q and D come from the
+        eigendecomposition of E (Flinn, 1979; Davis and Titus, 2011).
+
+        Args:
+            E (Ellipse): finite strain ellipse (Finger tensor FFᵀ).
+
+        Keyword Args:
+            R (Rotation2): rotation resolving the ambiguity in F = Q @ D @ R, to be
+                determined from independent data. Default is the identity, i.e. the
+                simplest, purely coaxial solution.
+
+        Returns:
+            DeformationGradient2: ``DeformationGradient2`` F = Q @ D @ R.
+        """
+        if R is None:
+            R = Rotation2()
+        Q = np.column_stack(E.eigenvectors())
+        D = np.diag(np.sqrt(E.eigenvalues()))
+        return cls(Q @ D @ np.asarray(R))
+
 
 class Rotation2(DeformationGradient2):
     """
@@ -247,6 +272,12 @@ class VelocityGradient2(Matrix2):
         """Return spin tensor."""
 
         return type(self)((self - self.T) / 2)
+
+    @property
+    def vorticity_scalar(self) -> float:
+        """Return the vorticity scalar, the magnitude of the out-of-plane vorticity (Means et al., 1980)."""
+        W = self.spin()
+        return abs(2 * W.yx)
 
 
 class Tensor2(Matrix2):
