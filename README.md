@@ -1,4 +1,11 @@
-<img src="https://github.com/ondrolexa/apsg/raw/refs/heads/master/docs/images/apsg_banner.svg" alt="APSG logo" width="300px"/>
+<!--
+Source - https://stackoverflow.com/a/70200610
+Posted by Giorgos Xou, modified by community. See post 'Timeline' for change history
+Retrieved 2026-08-05, License - CC BY-SA 4.0
+-->
+
+![APSG logo](https://github.com/ondrolexa/apsg/raw/refs/heads/master/docs/images/apsg_banner_light.svg#gh-light-mode-only)
+![APSG logo](https://github.com/ondrolexa/apsg/raw/refs/heads/master/docs/images/apsg_banner_dark.svg#gh-dark-mode-only)
 
 [![PyPI - Version](https://img.shields.io/pypi/v/apsg)](https://pypi.org/project/apsg)
 [![Conda](https://img.shields.io/conda/v/conda-forge/apsg)](https://anaconda.org/conda-forge/apsg)
