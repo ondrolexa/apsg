@@ -1026,6 +1026,21 @@ class TestEllipsoid:
         E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
         assert isinstance(E.lode, float)
 
+    def test_P_j(self):
+        E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
+        e1, e2, e3 = math.log(E.S1), math.log(E.S2), math.log(E.S3)
+        eta = (e1 + e2 + e3) / 3
+        expected = math.exp(
+            math.sqrt(2 * ((e1 - eta) ** 2 + (e2 - eta) ** 2 + (e3 - eta) ** 2))
+        )
+        assert isinstance(E.P_j, float)
+        assert math.isclose(E.P_j, expected)
+
+    def test_T(self):
+        E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
+        assert isinstance(E.T, float)
+        assert math.isclose(E.T, E.lode)
+
     def test_P(self):
         E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
         assert isinstance(E.P, float)

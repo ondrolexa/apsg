@@ -3,17 +3,36 @@ import math
 import numpy as np
 import pytest
 
-from apsg import dir2set, faultset, folset, linset, pairset, vec2set, vecset
+from apsg import (
+    G,
+    coneset,
+    dir2set,
+    ellipsoidset,
+    faultset,
+    folset,
+    linset,
+    pairset,
+    stress2set,
+    stressset,
+    vec2set,
+    vecset,
+)
 from apsg.feature._container import (
+    ConeSet,
     Direction2Set,
+    EllipsoidSet,
     FaultSet,
     FoliationSet,
     LineationSet,
     PairSet,
+    Stress2Set,
+    Stress3Set,
     Vector2Set,
     Vector3Set,
 )
-from apsg.feature._geodata import Direction, Fault, Foliation, Lineation, Pair
+from apsg.feature._geodata import Cone, Direction, Fault, Foliation, Lineation, Pair
+from apsg.feature._tensor2 import Stress2
+from apsg.feature._tensor3 import Ellipsoid, Stress3
 from apsg.math._vector import Vector2, Vector3
 
 # ---------------------------------------------------------------------------
@@ -935,6 +954,12 @@ class TestPairSet:
         assert isinstance(m, np.ndarray)
         assert len(m) == 1
 
+    def test_rake_property(self):
+        p = PairSet([Pair(140, 30, 110, 26)])
+        r = p.rake
+        assert isinstance(r, np.ndarray)
+        assert len(r) == 1
+
     def test_rax_property(self):
         p = PairSet([Pair(140, 30, 110, 26)])
         r = p.rax
@@ -1157,7 +1182,6 @@ class TestFaultSet:
             ]
         )
         stress_set = faults.stress_inversion(bootstrap=True, n=5)
-        from apsg.feature._container import Stress3Set
 
         assert isinstance(stress_set, Stress3Set)
         assert len(stress_set) == 5
@@ -1206,3 +1230,185 @@ class TestFaultSet:
         assert folset is FoliationSet
         assert pairset is PairSet
         assert faultset is FaultSet
+
+
+# ---------------------------------------------------------------------------
+# ConeSet
+# ---------------------------------------------------------------------------
+
+
+class TestConeSet:
+    def test_default(self):
+        c = ConeSet([Cone(140, 30, 110, 26, 360)])
+        assert len(c) == 1
+
+    def test_type_assertion(self):
+        with pytest.raises(TypeError):
+            ConeSet([Pair(140, 30, 110, 26)])
+
+    def test_revangle_property(self):
+        c = ConeSet([Cone(140, 30, 110, 26, 360), Cone(90, 70, 45, 30, 115)])
+        r = c.revangle
+        assert isinstance(r, np.ndarray)
+        assert len(r) == 2
+
+    def test_apical_angle_property(self):
+        c = ConeSet([Cone(140, 30, 110, 26, 360), Cone(90, 70, 45, 30, 115)])
+        a = c.apical_angle
+        assert isinstance(a, np.ndarray)
+        assert len(a) == 2
+
+    def test_lowercase_alias(self):
+        assert coneset is ConeSet
+
+
+# ---------------------------------------------------------------------------
+# EllipsoidSet
+# ---------------------------------------------------------------------------
+
+
+class TestEllipsoidSet:
+    def test_default(self):
+        e = EllipsoidSet([Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])])
+        assert len(e) == 1
+
+    def test_type_assertion(self):
+        with pytest.raises(TypeError):
+            EllipsoidSet([Pair(140, 30, 110, 26)])
+
+    def test_kind_property(self):
+        e = EllipsoidSet([Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])])
+        k = e.kind
+        assert isinstance(k, np.ndarray)
+        assert len(k) == 1
+
+    def test_P_j_property(self):
+        e = EllipsoidSet([Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])])
+        p = e.P_j
+        assert isinstance(p, np.ndarray)
+        assert len(p) == 1
+
+    def test_T_property(self):
+        e = EllipsoidSet([Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])])
+        t = e.T
+        assert isinstance(t, np.ndarray)
+        assert len(t) == 1
+
+    def test_lowercase_alias(self):
+        assert ellipsoidset is EllipsoidSet
+
+
+# ---------------------------------------------------------------------------
+# Stress3Set
+# ---------------------------------------------------------------------------
+
+
+class TestStress3Set:
+    def test_default(self):
+        s = Stress3Set([Stress3([[10, 2, -3], [2, 5, 1], [-3, 1, -2]])])
+        assert len(s) == 1
+
+    def test_type_assertion(self):
+        with pytest.raises(TypeError):
+            Stress3Set([Pair(140, 30, 110, 26)])
+
+    def test_mean_stress_property(self):
+        s = Stress3Set(
+            [
+                Stress3([[10, 2, -3], [2, 5, 1], [-3, 1, -2]]),
+                Stress3([[8, 0, 0], [0, 5, 0], [0, 0, 1]]),
+            ]
+        )
+        m = s.mean_stress
+        assert isinstance(m, np.ndarray)
+        assert len(m) == 2
+
+    def test_I1_I2_I3_properties(self):
+        s = Stress3Set(
+            [
+                Stress3([[10, 2, -3], [2, 5, 1], [-3, 1, -2]]),
+                Stress3([[8, 0, 0], [0, 5, 0], [0, 0, 1]]),
+            ]
+        )
+        assert isinstance(s.I1, np.ndarray)
+        assert isinstance(s.I2, np.ndarray)
+        assert isinstance(s.I3, np.ndarray)
+        assert len(s.I1) == len(s.I2) == len(s.I3) == 2
+
+    def test_shape_ratio_property(self):
+        s = Stress3Set(
+            [
+                Stress3([[10, 2, -3], [2, 5, 1], [-3, 1, -2]]),
+                Stress3([[8, 0, 0], [0, 5, 0], [0, 0, 1]]),
+            ]
+        )
+        r = s.shape_ratio
+        assert isinstance(r, np.ndarray)
+        assert len(r) == 2
+
+    def test_lowercase_alias(self):
+        assert stressset is Stress3Set
+
+
+# ---------------------------------------------------------------------------
+# Stress2Set
+# ---------------------------------------------------------------------------
+
+
+class TestStress2Set:
+    def test_default(self):
+        s = Stress2Set([Stress2([[8, 0], [0, 1]])])
+        assert len(s) == 1
+
+    def test_type_assertion(self):
+        with pytest.raises(TypeError):
+            Stress2Set([Pair(140, 30, 110, 26)])
+
+    def test_repr(self):
+        s = Stress2Set([Stress2([[8, 0], [0, 1]])], name="test")
+        assert repr(s) == "Sig2(1) test"
+
+    def test_mean_stress_property(self):
+        s = Stress2Set([Stress2([[8, 0], [0, 1]]), Stress2([[5, 0], [0, 2]])])
+        m = s.mean_stress
+        assert isinstance(m, np.ndarray)
+        assert len(m) == 2
+
+    def test_sigma1_sigma2_properties(self):
+        s = Stress2Set([Stress2([[8, 0], [0, 1]]), Stress2([[5, 0], [0, 2]])])
+        assert isinstance(s.sigma1, np.ndarray)
+        assert isinstance(s.sigma2, np.ndarray)
+        assert len(s.sigma1) == len(s.sigma2) == 2
+
+    def test_I1_I2_I3_properties(self):
+        s = Stress2Set([Stress2([[8, 0], [0, 1]]), Stress2([[5, 0], [0, 2]])])
+        assert isinstance(s.I1, np.ndarray)
+        assert isinstance(s.I2, np.ndarray)
+        assert isinstance(s.I3, np.ndarray)
+        assert len(s.I1) == len(s.I2) == len(s.I3) == 2
+
+    def test_sigma1dir_sigma2dir_properties(self):
+        s = Stress2Set([Stress2([[8, 0], [0, 1]]), Stress2([[5, 0], [0, 2]])])
+        assert isinstance(s.sigma1dir, Vector2Set)
+        assert isinstance(s.sigma2dir, Vector2Set)
+        assert len(s.sigma1dir) == len(s.sigma2dir) == 2
+
+    def test_lowercase_alias(self):
+        assert stress2set is Stress2Set
+
+
+# ---------------------------------------------------------------------------
+# G() factory registry
+# ---------------------------------------------------------------------------
+
+
+class TestGFactoryStress:
+    def test_stress3_registry(self):
+        g = G([Stress3([[10, 2, -3], [2, 5, 1], [-3, 1, -2]])] * 2)
+        assert isinstance(g, Stress3Set)
+        assert len(g) == 2
+
+    def test_stress2_registry(self):
+        g = G([Stress2([[8, 0], [0, 1]])] * 2)
+        assert isinstance(g, Stress2Set)
+        assert len(g) == 2

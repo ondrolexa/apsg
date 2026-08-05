@@ -81,6 +81,9 @@ from apsg.feature import (
     Stress2 as stress2,
 )
 from apsg.feature import (
+    Stress2Set as stress2set,
+)
+from apsg.feature import (
     Stress3 as stress,
 )
 from apsg.feature import (
@@ -159,6 +162,7 @@ __all__ = (
     "ortensor2set",
     "ortensorset",
     "stressset",
+    "stress2set",
     "cluster",
     "G",
     "defgrad",
@@ -183,6 +187,6 @@ __all__ = (
     "quicknet",
 )
 
-__version__ = "1.5.1"
+__version__ = "1.5.2"
 __author__ = "Ondrej Lexa"
 __email__ = "lexa.ondrej@gmail.com"

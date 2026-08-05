@@ -429,5 +429,5 @@ class Core(object):
                 pca = -pca
         else:
             pca = ot.V3
-        mad = ot.MAD()
+        mad = ot.MAD
         return pca, mad

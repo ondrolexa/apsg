@@ -14,7 +14,7 @@ from scipy.spatial.transform import Rotation
 from apsg.config import apsg_conf
 from apsg.feature._geodata import Cone, Direction, Fault, Foliation, Lineation, Pair
 from apsg.feature._statistics import KentDistribution, vonMisesFisher
-from apsg.feature._tensor2 import Ellipse, OrientationTensor2
+from apsg.feature._tensor2 import Ellipse, OrientationTensor2, Stress2
 from apsg.feature._tensor3 import (
     DeformationGradient3,
     Ellipsoid,
@@ -1492,6 +1492,12 @@ class PairSet(FeatureSet):
         return np.array([f.misfit for f in self])
 
     @property
+    def rake(self):
+        """Return array of rakes of linear features on planar features."""
+
+        return np.array([f.rake for f in self])
+
+    @property
     def rax(self):
         """Return vectors perpendicular to both planar and linear parts."""
         return Vector3Set([e.rax for e in self], name=self.name)
@@ -2029,6 +2035,18 @@ class ConeSet(FeatureSet):
     def __repr__(self):
         return f"C({len(self)}) {self.name}"
 
+    @property
+    def revangle(self):
+        """Return array of revolution angles."""
+
+        return np.array([c.revangle for c in self])
+
+    @property
+    def apical_angle(self):
+        """Return array of apical angles."""
+
+        return np.array([c.apical_angle() for c in self])
+
 
 class EllipseSet(FeatureSet):
     """
@@ -2122,6 +2140,11 @@ class EllipsoidSet(FeatureSet):
 
     def __repr__(self):
         return f"E({len(self)}) {self.name}"
+
+    @property
+    def kind(self) -> np.ndarray:
+        """Return the array of descriptive types of ellipsoids."""
+        return np.array([e.kind for e in self])
 
     @property
     def strength(self) -> np.ndarray:
@@ -2229,6 +2252,16 @@ class EllipsoidSet(FeatureSet):
         return np.array([e.lode for e in self])
 
     @property
+    def P_j(self) -> np.ndarray:
+        """Return the array of corrected anisotropy degrees (Jelínek, 1981)."""
+        return np.array([e.P_j for e in self])
+
+    @property
+    def T(self) -> np.ndarray:
+        """Return the array of shape parameters (Jelínek, 1981)."""
+        return np.array([e.T for e in self])
+
+    @property
     def P(self) -> np.ndarray:
         """Return the array of Point indexes (Vollmer, 1990)."""
         return np.array([e.P for e in self])
@@ -2296,6 +2329,70 @@ class OrientationTensor3Set(EllipsoidSet):
         return f"M({len(self)}) {self.name}"
 
 
+class Stress2Set(FeatureSet):
+    """
+    Class to store set of ``Stress2`` features.
+    """
+
+    __feature_class__ = Stress2
+
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        if not all(isinstance(obj, Stress2) for obj in data):
+            raise TypeError("Data must be instances of Stress2")
+
+    def __repr__(self):
+        return f"Sig2({len(self)}) {self.name}"
+
+    @property
+    def mean_stress(self) -> np.ndarray:
+        """Return the array of mean stresses."""
+
+        return np.array([e.mean_stress for e in self])
+
+    @property
+    def sigma1(self) -> np.ndarray:
+        """Return the array of the maximum principal stress (max compressive)."""
+
+        return np.array([e.sigma1 for e in self])
+
+    @property
+    def sigma2(self) -> np.ndarray:
+        """Return the array of the minimum principal stress."""
+
+        return np.array([e.sigma2 for e in self])
+
+    @property
+    def sigma1dir(self) -> Vector2Set:
+        """Return Vector2Set of unit length vector in direction of maximum."""
+
+        return Vector2Set([e.sigma1dir for e in self])
+
+    @property
+    def sigma2dir(self) -> Vector2Set:
+        """Return Vector2Set of unit length vector in direction of minimum."""
+
+        return Vector2Set([e.sigma2dir for e in self])
+
+    @property
+    def I1(self) -> np.ndarray:
+        """Return the array of first invariants."""
+
+        return np.array([e.I1 for e in self])
+
+    @property
+    def I2(self) -> np.ndarray:
+        """Return the array of second invariants."""
+
+        return np.array([e.I2 for e in self])
+
+    @property
+    def I3(self) -> np.ndarray:
+        """Return the array of third invariants."""
+
+        return np.array([e.I3 for e in self])
+
+
 class Stress3Set(FeatureSet):
     """
     Class to store set of ``Stress3`` features.
@@ -2310,6 +2407,12 @@ class Stress3Set(FeatureSet):
 
     def __repr__(self):
         return f"Sig({len(self)}) {self.name}"
+
+    @property
+    def mean_stress(self) -> np.ndarray:
+        """Return the array of mean stresses."""
+
+        return np.array([e.mean_stress for e in self])
 
     @property
     def sigma1(self) -> np.ndarray:
@@ -2346,6 +2449,30 @@ class Stress3Set(FeatureSet):
         """Return Vector3Set of unit length vector in direction of minimum."""
 
         return Vector3Set([e.sigma3dir for e in self])
+
+    @property
+    def I1(self) -> np.ndarray:
+        """Return the array of first invariants."""
+
+        return np.array([e.I1 for e in self])
+
+    @property
+    def I2(self) -> np.ndarray:
+        """Return the array of second invariants."""
+
+        return np.array([e.I2 for e in self])
+
+    @property
+    def I3(self) -> np.ndarray:
+        """Return the array of third invariants."""
+
+        return np.array([e.I3 for e in self])
+
+    @property
+    def shape_ratio(self) -> np.ndarray:
+        """Return the array of shape ratios (Gephart & Forsyth, 1984)."""
+
+        return np.array([e.shape_ratio for e in self])
 
 
 class ClusterSet(object):
@@ -2493,6 +2620,8 @@ def _build_registry():
             OrientationTensor3: OrientationTensor3Set,
             Ellipse: EllipseSet,
             OrientationTensor2: OrientationTensor2Set,
+            Stress3: Stress3Set,
+            Stress2: Stress2Set,
         }
     )
 

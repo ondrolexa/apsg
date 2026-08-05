@@ -1086,6 +1086,25 @@ class Ellipsoid(Tensor3):
         )
 
     @property
+    def P_j(self) -> float:
+        """Return the corrected anisotropy degree (Jelínek, 1981)."""
+        eta = (self.e1 + self.e2 + self.e3) / 3
+        return math.exp(
+            math.sqrt(
+                2 * ((self.e1 - eta) ** 2 + (self.e2 - eta) ** 2 + (self.e3 - eta) ** 2)
+            )
+        )
+
+    @property
+    def T(self) -> float:
+        """Return the shape parameter (Jelínek, 1981)."""
+        return (
+            (2 * self.e2 - self.e1 - self.e3) / (self.e1 - self.e3)
+            if (self.e1 - self.e3) > 0
+            else 0
+        )
+
+    @property
     def P(self) -> float:
         """Point index (Vollmer, 1990)."""
 

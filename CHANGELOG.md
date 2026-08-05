@@ -1,6 +1,11 @@
 # Changelog
 
-### 1.5.1 (master)
+### 1.5.2 (master)
+* Stress2Set added (mirrors Stress3Set for the 2D stress tensor: mean_stress, sigma1/2(dir), I1/2/3); PairSet.rake, ConeSet.revangle/apical_angle, EllipsoidSet.kind/P_j/T and Stress3Set.mean_stress/I1/2/3/shape_ratio array shortcuts added to fill gaps found auditing every FeatureSet against its item class's scalar properties; Stress3 (and now Stress2) also registered with the G() factory, which previously raised TypeError for stress objects
+* P_j and T (Jelínek, 1981 corrected anisotropy degree / shape parameter) added to Ellipsoid
+* WebSDBSession added to apsg.database for read/write access to a websdb REST API project (folset/linset/faultset/pairset with site/rock/unit/tags/structype filtering, mode="rw" for add/update/delete of sites, rocks, units, structypes and geodata), alongside the existing local-sqlite SDBSession; uses only the standard library (urllib), no new dependency
+
+### 1.5.1 (Aug 4 2026)
 * BREAKING: Stress2/Stress3 now use the geosciences & rock-mechanics sign convention (compression positive, tension negative), replacing the previous continuum-mechanics (tension positive) convention; sigma1/sigma2/sigma3(dir/vec) now map directly to E1/E2/E3. This also fixes Stress3.fault, Stress3.effective (pore pressure now correctly reduces compressive stress), Stress3.dilation_tendency, Stress3.from_ratio, Stress3Set.sigma1/2/3(dir), FaultSet.stress_inversion and the StereoNet stress-axis plotting, which all depended on the old convention
 * section method added to Ellipsoid to get planar section as Ellipse
 * confidence method added to StereoNet to draw fisher, bingham, watson or bootstrap confidence cone/ellipse around orientation data (bingham uses the exact F-distribution method of Fisher, Lewis & Embleton (1987)); replaces fisher_cone/fisher_cone_csd (removed from Vector3Set)
