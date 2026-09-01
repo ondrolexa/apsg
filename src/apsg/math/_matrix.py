@@ -146,7 +146,7 @@ class Matrix(ABC):
 
     def transform(self, other):
         """Coordinate transformations of matrix."""
-        other = self._ensure_same(other)
+        other = np.asarray(self._ensure_same(other))
         return type(self)(other @ self @ other.T)
 
     @property

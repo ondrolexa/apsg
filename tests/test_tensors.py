@@ -1068,6 +1068,21 @@ class TestEllipsoid:
         E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
         assert E.E1 == 8
 
+    def test_transform_identity(self):
+        # regression: Ellipsoid.T is the Jelinek shape parameter, not the matrix
+        # transpose, so transform() must not rely on the public .T property
+        E = Ellipsoid([[8, 2, 0], [2, 5, 1], [0, 1, 0.25]])
+        Et = E.transform(DeformationGradient3())
+        np.testing.assert_array_almost_equal(np.asarray(Et), np.asarray(E))
+
+    def test_transform_rotation(self):
+        E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
+        R = Rotation3.from_axisangle(Vector3(0, 0, 1), 90)
+        Et = E.transform(R)
+        np.testing.assert_array_almost_equal(
+            np.asarray(Et), [[2, 0, 0], [0, 8, 0], [0, 0, 1]]
+        )
+
     def test_from_defgrad_left(self):
         F = DeformationGradient3.from_ratios(Rxy=2, Ryz=3)
         E = Ellipsoid.from_defgrad(F, form="left")
