@@ -70,7 +70,7 @@ def stereo_plot(core, kind="geo", **kwargs):
         title="{} {}\n{}".format(core.site, core.specimen, tt[kind]), **kwargs
     )
     for f1, f2 in zip(data[:-1], data[1:]):
-        s.arc(f1, f2, "k:")
-    s.vector(data[0], "k+", markersize=14)
-    s.vector(data, "ko")
+        s.arc(f1, f2, color="k", ls=":")
+    s.vector(data[0], color="k", marker="+", ms=14)
+    s.vector(data, color="k", marker="o")
     s.show()

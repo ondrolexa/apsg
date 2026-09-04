@@ -693,10 +693,10 @@ class TestVector3Set:
     def test_align(self):
         v1 = Vector3Set([Vector3(1, 0, 0), Vector3(0, 1, 0)])
         v2 = Vector3Set([Vector3(1, 0, 0), Vector3(0, 1, 0)])
-        dg = v1.align(v2)
-        from apsg.feature._tensor3 import DeformationGradient3
+        R = v1.align(v2)
+        from apsg.feature._tensor3 import Rotation3
 
-        assert isinstance(dg, DeformationGradient3)
+        assert isinstance(R, Rotation3)
 
     def test_from_array(self):
         v = Vector3Set.from_array([0, 90], [0, 0])

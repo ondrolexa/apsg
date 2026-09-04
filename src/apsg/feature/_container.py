@@ -16,7 +16,6 @@ from apsg.feature._geodata import Cone, Direction, Fault, Foliation, Lineation, 
 from apsg.feature._statistics import KentDistribution, vonMisesFisher
 from apsg.feature._tensor2 import Ellipse, OrientationTensor2, Stress2
 from apsg.feature._tensor3 import (
-    DeformationGradient3,
     Ellipsoid,
     OrientationTensor3,
     Rotation3,
@@ -1088,10 +1087,10 @@ class Vector3Set(FeatureSet):
                 return float(observed), float(p_value), p_value >= alpha
 
     def align(self, other):
-        """Return best estimate rotation as `DeformationGradient3` to align with others."""
+        """Return best estimate rotation as `Rotation3` to align with others."""
 
         R = Rotation.align_vectors(np.array(other), np.array(self))[0]
-        return DeformationGradient3(R.as_matrix())
+        return Rotation3(R.as_matrix())
 
     @classmethod
     def from_csv(cls, filename, acol=0, icol=1):

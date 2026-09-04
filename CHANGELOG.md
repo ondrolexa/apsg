@@ -1,388 +1,551 @@
 # Changelog
 
-### 1.5.2 (master)
-* kinematic_vorticity, vorticity_vector and vorticity_scalar added to VelocityGradient3, and vorticity_scalar added to VelocityGradient2
-* flow_apophyses method added to VelocityGradient3 and DeformationGradient3 (Passchier, 1997; Davis and Titus, 2011), returning the fabric attractor/repeller directions as Lineation objects and raising ValueError when the deformation has complex eigenvalues (Wk > 1), since no real flow apophyses exist in that case
-* from_ellipsoid added to DeformationGradient3 and from_ellipse to DeformationGradient2, recovering F = Q @ D @ R from a finite strain ellipsoid/ellipse up to the rotational ambiguity described by Flinn (1979) and Davis and Titus (2011); R defaults to identity (coaxial solution) but accepts a Rotation3/Rotation2 resolved from independent data
-* fixed Matrix2/Matrix3 (and everything built directly on them: DeformationGradient2/3, VelocityGradient2/3, Rotation2/3) silently mishandling complex eigenvalues: E1/E2/E3 previously discarded the imaginary part without warning and eigenvectors()/V1/V2/V3 crashed with an unhelpful TypeError on repr; both now raise a clear ValueError instead. Stress2/3, Ellipse/Ellipsoid and OrientationTensor2/3 were never affected, since they use a symmetric-only eigendecomposition
-* fixed Ellipsoid.transform() (and OrientationTensor3.transform()) silently returning garbage: the shared Matrix.transform() used other.T expecting a matrix transpose, but Ellipsoid overrides T as the Jelínek shape parameter, so it picked up that scalar instead of the transposed array. transform() now transposes the raw array directly, independent of any domain-specific .T override
-* Stress2Set added (mirrors Stress3Set for the 2D stress tensor: mean_stress, sigma1/2(dir), I1/2/3); PairSet.rake, ConeSet.revangle/apical_angle, EllipsoidSet.kind/P_j/T and Stress3Set.mean_stress/I1/2/3/shape_ratio array shortcuts added to fill gaps found auditing every FeatureSet against its item class's scalar properties; Stress3 (and now Stress2) also registered with the G() factory, which previously raised TypeError for stress objects
-* P_j and T (Jelínek, 1981 corrected anisotropy degree / shape parameter) added to Ellipsoid
-* WebSDBSession added to apsg.database for read/write access to a websdb REST API project (folset/linset/faultset/pairset with site/rock/unit/tags/structype filtering, mode="rw" for add/update/delete of sites, rocks, units, structypes and geodata), alongside the existing local-sqlite SDBSession; uses only the standard library (urllib), no new dependency
-
-### 1.5.1 (Aug 4 2026)
-* BREAKING: Stress2/Stress3 now use the geosciences & rock-mechanics sign convention (compression positive, tension negative), replacing the previous continuum-mechanics (tension positive) convention; sigma1/sigma2/sigma3(dir/vec) now map directly to E1/E2/E3. This also fixes Stress3.fault, Stress3.effective (pore pressure now correctly reduces compressive stress), Stress3.dilation_tendency, Stress3.from_ratio, Stress3Set.sigma1/2/3(dir), FaultSet.stress_inversion and the StereoNet stress-axis plotting, which all depended on the old convention
-* section method added to Ellipsoid to get planar section as Ellipse
-* confidence method added to StereoNet to draw fisher, bingham, watson or bootstrap confidence cone/ellipse around orientation data (bingham uses the exact F-distribution method of Fisher, Lewis & Embleton (1987)); replaces fisher_cone/fisher_cone_csd (removed from Vector3Set)
-* csd and uniform removed from fisher_statistics; added as separate csd and uniformity_test methods on Vector2Set/Vector3Set, fixing the previous uniformity test which used an incorrect chi-square formula shared (and wrong) for both 2D and 3D data. Direction2Set uses an angle-doubling Rayleigh test and LineationSet/FoliationSet use Watson's U² test instead, since axial data can fool a plain Rayleigh test via antipodal cancellation in the resultant vector
-* random_fisher2 removed from Vector3Set (superseded by the proper von Mises-Fisher sampler in random_fisher)
-* random method added to Vector3Set for uniformly distributed random orientations (i.i.d., unlike the deterministic gss/sfs space-filling samplers)
-* uniform_sfs and uniform_gss renamed to sfs and gss
-* fixed R() on Direction2Set/LineationSet/FoliationSet giving a different resultant depending on the order features were listed in, due to axial addition flipping each vector against a running (order-dependent) partial sum; now uses the halfspace() consensus flip instead, which is order-independent. This also fixes var, delta, rdegree, fisher_statistics, csd, similarity(method="hotelling") and StereoNet.confidence(method="fisher"/"bootstrap") for axial data, which all relied on R()
-
-### 1.5.0 (Jul 15 2026)
- * notations refactored, including quadrant
- * Pandas API refactored
- * StereoNet point method added as a replacement for both line and pole
- * StereoNet plot method using styles implemented
- * Rotation classes derived from the deformation gradient class are implemented
- * align method added to featureset to find best rotation
- * Watson statistics added
- * Spherical harmonics are used as the default contouring method. Keyword method added.
- * Fisher statistics improved
- * similarly test for vecset implemented
- * stress inversion method added to faultset
- * angular_misfit method added to Fault and FaultSet
- * Roseplot weighting fixed
- * strike method added to planar features
- * from_declination added to defgrad to create rotation to correct magnetic declination
- * defgrad from_euler, from_quat, euler and quat methods added
- * scaled_eigenvectors bug fixed
- * docs updated
-
-### 1.4.0 (Feb 20 2026)
- * attributes storage implemented (passed as kwargs to features)
- * apsg_config implemented as dataclass
- * add_vecs, add_fols, add_lins and add_faults added to pandas API
- * df and structdata methods added to SDBSession
-
-### 1.3.9 (Feb 5 2026)
- * SDBSession getset bug fixed
-
-### 1.3.8 (Feb 5 2026)
- * SDBSession getset improved
- * SDBSession getpairs and getfaults added
-
-### 1.3.7 (Dec 8 2025)
- * transform method added to EllipseSet and EllipsoidSet
- * repr bug fixed
-
-### 1.3.6 (Nov 13 2025)
- * cluster bug fixed
- * RosePlot is axial for dir2set and vectorial for vec2set
-
-### 1.3.5 (Nov 13 2025)
- * Direction and Direction2Set added
- * cluster use different metrics for axial and vector data
- * stress tensor from_ratio method added
- * fault sense_str property for string representation added
- * fault sense_str used for repr by default
-
-### 1.3.4 (Sep 24 2025)
- * rounding bug fixed
- * quicknet pass all kwargs to StereoNet methods
-
-### 1.3.3 (Sep 21 2025)
- * iapsg fixed
- * sdbread tags fix
-
-### 1.3.2 (Mar 2 2025)
- * using setuptools as builder
-
-### 1.3.1 (Feb 28 2025)
- * SQLAlchemy interface to sdb updated
- * matplotlib 3.9 minimum version
- * collections clipping bug fixed
-
-## 1.3.0 (Dec 14 2024)
- * Python 3.10 set as minimal version
- * Tensor3 eigenlins and eigenfols implemented as methods
- * pandas accessors G property returns apsg FeatureSet
-
-### 1.2.3 (Nov 18 2024)
- * ClusterSet accepts PairSet and FaultSet
- * quicknet label option added
- * vector pow bug fix
-
-### 1.2.2 (Oct 21 2024)
- * Fault sense could be defined by str, one of 's', 'd', 'n' and 'r'
-
-### 1.2.1 (Sep 23 2024)
- * Fault sense could be defined by str, one of 's', 'd', 'n' and 'r'
-
-## 1.2.0 (May 24 2024)
- * sqlalchemy and pandas added to requirements
- * quicknet fault bug fixed
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+Note: apsg's version numbers do not strictly follow [Semantic Versioning](https://semver.org/) --
+a patch-level release can include breaking changes, marked below as **BREAKING**.
+
+## [Unreleased]
+
+### Added
+- Multiple contour layers can now be overlaid on the same stereonet in one plot.
+- `StereoNet.set_rotation()`/`.rotation` and `apsg.rotation_from_axis_angle()` to rotate a whole net (grid and data) around any axis.
+- `StereoGrid` can now be saved to and loaded from a file.
+- Config options extended.
+- `kinematic_vorticity`, `vorticity_vector`, `vorticity_scalar` for velocity gradients.
+- `flow_apophyses` to find the directions a progressive deformation neither stretches nor shrinks.
+- `from_ellipsoid`/`from_ellipse` to recover the deformation that produced a measured strain ellipsoid/ellipse.
+- `Stress2Set`, plus convenience shortcuts (rake, cone angles, shape/anisotropy parameters, etc.) across feature sets.
+- `P_j` and `T` (Jelínek 1981 anisotropy degree and shape parameter) on `Ellipsoid`.
+- `WebSDBSession` for connecting to a remote websdb database over the web.
+
+### Changed
+- **BREAKING:** the stereonet drawing engine was rebuilt on a real matplotlib map projection.
+- **BREAKING:** contour density values from the "kamb" and "sph" methods are now on one common scale ("standard deviations above random").
+- **BREAKING:** `contour()`: `clines` renamed to `filled`; default method changed from "sph" to "kamb"; densities above random are now shown by default (`clip=True`).
+- **BREAKING:** `StereoNet` setup options renamed: `overlay_position` to `rotation`, `overlay` to `grid`, `overlay_step` to `grid_step`.
+- **BREAKING:** rotating a net now also rotates the plotted data by default.
+
+### Removed
+- **BREAKING:** `contour()` options `sigmanorm`, `trimzero`, `show_data`, `data_kws` (plot data points separately with `point()` instead).
+- **BREAKING:** `StereoGrid.contourf()`/`.contour()`/`.plotcountgrid()` (use `StereoNet.contour()` instead).
+
+### Fixed
+- `contour()`'s `clip` option now actually works (it silently did nothing before).
+- Lines, poles, planes and contour plots on an upper-hemisphere stereonet now correctly appear at the antipodal position.
+- `cone()`, `arc()`, `confidence()`, `fault()` and `pair()` plots now correctly respond to upper/lower hemisphere choice.
+- The coordinate readout shown when hovering over a stereonet now always reports the correct orientation.
+- `vector()`'s open (antipodal) marker now always matches its filled marker's color and no longer shifts later plots' colors.
+- Hoeppner plot arrows are no longer hidden behind an oversized marker.
+- Paleomagnetic `stereo_plot()` silently plotting nothing.
 
-### 1.1.5 (May 15 2024)
- * paleomag Core .dd bug fixed
- * fix round-off domain math error for acosd and asind
-
-### 1.1.4 (Dec 13 2023)
- * Ellipsoid repr bugfix
-
-### 1.1.3 (Oct 23 2023)
-Bugfix release
- * slip and dilatation tendency methods added to stress
- * proj alias of project for FeatureSet added
-
-### 1.1.2 (Oct 09 2023)
- * added title_kws argument for plotting routines
-
-### 1.1.1 (Oct 06 2023)
- * sigma estimate contour fix
-
-## 1.1.0 (Oct 04 2023)
-APSG offers convenient pandas integration via pandas accessors.
+## [1.5.1] - 2026-08-04
 
-See documentation and Pandas interface tutorial for further details.
+### Added
+- `section` method on `Ellipsoid` to get a planar section as an `Ellipse`.
+- `confidence` method on `StereoNet` to draw a Fisher, Bingham, Watson or bootstrap confidence cone/ellipse around orientation data.
+- `csd` and `uniformity_test` methods on 2D and 3D feature sets; axial data (lines, poles) now uses Watson's test instead of a plain directional test.
+- `random` method on `Vector3Set` for uniformly random orientations.
 
- * StereoNet tensor method added
- * Cluster class renamed to ClusterSet
-
-### 1.0.3 (Apr 30 2023)
- * lambda properties of tensors renamed to S
- * cursor coordinates in stereonet show lin and fol
-
-### 1.0.1 (Nov 22 2022)
- * density_lookup method implemented for StereoNet.grid
- * Stress tensor sigma* properties using inverted order of eigenvalues
- * render2fig method of StereoNet implemented
- * vector-like objects are not iterable, so properly render in pandas
+### Changed
+- **BREAKING:** `Stress2`/`Stress3` now follow the geosciences/rock-mechanics sign convention (compression positive, tension negative).
 
-## 1.0.0 (Oct 7 2022)
-New major release
+### Removed
+- `fisher_cone`/`fisher_cone_csd` (replaced by the new `confidence` method).
 
-APSG has been significantly refactored from version 1.0 and several changes are
-breaking backward compatibility. The main APSG namespace provides often-used
-classes in lowercase names as aliases to `PascalCase` convention used in
-modules to provide a simplified interface for users. The `PascalCase` names of
-classes use longer and plain English names instead acronyms for better
-readability.
+## [1.5.0] - 2026-07-15
 
-See documentation for further details.
+### Added
+- `StereoNet.point` method as a unified replacement for `line`/`pole`.
+- `StereoNet.plot` method for plotting with reusable styles.
+- Rotation classes derived from the deformation gradient class.
+- `align` method on feature sets to find the best-fit rotation between two sets.
+- Watson statistics.
+- `method` keyword for choosing the contouring method.
+- Similarity test for vector sets.
+- Stress inversion method on fault sets.
+- `angular_misfit` method on `Fault`/`FaultSet`.
+- `strike` method on planar features.
+- `from_declination` to correct for magnetic declination.
+- `from_euler`, `from_quat`, `euler`, `quat` methods on deformation gradients.
 
-### 0.7.3 (Oct 6 2022)
- * figure window title removed from StereoNet
- * for future only bugfixes planned, foo further development see versions >=1.0
+### Changed
+- Notation handling refactored, including quadrant notation.
+- Pandas integration refactored.
+- Spherical harmonics are now the default contouring method.
+- Fisher statistics improved.
+- Documentation updated.
 
-### 0.7.2 (Oct 6 2022)
- * bugfix release
+### Fixed
+- Rose diagram weighting.
+- `scaled_eigenvectors`.
 
-### 0.7.1 (Jul 13 2021)
- * paleomag rs3 input/output improved
- * Simple SQLAlchemy API to sdb database implemented
- * StereoNet arc method fixed
- * StereoNet polygon method added
-
-## 0.7.0 (Feb 3 2021)
-
-* Python 2 support dropped
-* RosePlot added
-* Ortensor has from_pairs method for Lisle tensor for orthogonal data
-* StereoNet scatter method has labels kwarg to show hover annotations
+## [1.4.0] - 2026-02-20
 
-### 0.6.3 (Dec 6 2019)
+### Added
+- Custom attributes can now be attached to features.
+- `add_vecs`, `add_fols`, `add_lins`, `add_faults` in the Pandas integration.
+- `df` and `structdata` methods for reading SDB databases.
 
-* Python 2/3 compatibility fix
+### Changed
+- Global settings reorganized as a proper configuration object.
 
-### 0.6.2 (Dec 6 2019)
-
-* few minor bugs fixed
-* Stereogrid apply_func passes Vec3 instead numpy array
-* Pair H method to get mutual rotation implemented
-* velgrad method of DefGrad accepts steps kwarg
-  to generate list of DefGrad tensors
-* Added Tensor class to work with deformation tensors
+## [1.3.9] - 2026-02-05
 
-### 0.6.1 (Dec 12 2018)
+### Fixed
+- SDB database read/write bug.
 
-* Stereogrid always use Euclidean norms as weights
-* DefGrad properties e1, e2, e3 (natural principal strains) added
-* DefGrad properties eoct, goct (octahedral strains) added
-* DefGrad from_ratios class method added
-* DefGrad properties k, d, K, D (strain symmetries and intesities) added
-* New class Ellipsoid added to work with ellipsoids
-* FabricPLot renamed to VollmerPlot for consistency
-* RamsayPlot, FlinnPlot and HsuPlot implemented
-* All fabric plots have new path method accepting list of tensors
+## [1.3.8] - 2026-02-05
 
-## 0.6.0 (Nov 7 2018)
+### Added
+- Pair and fault retrieval for SDB databases.
 
-* Stress always gives eigenvalues sorted
-* Stress I1, I2, I3 properties for invariants implemented
-* Stress mean_stress property implemented
-* Stress hydrostatic and deviatoric properties implemented
-* precision added to settings to control numerical comparisms
-* figsize added to settings to control figure size across APSG
-* Animation examples fixed
-* rand class method implemented for Fol, Lin, Vec3 and Pair to
-  generate random instance
-* Group to_csv and from_csv improved
-* SDB tags method works properly for multiple tags
-* SDB can modify database metadata
-* QGIS 3 plugin ReadSDB compatibility
+### Changed
+- SDB database read/write improved.
 
-### 0.5.4 (Oct 19 2018)
+## [1.3.7] - 2025-12-08
 
-* StereoNet has cbpad keyword for colorbar padding
-* FabricPlot bug introduced in 0.5.2 fixed.
-
-### 0.5.3 (Oct 10 2018)
-
-* Bugfix release
-
-### 0.5.2 (Oct 10 2018)
-
-* Fischer distribution sampling added
-* transform method has norm kwarg to normalize tranformed vectors
-* axisangle property to calculate axis and angle from rotation matrix
-* StereoNet arc method added
-* Vec3 and Group upper and flip properties implemented
-* DefGrad, VelGrad and Stress rotate method accepts also rotation matrix
-* velgrad method added to DefGrad to calculate matrix logarithm
-* StereoGrid has new methods max, min, max_at, min_at
+### Added
+- `transform` method on ellipse/ellipsoid sets.
 
-### 0.5.1 (Dec 5 2017)
-
-* Kent distribution sampling added
-* Automatic kernel density estimate for contouring
-* UserWarnings fix
-
-## 0.5.0 (Nov 19 2017)
+### Fixed
+- Text representation bug.
 
-* bux fix minor release
-
-### 0.4.4 (Mar 25 2017)
-
-* Group method centered improved
-* Group method halfspace added to reorient all vectors towards resultant
-  halfspace
-
-### 0.4.3 (Mar 25 2017)
-
-* Stress tensor with few basic methods implemented
-* StereoGrid keyword argument 'weighted' to control weighting
-* StereoNet kwargs are passed to underlying methods for immediate plots
-* StereoNet tensor method implemented (draw eigenlins or fols based on
-  fol_plot settings)
-* Group totvar property and dot and proj methods implemented
-* Fol and Lin dot method returns absolute value of dot product
-* Vec3 H method to get mutual rotation implemented
-* StereoNet.contourf method draw contour lines as well by default. Option
-  clines controls it.
-* centered bug fixed
-* StereoNet allows simple animations. Add `animate=True` kwarg to plotting
-  method and finally call StereoNet animate method.
-
-### 0.4.1-2 (Mar 4 2017)
-
-* bugfix
-
-## 0.4.0 (Mar 4 2017)
-
-* Density class renamed to StereoGrid
-* Fault sense under rotation fixed
-* FaultSet example provided
-* Angelier-Mechler dihedra method implemented for FaultSet
-* StereoNet accepts StereoGrid and Ortensor as quick plot arguments
-* StereoNet instance has axtitle method to put text below stereonet
-
-### 0.3.7 (Jan 5 2017)
-
-* conda build for all platforms
-* numpy, matplotlib and other helpres imported by default
-* ortensor is normed by default
-* ortensor MADp, MADo, MAD and kind properties added
-
-### 0.3.6 (Jan 3 2017)
-
-* shell script iapsg opens interactive console
-
-### 0.3.5 (Nov 12 2016)
-
-* Simple settings interface implemented in in apsg.core.seetings dictionary.
-  To change settings use:
-  ```
-  from apsg.core import settings
-  setting['name']=value
-  ```
-* `notation` setting with values `dd` or `rhr` control how azimuth argument of
-  Fol is represented.
-* `vec2dd` setting with values `True` or `False` control how `Vec3` is
-  represented.
-* Vec3 could be instantiated by one arument (vector like), 2 arguments
-  (azimuth, inclination) or 3 arguments (azimuth, inclination, magnitude).
-* Group and FaultSet can return array or list of user-defined attributes of
-  all elements
-
-### 0.3.4 (Jun 20 2016)
-
-* RTD fix
-
-### 0.3.3 (Jun 4 2016)
-
-* Added E1,E2,E3 properties and polar decomposition method to DefGrad object
-* StereoNet has vector method to mimics lower and upper hemisphere plotting
-  of Lin and Vec3 objects as used in paleomagnetic plots
-* StereoNet could be initialized with subplots
-* rake method of Fol added to return vector defined by rake
-* Density could be initialized without data for user-defined calculations
-  New method apply_func could be used to calculate density
-* Contour(f) methods accept Density object as argument
-* Added Group class methods to generate Spherical Fibonacci and Golden Section
-  based uniform distributions of Vec3, Lin and Fol
-
-### 0.3.2 (Feb 22 2016)
-
-* FabricPlot - triangular fabric plot added
-* .asvec3 property has .V alias
-* Resultant of Fol and Lin is calculated as vectorial in centered position
-* dv property of Fol added to return dip slip vector
-
-### 0.3.1 (Nov 20 2015)
-
-* SDB class improved. Support basic filtering including tags
-* StereoNet has close method to close figure and new method
-  to re-initialize figure when closed in interactive mode
-* iapsg shell script added to invoke apsg ipython shell
-
-## 0.3.0 (Nov 9 2015)
-
-* Group fancy indexing implemented. Group could be indexed by sequences
-  of indexes like list, tuple or array as well as sliced.
-* Cluster class with hierarchical clustering implemented
-* Group to_file and from_file methods implemented to store data in file
-* Group copy method for shallow copy implemented
-* StereoNet now accept Vec3 and Fault object as well for instant plotting.
-* Ortensor updated with new properties E1,E2,E3 and Vollmer(1989) indexes
-  P,G,R and C. Bug in Woodcocks's shape and strength values fixed.
-* uniform_lin and uniform_fol improved.
-* asvec3 method implemented for Fol and Lin
-* fol_plot property of StereoNet allows choose poles or great circles for
-  immediate plotting
-* bootstrap method of Group provide generator of random resampling with
-  replacements.
-* Group examples method provide few well-known datasets.
-* Matplotlib deprecation warnings are ignored by default
-
-### 0.2.3 (Oct 21 2015)
-
-* New Docstrings format
-* StereoNet.getfols method bug fixed.
-* Shell scripts to run interactive session improved.
-
-### 0.2.2 (Apr 17 2015)
-
-* FaultSet class added. Fault and Hoeppner methods of StereoNet implemented
-* VelGrad and DefGrad classes used for transformations added
-* G class to quickly create groups from strings added.
-
-### 0.2.1 (Dec 9 2014)
-
-* Quick plotting of groups fixed.
-
-## 0.2.0 (Dec 9 2014)
-
-* new StereoNet class for Schmidt projection
-* Quick plot when data are passed as argument `StereoNet` class instantiation
-* mplstereonet dependency depreceated
-* new `Pair` and `Fault` classes to manipulate paired data (full support in future)
-* new `uniform_lin` and `uniform_fol` `Group` methods
-* abs for `Group` implemented to calculate euclidean norms
-* new `Group` method normalized
-* new `Group` properties and methods to calculate spherical statistics
-
-## 0.1.0 (Nov 1 2014)
-
-* First release of APSG
+## [1.3.6] - 2025-11-13
+
+### Changed
+- Rose diagrams are now axial for directions and vectorial for vectors, as appropriate.
+
+### Fixed
+- Clustering bug.
+
+## [1.3.5] - 2025-11-13
+
+### Added
+- `Direction` and `Direction2Set` classes.
+- `from_ratio` method on stress tensors.
+- Readable string representation for fault sense.
+
+### Changed
+- Clustering now uses different distance metrics for axial vs. vector data.
+- Fault sense string representation is now used by default.
+
+## [1.3.4] - 2025-09-24
+
+### Changed
+- `quicknet` now passes all keyword arguments through to the underlying `StereoNet` methods.
+
+### Fixed
+- Rounding bug.
+
+## [1.3.3] - 2025-09-21
+
+### Fixed
+- Interactive shell (`iapsg`).
+- SDB database tag reading.
+
+## [1.3.2] - 2025-03-02
+
+### Changed
+- Build system switched to setuptools.
+
+## [1.3.1] - 2025-02-28
+
+### Changed
+- SDB database interface updated.
+- matplotlib 3.9 is now the minimum supported version.
+
+### Fixed
+- A plotting bug affecting collections.
+
+## [1.3.0] - 2024-12-14
+
+### Added
+- `eigenlins`/`eigenfols` methods on 3D tensors.
+
+### Changed
+- Python 3.10 is now the minimum supported version.
+- Pandas `.G` accessor now returns a proper apsg feature set.
+
+## [1.2.3] - 2024-11-18
+
+### Added
+- `label` option for `quicknet`.
+
+### Changed
+- Clustering now accepts pair and fault sets.
+
+### Fixed
+- Vector exponentiation bug.
+
+## [1.2.2] - 2024-10-21
+
+### Changed
+- Fault sense can now be given as a string (`'s'`, `'d'`, `'n'` or `'r'`).
+
+## [1.2.1] - 2024-09-23
+
+### Changed
+- Fault sense can now be given as a string (`'s'`, `'d'`, `'n'` or `'r'`).
+
+## [1.2.0] - 2024-05-24
+
+### Changed
+- SQLAlchemy and Pandas added as dependencies.
+
+### Fixed
+- A `quicknet` bug affecting faults.
+
+## [1.1.5] - 2024-05-15
+
+### Fixed
+- Paleomagnetic core-orientation bug.
+- Round-off error in angle calculations.
+
+## [1.1.4] - 2023-12-13
+
+### Fixed
+- `Ellipsoid` text representation bug.
+
+## [1.1.3] - 2023-10-23
+Bugfix release.
+
+### Added
+- Slip and dilatation tendency methods on stress tensors.
+- `proj` as a shorter alias for `project` on feature sets.
+
+## [1.1.2] - 2023-10-09
+
+### Added
+- `title_kws` argument on plotting methods for custom title styling.
+
+## [1.1.1] - 2023-10-06
+
+### Fixed
+- Contouring bug affecting the sigma estimate.
+
+## [1.1.0] - 2023-10-04
+APSG offers convenient Pandas integration via Pandas accessors. See documentation and the
+Pandas interface tutorial for further details.
+
+### Added
+- `tensor` method on `StereoNet`.
+
+### Changed
+- `Cluster` class renamed to `ClusterSet`.
+
+## [1.0.3] - 2023-04-30
+
+### Added
+- Cursor coordinates on a stereonet now show both line and plane orientation.
+
+### Changed
+- Lambda properties of tensors renamed to `S`.
+
+## [1.0.1] - 2022-11-22
+
+### Added
+- `density_lookup` method on `StereoNet`'s grid.
+- `render2fig` method on `StereoNet`.
+
+### Changed
+- Stress tensor sigma properties now use the standard (inverted) eigenvalue order.
+
+### Fixed
+- Vector-like objects are no longer iterable, so they now display correctly in Pandas.
+
+## [1.0.0] - 2022-10-07
+New major release. See documentation for further details.
+
+### Changed
+- **BREAKING:** significantly refactored from the 0.x series; the main namespace now provides
+  short lowercase aliases (e.g. `lin`, `fol`) for the plain-English `PascalCase` class names
+  used internally, for a simpler day-to-day interface.
+
+## [0.7.3] - 2022-10-06
+
+### Removed
+- Figure window title from `StereoNet`.
+
+## [0.7.2] - 2022-10-06
+
+### Fixed
+- General bug fixes.
+
+## [0.7.1] - 2021-07-13
+
+### Added
+- Simple SQLAlchemy-based interface to SDB databases.
+- `StereoNet.polygon` method.
+
+### Changed
+- Paleomagnetic RS3 file input/output improved.
+
+### Fixed
+- `StereoNet.arc` method.
+
+## [0.7.0] - 2021-02-03
+
+### Added
+- `RosePlot` (rose diagram).
+- `from_pairs` method on orientation tensors (Lisle tensor for orthogonal data).
+- `labels` option on `StereoNet.scatter` for hover annotations.
+
+### Removed
+- Python 2 support.
+
+## [0.6.3] - 2019-12-06
+
+### Fixed
+- Python 2/3 compatibility.
+
+## [0.6.2] - 2019-12-06
+
+### Added
+- `Pair.H` method to get the mutual rotation between two pairs.
+- `steps` option on `velgrad` to generate a series of deformation tensors.
+- `Tensor` class for working with generic deformation tensors.
+
+### Fixed
+- Several minor bugs.
+- `StereoGrid.apply_func` now passes a proper vector object instead of a raw array.
+
+## [0.6.1] - 2018-12-12
+
+### Added
+- Natural principal strains (`e1`, `e2`, `e3`) on deformation gradients.
+- Octahedral strains (`eoct`, `goct`) on deformation gradients.
+- `from_ratios` class method on deformation gradients.
+- Strain symmetry/intensity properties (`k`, `d`, `K`, `D`) on deformation gradients.
+- `Ellipsoid` class for working with strain ellipsoids.
+- `RamsayPlot`, `FlinnPlot` and `HsuPlot` fabric plots.
+- `path` method on all fabric plots, accepting a list of tensors.
+
+### Changed
+- `StereoGrid` now always uses Euclidean norms as weights.
+- `FabricPlot` renamed to `VollmerPlot`.
+
+## [0.6.0] - 2018-11-07
+
+### Added
+- Stress invariants (`I1`, `I2`, `I3`).
+- `mean_stress` property on stress tensors.
+- `hydrostatic`/`deviatoric` properties on stress tensors.
+- `precision` setting to control numerical comparisons.
+- `figsize` setting to control figure size.
+- `rand` class method to generate a random line/plane/vector/pair.
+- SDB database metadata can now be modified.
+- QGIS 3 plugin (ReadSDB) compatibility.
+
+### Changed
+- Stress eigenvalues are now always returned sorted.
+- Group `to_csv`/`from_csv` improved.
+
+### Fixed
+- Animation examples.
+- SDB `tags` method for multiple tags.
+
+## [0.5.4] - 2018-10-19
+
+### Added
+- `cbpad` keyword on `StereoNet` for colorbar padding.
+
+### Fixed
+- `FabricPlot` bug introduced in 0.5.2.
+
+## [0.5.3] - 2018-10-10
+
+### Fixed
+- General bug fixes.
+
+## [0.5.2] - 2018-10-10
+
+### Added
+- Fisher distribution sampling.
+- `norm` option on `transform` to normalize transformed vectors.
+- `axisangle` property to compute axis and angle from a rotation matrix.
+- `StereoNet.arc` method.
+- `upper`/`flip` properties.
+- `velgrad` method to compute the matrix logarithm of a deformation gradient.
+- `max`, `min`, `max_at`, `min_at` methods on `StereoGrid`.
+
+### Changed
+- Rotate methods now also accept a rotation matrix directly.
+
+## [0.5.1] - 2017-12-05
+
+### Added
+- Kent distribution sampling.
+- Automatic kernel density estimate for contouring.
+
+### Fixed
+- Warnings cleanup.
+
+## [0.5.0] - 2017-11-19
+
+### Fixed
+- Minor bugfix release.
+
+## [0.4.4] - 2017-03-25
+
+### Added
+- `halfspace` method to reorient all vectors towards a common resultant halfspace.
+
+### Changed
+- `centered` method improved.
+
+## [0.4.3] - 2017-03-25
+
+### Added
+- Stress tensor with basic methods.
+- `weighted` keyword on `StereoGrid`.
+- `StereoNet.tensor` method (draws eigen-lines or eigen-planes).
+- `totvar`, `dot` and `proj` methods on feature groups.
+- `Vec3.H` method to get the mutual rotation between two vectors.
+- Simple animation support on `StereoNet` (`animate=True`).
+
+### Changed
+- `StereoNet` keyword arguments are now passed through for immediate plotting.
+- `dot` method on planes/lines now returns the absolute value of the dot product.
+- `StereoNet.contourf` now draws contour lines by default too (`clines` option).
+
+### Fixed
+- `centered` bug.
+
+## [0.4.1-2] - 2017-03-04
+
+### Fixed
+- General bug fixes.
+
+## [0.4.0] - 2017-03-04
+
+### Added
+- Angelier-Mechler dihedra method for fault sets.
+- `StereoNet` accepts a `StereoGrid` or orientation tensor as a quick-plot argument.
+- `StereoNet.axtitle` method to caption a plot.
+- Fault set example.
+
+### Changed
+- `Density` class renamed to `StereoGrid`.
+
+### Fixed
+- Fault sense under rotation.
+
+## [0.3.7] - 2017-01-05
+
+### Added
+- `MADp`, `MADo`, `MAD` and `kind` properties on orientation tensors.
+
+### Changed
+- Conda build available for all platforms.
+- numpy, matplotlib and other common helpers imported by default.
+- Orientation tensor is now normalized by default.
+
+## [0.3.6] - 2017-01-03
+
+### Added
+- `iapsg` shell script to open an interactive console.
+
+## [0.3.5] - 2016-11-12
+
+### Added
+- Simple settings interface.
+- `notation` setting (`dd` or `rhr`) to control how azimuth is interpreted.
+- `vec2dd` setting to control how vectors are displayed.
+- Vectors can now be created from 1 (vector-like), 2 (azimuth, inclination) or 3 (azimuth, inclination, magnitude) arguments.
+- Feature groups can now return an array or list of any user-defined attribute across all their elements.
+
+## [0.3.4] - 2016-06-20
+
+### Fixed
+- Documentation build.
+
+## [0.3.3] - 2016-06-04
+
+### Added
+- Principal strain properties and polar decomposition on deformation gradients.
+- `StereoNet.vector` method to mimic lower/upper hemisphere plotting as used in paleomagnetic plots.
+- Support for initializing `StereoNet` with subplots.
+- `rake` method on planes.
+- `apply_func` to compute density from a user-defined function, without needing input data upfront.
+- Contour methods accept a density grid object directly.
+- Uniform (Spherical Fibonacci / Golden Section) sampling for vectors, lines and planes.
+
+## [0.3.2] - 2016-02-22
+
+### Added
+- Triangular fabric plot.
+- `.V` as a shorter alias for `.asvec3`.
+- `dv` property on planes to return the dip-slip vector.
+
+### Changed
+- Resultant of planes/lines is now calculated vectorially in the centered position.
+
+## [0.3.1] - 2015-11-20
+
+### Added
+- Basic filtering by tags for SDB database support.
+- `close` method on `StereoNet`, with the ability to re-initialize after closing in interactive mode.
+- `iapsg` shell script to launch an apsg-aware IPython shell.
+
+## [0.3.0] - 2015-11-09
+
+### Added
+- Fancy indexing -- a group can be indexed by a list/tuple/array of indices, or sliced.
+- Hierarchical clustering.
+- Groups can be saved to and loaded from file.
+- Shallow-copy method for groups.
+- `StereoNet` now also accepts vectors and faults for instant plotting.
+- `E1`/`E2`/`E3` and Vollmer (1989) `P`/`G`/`R`/`C` indices on orientation tensors.
+- `asvec3` method on planes and lines.
+- `StereoNet` can plot planes as poles or great circles by default (`fol_plot`).
+- `bootstrap` method for resampling with replacement.
+- Built-in example datasets.
+
+### Changed
+- Uniform sampling of lines/planes improved.
+- matplotlib deprecation warnings ignored by default.
+
+### Fixed
+- A bug in Woodcock's shape/strength values.
+
+## [0.2.3] - 2015-10-21
+
+### Changed
+- Docstrings reformatted.
+- Interactive-session shell scripts improved.
+
+### Fixed
+- A `StereoNet` data-retrieval bug.
+
+## [0.2.2] - 2015-04-17
+
+### Added
+- `FaultSet` class; `Fault` and `Hoeppner` plotting methods on `StereoNet`.
+- `VelGrad` and `DefGrad` classes for transformations.
+- Quick group-creation helper.
+
+## [0.2.1] - 2014-12-09
+
+### Fixed
+- A quick-plotting bug for groups.
+
+## [0.2.0] - 2014-12-09
+
+### Added
+- `StereoNet` class for Schmidt projection plots.
+- Quick plotting when data is passed directly to `StereoNet`.
+- `Pair` and `Fault` classes for paired orientation data.
+- `uniform_lin`/`uniform_fol` sampling methods.
+- Absolute-value method to compute Euclidean norms for a group.
+- Normalization method for groups.
+- Spherical-statistics properties and methods for groups.
+
+### Removed
+- `mplstereonet` dependency.
+
+## [0.1.0] - 2014-11-01
+
+### Added
+- First release of APSG.

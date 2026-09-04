@@ -125,6 +125,7 @@ from apsg.plotting import (
     StereoNet,
     VollmerPlot,
     quicknet,
+    rotation_from_axis_angle,
 )
 from apsg.plotting import (
     RosePlotStyleFactory as roseplot_styles,
@@ -185,8 +186,9 @@ __all__ = (
     "FlinnPlot",
     "HsuPlot",
     "quicknet",
+    "rotation_from_axis_angle",
 )
 
-__version__ = "1.5.2"
+__version__ = "2.0.0"
 __author__ = "Ondrej Lexa"
 __email__ = "lexa.ondrej@gmail.com"

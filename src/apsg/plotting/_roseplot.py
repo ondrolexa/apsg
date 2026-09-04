@@ -30,6 +30,8 @@ class RosePlot:
         ticks (bool): show ticks. Default True
         grid (bool): show grid lines. Default False
         grid_kws (dict): Dict passed to Axes.grid. Default {}
+        legend_kws (dict): Extra keyword arguments passed to matplotlib's
+            ``legend``, overriding apsg's defaults. Default {}
 
         Other keyword arguments are passed to matplotlib plot.
 
@@ -114,9 +116,7 @@ class RosePlot:
         self._plot_artists()
         h, lbls = self.ax.get_legend_handles_labels()
         if h:
-            self._lgd = self.ax.legend(
-                h,
-                lbls,
+            legend_kwargs = dict(
                 prop={"size": 11},
                 borderaxespad=0,
                 loc="center left",
@@ -124,6 +124,8 @@ class RosePlot:
                 scatterpoints=1,
                 numpoints=1,
             )
+            legend_kwargs.update(self._kwargs["legend_kws"])
+            self._lgd = self.ax.legend(h, lbls, **legend_kwargs)
         if self._kwargs["title"] is not None:
             self.fig.suptitle(self._kwargs["title"], **self._kwargs["title_kws"])
         if self._kwargs["tight_layout"]:

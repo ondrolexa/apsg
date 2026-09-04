@@ -62,19 +62,21 @@ class StereonetConfig(BaseConfig):
     """Stereonet global configuration."""
 
     kind: str = "equal-area"
-    overlay_position: tuple[float, float, float, float] = (0, 0, 0, 0)
-    rotate_data: bool = False
-    minor_ticks: Any = None
-    major_ticks: Any = None
-    overlay: bool = True
-    overlay_step: int = 15
-    overlay_resolution: int = 181
+    rotation: Any = None
+    rotate_data: bool = True
+    grid: bool = True
+    grid_step: int = 15
+    grid_color: str = "grey"
+    grid_style: str = ":"
     clip_pole: int = 15
     hemisphere: str = "lower"
-    grid_type: str = "gss"
-    grid_n: int = 3000
+    primitive_lw: float = 1.5
+    primitive_color: Any = None
+    azimuth_ticks: bool = True
+    azimuth_ticks_kws: dict = field(default_factory=dict)
     tight_layout: bool = False
     title_kws: dict = field(default_factory=dict)
+    legend_kws: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -174,7 +176,8 @@ class StereonetFaultConfig(BaseConfig):
 class StereonetHoeppnerConfig(StereonetMarkerConfig):
     """Stereonet Hoeppner plot marker style configuration."""
 
-    ms: int = 5
+    ms: int = 4
+    pivot: str = "middle"
 
 
 @dataclass
@@ -220,19 +223,28 @@ class StereonetContourConfig(BaseConfig):
 
     alpha: Any = None
     antialiased: bool = True
-    method: str = "sph"
-    n_max: int = 10
-    cmap: str = "Greys"
+    method: str = "kamb"
+    n_max: Any = None
+    cmap: Any = None
     levels: int = 6
-    clines: bool = True
-    linewidths: float = 1
+    filled: bool = True
+    linewidth: float = 1
     linestyles: Any = None
     colorbar: bool = False
-    trimzero: bool = True
+    colorbar_kws: dict = field(
+        default_factory=lambda: {"shrink": 0.5, "anchor": (0.0, 0.3)}
+    )
+    line_color: str = "k"
     sigma: Any = None
-    sigmanorm: bool = True
-    show_data: bool = False
-    data_kws: dict = field(default_factory=dict)
+    clip: bool = True
+
+
+@dataclass
+class StereogridConfig(BaseConfig):
+    """StereoGrid global configuration."""
+
+    type: str = "gss"
+    n: int = 3000
 
 
 @dataclass
@@ -251,6 +263,7 @@ class RoseplotConfig(BaseConfig):
     grid_kws: dict = field(default_factory=dict)
     tight_layout: bool = False
     title_kws: dict = field(default_factory=dict)
+    legend_kws: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -302,9 +315,18 @@ class FabricplotConfig(BaseConfig):
     grid: bool = True
     grid_color: str = "k"
     grid_style: str = ":"
+    border_color: str = "k"
+    border_lw: float = 2
+    tick_color: str = "k"
+    tick_lw: float = 1
+    label_fontsize: int = 14
+    refline_color: str = "k"
+    refline_lw: float = 0.5
+    background_color: str = "w"
     title: Any = None
     tight_layout: bool = False
     title_kws: dict = field(default_factory=dict)
+    legend_kws: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -377,6 +399,7 @@ class AppConfig(BaseConfig):
     stereonet_contour: StereonetContourConfig = field(
         default_factory=StereonetContourConfig
     )
+    stereogrid: StereogridConfig = field(default_factory=StereogridConfig)
     roseplot: RoseplotConfig = field(default_factory=RoseplotConfig)
     roseplot_bar: RoseplotBarConfig = field(default_factory=RoseplotBarConfig)
     roseplot_pdf: RoseplotPdfConfig = field(default_factory=RoseplotPdfConfig)

@@ -29,6 +29,41 @@ Customize plot appearance::
     >>> s.contour(fols, levels=4, cmap="Blues", colorbar=True)
     >>> s.show()
 
+``kind`` selects equal-area (``"equal-area"``/``"schmidt"``, the default -- also known as a
+Schmidt net) or equal-angle (``"equal-angle"``/``"wulff"``, a Wulff net) projection.
+``hemisphere`` selects which hemisphere axial data (``point``, ``great_circle``, ``cone``,
+``contour``, ...) is projected onto -- ``"lower"`` (default) or ``"upper"``: a line plunging
+into the lower hemisphere at a given azimuth plots at that azimuth on a lower net, and at the
+antipodal azimuth (same distance from center) on an upper net. Genuinely directional data
+(``vector``) behaves differently: since it already draws a filled marker and an open one at
+its antipode, the two markers' positions stay the same between the nets and only which one is
+filled vs open swaps::
+
+    >>> s = StereoNet(kind="equal-angle", hemisphere="upper")
+    >>> s.point(fols)
+    >>> s.show()
+
+N/E/S/W compass tick labels are shown around the rim by default; pass ``azimuth_ticks=False``
+to remove them, or ``azimuth_ticks_kws`` to customize their angles/labels/position. Legend
+placement and styling for any of ``StereoNet``, ``RosePlot`` or the fabric plots can be
+overridden via ``legend_kws``, without disturbing apsg's own defaults for the options you
+don't pass::
+
+    >>> s = StereoNet(azimuth_ticks=False, legend_kws={"loc": "lower left"})
+    >>> s.point(fols, label="Poles")
+    >>> s.show()
+
+``rotation`` rotates the whole net (grid, ticks and, when ``rotate_data`` is True, the
+default, plotted data too, so a fabric's appearance relative to the grid is unchanged).
+Pass ``rotate_data=False`` to rotate only the grid, leaving already-plotted data anchored to
+the true, unrotated frame::
+
+    >>> from apsg import lin, rotation_from_axis_angle
+    >>> R = rotation_from_axis_angle(lin(90, 0), 30)  # 30 degrees about a horizontal E-W axis
+    >>> s = StereoNet(rotation=R, rotate_data=False)
+    >>> s.point(fols)
+    >>> s.show()
+
 Quick plot one-liner::
 
     >>> from apsg import quicknet

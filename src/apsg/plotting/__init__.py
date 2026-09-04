@@ -7,6 +7,7 @@ from apsg.plotting._plot_artists import (
     StereoNetArtistFactory,
 )
 from apsg.plotting._roseplot import RosePlot
+from apsg.plotting._stereo_engine import rotation_from_axis_angle
 from apsg.plotting._stereogrid import StereoGrid
 from apsg.plotting._stereonet import StereoNet, quicknet
 from apsg.plotting._styles import (
@@ -24,6 +25,7 @@ __all__ = (
     "FlinnPlot",
     "HsuPlot",
     "quicknet",
+    "rotation_from_axis_angle",
     "StereoNetArtistFactory",
     "RosePlotArtistFactory",
     "FabricPlotArtistFactory",

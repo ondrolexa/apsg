@@ -19,6 +19,23 @@ APSG is the package for structural geologists. It defines several new python cla
 
 Check ``CHANGELOG.md`` for recent updates.
 
+## :chart_with_upwards_trend: Quick example
+
+```python
+from apsg import *
+
+f = folset.random_fisher(position=fol(130, 60))
+s = StereoNet()
+s.great_circle(f)
+s.point(f)
+s.contour(f)
+s.show()
+```
+
+``StereoNet`` supports both equal-area (Schmidt, default) and equal-angle (Wulff) projections,
+lower and upper hemisphere, and rotating the whole net independently of the plotted data --
+see the stereonet tutorial in the [documentation](https://apsg.readthedocs.org) for examples.
+
 ## :hammer_and_wrench: Requirements
 
 You need Python 3.12 or later to run APSG. The package requires [NumPy](https://numpy.org/),

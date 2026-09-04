@@ -1,13 +1,27 @@
-import matplotlib.pyplot as plt
-import matplotlib.tri as tri
+import pickle
+import warnings
+
 import numpy as np
-import scipy.special
-from matplotlib.patches import Circle
 
 from apsg.config import apsg_conf
-from apsg.feature._container import Vector3Set
+from apsg.feature import feature_from_json
 from apsg.feature._geodata import Lineation
-from apsg.plotting._projection import EqualAngleProj, EqualAreaProj
+from apsg.math._vector import Vector3
+from apsg.plotting._stereo_engine._stereogrid import StereoGrid as _EngineStereoGrid
+
+
+def _forward(engine_attr, doc=None):
+    """A read-only property reading ``self._engine.<engine_attr>``."""
+    return property(lambda self: getattr(self._engine, engine_attr), doc=doc)
+
+
+def _forward_rw(engine_attr, doc=None):
+    """A read/write property proxying ``self._engine.<engine_attr>``."""
+    return property(
+        lambda self: getattr(self._engine, engine_attr),
+        lambda self, value: setattr(self._engine, engine_attr, value),
+        doc=doc,
+    )
 
 
 class StereoGrid:
@@ -15,25 +29,15 @@ class StereoGrid:
     The class to store values with associated uniformly positions.
 
     ``StereoGrid`` is used to calculate continous functions on sphere e.g. density
-    distribution.
+    distribution. Rendering (contouring) is done by ``StereoNet.contour``, which can
+    draw an existing, already-populated grid (e.g. built via ``apply_func``/
+    ``angmech``) directly.
 
     Keyword Args:
-        kind (str): Equal area ("equal-area", "schmidt" or "earea") or equal angle
-            ("equal-angle", "wulff" or "eangle") projection. Default is "equal-area"
-        hemisphere (str): "lower" or "upper". Default is "lower"
-        overlay_position (tuple or Pair): Position of overlay X, Y, Z given by Pair.
-            X is direction of linear element, Z is normal to planar.
-            Default is (0, 0, 0, 0)
-        rotate_data (bool): Whether data should be rotated together with overlay.
-            Default False
-        minor_ticks (None or float): Default None
-        major_ticks (None or float): Default None
-        overlay (bool): Whether to show overlay. Default is True
-        overlay_step (float): Grid step of overlay. Default 15
-        overlay_resolution (float): Resolution of overlay. Default 181
-        clip_pole (float): Clipped cone around poles. Default 15
-        grid_type (str): Type of contouring grid "gss" or "sfs". Default "gss"
-        grid_n (int): Number of counting points in grid. Default 3000
+        type (str): Type of contouring grid "gss" or "sfs". Default from
+            ``apsg_conf.stereogrid.type`` ("gss")
+        n (int): Number of counting points in grid. Default from
+            ``apsg_conf.stereogrid.n`` (3000)
 
     Note: Euclidean norms are used as weights. Normalize data if you dont want to use
     weigths.
@@ -41,25 +45,20 @@ class StereoGrid:
     """
 
     def __init__(self, **kwargs):
-        # parse options
-        self.grid_n = kwargs.get("grid_n", 2000)
-        # grid type
-        if kwargs.get("grid_type", "gss") == "gss":
-            self.grid = Vector3Set.gss(n=self.grid_n)
-        else:
-            self.grid = Vector3Set.sfs(n=self.grid_n)
-        # projection
-        kind = str(kwargs.get("kind", "equal-area")).lower()
-        if kind in ["equal-area", "schmidt", "earea"]:
-            self.proj = EqualAreaProj(**kwargs)
-        elif kind in ["equal-angle", "wulff", "eangle"]:
-            self.proj = EqualAngleProj(**kwargs)
-        else:
-            raise TypeError("Only 'Equal-area' and 'Equal-angle' implemented")
-        # initial values
-        self.values = np.zeros(self.grid_n, dtype=float)
-        self.calculated = False
-        self.features = None
+        self._kwargs = apsg_conf.stereogrid.copy()
+        self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
+        self.grid_n = self._kwargs["n"]
+        self.grid_type = self._kwargs["type"]
+        self._engine = _EngineStereoGrid(grid_n=self.grid_n, grid_type=self.grid_type)
+        # remembers the inputs+params of the last calculate_density/angmech call,
+        # so to_json can serialize and recompute them on from_json rather than
+        # persisting the computed `values` array (see to_json/from_json below)
+        self._last_calculation = None
+
+    grid = _forward("grid", doc="The (grid_n, 3) NED unit-vector counting grid.")
+    values = _forward_rw("values", doc="The (grid_n,) computed values.")
+    calculated = _forward_rw("calculated")
+    features = _forward("features")
 
     def __repr__(self):
         if self.calculated:
@@ -69,132 +68,60 @@ class StereoGrid:
             )
         else:
             info = ""
-        return f"StereoGrid {self.proj.__class__.__name__} {self.grid_n} points." + info
+        return f"StereoGrid ({self.grid_type}, {self.grid_n} points)" + info
 
     def min(self):
         """Returns minimum value of the grid."""
-        return self.values.min()
+        return float(self._engine.min())
 
     def max(self):
         """Returns maximum value of the grid."""
-        return self.values.max()
+        return float(self._engine.max())
 
     def min_at(self):
         """Returns position of minimum value of the grid as ``Lineation``."""
-        return Lineation(self.grid[self.values.argmin()])
+        return Lineation(self._engine.min_at())
 
     def max_at(self):
         """Returns position of maximum value of the grid as ``Lineation``."""
-        return Lineation(self.grid[self.values.argmax()])
+        return Lineation(self._engine.max_at())
 
     def calculate_density(self, features, **kwargs):
         """Calculate density distribution of vectors from ``FeatureSet`` object.
 
+        Both "kamb" and "sph" report the *same* statistic: standard deviations
+        above the value expected under a uniform (random) distribution -- i.e.
+        "level=3" means "3 sigma", regardless of which method computed it.
+
         Args:
-            method (str): "kamb" for modified Kamb contouring technique with exponential
-                smoothing or "sph" for spherical harmonics method. Default "sph"
-            n_max (int): maximum harmonic degree i.e. the angular resolution. Must be
-                even number (for "sph" method). Default 6
-            sigma (float): if none sigma is calculated automatically (for "kamb" method).
-                Default None
-            sigmanorm (bool): If True counting is normalized to sigma multiples
-                (for "kamb" method). Default True
+            method (str): "kamb" for modified Kamb contouring technique with
+                exponential smoothing or "sph" for spherical harmonics method.
+                Default "sph"
+            n_max (int): maximum harmonic degree i.e. the angular resolution. Must
+                be even number (for "sph" method). Default is derived from `sigma`
+                and the sample size.
+            sigma (float): controls how much to smooth, for either method
+                (Kamb 1959, Vollmer 1995). Default 3.
             trimzero (bool): If True, zero contour is not drawn. Default True
 
         """
-
-        def real_sph_harm(n, m, polar, azimuthal):
-            """
-            Compute real spherical harmonics.
-            """
-            # Calculate the complex spherical harmonic for positive m
-            # Check for the modern SciPy 1.15+ function
-            if hasattr(scipy.special, "sph_harm_y"):
-                Y_complex = scipy.special.sph_harm_y(n, abs(m), polar, azimuthal)
-
-            else:
-                # Fallback for older SciPy versions using legacy sph_harm
-                # Legacy signature: sph_harm(m, n, phi, theta)
-                Y_complex = scipy.special.sph_harm(abs(m), n, azimuthal, polar)
-
-            # Standard conversion from complex to real spherical harmonics
-            if m < 0:
-                return np.sqrt(2) * Y_complex.imag
-            elif m == 0:
-                return Y_complex.real
-            else:
-                return np.sqrt(2) * Y_complex.real
-
-        def evaluate_odf(coefficients, polar, azimuthal):
-            """
-            Evaluates the ODF on given angles using calculated SH coefficients.
-            """
-            # Initialize an array of zeros with the same shape as the input grid
-            odf_values = np.zeros_like(polar, dtype=float)
-            # Sum the contribution of each harmonic basis function
-            for (n, m), c in coefficients.items():
-                odf_values += c * real_sph_harm(n, m, polar, azimuthal)
-
-            return odf_values
-
-        self.features = np.atleast_2d(features)
-        nfeatures = len(self.features)
-        if kwargs.get("method", "sph") == "sph":
-            n_max = kwargs.get("n_max", 6)
-            if n_max % 2 != 0:
-                raise ValueError("n_max must be an even integer for axial data.")
-            # Calculate ODF spherical harmonic coefficients for axial unit vectors.
-            azi, inc = features.to_lin().geo
-            azimuthal = np.deg2rad(azi)
-            polar = np.deg2rad(90 - inc)
-            coeffs = {}
-            # Iterate only over even degrees (l = 0, 2, 4...)
-            for n in range(0, n_max + 1, 2):
-                for m in range(-n, n + 1):
-                    # Evaluate the harmonic at all data points
-                    Y_nm_vals = real_sph_harm(n, m, polar, azimuthal)
-                    # The coefficient is the mean of the basis function over the data
-                    coeffs[(n, m)] = np.sum(Y_nm_vals) / nfeatures
-            # Scales spherical harmonic coefficients so the resulting ODF
-            # is in units of Multiples of Uniform Distribution (MUD).
-            # Extract the isotropic coefficient (n=0, m=0)
-            c_0_0 = coeffs.get((0, 0))
-            # The Y_0_0 spherical harmonic is a constant: 1 / sqrt(4*pi)
-            Y_0_0 = 1.0 / np.sqrt(4 * np.pi)
-            # Calculate the mean value of the unscaled ODF
-            mean_odf_value = c_0_0 * Y_0_0
-            # Scale all coefficients by dividing by this mean value
-            mud_coeffs = {}
-            for (n, m), c in coeffs.items():
-                mud_coeffs[(n, m)] = c / mean_odf_value
-            # Evaluates the ODF on StereoGrid
-            azi, inc = self.grid.geo
-            azimuthal = np.deg2rad(azi)
-            polar = np.deg2rad(90 - inc)
-            self.values = np.clip(evaluate_odf(mud_coeffs, polar, azimuthal), 0, None)
-        else:
-            sigma = kwargs.get("sigma", None)
-            if sigma is None:
-                # k = estimate_k(features)
-                # sigma = np.sqrt(2 * nfeatures / (k - 2))
-                # Totally empirical as estimate_k is problematic
-                if nfeatures < 10:
-                    sigma = 3
-                else:
-                    sigma = np.sqrt(2 * nfeatures / (np.log(nfeatures) - 2)) / 3
-            k = 2 * (1.0 + nfeatures / sigma**2)
-            sigmanorm = kwargs.get("sigmanorm", True)
-            # do calc
-            scale = np.sqrt(nfeatures * (k / 2.0 - 1) / k**2)
-            cnt = np.exp(k * (np.abs(np.dot(self.grid, self.features.T)) - 1))
-            self.values = cnt.sum(axis=1) / scale
-            if sigmanorm:
-                self.values /= sigma
-            self.values[self.values < 0] = 0
-        trim = kwargs.get("trimzero", True)
-        if trim:
-            self.values[self.values == 0] = np.finfo(float).tiny
-        self.calculated = True
+        method = kwargs.get("method", "sph")
+        sigma = kwargs.get("sigma", None)
+        n_max = kwargs.get("n_max", None)
+        trimzero = kwargs.get("trimzero", True)
+        self._engine.calculate_density(
+            features, method=method, sigma=sigma, n_max=n_max, trimzero=trimzero
+        )
+        self._last_calculation = {
+            "op": "calculate_density",
+            "data": features,
+            "kwargs": {
+                "method": method,
+                "sigma": sigma,
+                "n_max": n_max,
+                "trimzero": trimzero,
+            },
+        }
 
     def apply_func(self, func, *args, **kwargs):
         """Calculate values of user-defined function on sphere.
@@ -202,140 +129,22 @@ class StereoGrid:
         Function must accept Vector3 like (or 3 elements array)
         as first argument and return scalar value.
 
+        Note: values computed via ``apply_func`` cannot be serialized (the
+        callable itself isn't saved) -- ``to_json``/``save`` will warn and skip
+        persisting them; call ``apply_func`` again after ``from_json``/``load``.
+
         Args:
             func (function): function used to calculate values
             *args: passed to function func as args
             **kwargs: passed to function func as kwargs
 
         """
-        for i in range(self.grid_n):
-            self.values[i] = func(self.grid[i], *args, **kwargs)
-        self.calculated = True
 
-    def contourf(self, *args, **kwargs):
-        """
-        Draw filled contours of values using tricontourf.
+        def wrapped(v, *a, **kw):
+            return func(Vector3(v), *a, **kw)
 
-        Keyword Args:
-            levels (int or list): Number or values of contours. Default 6
-            cmap (str): Matplotlib colormap used for filled contours. Default "Greys"
-            colorbar (bool): Show colorbar. Default False
-            alpha (float): Transparency. Default None
-            antialiased (bool): Default True
-        """
-        colorbar = kwargs.get("colorbar", False)
-        parsed = {}
-        parsed["alpha"] = kwargs.get("alpha", 1)
-        parsed["antialiased"] = kwargs.get("antialiased", True)
-        parsed["cmap"] = kwargs.get("cmap", "Greys")
-        parsed["levels"] = kwargs.get("levels", 6)
-
-        fig, ax = plt.subplots(figsize=apsg_conf.figsize)
-        ax.set_aspect(1)
-        ax.set_axis_off()
-
-        # Projection circle frame
-        theta = np.linspace(0, 2 * np.pi, 200)
-        ax.plot(np.cos(theta), np.sin(theta), "k", lw=2)
-        # add clipping circle
-        primitive = Circle(
-            (0, 0),
-            radius=1,
-            edgecolor="black",
-            fill=False,
-            clip_box=None,
-            label="_nolegend_",
-        )
-        ax.add_patch(primitive)
-        dcgrid = np.asarray(self.grid).T
-        X, Y = self.proj.project_data(*dcgrid, clip_inside=False)
-        cf = ax.tricontourf(X, Y, self.values, **parsed)
-        cf.set_clip_path(primitive)
-        ax.set_xlim(-1.05, 1.05)
-        ax.set_ylim(-1.05, 1.05)
-        if colorbar:
-            fig.colorbar(cf, ax=ax, shrink=0.6)
-        plt.show()
-
-    def contour(self, *args, **kwargs):
-        """
-        Draw contour lines of values using tricontour.
-
-        Keyword Args:
-            levels (int or list): Number or values of contours. Default 6
-            cmap (str): Matplotlib colormap used for filled contours. Default "Greys"
-            colorbar (bool): Show colorbar. Default False
-            alpha (float): Transparency. Default None
-            antialiased (bool): Default True
-            linewidths (float): Contour lines width.
-            linestyles (str): Contour lines style.
-        """
-        colorbar = kwargs.get("colorbar", False)
-        parsed = {}
-        parsed["alpha"] = kwargs.get("alpha", 1)
-        parsed["antialiased"] = kwargs.get("antialiased", True)
-        parsed["cmap"] = kwargs.get("cmap", "Greys")
-        parsed["linewidths"] = kwargs.get("linewidths", 1)
-        parsed["linestyles"] = kwargs.get("linestyles", "-")
-        parsed["levels"] = kwargs.get("levels", 6)
-
-        fig, ax = plt.subplots(figsize=apsg_conf.figsize)
-        ax.set_aspect(1)
-        ax.set_axis_off()
-
-        # Projection circle frame
-        theta = np.linspace(0, 2 * np.pi, 200)
-        ax.plot(np.cos(theta), np.sin(theta), "k", lw=2)
-        # add clipping circle
-        primitive = Circle(
-            (0, 0),
-            radius=1,
-            edgecolor="black",
-            fill=False,
-            clip_box=None,
-            label="_nolegend_",
-        )
-        ax.add_patch(primitive)
-        dcgrid = np.asarray(self.grid).T
-        X, Y = self.proj.project_data(*dcgrid, clip_inside=False)
-        cf = ax.tricontour(X, Y, self.values, **parsed)
-        cf.set_clip_path(primitive)
-        if colorbar:
-            fig.colorbar(cf, ax=ax, shrink=0.6)
-        plt.show()
-
-    def plotcountgrid(self, **kwargs):
-        """Show counting grid."""
-
-        proj = EqualAreaProj(**kwargs)
-
-        fig, ax = plt.subplots(figsize=apsg_conf.figsize)
-        ax.set_aspect(1)
-        ax.set_axis_off()
-
-        # Projection circle
-        # Projection circle frame
-        theta = np.linspace(0, 2 * np.pi, 200)
-        ax.plot(np.cos(theta), np.sin(theta), "k", lw=2)
-        # add clipping circle
-        primitive = Circle(
-            (0, 0),
-            radius=1,
-            edgecolor="black",
-            fill=False,
-            clip_box=None,
-            label="_nolegend_",
-        )
-        ax.add_patch(primitive)
-        dcgrid = np.asarray(self.grid).T
-        dcgrid = dcgrid[:, dcgrid[2] >= -0.5]
-        X, Y = proj.project_data(*dcgrid, clip_inside=False)
-        triang = tri.Triangulation(X, Y)
-        tp = ax.triplot(triang, "bo-")
-        for h in tp:
-            h.set_clip_path(primitive)
-        fig.tight_layout()
-        plt.show()
+        self._engine.apply_func(wrapped, *args, **kwargs)
+        self._last_calculation = "apply_func"
 
     def angmech(self, faults, **kwargs):
         """Implementation of Angelier-Mechler dihedra method
@@ -347,22 +156,92 @@ class StereoGrid:
             method (str): 'probability' or 'classic'. Classic method assigns +/-1
                 to individual positions, while 'probability' returns maximum
                 likelihood estimate.
-            Other kwargs are passed to contourf
 
         """
+        method = kwargs.get("method", "classic")
+        self._engine.angmech(
+            np.asarray(faults.fvec), np.asarray(faults.lvec), method=method
+        )
+        self._last_calculation = {
+            "op": "angmech",
+            "data": faults,
+            "kwargs": {"method": method},
+        }
 
-        method = kwargs.pop("method", "classic")
-        # self.apply_func(angmech2, faults)
-        # self.apply_func(angmech, faults)
-        val = np.zeros(self.grid_n, dtype=float)
-        dc = self.grid
-        adc = dc.to_lin()
-        for f in faults:
-            dist = 2 * (np.sign(dc.dot(f.fvec)) == np.sign(dc.dot(f.lvec))) - 1
-            if method == "probability":
-                lprob = 1 - np.abs(2 * (adc.dot(f.lin) - 0.5))
-                fprob = 1 - np.abs(2 * (adc.dot(f.fol) - 0.5))
-                dist = dist * lprob * fprob
-            val += dist
-        self.values = val
-        self.calculated = True
+    def _data_to_json(self, data):
+        if hasattr(data, "to_json"):
+            return {"kind": "feature", "data": data.to_json()}
+        return {"kind": "array", "data": np.asarray(data).tolist()}
+
+    def _data_from_json(self, obj):
+        if obj["kind"] == "feature":
+            return feature_from_json(obj["data"])
+        return np.asarray(obj["data"])
+
+    def to_json(self):
+        """Return ``StereoGrid`` as a JSON-compatible dict.
+
+        Serializes constructor kwargs plus the *inputs and parameters* of the
+        last ``calculate_density``/``angmech`` call (not the computed ``values``
+        array) -- ``from_json`` rebuilds the grid and recomputes them, matching
+        how ``StereoNet`` itself never persists computed contour data.
+        """
+        calculation = None
+        if isinstance(self._last_calculation, dict):
+            calculation = {
+                "op": self._last_calculation["op"],
+                "data": self._data_to_json(self._last_calculation["data"]),
+                "kwargs": self._last_calculation["kwargs"],
+            }
+        elif self._last_calculation == "apply_func":
+            warnings.warn(
+                "StereoGrid values were computed via apply_func(), which uses "
+                "an arbitrary Python callable that cannot be serialized -- the "
+                "computed values are not saved. Call apply_func() again after "
+                "from_json()/load().",
+                UserWarning,
+                stacklevel=2,
+            )
+        return dict(
+            kwargs=dict(n=self.grid_n, type=self.grid_type),
+            calculation=calculation,
+        )
+
+    @classmethod
+    def from_json(cls, json_dict):
+        """Create ``StereoGrid`` from a JSON-compatible dict (see ``to_json``)."""
+        grid = cls(**json_dict["kwargs"])
+        calculation = json_dict.get("calculation")
+        if calculation is not None:
+            data = grid._data_from_json(calculation["data"])
+            if calculation["op"] == "calculate_density":
+                grid.calculate_density(data, **calculation["kwargs"])
+            elif calculation["op"] == "angmech":
+                grid.angmech(data, **calculation["kwargs"])
+        return grid
+
+    def save(self, filename):
+        """
+        Save StereoGrid to pickle file
+
+        Args:
+            filename (str): name of pickle file
+        Returns:
+            None: The grid is serialized and written to a pickle file.
+        """
+        with open(filename, "wb") as f:
+            pickle.dump(self.to_json(), f, pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def load(cls, filename):
+        """
+        Load StereoGrid from pickle file
+
+        Args:
+            filename (str): name of pickle file
+        Returns:
+            StereoGrid: Loaded grid instance from pickle file.
+        """
+        with open(filename, "rb") as f:
+            data = pickle.load(f)
+        return cls.from_json(data)

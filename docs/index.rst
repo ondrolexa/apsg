@@ -12,10 +12,54 @@ Welcome to APSG's documentation!
    :width: 300
    :alt: APSG logo
 
-APSG defines several new python classes to easily manage, analyze and
-visualize orientational structural geology data. It is under active
-developement, so until documenation will be finished, you can go trough
-tutorial to see what APSG can do for you.
+.. rst-class:: lead
+
+   **APSG** brings the essential analytical toolkit of structural geology
+   directly into Python. From processing raw field measurements and
+   performing directional statistics to simplified stress and strain
+   tensor analysis and creating publication-ready stereonets and fabric
+   diagrams, APSG handles the underlying mathematics while keeping every
+   step transparent, documented, and reproducible. It provides an intuitive
+   pythonic bridge between field observations, quantitative analysis, and
+   tectonic interpretation — all seamlessly integrated into your Jupyter notebook.
+
+|
+
+.. grid:: 1 1 2 3
+    :gutter: 2
+    :padding: 0
+    :class-row: surface
+
+    .. grid-item-card:: :octicon:`north-star` Structural features
+
+        Lineations, foliations, faults, pairs and cones behave like proper
+        geological objects, with degree-based angles and RHR/dip-direction
+        notation built in.
+
+    .. grid-item-card:: :octicon:`stack` Feature sets
+
+        Group any feature into a set for vectorized statistics, filtering,
+        rotation and resampling — no manual loops over measurements.
+
+    .. grid-item-card:: :octicon:`graph` Tensors & fabric analysis
+
+        Deformation gradients, orientation and stress tensors, with
+        Vollmer, Ramsay, Flinn and Hsu fabric plots ready to go.
+
+    .. grid-item-card:: :octicon:`telescope` Stereonets & rose diagrams
+
+        Publication-ready equal-area/equal-angle stereonets, contouring and
+        rose diagrams, styled through a single configuration object.
+
+    .. grid-item-card:: :octicon:`table` Pandas integration
+
+        APSG features live directly inside a ``DataFrame`` column via a
+        pandas extension type, so your existing pandas workflow just works.
+
+    .. grid-item-card:: :octicon:`database` Database support
+
+        Read and write field data from legacy PySDB ``.sdb`` files or a
+        remote websdb project with the same feature-based API.
 
 Usage
 -----

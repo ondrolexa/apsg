@@ -55,7 +55,7 @@ class StereoNetScatterStyle(StereoNetStyle):
     def create_artist(self, *args):
         """Create stereonet scatter artist with configured style."""
         filtered = (arg for arg in args if isinstance(arg, self._valid))
-        return StereoNetArtistFactory.create_pole(*filtered, **self.kwargs)
+        return StereoNetArtistFactory.create_scatter(*filtered, **self.kwargs)
 
 
 class StereoNetVectorStyle(StereoNetStyle):
@@ -68,7 +68,7 @@ class StereoNetVectorStyle(StereoNetStyle):
     def create_artist(self, *args):
         """Create stereonet vector artist with configured style."""
         filtered = (arg for arg in args if isinstance(arg, self._valid))
-        return StereoNetArtistFactory.create_pole(*filtered, **self.kwargs)
+        return StereoNetArtistFactory.create_vector(*filtered, **self.kwargs)
 
 
 class StereoNetGreatCircleStyle(StereoNetStyle):
