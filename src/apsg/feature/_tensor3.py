@@ -341,6 +341,58 @@ class Rotation3(DeformationGradient3):
             )
         return cls.from_axisangle(v1.cross(v2), v1.angle(v2))
 
+    @staticmethod
+    def axisangle_from_vectors_axis(v1, v2, a):
+        """
+        Return the (axis, theta) pair used to rotate vector v1 to v2 around
+        (an adjustment of) axis a.
+
+        If v1.angle(a) is not equal to v2.angle(b), the minimum adjustment of rotation
+        axis is done automatically.
+
+        This is exposed separately from ``from_vectors_axis`` so that callers building
+        a continuous rotation path (e.g. a family ``from_axisangle(axis, t * theta)``
+        for ``t`` in ``[0, 1]``) can use the signed axis/angle directly, without
+        re-deriving them from the composed rotation matrix -- which is lossy exactly
+        when the rotation angle is 180 degrees, since ``axis`` and ``-axis`` then
+        produce an identical matrix.
+
+        Args:
+            v1: ``Vector3`` like object
+            v2: ``Vector3`` like object
+            a: estimated rotation axis ``Vector3`` like object
+
+        Returns:
+            tuple: ``(axis, theta)`` such that
+            ``v1.transform(Rotation3.from_axisangle(axis, theta)) == v2``.
+        """
+        try:
+            v1 = Vector3(v1)
+        except Exception:
+            raise TypeError(
+                "Unsupported first argument for axisangle_from_vectors_axis. Expecting Vector3"
+            )
+        try:
+            v2 = Vector3(v2)
+        except Exception:
+            raise TypeError(
+                "Unsupported second argument for axisangle_from_vectors_axis. Expecting Vector3"
+            )
+        try:
+            a = Vector3(a)
+        except Exception:
+            raise TypeError(
+                "Unsupported third argument for axisangle_from_vectors_axis. Expecting Vector3"
+            )
+        n = v1.cross(v2).cross(v1.slerp(v2, 0.5))
+        a_fix = a.reject(n).normalized()
+        v1p = v1.reject(a_fix)
+        v2p = v2.reject(a_fix)
+        theta = v1p.angle(v2p)
+        if v1p.cross(v2p).dot(a_fix) < 0:
+            theta = -theta
+        return a_fix, theta
+
     @classmethod
     def from_vectors_axis(cls, v1, v2, a):
         """
@@ -369,29 +421,8 @@ class Rotation3(DeformationGradient3):
         Returns:
             Rotation3: ``Rotation3`` representing rotation of vector v1 to v2 around axis a.
         """
-        try:
-            v1 = Vector3(v1)
-        except Exception:
-            raise TypeError(
-                "Unsupported first argument for from_vectors_axis. Expecting Vector3"
-            )
-        try:
-            v2 = Vector3(v2)
-        except Exception:
-            raise TypeError(
-                "Unsupported second argument for from_vectors_axis. Expecting Vector3"
-            )
-        try:
-            a = Vector3(a)
-        except Exception:
-            raise TypeError(
-                "Unsupported third argument for from_vectors_axis. Expecting Vector3"
-            )
-        n = v1.cross(v2).cross(v1.slerp(v2, 0.5))
-        a_fix = a.reject(n).normalized()
-        v1p = v1.reject(a_fix)
-        v2p = v2.reject(a_fix)
-        return cls.from_axisangle(a_fix, v1p.angle(v2p))
+        axis, theta = cls.axisangle_from_vectors_axis(v1, v2, a)
+        return cls.from_axisangle(axis, theta)
 
     @classmethod
     def from_two_pairs(cls, p1, p2, symmetry=False):

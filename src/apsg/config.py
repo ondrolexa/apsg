@@ -105,12 +105,18 @@ class StereonetGreatCircleConfig(BaseConfig):
 
 @dataclass
 class StereonetArcConfig(BaseConfig):
-    """Stereonet arc line style configuration."""
+    """Stereonet arc style configuration (line or points)."""
 
+    kind: str = "line"  # "line" or "points"
     alpha: Any = None
     color: Any = None
     ls: str = "-"
     lw: float = 1.5
+    marker: str = "o"
+    ms: int = 6
+    mec: Any = None
+    mfc: Any = None
+    mew: int = 1
 
 
 @dataclass

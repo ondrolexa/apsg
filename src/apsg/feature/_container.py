@@ -12,7 +12,15 @@ from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
 
 from apsg.config import apsg_conf
-from apsg.feature._geodata import Cone, Direction, Fault, Foliation, Lineation, Pair
+from apsg.feature._geodata import (
+    Arc,
+    Cone,
+    Direction,
+    Fault,
+    Foliation,
+    Lineation,
+    Pair,
+)
 from apsg.feature._statistics import KentDistribution, vonMisesFisher
 from apsg.feature._tensor2 import Ellipse, OrientationTensor2, Stress2
 from apsg.feature._tensor3 import (
@@ -2045,6 +2053,83 @@ class ConeSet(FeatureSet):
         """Return array of apical angles."""
 
         return np.array([c.apical_angle() for c in self])
+
+
+class ArcSet(FeatureSet):
+    """
+    Class to store set of ``Arc`` features.
+    """
+
+    __feature_class__ = Arc
+
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        if not all(isinstance(obj, Arc) for obj in data):
+            raise TypeError("Data must be instances of Arc")
+
+    def __repr__(self):
+        return f"A({len(self)}) {self.name}"
+
+    @property
+    def curvature(self):
+        """Return array of curvatures."""
+
+        return np.array([a.curvature for a in self])
+
+    @property
+    def positive(self):
+        """Return array of curvature directions."""
+
+        return np.array([a.positive for a in self], dtype=bool)
+
+    @property
+    def short(self):
+        """Return array of short/reflex path flags."""
+
+        return np.array([a.short for a in self], dtype=bool)
+
+    @classmethod
+    def from_vectors(
+        cls, *args, curvature=0, positive=True, short=True, name="Default"
+    ):
+        """
+        Create ``ArcSet`` connecting consecutive pairs of vectors.
+
+        Accepts either a single ``Vector3Set``-like object (a ``Vector3Set``,
+        ``LineationSet``, ``FoliationSet``, ...) or 2 or more individual
+        ``Vector3``-like features as separate positional arguments. Consecutive
+        pairs are connected into one ``Arc`` each, so N vectors produce N-1 arcs.
+
+        Args:
+            *args: a single ``Vector3Set``-like object, or 2 or more individual
+                ``Vector3``-like features.
+
+        Keyword Args:
+            curvature (float): passed to each ``Arc``. Default 0.
+            positive (bool): passed to each ``Arc``. Default True.
+            short (bool): passed to each ``Arc``. Default True.
+            name: name of dataset. Default is 'Default'.
+
+        Examples:
+            >>> a = arcset.from_vectors(lin(0, 0), lin(45, 20), lin(90, 0))
+            >>> a = arcset.from_vectors(linset.random_fisher(n=5))
+
+        Returns:
+            ArcSet: The created feature set.
+        """
+        if len(args) == 1 and isinstance(args[0], Vector3Set):
+            points = args[0].data
+        else:
+            points = args
+        if len(points) < 2 or not all(isinstance(p, Vector3) for p in points):
+            raise TypeError(
+                "ArcSet.from_vectors needs a Vector3Set or 2 or more Vector3-like features"
+            )
+        arcs = [
+            Arc(p1, p2, curvature=curvature, positive=positive, short=short)
+            for p1, p2 in zip(points[:-1], points[1:])
+        ]
+        return cls(arcs, name=name)
 
 
 class EllipseSet(FeatureSet):

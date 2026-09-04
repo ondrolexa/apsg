@@ -703,6 +703,55 @@ class TestRotation3:
         a = Vector3(0, 0, 1)
         R = Rotation3.from_vectors_axis(v1, v2, a)
         assert isinstance(R, Rotation3)
+        assert v1.transform(R) == v2
+
+    @pytest.mark.parametrize("sign", [1, -1])
+    def test_from_vectors_axis_handles_axis_on_either_side(self, sign):
+        # regression test: from_vectors_axis must produce a rotation that
+        # actually carries v1 to v2 regardless of which side of the true
+        # rotation axis the caller's approximate axis `a` falls on
+        p1 = Lineation(70, 20)
+        p2 = Lineation(150, 60)
+
+        a_p = Vector3(p1).cross(Vector3(p2))
+        a_m = Vector3(p1).slerp(Vector3(p2), 0.5)
+        a = a_m.slerp(sign * a_p, 0.3)
+
+        R = Rotation3.from_vectors_axis(p1, p2, a)
+        assert p1.transform(R) == p2
+
+    def test_axisangle_from_vectors_axis_matches_from_vectors_axis(self):
+        v1 = Vector3(1, 0, 0)
+        v2 = Vector3(0, 1, 0)
+        a = Vector3(0, 0, 1)
+        axis, theta = Rotation3.axisangle_from_vectors_axis(v1, v2, a)
+        R = Rotation3.from_axisangle(axis, theta)
+        assert R == Rotation3.from_vectors_axis(v1, v2, a)
+        assert v1.transform(R) == v2
+
+    def test_axisangle_from_vectors_axis_is_invariant_to_axis_sign(self):
+        # axisangle_from_vectors_axis(v1, v2, a) and (v1, v2, -a) must agree
+        # on the full rotation vector (axis * theta), not just the composed
+        # matrix: axis negates, theta negates, so their product -- and hence
+        # every intermediate rotation obtained by scaling theta -- is exactly
+        # unchanged. This is a necessary property of treating `a` as an
+        # undirected axis line rather than an oriented vector; it is not
+        # something a caller can route around by using the (axis, theta)
+        # pair instead of the composed Rotation3.
+        p1 = Lineation(70, 20)
+        p2 = Lineation(150, 60)
+
+        a1 = Vector3(p1).slerp(Vector3(p2), 0.5)
+
+        axis_pos, theta_pos = Rotation3.axisangle_from_vectors_axis(p1, p2, a1)
+        axis_neg, theta_neg = Rotation3.axisangle_from_vectors_axis(p1, p2, -a1)
+
+        assert axis_pos == -axis_neg
+        assert theta_pos == pytest.approx(-theta_neg)
+
+        rotvec_pos = np.asarray(axis_pos) * theta_pos
+        rotvec_neg = np.asarray(axis_neg) * theta_neg
+        assert rotvec_pos == pytest.approx(rotvec_neg)
 
     def test_from_quat(self):
         q = [-0.11543715, 0.19994301, 0.39988603, 0.88701083]

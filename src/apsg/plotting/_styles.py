@@ -1,5 +1,6 @@
 from apsg.config import apsg_conf
 from apsg.feature._container import (
+    ArcSet,
     ConeSet,
     EllipsoidSet,
     FaultSet,
@@ -8,7 +9,7 @@ from apsg.feature._container import (
     Vector2Set,
     Vector3Set,
 )
-from apsg.feature._geodata import Cone, Fault, Foliation, Pair
+from apsg.feature._geodata import Arc, Cone, Fault, Foliation, Pair
 from apsg.feature._tensor3 import Ellipsoid, Stress3, Tensor3
 from apsg.math._vector import Vector3
 from apsg.plotting._plot_artists import (
@@ -87,7 +88,7 @@ class StereoNetGreatCircleStyle(StereoNetStyle):
 class StereoNetArcStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet arc style."""
-        self._valid = (Foliation, FoliationSet)
+        self._valid = (Vector3, Vector3Set, Arc, ArcSet)
         self.kwargs = getattr(apsg_conf, "stereonet_arc").copy()
         super().__init__(**kwargs)
 

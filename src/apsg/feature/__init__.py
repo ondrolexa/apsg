@@ -2,6 +2,7 @@
 import sys
 
 from apsg.feature._container import (
+    ArcSet,
     ClusterSet,
     ConeSet,
     Direction2Set,
@@ -20,7 +21,15 @@ from apsg.feature._container import (
     Vector2Set,
     Vector3Set,
 )
-from apsg.feature._geodata import Cone, Direction, Fault, Foliation, Lineation, Pair
+from apsg.feature._geodata import (
+    Arc,
+    Cone,
+    Direction,
+    Fault,
+    Foliation,
+    Lineation,
+    Pair,
+)
 from apsg.feature._paleomag import Core
 from apsg.feature._tensor2 import (
     DeformationGradient2,
@@ -54,6 +63,7 @@ __all__ = (
     "Pair",
     "Fault",
     "Cone",
+    "Arc",
     "DeformationGradient3",
     "Rotation3",
     "VelocityGradient3",
@@ -75,6 +85,7 @@ __all__ = (
     "PairSet",
     "FaultSet",
     "ConeSet",
+    "ArcSet",
     "EllipseSet",
     "EllipsoidSet",
     "OrientationTensor2Set",

@@ -2,6 +2,12 @@
 
 from apsg.config import apsg_conf, apsg_conf_context
 from apsg.feature import (
+    Arc as arc,
+)
+from apsg.feature import (
+    ArcSet as arcset,
+)
+from apsg.feature import (
     ClusterSet as cluster,
 )
 from apsg.feature import (
@@ -150,6 +156,7 @@ __all__ = (
     "pair",
     "fault",
     "cone",
+    "arc",
     "vecset",
     "vec2set",
     "dir2set",
@@ -158,6 +165,7 @@ __all__ = (
     "pairset",
     "faultset",
     "coneset",
+    "arcset",
     "ellipseset",
     "ellipsoidset",
     "ortensor2set",

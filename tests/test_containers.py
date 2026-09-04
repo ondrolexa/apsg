@@ -5,6 +5,7 @@ import pytest
 
 from apsg import (
     G,
+    arcset,
     coneset,
     dir2set,
     ellipsoidset,
@@ -18,6 +19,7 @@ from apsg import (
     vecset,
 )
 from apsg.feature._container import (
+    ArcSet,
     ConeSet,
     Direction2Set,
     EllipsoidSet,
@@ -30,7 +32,15 @@ from apsg.feature._container import (
     Vector2Set,
     Vector3Set,
 )
-from apsg.feature._geodata import Cone, Direction, Fault, Foliation, Lineation, Pair
+from apsg.feature._geodata import (
+    Arc,
+    Cone,
+    Direction,
+    Fault,
+    Foliation,
+    Lineation,
+    Pair,
+)
 from apsg.feature._tensor2 import Stress2
 from apsg.feature._tensor3 import Ellipsoid, Stress3
 from apsg.math._vector import Vector2, Vector3
@@ -1260,6 +1270,84 @@ class TestConeSet:
 
     def test_lowercase_alias(self):
         assert coneset is ConeSet
+
+
+# ---------------------------------------------------------------------------
+# ArcSet
+# ---------------------------------------------------------------------------
+
+
+class TestArcSet:
+    def test_default(self):
+        a = ArcSet([Arc(Lineation(0, 0), Lineation(90, 0))])
+        assert len(a) == 1
+
+    def test_type_assertion(self):
+        with pytest.raises(TypeError):
+            ArcSet([Pair(140, 30, 110, 26)])
+
+    def test_curvature_property(self):
+        a = ArcSet(
+            [
+                Arc(Lineation(0, 0), Lineation(90, 0), curvature=0.2),
+                Arc(Lineation(10, 0), Lineation(80, 0), curvature=0.8),
+            ]
+        )
+        c = a.curvature
+        assert isinstance(c, np.ndarray)
+        assert len(c) == 2
+
+    def test_positive_short_properties(self):
+        a = ArcSet(
+            [
+                Arc(Lineation(0, 0), Lineation(90, 0), positive=True, short=True),
+                Arc(Lineation(10, 0), Lineation(80, 0), positive=False, short=False),
+            ]
+        )
+        assert isinstance(a.positive, np.ndarray)
+        assert isinstance(a.short, np.ndarray)
+        assert list(a.positive) == [True, False]
+        assert list(a.short) == [True, False]
+
+    def test_lowercase_alias(self):
+        assert arcset is ArcSet
+
+    def test_from_vectors_multiple_args(self):
+        a = ArcSet.from_vectors(Lineation(0, 0), Lineation(45, 20), Lineation(90, 0))
+        assert isinstance(a, ArcSet)
+        assert len(a) == 2
+        assert a[0].p1 == Lineation(0, 0)
+        assert a[0].p2 == Lineation(45, 20)
+        assert a[1].p1 == Lineation(45, 20)
+        assert a[1].p2 == Lineation(90, 0)
+
+    def test_from_vectors_single_set(self):
+        v = linset([Lineation(0, 0), Lineation(45, 20), Lineation(90, 0)])
+        a = ArcSet.from_vectors(v)
+        assert len(a) == 2
+        assert a[0].p1 == Lineation(0, 0)
+        assert a[1].p2 == Lineation(90, 0)
+
+    def test_from_vectors_forwards_arc_kwargs(self):
+        a = ArcSet.from_vectors(
+            Lineation(0, 0),
+            Lineation(90, 0),
+            curvature=0.4,
+            positive=False,
+            short=False,
+        )
+        assert len(a) == 1
+        assert a[0].curvature == pytest.approx(0.4)
+        assert a[0].positive is False
+        assert a[0].short is False
+
+    def test_from_vectors_too_few_points_raises(self):
+        with pytest.raises(TypeError):
+            ArcSet.from_vectors(Lineation(0, 0))
+        with pytest.raises(TypeError):
+            ArcSet.from_vectors(linset([Lineation(0, 0)]))
+        with pytest.raises(TypeError):
+            ArcSet.from_vectors()
 
 
 # ---------------------------------------------------------------------------

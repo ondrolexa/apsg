@@ -319,6 +319,42 @@ These classes control the appearance of lines on stereonet plots.
       - |nbsp|
       - |nbsp|
       - ``"o"``
+    * - ``kind``
+      - |nbsp|
+      - ``"line"``
+      - |nbsp|
+      - |nbsp|
+      - |nbsp|
+    * - ``marker``
+      - |nbsp|
+      - ``"o"``
+      - |nbsp|
+      - |nbsp|
+      - |nbsp|
+    * - ``mec``
+      - |nbsp|
+      - ``None``
+      - |nbsp|
+      - |nbsp|
+      - |nbsp|
+    * - ``mfc``
+      - |nbsp|
+      - ``None``
+      - |nbsp|
+      - |nbsp|
+      - |nbsp|
+    * - ``mew``
+      - |nbsp|
+      - ``1``
+      - |nbsp|
+      - |nbsp|
+      - |nbsp|
+    * - ``ms``
+      - |nbsp|
+      - ``6``
+      - |nbsp|
+      - |nbsp|
+      - |nbsp|
 
 StereonetScatterConfig
 ^^^^^^^^^^^^^^^^^^^^^^

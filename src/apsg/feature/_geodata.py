@@ -832,3 +832,187 @@ class Cone:
         """Return revangle rotated secant vector."""
 
         return self.secant.rotate(self.axis, self.revangle)
+
+
+_UNSET = object()
+
+
+class Arc:
+    """
+    The class to store a generalized path between two vectors, with an
+    optional curvature away from the plain great-circle connection.
+
+    There are different way to create ``Arc`` object according to number
+    of arguments:
+
+    - without args, you can create default ``Arc`` from ``lin(0, 0)`` to ``lin(90, 0)``
+    - with single argument `a`, where `a` could be ``Arc`` (copy constructor -- curvature,
+      positive and short are inherited unless explicitly overridden) or a 6-tuple of
+      `(p1x, p1y, p1z, p2x, p2y, p2z)`
+    - with 2 arguments, where `p1` and `p2` are Vector3 like objects, e.g. Lineation
+    - with 4 arguments defining `p1` as `lin(azi1, inc1)` and `p2` as `lin(azi2, inc2)`
+
+    Args:
+        *args: Variable length argument list. See descriptions above.
+
+    Keyword Args:
+        curvature (float): deviation of the arc from the great-circle path connecting
+            `p1` and `p2`, in range 0..1. Default 0.
+        positive (bool): direction of the curvature. Default True.
+        short (bool): whether to take the short (<=180°) or the reflex path
+            between `p1` and `p2`. Default True.
+        **kwargs: Additional keyword arguments.
+
+    Attributes:
+        p1 (Vector3): arc start point
+        p2 (Vector3): arc end point
+        curvature (float): curvature of the arc
+        positive (bool): direction of the curvature
+        short (bool): short or reflex path
+
+    Examples:
+        >>> arc()
+        >>> arc(a)
+        >>> arc(p1, p2)
+        >>> arc(p1, p2, curvature=0.5, positive=False, short=False)
+        >>> arc(azi1, inc1, azi2, inc2)
+
+    """
+
+    __slots__ = ("p1", "p2", "curvature", "positive", "short", "_attrs")
+    __shape__ = (6,)
+
+    def __init__(
+        self, *args, curvature=_UNSET, positive=_UNSET, short=_UNSET, **kwargs
+    ):
+        if len(args) == 0:
+            p1, p2 = Lineation(0, 0), Lineation(90, 0)
+        elif len(args) == 1 and isinstance(args[0], Arc):
+            other = args[0]
+            p1, p2 = other.p1, other.p2
+            if curvature is _UNSET:
+                curvature = other.curvature
+            if positive is _UNSET:
+                positive = other.positive
+            if short is _UNSET:
+                short = other.short
+        elif len(args) == 1 and np.asarray(args[0]).shape == Arc.__shape__:
+            p1, p2 = Vector3(args[0][:3]), Vector3(args[0][3:6])
+        elif (
+            len(args) == 2
+            and isinstance(args[0], Vector3)
+            and isinstance(args[1], Vector3)
+        ):
+            p1, p2 = args
+        elif len(args) == 4:
+            p1 = Lineation(args[0], args[1])
+            p2 = Lineation(args[2], args[3])
+        else:
+            raise TypeError("Not valid arguments for Arc")
+
+        self.p1 = Vector3(p1)
+        self.p2 = Vector3(p2)
+        self.curvature = float(
+            np.clip(0 if curvature is _UNSET else curvature, 0.0, 1.0)
+        )
+        self.positive = bool(True if positive is _UNSET else positive)
+        self.short = bool(True if short is _UNSET else short)
+        if is_jsonable(kwargs):
+            self._attrs = kwargs
+        else:
+            raise TypeError("Provided attributes are not serializable.")
+
+    def __repr__(self):
+        azi1, inc1 = vec2geo_linear(self.p1)
+        azi2, inc2 = vec2geo_linear(self.p2)
+        sign = "+" if self.positive else "-"
+        length = "s" if self.short else "l"
+        return (
+            f"A:{format_linear(azi1, inc1)}-{format_linear(azi2, inc2)} "
+            f"[{self.curvature:g}{sign}{length}]"
+        )
+
+    def __eq__(self, other):
+        cls = type(self)
+        if not isinstance(other, cls):
+            if np.asarray(other).shape == cls.__shape__:
+                other = cls(other)
+            else:
+                return NotImplemented
+        return (
+            (self.p1 == other.p1)
+            and (self.p2 == other.p2)
+            and (self.curvature == other.curvature)
+            and (self.positive == other.positive)
+            and (self.short == other.short)
+        )
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __array__(self, dtype=None, copy=None):
+        return np.hstack((self.p1, self.p2)).astype(dtype)
+
+    def label(self):
+        """Return label."""
+
+        return str(self)
+
+    def to_json(self):
+        """Return as JSON dict."""
+
+        p1azi, p1inc = vec2geo_linear_signed(self.p1)
+        p2azi, p2inc = vec2geo_linear_signed(self.p2)
+        kwargs = dict(self._attrs)
+        kwargs.update(
+            curvature=self.curvature, positive=self.positive, short=self.short
+        )
+        return {
+            "datatype": type(self).__name__,
+            "args": (p1azi, p1inc, p2azi, p2inc),
+            "kwargs": kwargs,
+        }
+
+    @classmethod
+    def random(cls):
+        """Random Arc."""
+
+        return cls(Vector3.random(), Vector3.random())
+
+    def rotate(self, axis, phi):
+        """Rotates ``Arc`` by angle `phi` about `axis`.
+
+        Args:
+            axis (``Vector3``): axis of rotation
+            phi (float): angle of rotation in degrees
+
+        Returns:
+            Arc: The rotated arc.
+        """
+        try:
+            axis = Vector3(axis)
+        except TypeError:
+            raise TypeError("Unsupported argument for rotate. Expecting Vector3")
+        return type(self)(
+            self.p1.rotate(axis, phi),
+            self.p2.rotate(axis, phi),
+            curvature=self.curvature,
+            positive=self.positive,
+            short=self.short,
+            **self._attrs,
+        )
+
+    def path(self):
+        """Return list of ``Vector3`` points discretizing the arc from `p1` to `p2`."""
+
+        from apsg.feature._tensor3 import Rotation3
+
+        p1, p2 = self.p1, self.p2
+        a0 = p1.cross(p2)
+        a1 = p1.slerp(p2, 0.5)
+        a = a0.slerp(a1 if self.positive else -a1, self.curvature)
+        axis, theta = Rotation3.axisangle_from_vectors_axis(p1, p2, a)
+        if not self.short:
+            theta = theta - 360 * np.sign(theta)
+        n = max(2, abs(int(theta)))
+        return [p1.rotate(axis, t * theta) for t in np.linspace(0, 1, n)]

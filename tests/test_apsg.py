@@ -2,9 +2,17 @@ import math
 
 import pytest
 
-from apsg import cone, dir2, fault, fol, lin, pair
+from apsg import arc, cone, dir2, fault, fol, lin, pair
 from apsg.config import apsg_conf_context
-from apsg.feature._geodata import Cone, Direction, Fault, Foliation, Lineation, Pair
+from apsg.feature._geodata import (
+    Arc,
+    Cone,
+    Direction,
+    Fault,
+    Foliation,
+    Lineation,
+    Pair,
+)
 from apsg.helpers._notation import (
     azi2bearing,
     bearing2azi,
@@ -1021,6 +1029,111 @@ class TestCone:
         assert cone is Cone
 
 
+class TestArc:
+    def test_default(self):
+        a = Arc()
+        assert isinstance(a.p1, Vector3)
+        assert isinstance(a.p2, Vector3)
+        assert a.curvature == 0
+        assert a.positive is True
+        assert a.short is True
+
+    def test_from_two_vectors(self):
+        p1 = Lineation(0, 0)
+        p2 = Lineation(90, 0)
+        a = Arc(p1, p2)
+        assert isinstance(a, Arc)
+
+    def test_from_four_args(self):
+        a = Arc(0, 0, 90, 0)
+        assert isinstance(a, Arc)
+
+    def test_kwargs(self):
+        a = Arc(
+            Lineation(0, 0),
+            Lineation(90, 0),
+            curvature=0.5,
+            positive=False,
+            short=False,
+        )
+        assert a.curvature == 0.5
+        assert a.positive is False
+        assert a.short is False
+
+    def test_curvature_clamp(self):
+        p1, p2 = Lineation(0, 0), Lineation(90, 0)
+        assert Arc(p1, p2, curvature=5).curvature == 1
+        assert Arc(p1, p2, curvature=-1).curvature == 0
+
+    def test_from_arc_inherits(self):
+        a1 = Arc(Lineation(0, 0), Lineation(90, 0), curvature=0.5, positive=False)
+        a2 = Arc(a1)
+        assert a1 == a2
+
+    def test_from_arc_override(self):
+        a1 = Arc(Lineation(0, 0), Lineation(90, 0), curvature=0.5)
+        a2 = Arc(a1, curvature=0.2)
+        assert a2.curvature == 0.2
+        assert a2.p1 == a1.p1 and a2.p2 == a1.p2
+
+    def test_repr(self):
+        a = Arc(Lineation(0, 0), Lineation(90, 0))
+        assert repr(a).startswith("A:")
+
+    def test_eq(self):
+        a1 = Arc(Lineation(0, 0), Lineation(90, 0))
+        a2 = Arc(Lineation(0, 0), Lineation(90, 0))
+        assert a1 == a2
+
+    def test_rotate(self):
+        a = Arc(Lineation(0, 0), Lineation(90, 0), curvature=0.3)
+        r = a.rotate(Lineation(40, 50), 120)
+        assert isinstance(r, Arc)
+        assert r.curvature == a.curvature
+
+    def test_to_json(self):
+        a = Arc(
+            Lineation(0, 0),
+            Lineation(90, 0),
+            curvature=0.3,
+            positive=False,
+            short=False,
+        )
+        j = a.to_json()
+        assert j["datatype"] == "Arc"
+        assert len(j["args"]) == 4
+        assert j["kwargs"]["curvature"] == 0.3
+        assert j["kwargs"]["positive"] is False
+        assert j["kwargs"]["short"] is False
+
+    def test_random(self):
+        a = Arc.random()
+        assert isinstance(a, Arc)
+
+    def test_bad_args(self):
+        with pytest.raises(TypeError):
+            Arc(1, 2, 3)
+
+    def test_aliases(self):
+        assert arc is Arc
+
+    def test_path_matches_legacy_great_circle(self):
+        p1, p2 = Lineation(0, 0), Lineation(90, 0)
+        a = Arc(p1, p2)
+        path = a.path()
+        steps = max(2, int(p1.angle(p2)))
+        expected = [p1.slerp(p2, t) for t in [i / (steps - 1) for i in range(steps)]]
+        assert len(path) == len(expected)
+        for got, exp in zip(path, expected):
+            assert got == exp
+
+    def test_path_short_vs_reflex(self):
+        p1, p2 = Lineation(0, 0), Lineation(90, 0)
+        short_path = Arc(p1, p2, short=True).path()
+        long_path = Arc(p1, p2, short=False).path()
+        assert len(long_path) > len(short_path)
+
+
 # ---------------------------------------------------------------------------
 # Cross-feature: JSON round-trip via feature_from_json
 # ---------------------------------------------------------------------------
@@ -1074,3 +1187,17 @@ class TestJSONRoundtrip:
         j = c.to_json()
         c2 = feature_from_json(j)
         assert c == c2
+
+    def test_arc(self):
+        from apsg.feature import feature_from_json
+
+        a = Arc(
+            Lineation(0, 0),
+            Lineation(90, 0),
+            curvature=0.4,
+            positive=False,
+            short=False,
+        )
+        j = a.to_json()
+        a2 = feature_from_json(j)
+        assert a == a2

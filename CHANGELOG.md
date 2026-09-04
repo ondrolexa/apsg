@@ -19,6 +19,8 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - `Stress2Set`, plus convenience shortcuts (rake, cone angles, shape/anisotropy parameters, etc.) across feature sets.
 - `P_j` and `T` (Jelínek 1981 anisotropy degree and shape parameter) on `Ellipsoid`.
 - `WebSDBSession` for connecting to a remote websdb database over the web.
+- `quicknet()` now also accepts arcs, tensors, stress tensors (and their sets), and `StereoGrid` contours.
+- `ArcSet.from_vectors()` to build a set of arcs connecting consecutive vectors.
 
 ### Changed
 - **BREAKING:** the stereonet drawing engine was rebuilt on a real matplotlib map projection.
@@ -39,6 +41,8 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - `vector()`'s open (antipodal) marker now always matches its filled marker's color and no longer shifts later plots' colors.
 - Hoeppner plot arrows are no longer hidden behind an oversized marker.
 - Paleomagnetic `stereo_plot()` silently plotting nothing.
+- `quicknet()` no longer silently ignores a `ConeSet`.
+- `quicknet(..., fol_as_pole=True)` no longer crashes.
 
 ## [1.5.1] - 2026-08-04
 

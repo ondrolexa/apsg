@@ -2,6 +2,7 @@ import numpy as np
 
 from apsg.config import apsg_conf
 from apsg.feature._container import (
+    ArcSet,
     ConeSet,
     EllipsoidSet,
     FaultSet,
@@ -10,7 +11,7 @@ from apsg.feature._container import (
     Vector2Set,
     Vector3Set,
 )
-from apsg.feature._geodata import Cone, Fault, Foliation, Pair
+from apsg.feature._geodata import Arc, Cone, Fault, Foliation, Pair
 from apsg.feature._tensor3 import Ellipsoid, Stress3, Tensor3
 from apsg.math._vector import Vector3
 from apsg.plotting._stereogrid import StereoGrid
@@ -115,7 +116,7 @@ class StereoNet_Arc(StereoNet_Artists):
             if len(self.args) == 1:
                 self.kwargs["label"] = self.args[0].label()
             else:
-                self.kwargs["label"] = f"Planar ({len(self.args)})"
+                self.kwargs["label"] = f"Arc ({len(self.args)})"
 
 
 # class StereoNet_Cone(StereoNet_Artists):
@@ -324,13 +325,19 @@ class StereoNetArtistFactory:
 
     @staticmethod
     def create_arc(*args, **kwargs):
-        """Create stereonet arc artist from Vector3 data."""
-        if isinstance(args[0], Vector3Set):
-            args = args[0].data
-        if all([isinstance(arg, Vector3) for arg in args]):
-            return StereoNet_Arc("create_arc", *args, **kwargs)
-        else:
-            raise TypeError("Not valid arguments for Stereonet arc")
+        """Create stereonet arc artist from Arc/ArcSet data, or from a raw
+        Vector3-like sequence connected pairwise in order via
+        ArcSet.from_vectors (legacy convention).
+        """
+        if len(args) == 1 and isinstance(args[0], ArcSet):
+            args = tuple(args[0])
+        elif not (args and all(isinstance(arg, Arc) for arg in args)):
+            try:
+                args = tuple(ArcSet.from_vectors(*args))
+            except TypeError:
+                raise TypeError("Not valid arguments for Stereonet arc")
+
+        return StereoNet_Arc("create_arc", *args, **kwargs)
 
     # @staticmethod
     # def create_cone(*args, **kwargs):

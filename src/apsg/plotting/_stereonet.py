@@ -8,14 +8,18 @@ import numpy as np
 from apsg.config import apsg_conf
 from apsg.feature import feature_from_json
 from apsg.feature._container import (
+    ArcSet,
+    ConeSet,
+    EllipsoidSet,
     FaultSet,
     FoliationSet,
     LineationSet,
     PairSet,
+    Stress3Set,
     Vector3Set,
 )
-from apsg.feature._geodata import Cone, Fault, Foliation, Lineation, Pair
-from apsg.feature._tensor3 import Stress3
+from apsg.feature._geodata import Arc, Cone, Fault, Foliation, Lineation, Pair
+from apsg.feature._tensor3 import Stress3, Tensor3
 from apsg.math._vector import Vector3
 from apsg.plotting._plot_artists import StereoNetArtistFactory
 from apsg.plotting._stereo_engine import rotation_from_axis_angle
@@ -435,22 +439,36 @@ class StereoNet:
 
     def arc(self, *args, **kwargs):
         """
-        Plot arc between vectors along great circle(s).
+        Plot arc(s) between vectors.
 
-        Note: You should pass several features in connection order
+        Two calling conventions are supported:
+
+        - Pass one or more ``Arc``/``ArcSet`` instances -- each contributes its own
+          independently-configured curved path (see ``Arc`` for how ``curvature``,
+          ``positive`` and ``short`` control its shape).
+        - Pass several raw ``Vector3`` (or ``Vector3Set``) like features in connection
+          order -- consecutive pairs are connected by a plain great-circle arc
+          (equivalent to ``Arc(p1, p2)`` with default ``curvature=0, positive=True,
+          short=True``). This is the legacy convention and remains fully supported.
 
         Args:
-            Vector3 or Vector3Set like feature(s)
+            Arc or ArcSet instance(s), or Vector3/Vector3Set like feature(s) to
+            connect pairwise in sequence.
 
         Keyword Args:
+            kind (str): Rendering mode, "line" or "points". Default "line"
             alpha (scalar): Set the alpha value. Default None
-            color (color): Set the color of the point. Default None
-            ls (str): Line style string (only for multiple features).
-                Default "-"
-            lw (float): Set line width. Default 1.5
+            color (color): Set the color. Default None
+            ls (str): Line style string (line mode). Default "-"
+            lw (float): Set line width (line mode). Default 1.5
+            marker (str): Marker style (points mode). Default "o"
+            ms (int): Marker size (points mode). Default 6
+            mec (color): Marker edge color (points mode). Default None
+            mfc (color): Marker face color (points mode). Default None
+            mew (int): Marker edge width (points mode). Default 1
 
         Returns:
-            None: Arcs are plotted between vectors along great circles.
+            None: Arc(s) are plotted.
         """
         self._add_artist(StereoNetArtistFactory.create_arc, *args, **kwargs)
 
@@ -698,13 +716,17 @@ class StereoNet:
         return self.ax.great_circle(np.vstack(args), **kwargs)
 
     def _arc(self, *args, **kwargs):
-        antipodal = any(type(arg) is Vector3 for arg in args)
+        kind = kwargs.pop("kind", "line")
+        if kind == "points":
+            kwargs["ls"] = "none"
+            kwargs.setdefault("marker", "o")
+        else:
+            kwargs["marker"] = "None"
+
+        antipodal = any(type(a.p1) is Vector3 or type(a.p2) is Vector3 for a in args)
         segments = []
-        for arg1, arg2 in zip(args[:-1], args[1:]):
-            steps = max(2, int(arg1.angle(arg2)))
-            curve = np.array(
-                [np.asarray(arg1.slerp(arg2, t)) for t in np.linspace(0, 1, steps)]
-            )
+        for a in args:
+            curve = np.array([np.asarray(v) for v in a.path()])
             segments.append(curve)
             segments.append(np.full((1, 3), np.nan))
         combined = np.vstack(segments)
@@ -954,8 +976,12 @@ def stereonetartist_from_json(obj_json):
 
 
 def _quicknet_plot_one(s, arg, fol_as_pole, **kwargs):
-    """Plot a single ``quicknet()`` argument on ``s`` -- dispatches by type,
-    accepting a single feature or its ``*Set`` counterpart alike."""
+    """Plot a single ``quicknet()`` argument on ``s`` -- dispatches by type to
+    whichever ``StereoNet`` method has an artist representation for it,
+    accepting a single feature or its ``*Set`` counterpart alike. Order
+    matters: a subclass (``Fault`` vs ``Pair``, ``Lineation``/``Foliation``
+    vs ``Vector3``, ``Stress3`` vs ``Tensor3``, ``OrientationTensor3Set`` vs
+    ``EllipsoidSet``) is checked before its more general base class."""
     if isinstance(arg, (Foliation, FoliationSet)):
         (s.point if fol_as_pole else s.great_circle)(arg, **kwargs)
     elif isinstance(arg, (Lineation, LineationSet)):
@@ -964,12 +990,27 @@ def _quicknet_plot_one(s, arg, fol_as_pole, **kwargs):
         s.fault(arg, **kwargs)
     elif isinstance(arg, (Pair, PairSet)):
         s.pair(arg, **kwargs)
-    elif isinstance(arg, Cone):
+    elif isinstance(arg, (Cone, ConeSet)):
         s.cone(arg, **kwargs)
-    elif isinstance(arg, (Vector3, Vector3Set)):
-        s.vector(arg, **kwargs)
+    elif isinstance(arg, (Arc, ArcSet)):
+        s.arc(arg, **kwargs)
     elif isinstance(arg, Stress3):
         s.stress(arg, **kwargs)
+    elif isinstance(arg, Stress3Set):
+        # .stress() only ever plots one Stress3 per call
+        for item in arg:
+            s.stress(item, **kwargs)
+    elif isinstance(arg, Tensor3):
+        s.tensor(arg, **kwargs)
+    elif isinstance(arg, EllipsoidSet):
+        # .tensor() only ever plots one Tensor3-like object per call;
+        # also matches OrientationTensor3Set (an EllipsoidSet subclass)
+        for item in arg:
+            s.tensor(item, **kwargs)
+    elif isinstance(arg, StereoGrid):
+        s.contour(arg, **kwargs)
+    elif isinstance(arg, (Vector3, Vector3Set)):
+        s.vector(arg, **kwargs)
     else:
         print(f"{type(arg)} not supported.")
 
@@ -979,9 +1020,15 @@ def quicknet(*args, **kwargs):
     Function to quickly show or save ``StereoNet`` from args
 
     Args:
-        args: object(s) to be plotted. Instaces of ``Vector3``, ``Foliation``,
-            ``Lineation``, ``Pair``, ``Fault``, ``Cone``, ``Vector3Set``,
-            ``FoliationSet``, ``LineationSet``, ``PairSet`` or ``FaultSet``.
+        args: object(s) to be plotted -- any type with a ``StereoNet`` artist
+            representation, or its ``*Set`` counterpart: ``Vector3``,
+            ``Foliation``, ``Lineation``, ``Pair``, ``Fault``, ``Cone``, ``Arc``,
+            ``Ellipsoid``, ``OrientationTensor3``, ``Stress3``, or a ``StereoGrid``.
+            A set whose method only accepts one object per call (``Stress3Set``,
+            ``EllipsoidSet``/``OrientationTensor3Set``) is plotted one artist
+            per item. ``scatter()``, ``confidence()``, ``arrow()`` and
+            ``hoeppner()`` need extra arguments/semantics beyond a single
+            object and remain reachable only via an explicit ``StereoNet`` call.
 
     Keyword Args:
         savefig (bool): True to save figure. Default `False`
@@ -998,10 +1045,10 @@ def quicknet(*args, **kwargs):
     Returns:
         None: Quickly shows or saves a ``StereoNet`` figure from the provided arguments.
     """
-    savefig = kwargs.get("savefig", False)
-    filename = kwargs.get("filename", "stereonet.png")
-    savefig_kwargs = kwargs.get("savefig_kwargs", {})
-    fol_as_pole = kwargs.get("fol_as_pole", False)
+    savefig = kwargs.pop("savefig", False)
+    filename = kwargs.pop("filename", "stereonet.png")
+    savefig_kwargs = kwargs.pop("savefig_kwargs", {})
+    fol_as_pole = kwargs.pop("fol_as_pole", False)
     kwargs["label"] = kwargs.get("label", "_nolegend_")
     s = StereoNet(**kwargs)
     for arg in args:
