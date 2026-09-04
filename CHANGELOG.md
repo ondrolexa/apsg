@@ -19,6 +19,7 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - `Stress2Set`, plus convenience shortcuts (rake, cone angles, shape/anisotropy parameters, etc.) across feature sets.
 - `P_j` and `T` (Jelínek 1981 anisotropy degree and shape parameter) on `Ellipsoid`.
 - `WebSDBSession` for connecting to a remote websdb database over the web.
+- `Arc`/`ArcSet` (and `StereoNet.arc()`) for plotting a curved path between two vectors, with an optional bow away from the plain great-circle connection.
 - `quicknet()` now also accepts arcs, tensors, stress tensors (and their sets), and `StereoGrid` contours.
 - `ArcSet.from_vectors()` to build a set of arcs connecting consecutive vectors.
 

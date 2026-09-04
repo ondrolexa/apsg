@@ -3,7 +3,7 @@ feature module
 ==============
 
 The :mod:`apsg.feature` module provides classes to store and analyze structural geology data. It includes
-representations of planar and linear features (``Foliation``, ``Lineation``, ``Fault``, ``Cone``, ``Pair``),
+representations of planar and linear features (``Foliation``, ``Lineation``, ``Fault``, ``Cone``, ``Arc``, ``Pair``),
 their corresponding sets (``FoliationSet``, ``LineationSet``, etc.), tensor classes (``Stress3``,
 ``Ellipsoid``, ``OrientationTensor3``), and higher-level analysis tools like ``ClusterSet`` for
 clustering of orientation data.
@@ -17,12 +17,13 @@ Usage
 
 Create individual features::
 
-    >>> from apsg import fol, lin, fault, pair, cone, vec
+    >>> from apsg import fol, lin, fault, pair, cone, arc, vec
     >>> f = fol(120, 30)                 # dip direction=120, dip=30
     >>> l = lin(210, 45)                 # trend=210, plunge=45
     >>> f2 = fault(120, 30, 80, 20, 1)   # dip direction, dip, trend, plunge, sense
     >>> p = pair(300, 20, 200, 60)       # dip direction, dip, trend, plunge
     >>> c = cone(vec(45, 30), 20)        # axis + half-angle
+    >>> a = arc(lin(0, 0), lin(90, 0))   # curved path between two vectors
 
 Create sets of features for batch analysis::
 

@@ -32,8 +32,8 @@ Welcome to APSG's documentation!
 
     .. grid-item-card:: :octicon:`north-star` Structural features
 
-        Lineations, foliations, faults, pairs and cones behave like proper
-        geological objects, with degree-based angles and RHR/dip-direction
+        Lineations, foliations, faults, pairs, cones and arcs behave like
+        proper geological objects, with degree-based angles and RHR/dip-direction
         notation built in.
 
     .. grid-item-card:: :octicon:`stack` Feature sets

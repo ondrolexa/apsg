@@ -64,7 +64,18 @@ the true, unrotated frame::
     >>> s.point(fols)
     >>> s.show()
 
-Quick plot one-liner::
+Arcs::
+
+    >>> from apsg import arc, arcset, lin
+    >>> a = arc(lin(0, 0), lin(90, 0), curvature=0.4)
+    >>> path = arcset.from_vectors(lin(0, 0), lin(45, 20), lin(90, 0))
+    >>> s = StereoNet()
+    >>> s.arc(a, path)
+    >>> s.show()
+
+Quick plot one-liner -- dispatches each argument to whichever plotting method matches its
+type (lines/poles, planes, pairs, faults, cones, arcs, tensors, stress tensors, or a
+``StereoGrid`` contour)::
 
     >>> from apsg import quicknet
     >>> quicknet(fols, lins, title="Quick net")
