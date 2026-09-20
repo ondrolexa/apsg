@@ -592,6 +592,8 @@ class StereoNet:
             ls (str): Line style string (only for multiple features).
                 Default "-"
             lw (float): Set line width. Default 1.5
+            mec (color): Set the marker edge color (principal directions only).
+                Default None (same as color)
             mew (float): Set the marker edge width. Default 1
             ms (float): Set the marker size. Default 9
             marker (str): Marker style string. Default "o"
@@ -611,9 +613,7 @@ class StereoNet:
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
             color (color): Set the color. Default is red, green, blue for s1, s2, s3
-            ls (str): Line style string (only for multiple features).
-                Default "-"
-            lw (float): Set line width. Default 1.5
+            mec (color): Set the marker edge color. Default None (same as color)
             mew (float): Set the marker edge width. Default 1
             ms (float): Set the marker size. Default 12
             marker (str): Marker style string. Default "*"
@@ -637,17 +637,34 @@ class StereoNet:
         cone resamples the data with replacement and takes the ``level``-percentile of
         the angular deviation of the resampled principal eigenvectors from the sample's.
 
+        For groups of symmetric tensors (``EllipsoidSet`` or ``Stress3Set``) use
+        ``method="jelinek"`` (the default when only tensor sets are passed): the
+        confidence ellipses of the principal axes of the mean tensor are plotted (all
+        three, or a single one selected by ``which``), following the linear perturbation
+        method of Jelinek (1978). See ``EllipsoidSet.mean_tensor`` and
+        ``Stress3Set.mean_tensor``.
+
         Args:
-            Vector3Set like feature(s), e.g. LineationSet or FoliationSet
+            Vector3Set like feature(s), e.g. LineationSet or FoliationSet, or
+            EllipsoidSet and Stress3Set feature(s) for ``method="jelinek"``. Vector
+            sets and tensor sets cannot be combined in one call.
 
         Keyword Args:
-            method (str): "fisher", "bingham", "watson" or "bootstrap". Default "fisher"
+            method (str): "fisher", "bingham", "watson", "bootstrap" or "jelinek".
+                Default "fisher" for vector sets and "jelinek" for tensor sets
             which (int): index (0, 1 or 2) of the eigenvector the ellipse is
-                centered on (``method="bingham"`` only). 0 is the major eigenvector,
-                2 is the minor (pole) eigenvector. Default 0.
+                centered on (``method="bingham"`` and ``method="jelinek"`` only). 0 is
+                the major eigenvector, 2 is the minor (pole) eigenvector. Default None,
+                which means 0 for ``"bingham"`` and, for ``"jelinek"``, the ellipses
+                of all three principal axes of the mean tensor are plotted.
             level (float): confidence level. Default 0.95
             n_resamples (int): number of bootstrap resamples (``method="bootstrap"``
                 only). Default 1000
+            normalize (bool): normalize tensors by their mean value before averaging
+                (``method="jelinek"`` only). Default False
+            anisoft (bool): multiply the tilts of the principal axes by an extra
+                factor ``(n - 1) / n``, as jelinekstat and TomoFab do, giving smaller
+                ellipses (``method="jelinek"`` only). Default False
             alpha (scalar): Set the alpha value. Default None
             color (color): Set the color. Default None
             ls (str): Line style string. Default "--"
@@ -773,10 +790,39 @@ class StereoNet:
         which = kwargs.pop("which")
         level = kwargs.pop("level")
         n_resamples = kwargs.pop("n_resamples")
+        normalize = kwargs.pop("normalize")
+        anisoft = kwargs.pop("anisoft")
         segments = []
         for arg in args:
-            if method == "bingham":
-                stats = arg.bingham_statistics(level=level, which=which)
+            if method == "jelinek":
+                if which not in (None, 0, 1, 2):
+                    raise ValueError("which must be 0, 1 or 2")
+                ellipses = arg.mean_tensor(
+                    level=level, normalize=normalize, anisoft=anisoft
+                )["ellipses"]
+                # all three principal axes unless a single one is selected
+                selected = ellipses if which is None else [ellipses[which]]
+                theta = np.linspace(0, 2 * np.pi, 181)
+                curves = []
+                for ell in selected:
+                    mu = np.asarray(ell["mu"])
+                    u = np.asarray(ell["axes"][0])
+                    v = np.asarray(ell["axes"][1])
+                    t0, t1 = np.tan(np.radians(ell["gamma"]))
+                    curve = (
+                        mu
+                        + (t0 * np.cos(theta))[:, None] * u
+                        + (t1 * np.sin(theta))[:, None] * v
+                    )
+                    curves.append(curve / np.linalg.norm(curve, axis=1)[:, None])
+                gap = np.full((1, 3), np.nan)
+                pts = curves[0]
+                for curve in curves[1:]:
+                    pts = np.vstack([pts, gap, curve])
+            elif method == "bingham":
+                stats = arg.bingham_statistics(
+                    level=level, which=0 if which is None else which
+                )
                 mu = np.asarray(stats["mu"])
                 u = np.asarray(stats["axes"][0])
                 v = np.asarray(stats["axes"][1])
@@ -888,7 +934,8 @@ class StereoNet:
         else:
             selkw = {
                 key: kwargs[key]
-                for key in kwargs.keys() & {"alpha", "marker", "mew", "ms", "label"}
+                for key in kwargs.keys()
+                & {"alpha", "marker", "mec", "mew", "ms", "label"}
             }
             kwargs["ls"] = "none"
             lins = args[0].eigenlins()
@@ -909,7 +956,7 @@ class StereoNet:
     def _stress(self, *args, **kwargs):
         selkw = {
             key: kwargs[key]
-            for key in kwargs.keys() & {"alpha", "marker", "mew", "ms", "label"}
+            for key in kwargs.keys() & {"alpha", "marker", "mec", "mew", "ms", "label"}
         }
         lins = args[0].eigenlins()
         if kwargs["color"] is None:

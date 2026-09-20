@@ -8,6 +8,7 @@ from apsg.feature._container import (
     FaultSet,
     FoliationSet,
     PairSet,
+    Stress3Set,
     Vector2Set,
     Vector3Set,
 )
@@ -364,16 +365,41 @@ class StereoNetArtistFactory:
 
     @staticmethod
     def create_confidence(*args, **kwargs):
-        """Create stereonet confidence cone/ellipse artist from Vector3Set data."""
-        return StereoNetArtistFactory._create(
+        """Create stereonet confidence cone/ellipse artist from Vector3Set data,
+        or (method "jelinek") from EllipsoidSet/Stress3Set data.
+        """
+        tensor_sets = (EllipsoidSet, Stress3Set)
+        is_tensor = [isinstance(arg, tensor_sets) for arg in args]
+        if any(is_tensor) and not all(is_tensor):
+            raise TypeError(
+                "Not valid arguments for Stereonet confidence: "
+                "vector sets and tensor sets cannot be combined"
+            )
+        tensors = bool(args) and all(is_tensor)
+        if tensors:
+            kwargs.setdefault("method", "jelinek")
+        artist = StereoNetArtistFactory._create(
             "create_confidence",
-            (Vector3Set,),
+            (Vector3Set, EllipsoidSet, Stress3Set),
             "_confidence",
             "stereonet_confidence",
             "Confidence",
             *args,
             **kwargs,
         )
+        method = artist.kwargs["method"]
+        if tensors and method != "jelinek":
+            raise TypeError(
+                "Not valid arguments for Stereonet confidence: "
+                f"method {method!r} is not valid for EllipsoidSet and Stress3Set "
+                "(use method 'jelinek')"
+            )
+        if not tensors and method == "jelinek":
+            raise TypeError(
+                "Not valid arguments for Stereonet confidence: "
+                "method 'jelinek' requires EllipsoidSet or Stress3Set"
+            )
+        return artist
 
     @staticmethod
     def create_pair(*args, **kwargs):
@@ -428,7 +454,7 @@ class StereoNetArtistFactory:
         if all([isinstance(arg, Tensor3) for arg in args[:1]]):
             return StereoNet_Tensor("create_tensor", *args, **kwargs)
         else:
-            raise TypeError("Not valid arguments for Stereonet arrow")
+            raise TypeError("Not valid arguments for Stereonet tensor")
 
     @staticmethod
     def create_stress(*args, **kwargs):
@@ -436,7 +462,7 @@ class StereoNetArtistFactory:
         if all([isinstance(arg, Stress3) for arg in args[:1]]):
             return StereoNet_Stress("create_stress", *args, **kwargs)
         else:
-            raise TypeError("Not valid arguments for Stereonet arrow")
+            raise TypeError("Not valid arguments for Stereonet stress")
 
     @staticmethod
     def create_contour(*args, **kwargs):

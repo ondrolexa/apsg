@@ -37,8 +37,19 @@ from apsg import (
 )
 from apsg.config import apsg_conf_context
 from apsg.feature._geodata import Lineation
-from apsg.feature._tensor3 import Rotation3
+from apsg.feature._tensor3 import Ellipsoid, Rotation3, Stress3
 from apsg.plotting import FlinnPlot, RamsayPlot, RosePlot, VollmerPlot
+from apsg.plotting._stereo_engine._axes import StereonetAxes
+
+
+def _tensor_sets(n=12, seed=3):
+    """Ellipsoidset and stressset of noisy tensors around a diagonal mean."""
+    rng = np.random.default_rng(seed)
+    noise = rng.normal(scale=0.05, size=(n, 3, 3))
+    mats = np.diag([1.3, 1.0, 0.7]) + (noise + noise.transpose(0, 2, 1)) / 2
+    return ellipsoidset([Ellipsoid(m) for m in mats]), stressset(
+        [Stress3(m) for m in mats]
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -67,6 +78,8 @@ from apsg.plotting import FlinnPlot, RamsayPlot, RosePlot, VollmerPlot
         ),
         ("stress", (stress([[3, 0, 0], [0, 2, 0], [0, 0, 1]]),), (lin(10, 20),)),
         ("confidence", (linset.random_fisher(n=10),), (lin(10, 20),)),
+        ("confidence", (_tensor_sets()[0],), (lin(10, 20),)),
+        ("confidence", (_tensor_sets()[1],), (lin(10, 20),)),
     ],
 )
 def test_artist_type_validation(capsys, method, valid_args, invalid_args):
@@ -85,6 +98,41 @@ def test_contour_does_not_swallow_type_errors():
     # wrapper -- a mismatched type raises rather than printing
     with pytest.raises(TypeError):
         StereoNet().contour(pair(140, 30, 110, 26))
+
+
+def test_stress_marker_edge_color_and_width_are_applied():
+    # regression: _stress() used to drop mec, so edges always followed the face color
+    s = StereoNet()
+    s.stress(stress([[3, 0, 0], [0, 2, 0], [0, 0, 1]]), mec="k", mew=2)
+    s.init_figure()
+    s._render()
+    markers = [
+        c
+        for c in s.ax.get_children()
+        if isinstance(c, matplotlib.lines.Line2D) and c.get_marker() == "*"
+    ]
+    assert len(markers) == 3  # sigma1, sigma2, sigma3
+    assert all(m.get_markeredgecolor() == "k" for m in markers)
+    assert all(m.get_markeredgewidth() == 2 for m in markers)
+    # face colors still distinguish the three axes
+    assert len({m.get_markerfacecolor() for m in markers}) == 3
+
+
+def test_tensor_marker_edge_color_and_width_are_applied():
+    # principal directions of a tensor (planes=False) are drawn as markers
+    s = StereoNet()
+    s.tensor(ortensor([[3, 0, 0], [0, 2, 0], [0, 0, 1]]), planes=False, mec="k", mew=2)
+    s.init_figure()
+    s._render()
+    markers = [
+        c
+        for c in s.ax.get_children()
+        if isinstance(c, matplotlib.lines.Line2D) and c.get_marker() == "o"
+    ]
+    assert len(markers) == 3
+    assert all(m.get_markeredgecolor() == "k" for m in markers)
+    assert all(m.get_markeredgewidth() == 2 for m in markers)
+    assert len({m.get_markerfacecolor() for m in markers}) == 3
 
 
 # ---------------------------------------------------------------------------
@@ -122,6 +170,9 @@ def test_full_render_smoke(tmp_path, kind, hemisphere):
     s.confidence(l, method="fisher")
     s.confidence(l, method="bootstrap", n_resamples=20)
     s.confidence(f, method="bingham")
+    es, ss = _tensor_sets()
+    s.confidence(es)
+    s.confidence(ss, which=2, level=0.9, anisoft=True)
     s.contour(l, method="kamb")
     s.set_rotation(rotation_from_axis_angle([0, 0, 1], 30))
 
@@ -186,6 +237,165 @@ def test_arc_mixed_type_rejected(capsys):
     s.arc(lin(0, 0), arc(lin(0, 0), lin(90, 0)))
     assert len(s._artists) == 0
     assert "Not valid arguments" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# Confidence ellipses of tensor sets (method "jelinek")
+# ---------------------------------------------------------------------------
+
+
+def _jelinek_line(s):
+    """Render the net and return (x, y) of the last confidence line."""
+    s.init_figure()
+    s._render()
+    line = [c for c in s.ax.get_children() if isinstance(c, matplotlib.lines.Line2D)][
+        -1
+    ]
+    return np.asarray(line.get_xdata(), float), np.asarray(line.get_ydata(), float)
+
+
+def _confidence_vectors(s, monkeypatch):
+    """Render the net and return the (N, 3) vectors the last ``ax.path`` call got."""
+    captured = []
+    monkeypatch.setattr(
+        StereonetAxes, "path", lambda self, v, **kw: captured.append(np.array(v))
+    )
+    s.init_figure()
+    s._render()
+    return captured[-1]
+
+
+def test_confidence_jelinek_is_default_for_tensor_sets():
+    es, ss = _tensor_sets()
+    s = StereoNet()
+    s.confidence(es)
+    s.confidence(ss, normalize=True)
+    assert [a.kwargs["method"] for a in s._artists] == ["jelinek", "jelinek"]
+    assert s._artists[1].kwargs["normalize"] is True
+
+
+@pytest.mark.parametrize(
+    "args,kwargs",
+    [
+        ("es", {"method": "fisher"}),
+        ("es", {"method": "bingham"}),
+        ("l", {"method": "jelinek"}),
+        ("both", {}),
+    ],
+)
+def test_confidence_jelinek_rejects_mismatched_input(capsys, args, kwargs):
+    es, _ = _tensor_sets()
+    l = linset.random_fisher(n=10)
+    s = StereoNet()
+    s.confidence(*{"es": (es,), "l": (l,), "both": (es, l)}[args], **kwargs)
+    assert len(s._artists) == 0
+    assert "Not valid arguments" in capsys.readouterr().out
+
+
+def test_confidence_jelinek_draws_all_three_ellipses(monkeypatch):
+    es, ss = _tensor_sets()
+    per_set = 2 * 3 * 181  # boundary and its antipode, 3 principal axes
+
+    s = StereoNet()
+    s.confidence(es)
+    assert np.isfinite(_confidence_vectors(s, monkeypatch)[:, 0]).sum() == per_set
+
+    s = StereoNet()
+    s.confidence(es, ss)
+    assert np.isfinite(_confidence_vectors(s, monkeypatch)[:, 0]).sum() == 2 * per_set
+
+
+def test_confidence_jelinek_which_selects_ellipse(monkeypatch):
+    es, _ = _tensor_sets()
+
+    def vectors(**kwargs):
+        s = StereoNet()
+        s.confidence(es, **kwargs)
+        return _confidence_vectors(s, monkeypatch)
+
+    everything = vectors()
+    # rows: k1 ellipse (181), gap, k2 ellipse (181), gap, k3 ellipse (181), ...
+    starts = {0: 0, 1: 182, 2: 364}
+    np.testing.assert_array_equal(vectors(which=None), everything)
+    for which, start in starts.items():
+        single = vectors(which=which)
+        assert np.isfinite(single[:, 0]).sum() == 2 * 181  # boundary and its antipode
+        np.testing.assert_array_equal(single[:181], everything[start : start + 181])
+
+
+def test_confidence_jelinek_invalid_which():
+    es, _ = _tensor_sets()
+    s = StereoNet()
+    s.confidence(es, which=3)
+    s.init_figure()
+    with pytest.raises(ValueError):
+        s._render()
+
+
+def test_confidence_jelinek_anisoft(monkeypatch):
+    es, _ = _tensor_sets()
+
+    def k3_ellipse_size(**kwargs):
+        s = StereoNet()
+        s.confidence(es, **kwargs)
+        k3 = _confidence_vectors(s, monkeypatch)[364:545]
+        centre = k3.mean(axis=0)
+        centre /= np.linalg.norm(centre)
+        return np.degrees(np.arccos(np.clip(k3 @ centre, -1, 1))).mean()
+
+    s = StereoNet()
+    s.confidence(es, anisoft=True)
+    assert s._artists[0].kwargs["anisoft"] is True
+    assert k3_ellipse_size(anisoft=True) < k3_ellipse_size()
+
+
+def test_confidence_bingham_default_which_is_major_axis(monkeypatch):
+    _, f = linset.random_fisher(n=30), folset.random_fisher(n=30)
+    vectors = []
+    for kwargs in ({}, {"which": 0}):
+        s = StereoNet()
+        s.confidence(f, method="bingham", **kwargs)
+        vectors.append(_confidence_vectors(s, monkeypatch))
+    np.testing.assert_array_equal(vectors[0], vectors[1])
+
+
+def test_confidence_jelinek_draws_line():
+    es, _ = _tensor_sets()
+    s = StereoNet()
+    s.confidence(es)
+    x, y = _jelinek_line(s)
+    assert np.isfinite(x).sum() > 3 * 181
+    assert np.isfinite(y).sum() > 3 * 181
+
+
+def test_confidence_jelinek_level_changes_the_curve(monkeypatch):
+    es, _ = _tensor_sets()
+
+    def k3_ellipse_size(level):
+        s = StereoNet()
+        s.confidence(es, level=level)
+        # rows: k1 ellipse (181), gap, k2 ellipse (181), gap, k3 ellipse (181), ...
+        k3 = _confidence_vectors(s, monkeypatch)[364:545]
+        centre = k3.mean(axis=0)
+        centre /= np.linalg.norm(centre)
+        return np.degrees(np.arccos(np.clip(k3 @ centre, -1, 1))).mean()
+
+    assert k3_ellipse_size(0.99) > k3_ellipse_size(0.5)
+
+
+def test_confidence_jelinek_styled_and_json_roundtrip(tmp_path):
+    es, ss = _tensor_sets()
+    s = StereoNet()
+    s.plot(stereonet_styles.confidence(method="jelinek"), es, ss)
+    s.confidence(es, color="r")
+    assert len(s._artists) == 2
+    assert len(s._artists[0].args) == 2
+
+    s2 = StereoNet.from_json(s.to_json())
+    assert [a.kwargs["method"] for a in s2._artists] == ["jelinek", "jelinek"]
+    out = tmp_path / "jelinek.png"
+    s2.savefig(str(out))
+    assert out.exists()
 
 
 def test_styled_plotting_smoke(tmp_path):

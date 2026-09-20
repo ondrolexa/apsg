@@ -6,6 +6,7 @@ from apsg.feature._container import (
     FaultSet,
     FoliationSet,
     PairSet,
+    Stress3Set,
     Vector2Set,
     Vector3Set,
 )
@@ -114,7 +115,7 @@ class StereoNetConeStyle(StereoNetStyle):
 class StereoNetConfidenceStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet confidence cone/ellipse style."""
-        self._valid = Vector3Set
+        self._valid = (Vector3Set, EllipsoidSet, Stress3Set)
         self.kwargs = getattr(apsg_conf, "stereonet_confidence").copy()
         super().__init__(**kwargs)
 

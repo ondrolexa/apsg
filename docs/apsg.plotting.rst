@@ -73,6 +73,21 @@ Arcs::
     >>> s.arc(a, path)
     >>> s.show()
 
+Confidence cones and ellipses -- around the mean of orientation data (``method`` ``"fisher"``,
+``"watson"``, ``"bootstrap"`` or ``"bingham"``), or, for a group of tensors (``EllipsoidSet`` or
+``Stress3Set``), around the principal axes of their mean tensor following Jelínek (1978)
+(``method="jelinek"``, the default for tensor sets). All three ellipses are drawn unless
+``which`` (0, 1 or 2) selects a single principal axis; ``normalize`` and ``anisoft`` are passed
+on to ``mean_tensor()``::
+
+    >>> s = StereoNet()
+    >>> s.point(lins, color="k", ms=3)
+    >>> s.confidence(lins, method="watson", level=0.99, color="g")
+    >>> s.confidence(es)                       # es: EllipsoidSet of at least 3 tensors
+    >>> s.confidence(es, which=2, lw=3)        # only the ellipse of the minor axis
+    >>> s.confidence(es, anisoft=True, ls=":")
+    >>> s.show()
+
 Quick plot one-liner -- dispatches each argument to whichever plotting method matches its
 type (lines/poles, planes, pairs, faults, cones, arcs, tensors, stress tensors, or a
 ``StereoGrid`` contour)::

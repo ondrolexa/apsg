@@ -21,7 +21,11 @@ from apsg.feature._geodata import (
     Lineation,
     Pair,
 )
-from apsg.feature._statistics import KentDistribution, vonMisesFisher
+from apsg.feature._statistics import (
+    KentDistribution,
+    jelinek_statistics,
+    vonMisesFisher,
+)
 from apsg.feature._tensor2 import Ellipse, OrientationTensor2, Stress2
 from apsg.feature._tensor3 import (
     Ellipsoid,
@@ -58,6 +62,38 @@ def _watson_u2_test(w, level=0.95):
         "statistic": float(u2_star),
         "critical_value": critical_value,
         "uniform": bool(u2_star <= critical_value),
+    }
+
+
+def _mean_tensor(tensor_set, level, normalize, anisoft):
+    """Mean tensor and principal axes confidence ellipses of a tensor set.
+
+    Shared implementation of ``EllipsoidSet.mean_tensor`` and
+    ``Stress3Set.mean_tensor``.
+    """
+    result = jelinek_statistics(
+        np.array([np.asarray(t) for t in tensor_set]),
+        level=level,
+        normalize=normalize,
+        anisoft=anisoft,
+    )
+    ellipses = tuple(
+        {
+            "mu": Vector3(e["mu"]),
+            "axes": tuple(Vector3(a) for a in e["axes"]),
+            "gamma": tuple(float(g) for g in e["gamma"]),
+            "which": which,
+        }
+        for which, e in enumerate(result["ellipses"])
+    )
+    return {
+        "mean": tensor_set.__feature_class__(result["mean"]),
+        "eigenvalues": result["eigenvalues"],
+        "ellipses": ellipses,
+        "n": result["n"],
+        "level": result["level"],
+        "normalize": result["normalize"],
+        "anisoft": result["anisoft"],
     }
 
 
@@ -2385,6 +2421,55 @@ class EllipsoidSet(FeatureSet):
         """Return approximate deviation according to shape"""
         return np.array([e.MAD for e in self])
 
+    def mean_tensor(self, level=0.95, normalize=False, anisoft=False):
+        """Return mean tensor and confidence ellipses of its principal axes.
+
+        Uses the classic linear perturbation method of Jelinek (1978), which
+        builds upon Hext (1963) matrix statistics. Each tensor is rotated to
+        the principal frame of the mean tensor and the sample covariance of the
+        first-order angular deviations of each principal axis towards the other
+        two axes gives the confidence ellipse (Hotelling's T² with
+        ``F(2, n - 2)``).
+
+        Jelinek, V. (1978). Statistical processing of anisotropy of magnetic
+            susceptibility measured on groups of specimens. Studia Geophysica
+            et Geodaetica, 22, 50-62.
+        Hext, G.R. (1963). The estimation of second-order tensors, with related
+            tests and designs. Biometrika, 50, 353-373.
+
+        Note:
+            The covariance is the unbiased sample covariance and the region is
+            the exact Hotelling T² region (in simulation its coverage matches
+            the nominal level). Use ``anisoft=True`` to reproduce
+            implementations (jelinekstat, TomoFab) that additionally scale the
+            covariance by ``((n - 1) / n)²``.
+
+        Args:
+            level (float): confidence level. Default 0.95 for 95 %.
+            normalize (bool): divide each tensor by its absolute mean value
+                ``abs(trace) / 3`` before averaging, as usual for anisotropy
+                of magnetic susceptibility. Default False. Fails for tensors
+                with zero trace.
+            anisoft (bool): multiply the tilts of the principal axes by an extra
+                factor ``(n - 1) / n`` (the covariance by ``((n - 1) / n)²``),
+                which shrinks the ellipses (by about 9-12 % in angle for n = 8) and
+                lowers their coverage below the nominal level. Default False.
+
+        Returns:
+            dict: with keys ``mean`` (mean tensor), ``eigenvalues`` (of the
+            mean tensor, descending), ``ellipses`` (tuple of three dicts, one
+            for each principal axis of the mean tensor, 0 is the largest
+            eigenvalue, with keys ``mu`` (principal axis), ``axes`` (tuple of
+            the two ellipse axes, perpendicular to ``mu``), ``gamma`` (tuple
+            of the corresponding semi-angles in degrees) and ``which``), ``n``
+            (sample size), ``level``, ``normalize`` and ``anisoft``.
+
+        Raises:
+            ValueError: for less than 3 tensors, or when ``normalize`` is used
+                on tensors with zero trace.
+        """
+        return _mean_tensor(self, level, normalize, anisoft)
+
     def transform(self, F):
         """Return transformation of all features ``EllipsoidSet`` by matrix 'F'.
 
@@ -2557,6 +2642,55 @@ class Stress3Set(FeatureSet):
         """Return the array of shape ratios (Gephart & Forsyth, 1984)."""
 
         return np.array([e.shape_ratio for e in self])
+
+    def mean_tensor(self, level=0.95, normalize=False, anisoft=False):
+        """Return mean tensor and confidence ellipses of its principal axes.
+
+        Uses the classic linear perturbation method of Jelinek (1978), which
+        builds upon Hext (1963) matrix statistics. Each tensor is rotated to
+        the principal frame of the mean tensor and the sample covariance of the
+        first-order angular deviations of each principal axis towards the other
+        two axes gives the confidence ellipse (Hotelling's T² with
+        ``F(2, n - 2)``).
+
+        Jelinek, V. (1978). Statistical processing of anisotropy of magnetic
+            susceptibility measured on groups of specimens. Studia Geophysica
+            et Geodaetica, 22, 50-62.
+        Hext, G.R. (1963). The estimation of second-order tensors, with related
+            tests and designs. Biometrika, 50, 353-373.
+
+        Note:
+            The covariance is the unbiased sample covariance and the region is
+            the exact Hotelling T² region (in simulation its coverage matches
+            the nominal level). Use ``anisoft=True`` to reproduce
+            implementations (jelinekstat, TomoFab) that additionally scale the
+            covariance by ``((n - 1) / n)²``.
+
+        Args:
+            level (float): confidence level. Default 0.95 for 95 %.
+            normalize (bool): divide each tensor by its absolute mean value
+                ``abs(trace) / 3`` before averaging, as usual for anisotropy
+                of magnetic susceptibility. Default False. Fails for tensors
+                with zero trace.
+            anisoft (bool): multiply the tilts of the principal axes by an extra
+                factor ``(n - 1) / n`` (the covariance by ``((n - 1) / n)²``),
+                which shrinks the ellipses (by about 9-12 % in angle for n = 8) and
+                lowers their coverage below the nominal level. Default False.
+
+        Returns:
+            dict: with keys ``mean`` (mean tensor), ``eigenvalues`` (of the
+            mean tensor, descending), ``ellipses`` (tuple of three dicts, one
+            for each principal axis of the mean tensor, 0 is the largest
+            eigenvalue, with keys ``mu`` (principal axis), ``axes`` (tuple of
+            the two ellipse axes, perpendicular to ``mu``), ``gamma`` (tuple
+            of the corresponding semi-angles in degrees) and ``which``), ``n``
+            (sample size), ``level``, ``normalize`` and ``anisoft``.
+
+        Raises:
+            ValueError: for less than 3 tensors, or when ``normalize`` is used
+                on tensors with zero trace.
+        """
+        return _mean_tensor(self, level, normalize, anisoft)
 
 
 class ClusterSet(object):

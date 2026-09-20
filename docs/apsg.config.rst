@@ -104,6 +104,9 @@ AppConfig
     * - ``stereonet_cone``
       - ``StereonetConeConfig()``
       - Default kwargs for cones
+    * - ``stereonet_confidence``
+      - ``StereonetConfidenceConfig()``
+      - Default kwargs for confidence cones and ellipses
     * - ``stereonet_pair``
       - ``StereonetPairConfig()``
       - Default kwargs for pairs
@@ -445,6 +448,9 @@ StereonetTensorConfig
     * - ``marker``
       - ``"o"``
       - Marker style
+    * - ``mec``
+      - ``None``
+      - Marker edge color
     * - ``mew``
       - ``1``
       - Marker edge width
@@ -474,6 +480,9 @@ StereonetStressConfig
     * - ``marker``
       - ``"*"``
       - Marker style (star)
+    * - ``mec``
+      - ``None``
+      - Marker edge color
     * - ``mew``
       - ``1``
       - Marker edge width

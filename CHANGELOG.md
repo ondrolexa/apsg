@@ -22,6 +22,8 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - `Arc`/`ArcSet` (and `StereoNet.arc()`) for plotting a curved path between two vectors, with an optional bow away from the plain great-circle connection.
 - `quicknet()` now also accepts arcs, tensors, stress tensors (and their sets), and `StereoGrid` contours.
 - `ArcSet.from_vectors()` to build a set of arcs connecting consecutive vectors.
+- `mean_tensor()` on `EllipsoidSet` and `Stress3Set` returning the mean tensor and confidence ellipses of its principal axes (linear perturbation method of Jelínek 1978, after Hext 1963), with optional `normalize` and `anisoft` (extra (n-1)/n factor as in jelinekstat/TomoFab) settings.
+- `confidence(method="jelinek")` on `StereoNet` to plot the confidence ellipses of the principal axes of the mean tensor of an `EllipsoidSet` or `Stress3Set`: all three by default, or a single one selected with `which`.
 
 ### Changed
 - **BREAKING:** the stereonet drawing engine was rebuilt on a real matplotlib map projection.

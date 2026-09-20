@@ -52,6 +52,17 @@ Tensor analysis::
     >>> s = stress.from_ratio(r=0.5, mag=1)
     >>> ot = ortensor.from_features(fols)
 
+Mean tensor of a group of tensors (``EllipsoidSet`` or ``Stress3Set``) with confidence ellipses
+of its principal axes, following the linear perturbation method of Jelínek (1978)::
+
+    >>> from apsg import ellipsoidset
+    >>> es = ellipsoidset([ellipsoid.from_stretch(2 + 0.1 * i, 1, 0.5) for i in range(10)])
+    >>> res = es.mean_tensor()                     # normalize=True divides tensors by trace/3
+    >>> res["mean"], res["eigenvalues"]
+    >>> res["ellipses"][0]["mu"]                   # principal axis of the mean tensor
+    >>> res["ellipses"][0]["gamma"]                # semi-angles of its confidence ellipse (deg)
+    >>> es.mean_tensor(anisoft=True)               # extra (n-1)/n factor as in jelinekstat/TomoFab
+
 Serialization::
 
     >>> from apsg.feature import feature_from_json

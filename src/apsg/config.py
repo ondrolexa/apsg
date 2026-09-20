@@ -148,9 +148,11 @@ class StereonetConfidenceConfig(BaseConfig):
     """Stereonet confidence cone/ellipse style configuration."""
 
     method: str = "fisher"
-    which: int = 0
+    which: Any = None
     level: float = 0.95
     n_resamples: int = 1000
+    normalize: bool = False
+    anisoft: bool = False
     alpha: Any = None
     color: Any = None
     ls: str = "--"
@@ -207,6 +209,7 @@ class StereonetTensorConfig(BaseConfig):
     ls: str = "-"
     lw: float = 1.5
     marker: str = "o"
+    mec: Any = None
     mew: int = 1
     ms: int = 9
 
@@ -219,6 +222,7 @@ class StereonetStressConfig(BaseConfig):
     color: Any = None
     ls: str = "none"
     marker: str = "*"
+    mec: Any = None
     mew: int = 1
     ms: int = 12
 

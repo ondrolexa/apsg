@@ -26,6 +26,7 @@ from apsg.feature._container import (
     FaultSet,
     FoliationSet,
     LineationSet,
+    OrientationTensor3Set,
     PairSet,
     Stress2Set,
     Stress3Set,
@@ -41,8 +42,9 @@ from apsg.feature._geodata import (
     Lineation,
     Pair,
 )
+from apsg.feature._statistics import jelinek_statistics
 from apsg.feature._tensor2 import Stress2
-from apsg.feature._tensor3 import Ellipsoid, Stress3
+from apsg.feature._tensor3 import Ellipsoid, OrientationTensor3, Stress3
 from apsg.math._vector import Vector2, Vector3
 
 # ---------------------------------------------------------------------------
@@ -1436,6 +1438,213 @@ class TestStress3Set:
 
     def test_lowercase_alias(self):
         assert stressset is Stress3Set
+
+
+# ---------------------------------------------------------------------------
+# mean_tensor (Jelinek 1978) of EllipsoidSet and Stress3Set
+# ---------------------------------------------------------------------------
+
+# 8-specimen AMS example (k11, k22, k33, k12, k23, k13) from the jelinekstat package
+_AMS = np.array(
+    [
+        [1.02327, 1.02946, 0.94727, -0.01495, -0.03599, -0.05574],
+        [1.02315, 1.01803, 0.95882, -0.00924, -0.02058, -0.03151],
+        [1.02801, 1.03572, 0.93627, -0.03029, -0.03491, -0.06088],
+        [1.02775, 1.00633, 0.96591, -0.01635, -0.04148, -0.02006],
+        [1.02143, 1.01775, 0.96082, -0.02798, -0.04727, -0.02384],
+        [1.01823, 1.01203, 0.96975, -0.01126, -0.02833, -0.03649],
+        [1.01486, 1.02067, 0.96446, -0.01046, -0.01913, -0.03864],
+        [1.04596, 1.01133, 0.94271, -0.01660, -0.04711, -0.03636],
+    ]
+)
+
+
+def _ams_matrices():
+    a, b, c, d, e, f = _AMS.T
+    return np.array([[a, d, f], [d, b, e], [f, e, c]]).transpose(2, 0, 1)
+
+
+def _noisy_matrices(rng, n, sigma=0.05, true=(1.3, 1.0, 0.7)):
+    noise = rng.normal(scale=sigma, size=(n, 3, 3))
+    return np.diag(true) + (noise + noise.transpose(0, 2, 1)) / 2
+
+
+class TestMeanTensor:
+    def test_ellipsoidset(self):
+        es = EllipsoidSet([Ellipsoid(m) for m in _ams_matrices()])
+        r = es.mean_tensor()
+        assert set(r) == {
+            "mean",
+            "eigenvalues",
+            "ellipses",
+            "n",
+            "level",
+            "normalize",
+            "anisoft",
+        }
+        assert isinstance(r["mean"], Ellipsoid)
+        assert r["n"] == 8
+        assert r["level"] == 0.95
+        assert r["normalize"] is False
+        assert r["anisoft"] is False
+        assert len(r["ellipses"]) == 3
+        for which, ell in enumerate(r["ellipses"]):
+            assert ell["which"] == which
+            assert isinstance(ell["mu"], Vector3)
+            assert all(isinstance(a, Vector3) for a in ell["axes"])
+            assert len(ell["gamma"]) == 2
+            u, v = ell["axes"]
+            assert abs(u.dot(ell["mu"])) < 1e-9
+            assert abs(v.dot(ell["mu"])) < 1e-9
+            assert abs(u.dot(v)) < 1e-9
+
+    def test_mean_is_arithmetic_mean(self):
+        mats = _ams_matrices()
+        r = EllipsoidSet([Ellipsoid(m) for m in mats]).mean_tensor()
+        np.testing.assert_allclose(np.asarray(r["mean"]), mats.mean(axis=0))
+        np.testing.assert_allclose(
+            r["eigenvalues"], np.linalg.eigvalsh(mats.mean(axis=0))[::-1]
+        )
+
+    def test_stress3set(self):
+        ss = Stress3Set([Stress3(m) for m in _ams_matrices()])
+        r = ss.mean_tensor()
+        assert isinstance(r["mean"], Stress3)
+        assert r["mean"] == Stress3(_ams_matrices().mean(axis=0))
+
+    def test_orientationtensor3set_inherits(self):
+        os = OrientationTensor3Set([OrientationTensor3(m) for m in _ams_matrices()])
+        assert isinstance(os.mean_tensor()["mean"], OrientationTensor3)
+
+    def test_too_few_tensors(self):
+        es = EllipsoidSet([Ellipsoid(m) for m in _ams_matrices()[:2]])
+        with pytest.raises(ValueError):
+            es.mean_tensor()
+
+    def test_normalize(self):
+        mats = _ams_matrices() * np.arange(1, 9)[:, None, None]
+        es = EllipsoidSet([Ellipsoid(m) for m in mats])
+        r = es.mean_tensor(normalize=True)
+        assert r["normalize"] is True
+        assert np.trace(np.asarray(r["mean"])) == pytest.approx(3)
+        # scale of individual tensors does not matter once normalized
+        r0 = EllipsoidSet([Ellipsoid(m) for m in _ams_matrices()]).mean_tensor(
+            normalize=True
+        )
+        np.testing.assert_allclose(np.asarray(r["mean"]), np.asarray(r0["mean"]))
+        np.testing.assert_allclose(
+            [e["gamma"] for e in r["ellipses"]], [e["gamma"] for e in r0["ellipses"]]
+        )
+
+    def test_normalize_zero_trace(self):
+        ss = Stress3Set(
+            [Stress3(np.diag(d)) for d in ([2, 0, -2], [3, -1, -2], [1, 1, -2])]
+        )
+        with pytest.raises(ValueError):
+            ss.mean_tensor(normalize=True)
+        assert isinstance(ss.mean_tensor()["mean"], Stress3)
+
+    def test_level_monotonic(self):
+        es = EllipsoidSet([Ellipsoid(m) for m in _ams_matrices()])
+        lo = es.mean_tensor(level=0.8)["ellipses"]
+        hi = es.mean_tensor(level=0.99)["ellipses"]
+        for a, b in zip(lo, hi):
+            assert all(x < y for x, y in zip(a["gamma"], b["gamma"]))
+
+    def test_more_specimens_narrower(self):
+        mats = _noisy_matrices(np.random.default_rng(5), 200)
+        few = EllipsoidSet([Ellipsoid(m) for m in mats[:10]]).mean_tensor()
+        many = EllipsoidSet([Ellipsoid(m) for m in mats]).mean_tensor()
+        assert many["ellipses"][2]["gamma"][0] < few["ellipses"][2]["gamma"][0]
+
+    def test_isotropic_is_degenerate(self):
+        es = EllipsoidSet([Ellipsoid(np.eye(3)) for _ in range(3)])
+        for ell in es.mean_tensor()["ellipses"]:
+            assert ell["gamma"] == (90.0, 90.0)
+
+    def test_identical_tensors_have_zero_gamma(self):
+        es = EllipsoidSet([Ellipsoid(np.diag([3.0, 2.0, 1.0])) for _ in range(4)])
+        for ell in es.mean_tensor()["ellipses"]:
+            assert ell["gamma"] == (0.0, 0.0)
+
+    def test_rotation_covariance(self):
+        from scipy.spatial.transform import Rotation
+
+        R = Rotation.random(random_state=11).as_matrix()
+        mats = _ams_matrices()
+        rotated = R @ mats @ R.T
+        r0 = EllipsoidSet([Ellipsoid(m) for m in mats]).mean_tensor()
+        r1 = EllipsoidSet([Ellipsoid(m) for m in rotated]).mean_tensor()
+        np.testing.assert_allclose(r0["eigenvalues"], r1["eigenvalues"])
+        for e0, e1 in zip(r0["ellipses"], r1["ellipses"]):
+            np.testing.assert_allclose(e0["gamma"], e1["gamma"])
+            # eigenvector sign is arbitrary
+            assert abs(np.dot(np.asarray(e1["mu"]), R @ np.asarray(e0["mu"]))) == (
+                pytest.approx(1)
+            )
+
+    def test_ams_regression(self):
+        es = EllipsoidSet([Ellipsoid(m) for m in _ams_matrices()])
+        r = es.mean_tensor(normalize=True)
+        # normalized mean tensor and its eigenvalues as published for jelinekstat
+        np.testing.assert_allclose(
+            r["eigenvalues"], [1.042394, 1.033976, 0.923631], atol=1e-6
+        )
+        np.testing.assert_allclose(
+            [e["gamma"] for e in r["ellipses"]],
+            [(42.094, 6.509), (42.129, 6.290), (8.984, 3.038)],
+            atol=1e-3,
+        )
+
+    def test_anisoft_matches_jelinekstat(self):
+        # jelinekstat additionally scales the covariance by ((n - 1) / n)**2;
+        # with anisoft=True its published values are reproduced
+        es = EllipsoidSet([Ellipsoid(m) for m in _ams_matrices()])
+        r = es.mean_tensor(normalize=True, anisoft=True)
+        assert r["anisoft"] is True
+        np.testing.assert_allclose(
+            np.radians([e["gamma"] for e in r["ellipses"]]),
+            [
+                (0.66888885, 0.09950548),
+                (0.66949335, 0.09615434),
+                (0.13745895, 0.04640122),
+            ],
+            atol=1e-6,
+        )
+
+    def test_anisoft_scales_tangent_of_semi_angles(self):
+        mats = _noisy_matrices(np.random.default_rng(8), 10)
+        for cls, kls in ((EllipsoidSet, Ellipsoid), (Stress3Set, Stress3)):
+            ts = cls([kls(m) for m in mats])
+            plain, aniso = ts.mean_tensor(), ts.mean_tensor(anisoft=True)
+            assert plain["anisoft"] is False
+            assert aniso["anisoft"] is True
+            for p, a in zip(plain["ellipses"], aniso["ellipses"]):
+                np.testing.assert_allclose(
+                    np.tan(np.radians(a["gamma"])),
+                    9 / 10 * np.tan(np.radians(p["gamma"])),
+                )
+        # the mean tensor and the axes do not depend on it
+        np.testing.assert_allclose(np.asarray(plain["mean"]), np.asarray(aniso["mean"]))
+
+    def test_anisoft_keeps_degenerate_ellipse(self):
+        es = EllipsoidSet([Ellipsoid(np.eye(3)) for _ in range(3)])
+        for ell in es.mean_tensor(anisoft=True)["ellipses"]:
+            assert ell["gamma"] == (90.0, 90.0)
+
+    @pytest.mark.parametrize("which", [0, 1, 2])
+    def test_confidence_coverage(self, which):
+        # the ellipse of the true principal axis has to cover it ~95 % of the time
+        rng = np.random.default_rng(1234)
+        trials, hits = 1000, 0
+        x = np.eye(3)[which]
+        for _ in range(trials):
+            ell = jelinek_statistics(_noisy_matrices(rng, 8))["ellipses"][which]
+            mu = ell["mu"]
+            d = (x if x @ mu > 0 else -x) / abs(x @ mu) - mu
+            t0, t1 = np.tan(np.radians(ell["gamma"]))
+            hits += (d @ ell["axes"][0] / t0) ** 2 + (d @ ell["axes"][1] / t1) ** 2 <= 1
+        assert 0.92 <= hits / trials <= 0.98
 
 
 # ---------------------------------------------------------------------------
