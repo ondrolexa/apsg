@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Note: apsg's version numbers do not strictly follow [Semantic Versioning](https://semver.org/) --
 a patch-level release can include breaking changes, marked below as **BREAKING**.
 
-## [Unreleased]
+## [2.0.0] - 2026-09-21
 
 ### Added
 - Multiple contour layers can now be overlaid on the same stereonet in one plot.
