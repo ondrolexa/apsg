@@ -25,7 +25,7 @@ from ._transforms import (
     ned_from_graticule,
     rotation_from_axis_angle,
 )
-from ._utils import _as_vectors
+from ._utils import _as_vectors, _clip_ring_to_hemisphere
 
 __all__ = ["SchmidtNetAxes", "WulffNetAxes"]
 
@@ -588,6 +588,43 @@ class StereonetAxes(Axes):
         (handle,) = self.plot(glon, glat, **plot_kwargs)
         handle.set_clip_path(self.patch)
         return handle
+
+    def polygon(self, vectors, **kwargs):
+        """Fill the region bounded by an already-computed NED-vector ring
+        (closed automatically, last point to first), e.g. a chain of
+        slerp-interpolated arcs.
+
+        The region is the side of the ring that does not contain the
+        projection's singular point (the vector antipodal to the net's center,
+        the zenith of a lower-hemisphere net). It is clipped to the displayed
+        hemisphere: where the ring runs through the hidden hemisphere, its
+        excursion is replaced by the part of the primitive circle that
+        belongs to the region.
+
+        Args:
+            vectors: NED vectors, shape (N, 3), the boundary in the given order
+                (no resampling is done here; the caller supplies dense points).
+            **kwargs: passed to ``self.fill``. If neither ``color`` nor
+                ``facecolor`` is given, the next color of the axes' color cycle
+                is used. ``label`` goes to the first patch only.
+
+        Returns:
+            list of ``Polygon`` handles (one per separate visible piece; empty
+            if nothing of the region is visible).
+        """
+        loops = _clip_ring_to_hemisphere(self._hemisphere_rotate(vectors))
+        fill_kwargs = dict(transform=self._data_transform())
+        fill_kwargs.update(kwargs)
+        if not {"color", "facecolor", "fc"} & fill_kwargs.keys():
+            fill_kwargs["facecolor"] = self._get_lines.get_next_color()
+        handles = []
+        for loop in loops:
+            glon, glat = graticule_from_ned(loop[:, 0], loop[:, 1], loop[:, 2])
+            (handle,) = self.fill(glon, glat, **fill_kwargs)
+            handle.set_clip_path(self.patch)
+            handles.append(handle)
+            fill_kwargs.pop("label", None)  # one legend entry only
+        return handles
 
     # -- matplotlib custom-projection machinery --------------------------
 

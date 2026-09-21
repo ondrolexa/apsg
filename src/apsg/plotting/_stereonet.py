@@ -451,12 +451,21 @@ class StereoNet:
           (equivalent to ``Arc(p1, p2)`` with default ``curvature=0, positive=True,
           short=True``). This is the legacy convention and remains fully supported.
 
+        An arc is drawn as a path on the sphere, exactly as computed, and only where it
+        runs through the displayed hemisphere. E.g. ``short=False`` between two
+        lineations shows just the two pieces beyond the endpoints, leaving a gap where
+        the short arc would be; the piece through the other hemisphere is visible on a
+        net with ``hemisphere="upper"``.
+
         Args:
             Arc or ArcSet instance(s), or Vector3/Vector3Set like feature(s) to
             connect pairwise in sequence.
 
         Keyword Args:
-            kind (str): Rendering mode, "line" or "points". Default "line"
+            kind (str): Rendering mode, "line", "points" or "filled". Default "line".
+                "filled" fills the polygon bounded by the arcs taken in order, closed
+                by great-circle arcs between the last and the first point, using only
+                ``alpha`` and ``color`` (no outline)
             alpha (scalar): Set the alpha value. Default None
             color (color): Set the color. Default None
             ls (str): Line style string (line mode). Default "-"
@@ -734,20 +743,50 @@ class StereoNet:
 
     def _arc(self, *args, **kwargs):
         kind = kwargs.pop("kind", "line")
+        if kind not in ("line", "points", "filled"):
+            raise ValueError("kind must be 'line', 'points' or 'filled'")
+        if kind == "filled":
+            return self._arc_polygon(args, **kwargs)
         if kind == "points":
             kwargs["ls"] = "none"
             kwargs.setdefault("marker", "o")
         else:
             kwargs["marker"] = "None"
 
-        antipodal = any(type(a.p1) is Vector3 or type(a.p2) is Vector3 for a in args)
         segments = []
         for a in args:
             curve = np.array([np.asarray(v) for v in a.path()])
             segments.append(curve)
             segments.append(np.full((1, 3), np.nan))
         combined = np.vstack(segments)
-        return [self.ax.path(combined, antipodal=antipodal, **kwargs)]
+        # An arc is a path on the sphere, not an axial feature: never add its
+        # antipodal reflection, which would refill the gap left by a short=False arc.
+        return [self.ax.path(combined, antipodal=False, **kwargs)]
+
+    def _arc_polygon(self, arcs, **kwargs):
+        """Fill the polygon bounded by ``arcs`` taken in order, without outline.
+
+        Gaps between consecutive arcs, and between the last and the first one, are
+        closed by plain great-circle arcs.
+        """
+        ring = []
+        end = None
+        for a in arcs:
+            if end is not None and end.angle(a.p1) > 1e-6:
+                ring.extend(Arc(end, a.p1).path())
+            ring.extend(a.path())
+            end = a.p2
+        if end.angle(arcs[0].p1) > 1e-6:
+            ring.extend(Arc(end, arcs[0].p1).path())
+        fill_kwargs = {key: kwargs[key] for key in kwargs.keys() & {"alpha", "label"}}
+        if kwargs.get("color") is not None:
+            fill_kwargs["facecolor"] = kwargs["color"]
+        return self.ax.polygon(
+            np.array([np.asarray(v) for v in ring]),
+            edgecolor="none",
+            linewidth=0,
+            **fill_kwargs,
+        )
 
     def _scatter(self, *args, **kwargs):
         legend = kwargs.pop("legend")

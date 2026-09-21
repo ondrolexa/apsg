@@ -19,11 +19,13 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - `Stress2Set`, plus convenience shortcuts (rake, cone angles, shape/anisotropy parameters, etc.) across feature sets.
 - `P_j` and `T` (Jelínek 1981 anisotropy degree and shape parameter) on `Ellipsoid`.
 - `WebSDBSession` for connecting to a remote websdb database over the web.
-- `Arc`/`ArcSet` (and `StereoNet.arc()`) for plotting a curved path between two vectors, with an optional bow away from the plain great-circle connection.
+- `Arc`/`ArcSet` (and `StereoNet.arc()`) for plotting a curved path between two vectors, with an optional bow away from the plain great-circle connection. Arcs can be drawn as a line, as points, or as the filled polygon they bound.
 - `quicknet()` now also accepts arcs, tensors, stress tensors (and their sets), and `StereoGrid` contours.
 - `ArcSet.from_vectors()` to build a set of arcs connecting consecutive vectors.
+- `Rotation3.axisangle_from_vectors_axis()` returning the signed (axis, angle) pair behind `from_vectors_axis()`.
 - `mean_tensor()` on `EllipsoidSet` and `Stress3Set` returning the mean tensor and confidence ellipses of its principal axes (linear perturbation method of Jelínek 1978, after Hext 1963), with optional `normalize` and `anisoft` (extra (n-1)/n factor as in jelinekstat/TomoFab) settings.
 - `confidence(method="jelinek")` on `StereoNet` to plot the confidence ellipses of the principal axes of the mean tensor of an `EllipsoidSet` or `Stress3Set`: all three by default, or a single one selected with `which`.
+- `tensor()` now accepts `mec` (marker edge color) when plotting principal directions.
 
 ### Changed
 - **BREAKING:** the stereonet drawing engine was rebuilt on a real matplotlib map projection.
@@ -46,6 +48,9 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - Paleomagnetic `stereo_plot()` silently plotting nothing.
 - `quicknet()` no longer silently ignores a `ConeSet`.
 - `quicknet(..., fol_as_pole=True)` no longer crashes.
+- `stress()` silently ignored its `mec` (marker edge color) option.
+- `StereoNet.plot()` with a style now prints an error for invalid arguments, like the direct plotting methods, instead of crashing.
+- `tensor()` and `stress()` error messages for invalid arguments no longer say "arrow".
 
 ## [1.5.1] - 2026-08-04
 

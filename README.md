@@ -1,25 +1,21 @@
-<!--
-Source - https://stackoverflow.com/a/70200610
-Posted by Giorgos Xou, modified by community. See post 'Timeline' for change history
-Retrieved 2026-08-05, License - CC BY-SA 4.0
--->
-
-![APSG logo](https://github.com/ondrolexa/apsg/raw/refs/heads/master/docs/images/apsg_banner_light.svg#gh-light-mode-only)
-![APSG logo](https://github.com/ondrolexa/apsg/raw/refs/heads/master/docs/images/apsg_banner_dark.svg#gh-dark-mode-only)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/ondrolexa/apsg/master/docs/images/apsg_banner_dark.svg">
+  <img alt="APSG logo" src="https://raw.githubusercontent.com/ondrolexa/apsg/master/docs/images/apsg_banner_light.svg">
+</picture>
 
 [![PyPI - Version](https://img.shields.io/pypi/v/apsg)](https://pypi.org/project/apsg)
 [![Conda](https://img.shields.io/conda/v/conda-forge/apsg)](https://anaconda.org/conda-forge/apsg)
 [![Documentation Status](https://readthedocs.org/projects/apsg/badge/?version=stable)](https://apsg.readthedocs.io/en/stable/?badge=stable)
 [![codecov](https://codecov.io/gh/ondrolexa/apsg/graph/badge.svg?token=YKXWmJJHw3)](https://codecov.io/gh/ondrolexa/apsg)
-[![DOI](https://zenodo.org/badge/24879346.svg)](https://zenodo.org/badge/latestdoi/24879346)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.593586-blue)](https://doi.org/10.5281/zenodo.593586)
 
-## :thinking: What is APSG?
+## 🤔 What is APSG?
 
 APSG is the package for structural geologists. It defines several new python classes to easily manage, analyze and visualize orientation structural geology data.
 
-Check ``CHANGELOG.md`` for recent updates.
+Check [CHANGELOG.md](https://github.com/ondrolexa/apsg/blob/master/CHANGELOG.md) for recent updates.
 
-## :chart_with_upwards_trend: Quick example
+## 📈 Quick example
 
 ```python
 from apsg import *
@@ -36,13 +32,13 @@ s.show()
 lower and upper hemisphere, and rotating the whole net independently of the plotted data --
 see the stereonet tutorial in the [documentation](https://apsg.readthedocs.org) for examples.
 
-## :hammer_and_wrench: Requirements
+## 🛠️ Requirements
 
 You need Python 3.12 or later to run APSG. The package requires [NumPy](https://numpy.org/),
 [SciPy](https://scipy.org/), [Matplotlib](https://matplotlib.org/), [SQLAlchemy](https://www.sqlalchemy.org/),
 [pandas](https://pandas.pydata.org/) and [pygeomag](https://github.com/boxpet/pygeomag).
 
-## :rocket: How to install
+## 🚀 How to install
 
 It is strongly suggested to install **apsg** into separate environment. You can create
 Python virtual environment. For Linux and macOS use:
@@ -55,8 +51,7 @@ for Windows use Command Prompt or PowerShell:
     python -m venv .venv
     .venv\Scripts\activate
 
-> [!NOTE]
-> On Microsoft Windows, it may be required to set the execution policy in PowerShell for the user.
+> **Note:** On Microsoft Windows, it may be required to set the execution policy in PowerShell for the user.
 > You can do this by issuing the following PowerShell command:
 > ```
 > Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
@@ -116,15 +111,15 @@ or using mamba
 | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-apsg-green.svg)](https://anaconda.org/conda-forge/apsg) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/apsg.svg)](https://anaconda.org/conda-forge/apsg) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/apsg.svg)](https://anaconda.org/conda-forge/apsg) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/apsg.svg)](https://anaconda.org/conda-forge/apsg) |
 
-## :blue_book: Documentation
+## 📘 Documentation
 
 You can explore all the features of APSG in [documentation](https://apsg.readthedocs.org).
 
-## :computer: Contributing
+## 💻 Contributing
 
-Most discussion happens on [Github](https://github.com/ondrolexa/apsg). Feel free to open [an issue](https://github.com/ondrolexa/apsg/issues/new) or comment on any open issue or pull request. Check ``CONTRIBUTING.md`` for more details.
+Most discussion happens on [Github](https://github.com/ondrolexa/apsg). Feel free to open [an issue](https://github.com/ondrolexa/apsg/issues/new) or comment on any open issue or pull request. Check [CONTRIBUTING.md](https://github.com/ondrolexa/apsg/blob/master/CONTRIBUTING.md) for more details.
 
-## :coin: Donate
+## 🪙 Donate
 
 APSG is an open-source project, available for you for free. It took a lot of time and resources to build this software. If you find this software useful and want to support its future development please consider donating to me.
 
@@ -132,4 +127,4 @@ APSG is an open-source project, available for you for free. It took a lot of tim
 
 ## License
 
-APSG is free software: you can redistribute it and/or modify it under the terms of the MIT License. A copy of this license is provided in ``LICENSE`` file.
+APSG is free software: you can redistribute it and/or modify it under the terms of the MIT License. A copy of this license is provided in the [LICENSE](https://github.com/ondrolexa/apsg/blob/master/LICENSE) file.

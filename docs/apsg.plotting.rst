@@ -73,6 +73,27 @@ Arcs::
     >>> s.arc(a, path)
     >>> s.show()
 
+An arc is drawn as a path, only where it runs through the displayed hemisphere. With
+``short=False`` the arc takes the other way around the great circle, so only the remaining
+pieces beyond the endpoints are shown, leaving a gap where the short arc is::
+
+    >>> s = StereoNet()
+    >>> s.arc(arc(lin(50, 30), lin(210, 40)), color="C0")               # short arc
+    >>> s.arc(arc(lin(50, 30), lin(210, 40), short=False), color="C3")  # the rest
+    >>> s.show()
+
+``kind="points"`` draws the path as markers and ``kind="filled"`` fills the polygon bounded by
+the arcs taken in order, closed by a great-circle arc from the last point to the first. The
+fill uses only ``color`` and ``alpha`` (no outline). It is clipped to the displayed hemisphere;
+the filled region is the side of the boundary not containing the point antipodal to the net's
+center::
+
+    >>> quad = arcset([arc(50, 30, 120, 60), arc(120, 60, 260, 50),
+    ...                arc(260, 50, 310, 40), arc(310, 40, 50, 30)])
+    >>> s = StereoNet()
+    >>> s.arc(quad, kind="filled", color="C0", alpha=0.5)
+    >>> s.show()
+
 Confidence cones and ellipses -- around the mean of orientation data (``method`` ``"fisher"``,
 ``"watson"``, ``"bootstrap"`` or ``"bingham"``), or, for a group of tensors (``EllipsoidSet`` or
 ``Stress3Set``), around the principal axes of their mean tensor following Jelínek (1978)

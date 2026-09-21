@@ -40,6 +40,10 @@ from apsg.feature._geodata import Lineation
 from apsg.feature._tensor3 import Ellipsoid, Rotation3, Stress3
 from apsg.plotting import FlinnPlot, RamsayPlot, RosePlot, VollmerPlot
 from apsg.plotting._stereo_engine._axes import StereonetAxes
+from apsg.plotting._stereo_engine._utils import (
+    _clip_ring_to_hemisphere,
+    _crosses_geodesic,
+)
 
 
 def _tensor_sets(n=12, seed=3):
@@ -237,6 +241,251 @@ def test_arc_mixed_type_rejected(capsys):
     s.arc(lin(0, 0), arc(lin(0, 0), lin(90, 0)))
     assert len(s._artists) == 0
     assert "Not valid arguments" in capsys.readouterr().out
+
+
+def _visible_axes_fractions(s):
+    """Render the net; axes-fraction (X, Y) of the last line's points inside the net."""
+    s.init_figure()
+    s._render()
+    line = [c for c in s.ax.get_children() if isinstance(c, matplotlib.lines.Line2D)][
+        -1
+    ]
+    xy = np.column_stack([line.get_xdata(), line.get_ydata()]).astype(float)
+    xy = xy[np.isfinite(xy).all(axis=1)]
+    frac = s.ax.transAxes.inverted().transform(line.get_transform().transform(xy))
+    return frac[np.hypot(frac[:, 0] - 0.5, frac[:, 1] - 0.5) <= 0.5]
+
+
+@pytest.mark.parametrize("hemisphere", ["lower", "upper"])
+def test_arc_long_path_leaves_gap_where_short_arc_is(hemisphere):
+    # regression: the antipodal reflection of a short=False arc refilled the gap,
+    # drawing the whole great circle instead of just the remaining pieces
+    p1, p2 = lin(50, 30), lin(210, 40)
+    short = arc(p1, p2)
+    midpoint = np.asarray(short.path()[len(short.path()) // 2])
+
+    def nearest(a, v):
+        s = StereoNet(hemisphere=hemisphere)
+        s.arc(a)
+        pts = _visible_axes_fractions(s)
+        X, Y = s.ax.project(v, clip_inside=False, fold=True)
+        return np.hypot(pts[:, 0] - X, pts[:, 1] - Y).min()
+
+    assert (
+        nearest(short, midpoint) < 0.01
+    )  # the short arc is drawn through its midpoint
+    long_ = arc(p1, p2, short=False)
+    assert nearest(long_, midpoint) > 0.1  # ... the long one leaves a gap there
+    # while the remaining pieces do start at the endpoints
+    assert nearest(long_, np.asarray(p1)) < 0.01
+    assert nearest(long_, np.asarray(p2)) < 0.01
+
+
+def test_arc_never_requests_antipodal_reflection(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        StereonetAxes,
+        "path",
+        lambda self, v, antipodal=False, **kw: calls.append(antipodal),
+    )
+    cases = [
+        (arc(50, 30, 210, 40),),
+        (arc(50, 30, 210, 40, short=False),),
+        (arcset.from_vectors(lin(0, 0), lin(45, 20), lin(90, 0)),),
+        (lin(0, 0), lin(90, 0), lin(0, 90)),  # legacy chain, axial vectors
+        (vec(1, 0, 0), vec(0, 1, 0), vec(0, 0, 1)),  # legacy chain, plain vectors
+    ]
+    for args in cases:
+        s = StereoNet()
+        s.arc(*args)
+        s.init_figure()
+        s._render()
+    assert calls == [False] * len(cases)
+
+
+# -- arc(kind="filled") -----------------------------------------------------
+
+_FILL = np.array([31, 119, 180])  # matplotlib "C0"
+
+
+def _ring_vectors(aset):
+    return np.array([np.asarray(v) for a in aset for v in a.path()])
+
+
+def _inside_via_nadir(ring, x):
+    """Independent spherical point-in-polygon: is x on the side of the ring not
+    containing the zenith? Uses the nadir as intermediate reference,
+    (x vs nadir differ) XOR (nadir vs zenith differ), unlike the zenith-parity
+    helper the implementation uses."""
+    nadir, zenith, east = np.array([0, 0, 1.0]), np.array([0, 0, -1.0]), np.eye(3)[0]
+
+    def parity(p, q):
+        hit = _crosses_geodesic(p, q, ring, np.roll(ring, -1, axis=0))
+        return int(hit.sum()) % 2
+
+    nadir_zenith = (parity(nadir, east) + parity(east, zenith)) % 2
+    return (parity(x, nadir) + nadir_zenith) % 2 == 1
+
+
+def _fill_mismatches(aset, n=400, seed=0):
+    """Render the filled arcs and count sample points (away from the boundary and
+    the center mark) whose pixel disagrees with the spherical classification."""
+    ring = _ring_vectors(aset)
+    s = StereoNet()
+    s.arc(aset, kind="filled", color="C0")
+    s.init_figure()
+    s._render()
+    s.fig.canvas.draw()
+    img = np.asarray(s.fig.canvas.buffer_rgba())[:, :, :3].astype(int)
+    rng = np.random.default_rng(seed)
+    bad = total = 0
+    while total < n:
+        v = rng.normal(size=3)
+        v[2] = abs(v[2])
+        v /= np.linalg.norm(v)
+        near_boundary = np.degrees(np.arccos(np.clip(ring @ v, -1, 1))).min() < 2.5
+        if v[2] < 0.08 or np.hypot(*v[:2]) < 0.06 or near_boundary:
+            continue
+        X, Y = s.ax.project(v, clip_inside=False, fold=True)
+        px, py = s.ax.transAxes.transform([X[0], Y[0]])
+        pixel = img[int(round(img.shape[0] - py)), int(round(px))]
+        bad += (np.abs(pixel - _FILL).sum() < 60) != _inside_via_nadir(ring, v)
+        total += 1
+    return bad
+
+
+def test_arc_filled_quadrilateral_within_the_lower_hemisphere():
+    aa = arcset(
+        [
+            arc(50, 30, 120, 60),
+            arc(120, 60, 260, 50),
+            arc(260, 50, 310, 40),
+            arc(310, 40, 50, 30),
+        ]
+    )
+    assert _fill_mismatches(aa) == 0
+
+
+def test_arc_filled_with_short_false_arcs_through_the_hidden_hemisphere():
+    # the long arc from (260, 40) to (85, 20) passes ~4 degrees from the zenith, the
+    # projection's singular point: the polygon must be clipped to the hemisphere
+    # (regression: the projected polygon got a straight chord across the net)
+    bb = arcset(
+        [
+            arc(50, 30, 210, 30, short=False),
+            arc(210, 30, 260, 40),
+            arc(260, 40, 85, 20, short=False),
+            arc(85, 20, 50, 30),
+        ]
+    )
+    assert _fill_mismatches(bb) == 0
+
+
+def test_arc_filled_open_chain_is_closed_by_a_great_circle():
+    # three points only: the last point is joined to the first by a great-circle arc
+    tri = arcset.from_vectors(lin(30, 20), lin(150, 30), lin(260, 45))
+    assert _fill_mismatches(tri) == 0
+
+
+def test_arc_filled_uses_color_and_alpha_and_has_no_outline():
+    aa = arcset.from_vectors(lin(30, 20), lin(150, 30), lin(260, 45))
+    s = StereoNet()
+    s.arc(aa, kind="filled", color="r", alpha=0.3, lw=5, ls="--", label="area")
+    s.init_figure()
+    s._render()
+    (poly,) = [
+        c for c in s.ax.get_children() if isinstance(c, matplotlib.patches.Polygon)
+    ]
+    np.testing.assert_allclose(
+        poly.get_facecolor(), matplotlib.colors.to_rgba("r", 0.3)
+    )
+    assert poly.get_linewidth() == 0
+    assert poly.get_edgecolor()[3] == 0  # fully transparent edge
+    # no line artist was added for the arcs
+    assert not [
+        c
+        for c in s.ax.get_children()
+        if isinstance(c, matplotlib.lines.Line2D) and c.get_label() == "area"
+    ]
+    _, labels = s.ax.get_legend_handles_labels()
+    assert labels == ["area"]  # one legend entry
+
+
+def test_arc_filled_default_color_follows_the_color_cycle():
+    s = StereoNet()
+    s.point(lin(10, 10))  # takes C0
+    s.arc(arcset.from_vectors(lin(30, 20), lin(150, 30), lin(260, 45)), kind="filled")
+    s.init_figure()
+    s._render()
+    (poly,) = [
+        c for c in s.ax.get_children() if isinstance(c, matplotlib.patches.Polygon)
+    ]
+    np.testing.assert_allclose(poly.get_facecolor()[:3], matplotlib.colors.to_rgb("C1"))
+
+
+def test_arc_filled_single_curved_arc_fills_lens_to_its_chord():
+    s = StereoNet()
+    s.arc(arc(lin(50, 30), lin(210, 40), curvature=0.5), kind="filled")
+    s.init_figure()
+    s._render()
+    assert (
+        len(
+            [
+                c
+                for c in s.ax.get_children()
+                if isinstance(c, matplotlib.patches.Polygon)
+            ]
+        )
+        == 1
+    )
+
+
+def test_arc_unknown_kind_raises_at_render():
+    s = StereoNet()
+    s.arc(arc(50, 30, 210, 40), kind="hatched")
+    s.init_figure()
+    with pytest.raises(ValueError):
+        s._render()
+
+
+def test_clip_ring_to_hemisphere():
+    def circle(center, radius, n=720):
+        center = np.asarray(center, float)
+        center = center / np.linalg.norm(center)
+        u = np.cross(center, [0.3, 0.5, 0.7])
+        u /= np.linalg.norm(u)
+        w = np.cross(center, u)
+        t = np.linspace(0, 2 * np.pi, n, endpoint=False)[:, None]
+        r = np.radians(radius)
+        return np.cos(r) * center + np.sin(r) * (np.cos(t) * u + np.sin(t) * w)
+
+    # entirely visible: returned as is
+    (loop,) = _clip_ring_to_hemisphere(circle([0, 0, 1], 40))
+    assert len(loop) == 720 and (loop[:, 2] >= 0).all()
+    # small ring in the hidden hemisphere not around the zenith: nothing to fill
+    assert _clip_ring_to_hemisphere(circle([1, 0, -1], 20)) == []
+    # ring around the zenith: the region without the zenith is the whole visible hemisphere
+    (loop,) = _clip_ring_to_hemisphere(circle([0, 0, -1], 30))
+    assert np.allclose(loop[:, 2], 0)
+    # ring straddling the horizon: one visible piece bounded by the ring and the primitive
+    (loop,) = _clip_ring_to_hemisphere(circle([1, 0, 0], 30))
+    assert (loop[:, 2] >= -1e-12).all()
+    assert np.isclose(loop[:, 2], 0).sum() > 30  # part of the boundary lies on the rim
+    assert np.allclose(np.linalg.norm(loop, axis=1), 1)
+
+
+def _unit(v):
+    v = np.asarray(v, float)
+    return v / np.linalg.norm(v)
+
+
+def test_crosses_geodesic():
+    a = np.array([[1.0, 0, 0], [0, 1.0, 0]])
+    b = np.array([[0, 1.0, 0], [-1.0, 0, 0]])
+    # x -> y quarter arc, y -> -x quarter arc
+    # crossed by the arc from (0.7, 0.7, -0.5)-ish above to below the equator plane
+    p, q = _unit([1, 1, 1]), _unit([1, 1, -1])
+    assert _crosses_geodesic(p, q, a, b).tolist() == [True, False]
 
 
 # ---------------------------------------------------------------------------
