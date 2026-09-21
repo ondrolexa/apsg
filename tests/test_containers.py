@@ -687,19 +687,19 @@ class TestVector3Set:
     def test_similarity(self):
         v1 = Vector3Set([Vector3(1, 0, 0), Vector3(0, 1, 0)])
         v2 = Vector3Set([Vector3(1, 0, 0), Vector3(0, 1, 0)])
-        stat, pval, same = v1.similarity(v2)
+        _stat, _pval, same = v1.similarity(v2)
         assert same
 
     def test_similarity_hotelling(self):
         v1 = Vector3Set([Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)] * 3)
         v2 = Vector3Set([Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)] * 3)
-        stat, pval, same = v1.similarity(v2, method="hotelling")
+        _stat, _pval, same = v1.similarity(v2, method="hotelling")
         assert same
 
     def test_similarity_mmd(self):
         v1 = Vector3Set([Vector3(1, 0, 0), Vector3(0, 1, 0)])
         v2 = Vector3Set([Vector3(1, 0, 0), Vector3(0, 1, 0)])
-        stat, pval, same = v1.similarity(v2, method="mmd", n_permutations=99)
+        _stat, _pval, same = v1.similarity(v2, method="mmd", n_permutations=99)
         assert same
 
     def test_align(self):

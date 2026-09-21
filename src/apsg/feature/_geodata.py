@@ -286,7 +286,7 @@ class Pair:
 
     """
 
-    __slots__ = ("fvec", "lvec", "misfit", "_attrs")
+    __slots__ = ("_attrs", "fvec", "lvec", "misfit")
     __shape__ = (6,)
 
     def __init__(self, *args, **kwargs):
@@ -699,7 +699,7 @@ class Cone:
 
     """
 
-    __slots__ = ("axis", "secant", "revangle", "_attrs")
+    __slots__ = ("_attrs", "axis", "revangle", "secant")
     __shape__ = (7,)
 
     def __init__(self, *args, **kwargs):
@@ -852,6 +852,10 @@ class Arc:
     - with 2 arguments, where `p1` and `p2` are Vector3 like objects, e.g. Lineation
     - with 4 arguments defining `p1` as `lin(azi1, inc1)` and `p2` as `lin(azi2, inc2)`
 
+    Axial endpoints (``Lineation``, ``Foliation``) are taken in the lower hemisphere,
+    since a feature and its antipode are equivalent; plain ``Vector3`` endpoints are
+    used as given.
+
     Args:
         *args: Variable length argument list. See descriptions above.
 
@@ -879,7 +883,7 @@ class Arc:
 
     """
 
-    __slots__ = ("p1", "p2", "curvature", "positive", "short", "_attrs")
+    __slots__ = ("_attrs", "curvature", "p1", "p2", "positive", "short")
     __shape__ = (6,)
 
     def __init__(
@@ -910,6 +914,11 @@ class Arc:
         else:
             raise TypeError("Not valid arguments for Arc")
 
+        # A lineation/foliation and its antipode are the same feature, so axial
+        # endpoints are taken in the lower hemisphere to make the path independent
+        # of the (arbitrary) sign of the vector.
+        p1 = p1.lower() if isinstance(p1, Axial3) else p1
+        p2 = p2.lower() if isinstance(p2, Axial3) else p2
         self.p1 = Vector3(p1)
         self.p2 = Vector3(p2)
         self.curvature = float(
@@ -1003,16 +1012,40 @@ class Arc:
         )
 
     def path(self):
-        """Return list of ``Vector3`` points discretizing the arc from `p1` to `p2`."""
+        """Return list of ``Vector3`` points discretizing the arc from `p1` to `p2`.
+
+        When `p1` and `p2` coincide the plane of the arc is undefined. A ``short``
+        arc is then a zero-length path (a list with the single point `p1`), while the
+        reflex one is the full closed circle. Its plane is the vertical plane through
+        `p1` (for ``curvature=0``), the same plane that is used for antipodal
+        endpoints.
+        """
 
         from apsg.feature._tensor3 import Rotation3
 
         p1, p2 = self.p1, self.p2
+        u1, u2 = p1.uv(), p2.uv()
         a0 = p1.cross(p2)
-        a1 = p1.slerp(p2, 0.5)
+        full_circle = False
+        if u1.cross(u2).magnitude() < 1e-7:
+            # p1 == p2 or p1 == -p2: the great circle through them is not unique
+            coincident = u1.dot(u2) > 0
+            if coincident and self.short:
+                return [p1]
+            a0 = Vector3(0, 0, 1).cross(u1)
+            if a0.magnitude() < 1e-7:  # p1 is vertical
+                a0 = Vector3(1, 0, 0)
+            a0 = a0.uv()
+            a1 = p1 if coincident else a0.cross(p1)
+            full_circle = coincident
+        else:
+            a1 = p1.slerp(p2, 0.5)
         a = a0.slerp(a1 if self.positive else -a1, self.curvature)
-        axis, theta = Rotation3.axisangle_from_vectors_axis(p1, p2, a)
-        if not self.short:
-            theta = theta - 360 * np.sign(theta)
+        if full_circle:
+            axis, theta = a, 360
+        else:
+            axis, theta = Rotation3.axisangle_from_vectors_axis(p1, p2, a)
+            if not self.short:
+                theta = theta - 360 * np.sign(theta)
         n = max(2, abs(int(theta)))
         return [p1.rotate(axis, t * theta) for t in np.linspace(0, 1, n)]

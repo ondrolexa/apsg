@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 import pandas as pd
 
 from apsg.feature import (
@@ -63,7 +65,9 @@ class _FeatureAccessor:
     _SCALAR_CLS = None
     _FEATURE_SET_CLS = None
     _ARRAY_CLS = None
-    _DEFAULT_COLUMNS = {}  # {param_name: default_column_name}, order == ctor arg order
+    _DEFAULT_COLUMNS: ClassVar[
+        dict[str, str]
+    ] = {}  # {param_name: default_column_name}, order == ctor arg order
     _NAME = None
     _PLOT_CLASS = None  # "StereoNet" or "RosePlot"
     _PLOT_KINDS = ()  # first entry is the default `kind`
@@ -255,7 +259,7 @@ class VecAccessor(_FeatureAccessor):
     _SCALAR_CLS = Vector3
     _FEATURE_SET_CLS = Vector3Set
     _ARRAY_CLS = Vec3Array
-    _DEFAULT_COLUMNS = {"x": "x", "y": "y", "z": "z"}
+    _DEFAULT_COLUMNS: ClassVar[dict[str, str]] = {"x": "x", "y": "y", "z": "z"}
     _NAME = "vec"
     _PLOT_CLASS = "StereoNet"
     _PLOT_KINDS = ("line", "vector")
@@ -268,7 +272,7 @@ class Vec2Accessor(_FeatureAccessor):
     _SCALAR_CLS = Vector2
     _FEATURE_SET_CLS = Vector2Set
     _ARRAY_CLS = Vec2Array
-    _DEFAULT_COLUMNS = {"x": "x", "y": "y"}
+    _DEFAULT_COLUMNS: ClassVar[dict[str, str]] = {"x": "x", "y": "y"}
     _NAME = "vec2"
     _PLOT_CLASS = "RosePlot"
     _PLOT_KINDS = ("bar", "pdf")
@@ -281,7 +285,7 @@ class DirAccessor(_FeatureAccessor):
     _SCALAR_CLS = Direction
     _FEATURE_SET_CLS = Direction2Set
     _ARRAY_CLS = DirArray
-    _DEFAULT_COLUMNS = {"angle": "angle"}
+    _DEFAULT_COLUMNS: ClassVar[dict[str, str]] = {"angle": "angle"}
     _NAME = "dir"
     _PLOT_CLASS = "RosePlot"
     _PLOT_KINDS = ("bar", "pdf")
@@ -294,7 +298,7 @@ class FolAccessor(_FeatureAccessor):
     _SCALAR_CLS = Foliation
     _FEATURE_SET_CLS = FoliationSet
     _ARRAY_CLS = FolArray
-    _DEFAULT_COLUMNS = {"azi": "azi", "inc": "inc"}
+    _DEFAULT_COLUMNS: ClassVar[dict[str, str]] = {"azi": "azi", "inc": "inc"}
     _NAME = "fol"
     _PLOT_CLASS = "StereoNet"
     _PLOT_KINDS = ("gc", "pole")
@@ -307,7 +311,7 @@ class LinAccessor(_FeatureAccessor):
     _SCALAR_CLS = Lineation
     _FEATURE_SET_CLS = LineationSet
     _ARRAY_CLS = LinArray
-    _DEFAULT_COLUMNS = {"azi": "azi", "inc": "inc"}
+    _DEFAULT_COLUMNS: ClassVar[dict[str, str]] = {"azi": "azi", "inc": "inc"}
     _NAME = "lin"
     _PLOT_CLASS = "StereoNet"
     _PLOT_KINDS = ("line",)
@@ -323,7 +327,7 @@ class FaultAccessor(_FeatureAccessor):
     _SCALAR_CLS = Fault
     _FEATURE_SET_CLS = FaultSet
     _ARRAY_CLS = FaultArray
-    _DEFAULT_COLUMNS = {
+    _DEFAULT_COLUMNS: ClassVar[dict[str, str]] = {
         "fazi": "fazi",
         "finc": "finc",
         "lazi": "lazi",
@@ -332,4 +336,4 @@ class FaultAccessor(_FeatureAccessor):
     }
     _NAME = "fault"
     _PLOT_CLASS = "StereoNet"
-    _PLOT_KINDS = ("fault", "pair", "hoeppner")
+    _PLOT_KINDS = ("fault", "pair", "hoeppner", "dihedra")

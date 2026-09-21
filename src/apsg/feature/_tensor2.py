@@ -142,7 +142,7 @@ class Rotation2(DeformationGradient2):
             raise TypeError("Not valid arguments for Rotation2")
         # fix improper rotations
         if np.allclose(-1, np.linalg.det(self)):
-            U, S, Vt = np.linalg.svd(self)
+            U, _S, Vt = np.linalg.svd(self)
             # Ensure a proper rotation (det=1)
             coefs = U @ np.diag([1, np.linalg.det(U @ Vt)]) @ Vt
             self._coefs = tuple(coefs[0]), tuple(coefs[1])
@@ -189,16 +189,16 @@ class Rotation2(DeformationGradient2):
         """
         try:
             v1 = Vector2(v1)
-        except Exception:
+        except Exception as err:
             raise TypeError(
                 "Unsupported first argument for from_two_vectors. Expecting Vector2"
-            )
+            ) from err
         try:
             v2 = Vector2(v2)
-        except Exception:
+        except Exception as err:
             raise TypeError(
                 "Unsupported second argument for from_two_vectors. Expecting Vector2"
-            )
+            ) from err
         return cls.from_angle(v1.angle(v2))
 
 
@@ -506,7 +506,7 @@ class Stress2(Tensor2):
             float: shear stress magnitude on plane given by normal vector.
         """
 
-        sn, tau = self.stress_comp(n)
+        _sn, tau = self.stress_comp(n)
         return abs(tau)
 
     def signed_shear_stress(self, n):

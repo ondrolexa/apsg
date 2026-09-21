@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+import itertools
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,7 +12,7 @@ def zijderveld_plot(core, kind="geo"):
 
     def onpick(core, event, fig):
         """Handle pick event to display selected step index."""
-        fig.suptitle("{}".format(core.steps[event.ind[0]]))
+        fig.suptitle(f"{core.steps[event.ind[0]]}")
         fig.canvas.draw()
 
     data = getattr(core, kind)
@@ -40,19 +40,19 @@ def zijderveld_plot(core, kind="geo"):
     # ax.xaxis.set_ticks(t[t != 0])
     # t = ax.yaxis.get_ticklocs()
     # ax.yaxis.set_ticks(t[t != 0])
-    ax.set_title("{} {}".format(core.site, core.specimen), loc="left")
-    plt.legend(title="Unit={:g}A/m".format(t[1] - t[0]))
+    ax.set_title(f"{core.site} {core.specimen}", loc="left")
+    plt.legend(title=f"Unit={t[1] - t[0]:g}A/m")
     plt.tight_layout()
     plt.show()
 
 
 def demag_plot(core):
     """Create demagnetization intensity decay plot."""
-    fig, ax = plt.subplots(figsize=apsg_conf.figsize)
+    _fig, ax = plt.subplots(figsize=apsg_conf.figsize)
     ax.plot(core.nsteps[0], core.MAG[0] / core.MAG.max(), "k+", markersize=14)
     ax.plot(core.nsteps, core.MAG / core.MAG.max(), "ko-")
     ax.set_ylabel("M/Mmax")
-    ax.set_title("{} {} (Mmax = {:g})".format(core.site, core.specimen, core.MAG.max()))
+    ax.set_title(f"{core.site} {core.specimen} (Mmax = {core.MAG.max():g})")
     ax.set_ylim(0, 1.02)
     ax.yaxis.grid()
     plt.show()
@@ -66,10 +66,8 @@ def stereo_plot(core, kind="geo", **kwargs):
         "geo": "Geographic coordinates",
         "tilt": "Tilted coordinates",
     }
-    s = StereoNet(
-        title="{} {}\n{}".format(core.site, core.specimen, tt[kind]), **kwargs
-    )
-    for f1, f2 in zip(data[:-1], data[1:]):
+    s = StereoNet(title=f"{core.site} {core.specimen}\n{tt[kind]}", **kwargs)
+    for f1, f2 in itertools.pairwise(data):
         s.arc(f1, f2, color="k", ls=":")
     s.vector(data[0], color="k", marker="+", ms=14)
     s.vector(data, color="k", marker="o")

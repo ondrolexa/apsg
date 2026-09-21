@@ -202,10 +202,10 @@ class StereoGrid:
                 UserWarning,
                 stacklevel=2,
             )
-        return dict(
-            kwargs=dict(n=self.grid_n, type=self.grid_type),
-            calculation=calculation,
-        )
+        return {
+            "kwargs": {"n": self.grid_n, "type": self.grid_type},
+            "calculation": calculation,
+        }
 
     @classmethod
     def from_json(cls, json_dict):

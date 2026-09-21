@@ -25,9 +25,8 @@ class StereoNetStyle:
         """Initialize stereonet style with kwargs."""
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         label = kwargs.get("label", None)
-        if label is not None:
-            if isinstance(label, str):
-                self.kwargs["label"] = label
+        if isinstance(label, str):
+            self.kwargs["label"] = label
 
     def __repr__(self):
         """Return string representation of style."""
@@ -38,7 +37,7 @@ class StereoNetPointStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet point style."""
         self._valid = (Vector3, Vector3Set)
-        self.kwargs = getattr(apsg_conf, "stereonet_point").copy()
+        self.kwargs = apsg_conf.stereonet_point.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -51,7 +50,7 @@ class StereoNetScatterStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet scatter style."""
         self._valid = (Vector3, Vector3Set)
-        self.kwargs = getattr(apsg_conf, "stereonet_scatter").copy()
+        self.kwargs = apsg_conf.stereonet_scatter.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -64,7 +63,7 @@ class StereoNetVectorStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet vector style."""
         self._valid = (Vector3, Vector3Set)
-        self.kwargs = getattr(apsg_conf, "stereonet_vector").copy()
+        self.kwargs = apsg_conf.stereonet_vector.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -77,7 +76,7 @@ class StereoNetGreatCircleStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet great circle style."""
         self._valid = (Foliation, FoliationSet)
-        self.kwargs = getattr(apsg_conf, "stereonet_great_circle").copy()
+        self.kwargs = apsg_conf.stereonet_great_circle.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -90,7 +89,7 @@ class StereoNetArcStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet arc style."""
         self._valid = (Vector3, Vector3Set, Arc, ArcSet)
-        self.kwargs = getattr(apsg_conf, "stereonet_arc").copy()
+        self.kwargs = apsg_conf.stereonet_arc.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -103,7 +102,7 @@ class StereoNetConeStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet cone style."""
         self._valid = (Cone, ConeSet)
-        self.kwargs = getattr(apsg_conf, "stereonet_cone").copy()
+        self.kwargs = apsg_conf.stereonet_cone.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -116,7 +115,7 @@ class StereoNetConfidenceStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet confidence cone/ellipse style."""
         self._valid = (Vector3Set, EllipsoidSet, Stress3Set)
-        self.kwargs = getattr(apsg_conf, "stereonet_confidence").copy()
+        self.kwargs = apsg_conf.stereonet_confidence.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -129,7 +128,7 @@ class StereoNetPairStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet pair style."""
         self._valid = (Pair, PairSet)
-        self.kwargs = getattr(apsg_conf, "stereonet_pair").copy()
+        self.kwargs = apsg_conf.stereonet_pair.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -142,7 +141,7 @@ class StereoNetFaultStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet fault style."""
         self._valid = (Fault, FaultSet)
-        self.kwargs = getattr(apsg_conf, "stereonet_fault").copy()
+        self.kwargs = apsg_conf.stereonet_fault.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -155,7 +154,7 @@ class StereoNetHoeppnerStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet Hoeppner plot style."""
         self._valid = (Fault, FaultSet)
-        self.kwargs = getattr(apsg_conf, "stereonet_hoeppner").copy()
+        self.kwargs = apsg_conf.stereonet_hoeppner.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -164,11 +163,37 @@ class StereoNetHoeppnerStyle(StereoNetStyle):
         return StereoNetArtistFactory.create_hoeppner(*filtered, **self.kwargs)
 
 
+class StereoNetDihedraStyle(StereoNetStyle):
+    def __init__(self, **kwargs):
+        """Initialize stereonet fault dihedra style."""
+        self._valid = (Fault, FaultSet)
+        self.kwargs = apsg_conf.stereonet_dihedra.copy()
+        super().__init__(**kwargs)
+
+    def create_artist(self, *args):
+        """Create stereonet fault dihedra artist with configured style."""
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
+        return StereoNetArtistFactory.create_dihedra(*filtered, **self.kwargs)
+
+
+class StereoNetBeachballStyle(StereoNetStyle):
+    def __init__(self, **kwargs):
+        """Initialize stereonet stress beach ball style."""
+        self._valid = (Stress3, Stress3Set)
+        self.kwargs = apsg_conf.stereonet_beachball.copy()
+        super().__init__(**kwargs)
+
+    def create_artist(self, *args):
+        """Create stereonet stress beach ball artist with configured style."""
+        filtered = (arg for arg in args if isinstance(arg, self._valid))
+        return StereoNetArtistFactory.create_beachball(*filtered, **self.kwargs)
+
+
 class StereoNetArrowStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet arrow style."""
         self._valid = (Vector3, Vector3Set)
-        self.kwargs = getattr(apsg_conf, "stereonet_arrow").copy()
+        self.kwargs = apsg_conf.stereonet_arrow.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -181,7 +206,7 @@ class StereoNetTensorStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet tensor style."""
         self._valid = Tensor3
-        self.kwargs = getattr(apsg_conf, "stereonet_tensor").copy()
+        self.kwargs = apsg_conf.stereonet_tensor.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -194,7 +219,7 @@ class StereoNetStressStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet stress style."""
         self._valid = Stress3
-        self.kwargs = getattr(apsg_conf, "stereonet_stress").copy()
+        self.kwargs = apsg_conf.stereonet_stress.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -207,7 +232,7 @@ class StereoNetContourStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet contour style."""
         self._valid = (Vector3, Vector3Set)
-        self.kwargs = getattr(apsg_conf, "stereonet_contour").copy()
+        self.kwargs = apsg_conf.stereonet_contour.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -270,6 +295,16 @@ class StereoNetStyleFactory:
         return StereoNetHoeppnerStyle(**kwargs)
 
     @staticmethod
+    def dihedra(**kwargs):
+        """Return StereoNetDihedraStyle with given kwargs."""
+        return StereoNetDihedraStyle(**kwargs)
+
+    @staticmethod
+    def beachball(**kwargs):
+        """Return StereoNetBeachballStyle with given kwargs."""
+        return StereoNetBeachballStyle(**kwargs)
+
+    @staticmethod
     def arrow(**kwargs):
         """Return StereoNetArrowStyle with given kwargs."""
         return StereoNetArrowStyle(**kwargs)
@@ -295,9 +330,8 @@ class RosePlotStyle:
         """Initialize rose plot style with kwargs."""
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         label = kwargs.get("label", None)
-        if label is not None:
-            if isinstance(label, str):
-                self.kwargs["label"] = label
+        if isinstance(label, str):
+            self.kwargs["label"] = label
 
     def __repr__(self):
         """Return string representation of style."""
@@ -308,7 +342,7 @@ class RosePlotBarStyle(RosePlotStyle):
     def __init__(self, **kwargs):
         """Initialize rose plot bar style."""
         self._valid = Vector2Set
-        self.kwargs = getattr(apsg_conf, "roseplot_bar").copy()
+        self.kwargs = apsg_conf.roseplot_bar.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -321,7 +355,7 @@ class RosePlotPdfStyle(RosePlotStyle):
     def __init__(self, **kwargs):
         """Initialize rose plot PDF style."""
         self._valid = Vector2Set
-        self.kwargs = getattr(apsg_conf, "roseplot_pdf").copy()
+        self.kwargs = apsg_conf.roseplot_pdf.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -334,7 +368,7 @@ class RosePlotMuciStyle(RosePlotStyle):
     def __init__(self, **kwargs):
         """Initialize rose plot muci style."""
         self._valid = Vector2Set
-        self.kwargs = getattr(apsg_conf, "roseplot_muci").copy()
+        self.kwargs = apsg_conf.roseplot_muci.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -365,9 +399,8 @@ class FabricPlotStyle:
         """Initialize fabric plot style with kwargs."""
         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
         label = kwargs.get("label", None)
-        if label is not None:
-            if isinstance(label, str):
-                self.kwargs["label"] = label
+        if isinstance(label, str):
+            self.kwargs["label"] = label
 
     def __repr__(self):
         """Return string representation of style."""
@@ -378,7 +411,7 @@ class FabricPlotPointStyle(FabricPlotStyle):
     def __init__(self, **kwargs):
         """Initialize fabric plot point style."""
         self._valid = (Ellipsoid, EllipsoidSet)
-        self.kwargs = getattr(apsg_conf, "fabricplot_point").copy()
+        self.kwargs = apsg_conf.fabricplot_point.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):
@@ -391,7 +424,7 @@ class FabricPlotPathStyle(FabricPlotStyle):
     def __init__(self, **kwargs):
         """Initialize fabric plot path style."""
         self._valid = EllipsoidSet
-        self.kwargs = getattr(apsg_conf, "fabricplot_path").copy()
+        self.kwargs = apsg_conf.fabricplot_path.copy()
         super().__init__(**kwargs)
 
     def create_artist(self, *args):

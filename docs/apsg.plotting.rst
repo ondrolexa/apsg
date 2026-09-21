@@ -94,6 +94,37 @@ center::
     >>> s.arc(quad, kind="filled", color="C0", alpha=0.5)
     >>> s.show()
 
+``region="outside"`` fills the rest of the net instead, the remaining area of the full circle
+without the polygon (``region="inside"`` is the default)::
+
+    >>> s = StereoNet()
+    >>> s.arc(quad, kind="filled", region="outside", color="C0", alpha=0.5)
+    >>> s.show()
+
+Fault dihedra -- each fault is drawn as the filled pair of opposite quadrants between the fault
+plane and the auxiliary plane (perpendicular to the slip) that contain its T axis; the polygons
+of a ``FaultSet`` add up where they overlap. Leave ``alpha`` unset for a default that gets
+lighter as the number of faults grows::
+
+    >>> from apsg import fault, faultset
+    >>> f = fault(120, 60, 110, 59, "R")
+    >>> s = StereoNet()
+    >>> s.dihedra(f, color="C0")
+    >>> s.point(f.t, color="k")
+    >>> s.show()
+
+Beach ball of a stress tensor -- the two planes through the intermediate principal stress at
+45 degrees to the maximum (P axis) and minimum (T axis) principal stresses divide the net into
+four quadrants, and the compressive ones, those containing the P axis, are filled. A
+``Stress3Set`` adds its beach balls up where they overlap::
+
+    >>> from apsg import stress
+    >>> S = stress([[8, 1, 0], [1, 5, 0], [0, 0, 1]])
+    >>> s = StereoNet()
+    >>> s.beachball(S)
+    >>> s.stress(S)
+    >>> s.show()
+
 Confidence cones and ellipses -- around the mean of orientation data (``method`` ``"fisher"``,
 ``"watson"``, ``"bootstrap"`` or ``"bingham"``), or, for a group of tensors (``EllipsoidSet`` or
 ``Stress3Set``), around the principal axes of their mean tensor following Jelínek (1978)

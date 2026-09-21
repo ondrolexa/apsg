@@ -436,19 +436,19 @@ def populated(fake, project):
         structype_id=st_s2["id"],
     )
 
-    return dict(
-        project=project,
-        unit_gneiss=unit_gneiss,
-        unit_schist=unit_schist,
-        st_s1=st_s1,
-        st_s2=st_s2,
-        site_a=site_a,
-        site_b=site_b,
-        rock_a1=rock_a1,
-        rock_b1=rock_b1,
-        fol1=fol1,
-        fol2=fol2,
-    )
+    return {
+        "project": project,
+        "unit_gneiss": unit_gneiss,
+        "unit_schist": unit_schist,
+        "st_s1": st_s1,
+        "st_s2": st_s2,
+        "site_a": site_a,
+        "site_b": site_b,
+        "rock_a1": rock_a1,
+        "rock_b1": rock_b1,
+        "fol1": fol1,
+        "fol2": fol2,
+    }
 
 
 # --- project resolution ---

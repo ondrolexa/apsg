@@ -211,7 +211,7 @@ class Rotation3(DeformationGradient3):
             raise TypeError("Not valid arguments for Rotation3")
         # fix improper rotations
         if np.allclose(-1, np.linalg.det(self)):
-            U, S, Vt = np.linalg.svd(self)
+            U, _S, Vt = np.linalg.svd(self)
             # Ensure a proper rotation (det=1)
             coefs = U @ np.diag([1, 1, np.linalg.det(U @ Vt)]) @ Vt
             self._coefs = tuple(coefs[0]), tuple(coefs[1]), tuple(coefs[2])
@@ -277,8 +277,10 @@ class Rotation3(DeformationGradient3):
         """
         try:
             p = Pair(p)
-        except Exception:
-            raise TypeError("Unsupported argument for from_pair. Expecting Pair")
+        except Exception as err:
+            raise TypeError(
+                "Unsupported argument for from_pair. Expecting Pair"
+            ) from err
         return cls(
             np.asarray(
                 [
@@ -305,10 +307,10 @@ class Rotation3(DeformationGradient3):
         """
         try:
             vector = Vector3(vector)
-        except Exception:
+        except Exception as err:
             raise TypeError(
                 "Unsupported argument for from_axisangle. Expecting Vector3"
-            )
+            ) from err
         rotvec = theta * np.array(vector.uv())
         return cls(Rotation.from_rotvec(rotvec, degrees=True).as_matrix())
 
@@ -329,16 +331,16 @@ class Rotation3(DeformationGradient3):
         """
         try:
             v1 = Vector3(v1)
-        except Exception:
+        except Exception as err:
             raise TypeError(
                 "Unsupported first argument for from_two_vectors. Expecting Vector3"
-            )
+            ) from err
         try:
             v2 = Vector3(v2)
-        except Exception:
+        except Exception as err:
             raise TypeError(
                 "Unsupported second argument for from_two_vectors. Expecting Vector3"
-            )
+            ) from err
         return cls.from_axisangle(v1.cross(v2), v1.angle(v2))
 
     @staticmethod
@@ -368,22 +370,22 @@ class Rotation3(DeformationGradient3):
         """
         try:
             v1 = Vector3(v1)
-        except Exception:
+        except Exception as err:
             raise TypeError(
                 "Unsupported first argument for axisangle_from_vectors_axis. Expecting Vector3"
-            )
+            ) from err
         try:
             v2 = Vector3(v2)
-        except Exception:
+        except Exception as err:
             raise TypeError(
                 "Unsupported second argument for axisangle_from_vectors_axis. Expecting Vector3"
-            )
+            ) from err
         try:
             a = Vector3(a)
-        except Exception:
+        except Exception as err:
             raise TypeError(
                 "Unsupported third argument for axisangle_from_vectors_axis. Expecting Vector3"
-            )
+            ) from err
         n = v1.cross(v2).cross(v1.slerp(v2, 0.5))
         a_fix = a.reject(n).normalized()
         v1p = v1.reject(a_fix)
@@ -457,7 +459,7 @@ class Rotation3(DeformationGradient3):
                 cls(cls.from_pair(Pair(p2.fvec, -p2.lvec)) @ cls.from_pair(p1).I),
                 cls(cls.from_pair(Pair(-p2.fvec, -p2.lvec)) @ cls.from_pair(p1).I),
             ]
-            axes, angles = zip(*[R.axisangle() for R in R4])
+            _axes, angles = zip(*[R.axisangle() for R in R4])
             angles = [abs(a) for a in angles]
             ix = angles.index(min(angles))
             return R4[ix]
@@ -491,7 +493,8 @@ class Rotation3(DeformationGradient3):
 
         geo_mag = GeoMag(high_resolution=True)
         if year is None:
-            year = datetime.now().year + datetime.now().month / 12
+            now = datetime.now()  # noqa: DTZ005
+            year = now.year + now.month / 12
         result = geo_mag.calculate(
             glat=lat, glon=lon, alt=0, time=year, allow_date_outside_lifespan=True
         )
@@ -943,7 +946,7 @@ class Stress3(Tensor3):
             Fault: ``Fault`` object derived from given by normal vector.
         """
 
-        sn, tau = self.stress_comp(n)
+        _sn, tau = self.stress_comp(n)
         return Fault(n.normalized(), tau.normalized())
 
     def stress_comp(self, n):
@@ -975,7 +978,7 @@ class Stress3(Tensor3):
             float: shear stress magnitude on plane given by normal vector.
         """
 
-        sn, tau = self.stress_comp(n)
+        _sn, tau = self.stress_comp(n)
         return abs(tau)
 
     def slip_tendency(self, n, fp=0, log=False):

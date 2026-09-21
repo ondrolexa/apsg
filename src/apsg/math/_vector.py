@@ -15,7 +15,7 @@ from apsg.helpers._notation import (
 class Vector(ABC):
     """Abstract base class for Vector2 and Vector3."""
 
-    __slots__ = ("_coords", "_attrs")
+    __slots__ = ("_attrs", "_coords")
     __shape__ = None
 
     @abstractmethod
@@ -93,7 +93,7 @@ class Vector(ABC):
     __pos__ = __copy__
 
     def __abs__(self):
-        return math.sqrt(sum(map(lambda x: x * x, self._coords)))
+        return math.sqrt(sum(x * x for x in self._coords))
 
     magnitude = __abs__
 
@@ -182,7 +182,7 @@ class Vector2(Vector):
 
     """
 
-    __slots__ = ("_coords", "_attrs")
+    __slots__ = ("_attrs", "_coords")
     __shape__ = (2,)
 
     def __init__(self, *args, **kwargs):
@@ -337,23 +337,20 @@ class Axial2(Vector2):  # Do we need it?
         return np.allclose(self, other) or np.allclose(self, -other)
 
     def __add__(self, other):
-        if isinstance(other, Vector2):
-            if super().dot(other) < 0:
-                other = -other
+        if isinstance(other, Vector2) and super().dot(other) < 0:
+            other = -other
         return type(self)(np.add(self, other))
 
     __radd__ = __add__
 
     def __sub__(self, other):
-        if isinstance(other, Vector2):
-            if super().dot(other) < 0:
-                other = -other
+        if isinstance(other, Vector2) and super().dot(other) < 0:
+            other = -other
         return type(self)(np.subtract(self, other))
 
     def __rsub__(self, other):
-        if isinstance(other, Vector2):
-            if super().dot(other) < 0:
-                other = -other
+        if isinstance(other, Vector2) and super().dot(other) < 0:
+            other = -other
         return type(self)(np.subtract(other, self))
 
     def dot(self, other):
@@ -388,7 +385,7 @@ class Vector3(Vector):
 
     """
 
-    __slots__ = ("_coords", "_attrs")
+    __slots__ = ("_attrs", "_coords")
     __shape__ = (3,)
 
     def __init__(self, *args, **kwargs):
@@ -614,23 +611,20 @@ class Axial3(Vector3):
         return np.allclose(self, other) or np.allclose(self, -other)
 
     def __add__(self, other):
-        if isinstance(other, Vector3):
-            if super().dot(other) < 0:
-                other = -other
+        if isinstance(other, Vector3) and super().dot(other) < 0:
+            other = -other
         return type(self)(np.add(self, other))
 
     __radd__ = __add__
 
     def __sub__(self, other):
-        if isinstance(other, Vector3):
-            if super().dot(other) < 0:
-                other = -other
+        if isinstance(other, Vector3) and super().dot(other) < 0:
+            other = -other
         return type(self)(np.subtract(self, other))
 
     def __rsub__(self, other):
-        if isinstance(other, Vector3):
-            if super().dot(other) < 0:
-                other = -other
+        if isinstance(other, Vector3) and super().dot(other) < 0:
+            other = -other
         return type(self)(np.subtract(other, self))
 
     def dot(self, other):

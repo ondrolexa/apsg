@@ -301,19 +301,19 @@ class WebSDBSession:
         site = gd["_site"]
         unit_id = rock.get("unit_id")
         structype_id = gd.get("structype_id")
-        return dict(
-            id=gd["id"],
-            rock_id=gd["rock_id"],
-            site_id=rock["site_id"],
-            site=site["name"],
-            rock=rock["name"],
-            unit=unit_names.get(unit_id) if unit_id is not None else None,
-            structype=structype_names.get(structype_id)
+        return {
+            "id": gd["id"],
+            "rock_id": gd["rock_id"],
+            "site_id": rock["site_id"],
+            "site": site["name"],
+            "rock": rock["name"],
+            "unit": unit_names.get(unit_id) if unit_id is not None else None,
+            "structype": structype_names.get(structype_id)
             if structype_id is not None
             else None,
-            tags=list(gd.get("value", {}).get("kwargs", {}).get("tags", [])),
-            description=gd.get("description"),
-        )
+            "tags": list(gd.get("value", {}).get("kwargs", {}).get("tags", [])),
+            "description": gd.get("description"),
+        }
 
     def _name_lookups(self):
         return (
@@ -514,15 +514,15 @@ class WebSDBSession:
             fazi, finc = fol_gd["value"]["args"]
             lazi, linc = lin_gd["value"]["args"]
             rock_row = fol_gd["_rock"]
-            attrs = dict(
-                fol_id=fol_gd["id"],
-                lin_id=lin_gd["id"],
-                rock_id=fol_gd["rock_id"],
-                site_id=rock_row["site_id"],
-                site=fol_gd["_site"]["name"],
-                rock=rock_row["name"],
-                unit=unit_names.get(rock_row.get("unit_id")),
-            )
+            attrs = {
+                "fol_id": fol_gd["id"],
+                "lin_id": lin_gd["id"],
+                "rock_id": fol_gd["rock_id"],
+                "site_id": rock_row["site_id"],
+                "site": fol_gd["_site"]["name"],
+                "rock": rock_row["name"],
+                "unit": unit_names.get(rock_row.get("unit_id")),
+            }
             misfit = False
             with warnings.catch_warnings():
                 warnings.simplefilter("error")
@@ -835,15 +835,15 @@ class WebSDBSession:
         self._t.request(
             "POST", "/api/geodata/pair", json_body={"geodata_ids": [fol_id, lin_id]}
         )
-        attrs = dict(
-            fol_id=fol_id,
-            lin_id=lin_id,
-            rock_id=fol._attrs["rock_id"],
-            site_id=fol._attrs["site_id"],
-            site=fol._attrs["site"],
-            rock=fol._attrs["rock"],
-            unit=fol._attrs["unit"],
-        )
+        attrs = {
+            "fol_id": fol_id,
+            "lin_id": lin_id,
+            "rock_id": fol._attrs["rock_id"],
+            "site_id": fol._attrs["site_id"],
+            "site": fol._attrs["site"],
+            "rock": fol._attrs["rock"],
+            "unit": fol._attrs["unit"],
+        }
         return Pair(fazi, finc, lazi, linc, **attrs)
 
     # --- write: update / delete geodata ---

@@ -116,6 +116,12 @@ AppConfig
     * - ``stereonet_hoeppner``
       - ``StereonetHoeppnerConfig()``
       - Default kwargs for Hoeppner plots
+    * - ``stereonet_dihedra``
+      - ``StereonetDihedraConfig()``
+      - Default kwargs for fault dihedra (``color``, ``alpha``)
+    * - ``stereonet_beachball``
+      - ``StereonetBeachballConfig()``
+      - Default kwargs for stress beach balls (``color``, ``alpha``)
     * - ``stereonet_arrow``
       - ``StereonetArrowConfig()``
       - Default kwargs for arrows
@@ -325,6 +331,12 @@ These classes control the appearance of lines on stereonet plots.
     * - ``kind``
       - |nbsp|
       - ``"line"``
+      - |nbsp|
+      - |nbsp|
+      - |nbsp|
+    * - ``region``
+      - |nbsp|
+      - ``"inside"``
       - |nbsp|
       - |nbsp|
       - |nbsp|

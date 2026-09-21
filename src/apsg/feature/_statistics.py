@@ -9,6 +9,11 @@ from scipy.stats import f as fdist
 from scipy.stats import norm as gauss
 from scipy.stats import uniform
 
+# Normalization constants keyed by (kappa, beta), shared by every ``KentDistribution``
+# (the series is expensive to evaluate); ``normalize*(cache=...)`` overrides them.
+_NORMALIZE_CACHE = {}
+_NORMALIZE_PRIME_CACHE = {}
+
 
 def vonMisesFisher(mu, kappa, num_samples):
     """Generate N samples from von Mises Fisher
@@ -76,7 +81,7 @@ def estimate_k(features):
         return 1
 
 
-class KentDistribution(object):
+class KentDistribution:
     """
     The algorithms here are partially based on methods described in:
     [The Fisher-Bingham Distribution on the Sphere, John T. Kent
@@ -173,19 +178,13 @@ class KentDistribution(object):
         self._cached_rvs = np.array([], dtype=np.float64).reshape(0, 3)
 
     def __repr__(self):
-        return "kent(%s, %s, %s, %s, %s)" % (
-            self.theta,
-            self.phi,
-            self.psi,
-            self.kappa,
-            self.beta,
-        )
+        return f"kent({self.theta}, {self.phi}, {self.psi}, {self.kappa}, {self.beta})"
 
     @property
     def Gamma(self):
         return self.create_matrix_Gamma(self.theta, self.phi, self.psi)
 
-    def normalize(self, cache=dict(), return_num_iterations=False):
+    def normalize(self, cache=None, return_num_iterations=False):
         """
         Returns the normalization constant of the Kent distribution.
         The proportional error may be expected not to be greater than
@@ -195,6 +194,8 @@ class KentDistribution(object):
             float: normalization constant of the Kent distribution.
         """
 
+        if cache is None:
+            cache = _NORMALIZE_CACHE
         (k, b) = (self.kappa, self.beta)
         if (k, b) not in cache:
             G = gamma_fun
@@ -324,7 +325,7 @@ class KentDistribution(object):
         else:
             return df
 
-    def normalize_prime(self, cache=dict(), return_num_iterations=False):
+    def normalize_prime(self, cache=None, return_num_iterations=False):
         """
         Returns the derivative of the normalization factor with respect
         to kappa and beta.
@@ -333,6 +334,8 @@ class KentDistribution(object):
             ndarray: derivative of the normalization factor with respect to kappa and beta.
         """
 
+        if cache is None:
+            cache = _NORMALIZE_PRIME_CACHE
         (k, b) = (self.kappa, self.beta)
         if (k, b) not in cache:
             G = gamma_fun

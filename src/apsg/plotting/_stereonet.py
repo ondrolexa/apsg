@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import pickle
 
 import matplotlib.pyplot as plt
@@ -23,6 +21,7 @@ from apsg.feature._tensor3 import Stress3, Tensor3
 from apsg.math._vector import Vector3
 from apsg.plotting._plot_artists import StereoNetArtistFactory
 from apsg.plotting._stereo_engine import rotation_from_axis_angle
+from apsg.plotting._stereo_engine._utils import _as_vectors, _ring_contains
 from apsg.plotting._stereogrid import StereoGrid
 from apsg.plotting._styles import StereoNetStyle
 
@@ -38,6 +37,65 @@ def _kind_to_projection(kind):
     elif kind in ("equal-angle", "wulff", "eangle"):
         return "wulff"
     raise TypeError("Only 'Equal-area' and 'Equal-angle' implemented")
+
+
+# Tilt axis of the nudge in ``_quadrant_arcs``: generic, so that no round-number
+# orientation is parallel to it (which would leave that orientation unmoved).
+_NUDGE_AXIS = Vector3(0.5, 0.3, 0.8124)
+
+
+def _quadrant_arcs(fol, lin, axis):
+    """Return ``(arcset, outside)`` for the two nodal planes with poles `fol` and `lin`.
+
+    The arcs trace both planes, each once, so the filled polygon is one of the two
+    colour classes of the four quadrants. ``outside`` is the ``region`` of
+    ``StereoNet.arc(kind="filled")`` for which the polygon contains `axis` (which,
+    like its antipode, is in the same class).
+    """
+    fol, lin, axis = Foliation(fol), Lineation(lin), Vector3(axis)
+    poles = (abs(fol.z), abs(lin.z))
+    # The fill cannot resolve a ring through the projection's singular point (a
+    # vertical nodal plane) or lying on the primitive circle (a horizontal one), and
+    # an axis exactly on the horizon or at the nadir has no well defined side: nudge
+    # everything by an invisible 0.001 degree.
+    if (
+        min(poles) < 1e-9
+        or max(poles) > 1 - 1e-9
+        or abs(axis.z) < 1e-9
+        or abs(axis.z) > 1 - 1e-9
+    ):
+        fol, lin, axis = (v.rotate(_NUDGE_AXIS, 1e-3) for v in (fol, lin, axis))
+    a = fol**lin
+    arcs = ArcSet(
+        [
+            Arc(a, lin),
+            Arc(lin, a, short=False),
+            Arc(a, fol, short=False),
+            Arc(fol, a),
+        ]
+    )
+    ring = _as_vectors([np.asarray(v) for arc in arcs for v in arc.path()])
+    t = np.asarray(axis)
+    inside = _ring_contains(ring, t if t[2] >= 0 else -t)
+    return arcs, not inside
+
+
+def _dihedra_arcs(fault):
+    """Return ``(arcset, outside)`` for the extensional dihedra of ``fault``: the
+    quadrants between the fault plane and the auxiliary plane that contain the T axis."""
+    return _quadrant_arcs(fault.fol, fault.lin, fault.t)
+
+
+def _beachball_arcs(stress):
+    """Return ``(arcset, outside)`` for the beach ball of a stress tensor: the
+    quadrants between the two planes through sigma2 at 45 degrees to sigma1 and
+    sigma3 that contain the P axis (sigma1). ``None`` for an isotropic stress, which
+    has no preferred orientation."""
+    e1, e3 = stress.E1, stress.E3
+    if e1 - e3 <= 1e-12 * max(1.0, abs(e1), abs(e3)):
+        return None
+    p, t = np.asarray(stress.sigma1dir), np.asarray(stress.sigma3dir)
+    return _quadrant_arcs((p + t) / np.sqrt(2), (p - t) / np.sqrt(2), p)
 
 
 class StereoNet:
@@ -162,7 +220,7 @@ class StereoNet:
         """Return stereonet as JSON dict."""
 
         artists = [artist.to_json() for artist in self._artists]
-        return dict(kwargs=self._kwargs, artists=artists)
+        return {"kwargs": self._kwargs, "artists": artists}
 
     @classmethod
     def from_json(cls, json_dict):
@@ -221,15 +279,15 @@ class StereoNet:
         self._plot_artists()
         h, labels = self.ax.get_legend_handles_labels()
         if h:
-            legend_kwargs = dict(
-                bbox_to_anchor=(1.05, 1),
-                prop={"size": 11},
-                loc="upper left",
-                borderaxespad=0,
-                scatterpoints=1,
-                numpoints=1,
-            )
-            legend_kwargs.update(self._kwargs["legend_kws"])
+            legend_kwargs = {
+                "bbox_to_anchor": (1.05, 1),
+                "prop": {"size": 11},
+                "loc": "upper left",
+                "borderaxespad": 0,
+                "scatterpoints": 1,
+                "numpoints": 1,
+                **self._kwargs["legend_kws"],
+            }
             self.ax.legend(h, labels, **legend_kwargs)
         if self._kwargs["title"] is not None:
             self.fig.suptitle(self._kwargs["title"], **self._kwargs["title_kws"])
@@ -466,6 +524,9 @@ class StereoNet:
                 "filled" fills the polygon bounded by the arcs taken in order, closed
                 by great-circle arcs between the last and the first point, using only
                 ``alpha`` and ``color`` (no outline)
+            region (str): Which side of the polygon "filled" fills, "inside" or
+                "outside". "inside" is the side not containing the point antipodal to
+                the net's center; "outside" is the rest of the net. Default "inside"
             alpha (scalar): Set the alpha value. Default None
             color (color): Set the color. Default None
             ls (str): Line style string (line mode). Default "-"
@@ -563,6 +624,53 @@ class StereoNet:
             None: Fault features are plotted on Hoeppner plot.
         """
         self._add_artist(StereoNetArtistFactory.create_hoeppner, *args, **kwargs)
+
+    def dihedra(self, *args, **kwargs):
+        """
+        Plot the extensional dihedra of fault feature(s).
+
+        Each fault is drawn as a filled polygon, the two opposite quadrants between the
+        fault plane and the auxiliary plane (perpendicular to the slip) that contain
+        the T axis. Overlapping polygons of a ``FaultSet`` add up.
+
+        Args:
+            Fault or FaultSet feature(s)
+
+        Keyword Args:
+            color (color): Set the fill color. Default None
+            alpha (scalar): Set the alpha value. Default None, i.e. 0.3 for a few
+                faults, lowered as 1.5 / n for larger sets
+            label (str): Legend label. Default depends on the features
+
+        Returns:
+            None: Fault dihedra are plotted.
+        """
+        self._add_artist(StereoNetArtistFactory.create_dihedra, *args, **kwargs)
+
+    def beachball(self, *args, **kwargs):
+        """
+        Plot beach ball of stress tensor(s).
+
+        The two nodal planes pass through the intermediate principal stress at 45
+        degrees to the maximum (sigma1, the P axis) and minimum (sigma3, the T axis)
+        principal stresses and divide the net into four quadrants. The quadrants
+        containing the P axis, i.e. the compressive ones, are filled. Beach balls of a
+        ``Stress3Set`` add up where they overlap. Isotropic stress has no
+        orientation and is not drawn.
+
+        Args:
+            Stress3 or Stress3Set feature(s)
+
+        Keyword Args:
+            color (color): Set the fill color. Default "k"
+            alpha (scalar): Set the alpha value. Default None, i.e. 1 for a single
+                stress, lowered as 1.5 / n for larger sets
+            label (str): Legend label. Default depends on the features
+
+        Returns:
+            None: Beach balls are plotted.
+        """
+        self._add_artist(StereoNetArtistFactory.create_beachball, *args, **kwargs)
 
     def arrow(self, *args, **kwargs):
         """
@@ -745,8 +853,11 @@ class StereoNet:
         kind = kwargs.pop("kind", "line")
         if kind not in ("line", "points", "filled"):
             raise ValueError("kind must be 'line', 'points' or 'filled'")
+        region = kwargs.pop("region", "inside")
+        if region not in ("inside", "outside"):
+            raise ValueError("region must be 'inside' or 'outside'")
         if kind == "filled":
-            return self._arc_polygon(args, **kwargs)
+            return self._arc_polygon(args, outside=region == "outside", **kwargs)
         if kind == "points":
             kwargs["ls"] = "none"
             kwargs.setdefault("marker", "o")
@@ -763,11 +874,12 @@ class StereoNet:
         # antipodal reflection, which would refill the gap left by a short=False arc.
         return [self.ax.path(combined, antipodal=False, **kwargs)]
 
-    def _arc_polygon(self, arcs, **kwargs):
+    def _arc_polygon(self, arcs, outside=False, **kwargs):
         """Fill the polygon bounded by ``arcs`` taken in order, without outline.
 
         Gaps between consecutive arcs, and between the last and the first one, are
-        closed by plain great-circle arcs.
+        closed by plain great-circle arcs. With ``outside`` the rest of the net is
+        filled instead.
         """
         ring = []
         end = None
@@ -778,11 +890,14 @@ class StereoNet:
             end = a.p2
         if end.angle(arcs[0].p1) > 1e-6:
             ring.extend(Arc(end, arcs[0].p1).path())
+        if len(ring) < 3:  # zero-length arcs: no polygon, for either region
+            return []
         fill_kwargs = {key: kwargs[key] for key in kwargs.keys() & {"alpha", "label"}}
         if kwargs.get("color") is not None:
             fill_kwargs["facecolor"] = kwargs["color"]
         return self.ax.polygon(
             np.array([np.asarray(v) for v in ring]),
+            outside=outside,
             edgecolor="none",
             linewidth=0,
             **fill_kwargs,
@@ -799,13 +914,13 @@ class StereoNet:
         sc = self.ax.scatter(X, Y, transform=self.ax.transAxes, **kwargs)
         if legend:
             prop = "colors" if kwargs.get("c") is not None else "sizes"
-            legend_kwargs = dict(
-                bbox_to_anchor=(1.05, 1),
-                prop={"size": 11},
-                loc="upper left",
-                borderaxespad=0,
-            )
-            legend_kwargs.update(self._kwargs["legend_kws"])
+            legend_kwargs = {
+                "bbox_to_anchor": (1.05, 1),
+                "prop": {"size": 11},
+                "loc": "upper left",
+                "borderaxespad": 0,
+                **self._kwargs["legend_kws"],
+            }
             self.ax.legend(*sc.legend_elements(prop, num=num), **legend_kwargs)
         sc.set_clip_path(self.primitive)
 
@@ -934,6 +1049,40 @@ class StereoNet:
         quiver_kwargs["color"] = h[0].get_color()
         for arg in args:
             self._arrow(arg.fol, arg.lin, sense=arg.sense, **quiver_kwargs)
+
+    def _fill_quadrants(self, quads, max_alpha, **kwargs):
+        """Fill each ``(arcset, outside)`` of ``quads`` with one color and one legend
+        entry, shared by ``dihedra`` and ``beachball``."""
+        if not quads:
+            return []
+        color = kwargs.pop("color", None)
+        if color is None:
+            color = self.ax._get_lines.get_next_color()
+        label = kwargs.pop("label", None)
+        if kwargs.get("alpha") is None:  # keep overlaps of a large set readable
+            kwargs["alpha"] = min(max_alpha, 1.5 / len(quads))
+        handles = []
+        for arcs, outside in quads:
+            legend = {"label": label} if label is not None and not handles else {}
+            handles.extend(
+                self._arc_polygon(
+                    tuple(arcs), outside=outside, color=color, **legend, **kwargs
+                )
+            )
+        return handles
+
+    def _dihedra(self, *args, **kwargs):
+        faults = []
+        for arg in args:
+            faults.extend([arg] if isinstance(arg, Fault) else list(arg))
+        return self._fill_quadrants([_dihedra_arcs(f) for f in faults], 0.3, **kwargs)
+
+    def _beachball(self, *args, **kwargs):
+        stresses = []
+        for arg in args:
+            stresses.extend([arg] if isinstance(arg, Stress3) else list(arg))
+        quads = [q for q in map(_beachball_arcs, stresses) if q is not None]
+        return self._fill_quadrants(quads, 1.0, **kwargs)
 
     def _arrow(self, *args, **kwargs):
         sense = kwargs.pop("sense") * np.ones(

@@ -56,6 +56,20 @@ def _ring_contains(ring, point):
     return int(crossings) % 2 == 1
 
 
+def _horizon_ring(step=1.0):
+    """The primitive circle (``z = 0``) as an (N, 3) array of unit vectors, sampled
+    every ``step`` degrees."""
+    rim = np.radians(np.arange(0.0, 360.0, step))
+    return np.column_stack([np.cos(rim), np.sin(rim), np.zeros_like(rim)])
+
+
+def _signed_area(xy):
+    """Shoelace signed area of the closed polygon ``xy`` (N, 2): positive when the
+    vertices run counter-clockwise."""
+    x, y = xy[:, 0], xy[:, 1]
+    return 0.5 * np.sum(x * np.roll(y, -1) - np.roll(x, -1) * y)
+
+
 def _clip_ring_to_hemisphere(ring, step=1.0):
     """Clip the region bounded by a closed ring of unit vectors to the visible
     hemisphere (``z >= 0``), for filling it in the projection.
@@ -81,9 +95,7 @@ def _clip_ring_to_hemisphere(ring, step=1.0):
         return [v]
     if not visible.any():
         # the region is either the whole visible hemisphere or none of it
-        rim = np.radians(np.arange(0.0, 360.0, step))
-        disk = np.column_stack([np.cos(rim), np.sin(rim), np.zeros_like(rim)])
-        return [disk] if _ring_contains(v, [0.0, 0.0, 1.0]) else []
+        return [_horizon_ring(step)] if _ring_contains(v, [0.0, 0.0, 1.0]) else []
 
     n = len(v)
     nxt = np.roll(np.arange(n), -1)
@@ -91,12 +103,26 @@ def _clip_ring_to_hemisphere(ring, step=1.0):
     # rotate so that the crossings start with an entry (hidden -> visible)
     if visible[edges[0]]:
         edges = np.roll(edges, -1)
-    nodes = []
-    for i in edges:  # the point where edge i -> i+1 meets the horizon
+    nodes, lean = [], []
+    for k, i in enumerate(edges):  # the point where edge i -> i+1 meets the horizon
         a, b = v[i], v[nxt[i]]
         t = a[2] / (a[2] - b[2])
         c = a + t * (b - a)
-        nodes.append(c / np.linalg.norm(c))
+        c /= np.linalg.norm(c)
+        nodes.append(c)
+        # azimuth at which the ring leaves the node into the visible hemisphere; it
+        # orders nodes that coincide (rings crossing exactly on the horizon)
+        entry = k % 2 == 0
+        j, walk = (nxt[i], 1) if entry else (i, -1)
+        for _ in range(n):
+            if v[j, 2] >= 1e-6:
+                break
+            j = (j + walk) % n
+        lean.append(
+            (np.arctan2(v[j, 1], v[j, 0]) - np.arctan2(c[1], c[0]) + np.pi)
+            % (2 * np.pi)
+            - np.pi
+        )
     nodes = np.array(nodes)
     m = len(edges) // 2
     # visible runs: node 2r (entry) -> vertices -> node 2r + 1 (exit)
@@ -107,17 +133,22 @@ def _clip_ring_to_hemisphere(ring, step=1.0):
         runs.append(np.vstack([nodes[2 * r], v[idx], nodes[2 * r + 1]]))
 
     # arcs of the primitive circle between neighbouring crossings alternate
-    # inside/outside the region; the inside ones connect the runs
+    # inside/outside the region (the region flips at every crossing, also across a
+    # zero-width gap between coincident ones); the inside ones connect the runs
     phi = np.arctan2(nodes[:, 1], nodes[:, 0])
-    order = np.argsort(phi)
+    order = np.lexsort((lean, np.round(phi / 1e-9)))
+    span = phi[order]
+    width = np.append(np.diff(span), span[0] + 2 * np.pi - span[-1])
+    widest = int(np.argmax(width))
+    # only the widest arc gets the (numerically safe) point test
+    mid = span[widest] + width[widest] / 2
+    widest_inside = _ring_contains(v, [np.cos(mid), np.sin(mid), 1e-6])
     partner, sweep = {}, {}  # neighbouring node, signed azimuth span of the arc
     for k in range(len(order)):
-        a, b = order[k], order[(k + 1) % len(order)]
-        width = (phi[b] - phi[a]) % (2 * np.pi)
-        mid = phi[a] + width / 2
-        if _ring_contains(v, [np.cos(mid), np.sin(mid), 1e-6]):
+        if widest_inside == ((k - widest) % 2 == 0):
+            a, b = order[k], order[(k + 1) % len(order)]
             partner[a], partner[b] = b, a
-            sweep[a, b], sweep[b, a] = width, -width
+            sweep[a, b], sweep[b, a] = width[k], -width[k]
 
     def rim_arc(a, b):
         """Points on the primitive circle from node a to node b along the
@@ -131,7 +162,7 @@ def _clip_ring_to_hemisphere(ring, step=1.0):
         if start in seen or start not in partner:
             continue
         loop, cur = [], start
-        while True:
+        for _ in range(len(nodes)):  # bounded: a bad pairing must not hang
             seen.add(cur)
             run = runs[cur // 2] if cur % 2 == 0 else runs[cur // 2][::-1]
             end = cur + 1 if cur % 2 == 0 else cur - 1

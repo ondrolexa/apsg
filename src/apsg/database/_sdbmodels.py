@@ -23,8 +23,6 @@ from sqlalchemy.orm import (
 class Base(DeclarativeBase):
     """SQLAlchemy declarative base for all models."""
 
-    pass
-
 
 metadata = Base.metadata
 
@@ -40,7 +38,7 @@ class Meta(Base):
 
     def __repr__(self):
         """Return string representation of the meta entry."""
-        return "Meta:{}={}".format(self.name, self.value)
+        return f"Meta:{self.name}={self.value}"
 
 
 class Site(Base):
@@ -65,7 +63,7 @@ class Site(Base):
 
     def __repr__(self):
         """Return string representation of the site."""
-        return "Site:{} ({})".format(self.name, self.unit.name)
+        return f"Site:{self.name} ({self.unit.name})"
 
 
 tagged = Table(
@@ -109,7 +107,7 @@ class Attached(Base):
 
     def __repr__(self):
         """Return string representation of the attachment."""
-        return "{} - {}".format(self.planar, self.linear)
+        return f"{self.planar} - {self.linear}"
 
 
 class Structdata(Base):
@@ -156,9 +154,7 @@ class Structdata(Base):
 
     def __repr__(self):
         """Return string representation of the measurement."""
-        return "{}:{:g}/{:g}".format(
-            self.structype.structure, self.azimuth, self.inclination
-        )
+        return f"{self.structype.structure}:{self.azimuth:g}/{self.inclination:g}"
 
 
 class Structype(Base):
@@ -180,7 +176,7 @@ class Structype(Base):
 
     def __repr__(self):
         """Return string representation of the structure type."""
-        return "Type:{}".format(self.structure)
+        return f"Type:{self.structure}"
 
 
 class Tag(Base):
@@ -197,7 +193,7 @@ class Tag(Base):
 
     def __repr__(self):
         """Return string representation of the tag."""
-        return "Tag:{}".format(self.name)
+        return f"Tag:{self.name}"
 
 
 class Unit(Base):
@@ -214,4 +210,4 @@ class Unit(Base):
 
     def __repr__(self):
         """Return string representation of the unit."""
-        return "Unit:{}".format(self.name)
+        return f"Unit:{self.name}"

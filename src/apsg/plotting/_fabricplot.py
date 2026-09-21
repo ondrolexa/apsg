@@ -9,10 +9,10 @@ from apsg.feature import feature_from_json
 from apsg.plotting._plot_artists import FabricPlotArtistFactory
 from apsg.plotting._styles import FabricPlotStyle
 
-__all__ = ["VollmerPlot", "RamsayPlot", "FlinnPlot", "HsuPlot"]
+__all__ = ["FlinnPlot", "HsuPlot", "RamsayPlot", "VollmerPlot"]
 
 
-class FabricPlot(object):
+class FabricPlot:
     """
     Metaclas for Fabric plots
     """
@@ -36,7 +36,7 @@ class FabricPlot(object):
         """Return fabric plot as JSON dict."""
 
         artists = [artist.to_json() for artist in self._artists]
-        return dict(kwargs=self._kwargs, artists=artists)
+        return {"kwargs": self._kwargs, "artists": artists}
 
     @classmethod
     def from_json(cls, json_dict):
@@ -87,14 +87,14 @@ class FabricPlot(object):
         self._plot_artists()
         h, lbls = self.ax.get_legend_handles_labels()  # ty: ignore
         if h:
-            legend_kwargs = dict(
-                prop={"size": 11},
-                borderaxespad=0,
-                loc="center left",
-                bbox_to_anchor=(1.1, 0.5),
-                scatterpoints=1,
-                numpoints=1,
-            )
+            legend_kwargs = {
+                "prop": {"size": 11},
+                "borderaxespad": 0,
+                "loc": "center left",
+                "bbox_to_anchor": (1.1, 0.5),
+                "scatterpoints": 1,
+                "numpoints": 1,
+            }
             legend_kwargs.update(self._kwargs["legend_kws"])
             self._lgd = self.ax.legend(h, lbls, **legend_kwargs)  # ty: ignore
         if self._kwargs["title"] is not None:
@@ -365,7 +365,7 @@ class VollmerPlot(FabricPlot):
         if a < 0 or b < 0 or c < 0:
             return ""
         else:
-            return "P:{:0.2f} G:{:0.2f} R:{:0.2f}".format(a, b, c)
+            return f"P:{a:0.2f} G:{b:0.2f} R:{c:0.2f}"
 
 
 class RamsayPlot(FabricPlot):
@@ -480,7 +480,7 @@ class RamsayPlot(FabricPlot):
     def format_coord(self, x, y):
         k = y / x if x > 0 else 0
         d = x**2 + y**2
-        return "k:{:0.2f} d:{:0.2f}".format(k, d)
+        return f"k:{k:0.2f} d:{d:0.2f}"
 
 
 class FlinnPlot(FabricPlot):
@@ -595,7 +595,7 @@ class FlinnPlot(FabricPlot):
     def format_coord(self, x, y):
         K = (y - 1) / (x - 1) if x > 1 else 0
         D = np.sqrt((x - 1) ** 2 + (y - 1) ** 2)
-        return "K:{:0.2f} D:{:0.2f}".format(K, D)
+        return f"K:{K:0.2f} D:{D:0.2f}"
 
 
 class HsuPlot(FabricPlot):

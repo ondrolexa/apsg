@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-
 """
 Run the interactive shell.
 """
@@ -11,7 +7,7 @@ import code
 import numpy as np  # noqa
 import matplotlib.pyplot as plt  # noqa
 import apsg
-from apsg import *  # noqa
+from apsg import *
 
 
 def main():

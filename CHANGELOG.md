@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Note: apsg's version numbers do not strictly follow [Semantic Versioning](https://semver.org/) --
 a patch-level release can include breaking changes, marked below as **BREAKING**.
 
+## [2.0.1] - master
+
+### Added
+- `StereoNet.dihedra()` fills the extensional dihedra (the quadrants containing the T axis) of faults; a `FaultSet` shows where its dihedra overlap.
+- `StereoNet.beachball()` plots the beach ball of a stress tensor, filling the compressive quadrants (those containing the P axis); a `Stress3Set` shows where its beach balls overlap.
+- `Arc`/`ArcSet` (and `StereoNet.arc()`) for plotting a curved path between two vectors, with an optional bow away from the plain great-circle connection. Arcs can be drawn as a line, as points, or as the filled polygon they bound (or the rest of the net, with `region="outside"`).
+
 ## [2.0.0] - 2026-09-21
 
 ### Added

@@ -83,8 +83,6 @@ class StereonetConfig(BaseConfig):
 class StereonetPointConfig(StereonetMarkerConfig):
     """Stereonet point marker style configuration."""
 
-    pass
-
 
 @dataclass
 class StereonetVectorConfig(StereonetMarkerConfig):
@@ -108,6 +106,7 @@ class StereonetArcConfig(BaseConfig):
     """Stereonet arc style configuration (line, points or filled)."""
 
     kind: str = "line"  # "line", "points" or "filled"
+    region: str = "inside"  # "inside" or "outside" (kind="filled" only)
     alpha: Any = None
     color: Any = None
     ls: str = "-"
@@ -186,6 +185,22 @@ class StereonetHoeppnerConfig(StereonetMarkerConfig):
 
     ms: int = 4
     pivot: str = "middle"
+
+
+@dataclass
+class StereonetDihedraConfig(BaseConfig):
+    """Stereonet fault dihedra (filled extensional quadrants) configuration."""
+
+    color: Any = None
+    alpha: Any = None  # None: 0.3 for a few faults, lowered as 1.5 / n for larger sets
+
+
+@dataclass
+class StereonetBeachballConfig(BaseConfig):
+    """Stereonet stress beach ball (filled compressive quadrants) configuration."""
+
+    color: Any = "k"
+    alpha: Any = None  # None: 1 for one stress, lowered as 1.5 / n for larger sets
 
 
 @dataclass
@@ -398,6 +413,12 @@ class AppConfig(BaseConfig):
     stereonet_fault: StereonetFaultConfig = field(default_factory=StereonetFaultConfig)
     stereonet_hoeppner: StereonetHoeppnerConfig = field(
         default_factory=StereonetHoeppnerConfig
+    )
+    stereonet_dihedra: StereonetDihedraConfig = field(
+        default_factory=StereonetDihedraConfig
+    )
+    stereonet_beachball: StereonetBeachballConfig = field(
+        default_factory=StereonetBeachballConfig
     )
     stereonet_arrow: StereonetArrowConfig = field(default_factory=StereonetArrowConfig)
     stereonet_tensor: StereonetTensorConfig = field(

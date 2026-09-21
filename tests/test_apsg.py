@@ -1,5 +1,6 @@
 import math
 
+import numpy as np
 import pytest
 
 from apsg import arc, cone, dir2, fault, fol, lin, pair
@@ -665,7 +666,7 @@ class TestFoliation:
         f1 = Foliation(0, 90)
         f2 = Foliation(90, 90)
         v = f1.cross(f2)
-        azi, inc = v.geo
+        _azi, inc = v.geo
         assert math.isclose(inc, 90, abs_tol=1e-10)
 
     def test_pow_operator(self):
@@ -735,8 +736,8 @@ class TestPair:
 
     def test_from_four_args(self):
         p = Pair(140, 30, 110, 26)
-        fazi, finc = p.fol.geo
-        lazi, linc = p.lin.geo
+        fazi, _finc = p.fol.geo
+        lazi, _linc = p.lin.geo
         assert math.isclose(fazi, 140, abs_tol=1)
         assert math.isclose(lazi, 110, abs_tol=1)
 
@@ -835,8 +836,8 @@ class TestFault:
 
     def test_from_five_args(self):
         f = Fault(140, 30, 110, 26, -1)
-        fazi, finc = f.fol.geo
-        lazi, linc = f.lin.geo
+        fazi, _finc = f.fol.geo
+        lazi, _linc = f.lin.geo
         assert math.isclose(fazi, 140, abs_tol=1)
         assert math.isclose(lazi, 110, abs_tol=1)
         assert f.sense == -1
@@ -1084,6 +1085,78 @@ class TestArc:
         a1 = Arc(Lineation(0, 0), Lineation(90, 0))
         a2 = Arc(Lineation(0, 0), Lineation(90, 0))
         assert a1 == a2
+
+    def test_axial_endpoint_sign_does_not_matter(self):
+        p = Lineation(110, 59)
+        up = Lineation(-Lineation(207, 4))  # same axis as 207/4, pointing up
+        assert up.is_upper()
+        assert Arc(up, p) == Arc(up.lower(), p) == Arc(-up, p)
+        assert Arc(p, up) == Arc(p, up.lower())
+        assert all(v.z >= 0 for v in Arc(up, p).path())
+
+    def test_axial_endpoint_sign_does_not_matter_foliation(self):
+        p = Foliation(110, 59)
+        up = Foliation(-Foliation(207, 4))
+        assert up.is_upper()
+        assert Arc(up, p) == Arc(up.lower(), p)
+
+    def test_four_args_negative_inclination_is_axial(self):
+        assert Arc(207, -4, 110, 59) == Arc(27, 4, 110, 59)
+
+    def test_vector_endpoints_keep_sign(self):
+        up = Vector3(0.5, 0.2, -0.8)
+        a = Arc(up, Vector3(0, 0, 1))
+        assert a.p1 == up
+        assert a != Arc(-up, Vector3(0, 0, 1))
+
+    @pytest.mark.parametrize("curvature", [0, 0.5])
+    @pytest.mark.parametrize("delta", [0, 1e-7, 1e-9])
+    def test_coincident_endpoints_short_is_zero_length(self, curvature, delta):
+        a = Arc(120, 10, 120 + delta, 10, curvature=curvature)
+        path = a.path()
+        assert len(path) == 1
+        assert path[0] == a.p1
+
+    @pytest.mark.parametrize("curvature", [0, 0.5])
+    def test_coincident_endpoints_long_is_full_circle(self, curvature):
+        a = Arc(120, 10, 120, 10, curvature=curvature, short=False)
+        pts = np.array([np.asarray(v) for v in a.path()])
+        assert len(pts) == 360
+        assert not np.isnan(pts).any()
+        assert np.allclose(pts[0], np.asarray(a.p1))
+        assert np.allclose(pts[-1], np.asarray(a.p1))
+        assert np.allclose(np.linalg.norm(pts, axis=1), 1)
+        if curvature == 0:
+            # great circle in the vertical plane through p1
+            normal = np.cross(pts[0], pts[90])
+            normal /= np.linalg.norm(normal)
+            assert np.allclose(pts @ normal, 0, atol=1e-9)
+            assert abs(normal[2]) < 1e-9
+
+    def test_coincident_vertical_endpoints_long_is_full_circle(self):
+        v = Vector3(0, 0, 1)
+        pts = np.array([np.asarray(p) for p in Arc(v, v, short=False).path()])
+        assert len(pts) == 360
+        assert not np.isnan(pts).any()
+        assert np.allclose(pts[-1], [0, 0, 1])
+        assert Arc(v, v).path() == [v]
+
+    def test_antipodal_endpoints_are_deterministic(self):
+        p = Vector3(1, 0, 0)
+        short = np.array([np.asarray(v) for v in Arc(p, -p).path()])
+        long = np.array([np.asarray(v) for v in Arc(p, -p, short=False).path()])
+        for pts in (short, long):
+            assert not np.isnan(pts).any()
+            assert np.allclose(pts[0], [1, 0, 0])
+            assert np.allclose(pts[-1], [-1, 0, 0])
+        # the two halves of the same vertical great circle
+        assert np.allclose(short[:, 1], 0)
+        assert np.allclose(short[:, 2], -long[:, 2], atol=1e-9)
+
+    def test_fault_dihedra_regression(self):
+        f = fault(120, 60, 110, 59, "N")
+        a = f.fol**f.d
+        assert Arc(a, f.lin) == Arc(a.lower(), f.lin)
 
     def test_rotate(self):
         a = Arc(Lineation(0, 0), Lineation(90, 0), curvature=0.3)

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from apsg.helpers._helper import eformat, is_jsonable
 from apsg.helpers._math import acosd, asind, atan2d, atand, cosd, sind, sqrt2, tand
 from apsg.helpers._notation import (
@@ -15,25 +13,25 @@ from apsg.helpers._notation import (
 )
 
 __all__ = (
-    "sind",
-    "cosd",
-    "tand",
+    "NOTATIONS",
     "acosd",
     "asind",
-    "atand",
     "atan2d",
-    "sqrt2",
-    "is_like_vec3",
-    "is_like_matrix3",
+    "atand",
+    "cosd",
     "eformat",
-    "is_jsonable",
-    "geo2vec_planar",
-    "geo2vec_linear",
-    "vec2geo_planar",
-    "vec2geo_linear",
-    "NOTATIONS",
-    "format_planar",
     "format_linear",
-    "parse_quadrant_planar",
+    "format_planar",
+    "geo2vec_linear",
+    "geo2vec_planar",
+    "is_jsonable",
+    "is_like_matrix3",
+    "is_like_vec3",
     "parse_quadrant_linear",
+    "parse_quadrant_planar",
+    "sind",
+    "sqrt2",
+    "tand",
+    "vec2geo_linear",
+    "vec2geo_planar",
 )

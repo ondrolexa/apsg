@@ -31,15 +31,18 @@ from apsg.feature._container import FaultSet, FoliationSet, LineationSet, PairSe
 from apsg.feature._geodata import Fault, Foliation, Lineation, Pair
 from apsg.pandas import FolArray, LinArray, pd
 
+# Note: a `structype` argument of the wrong type raises ValueError (not TypeError)
+# for backward compatibility, hence the ``noqa: TRY004`` below.
+
 
 def default_meta():
-    return dict(
-        version="3.1.0",
-        crs="EPSG:4326",
-        created=datetime.now().strftime("%d.%m.%Y %H:%M"),
-        updated=datetime.now().strftime("%d.%m.%Y %H:%M"),
-        accessed=datetime.now().strftime("%d.%m.%Y %H:%M"),
-    )
+    return {
+        "version": "3.1.0",
+        "crs": "EPSG:4326",
+        "created": datetime.now().strftime("%d.%m.%Y %H:%M"),  # noqa: DTZ005
+        "updated": datetime.now().strftime("%d.%m.%Y %H:%M"),  # noqa: DTZ005
+        "accessed": datetime.now().strftime("%d.%m.%Y %H:%M"),  # noqa: DTZ005
+    }
 
 
 def default_initial_values():
@@ -66,13 +69,13 @@ def default_initial_values():
 
 def before_commit_meta_update(session):
     u = session.query(Meta).filter_by(name="updated").first()
-    u.value = datetime.now().strftime("%d.%m.%Y %H:%M")
+    u.value = datetime.now().strftime("%d.%m.%Y %H:%M")  # noqa: DTZ005
 
 
 def before_insert_pos_update(mapper, connection, target):
     if target.pos is None:
         t = str(mapper.persist_selectable)
-        query = "SELECT max({}.pos) FROM {}".format(t, t)
+        query = f"SELECT max({t}.pos) FROM {t}"
         maxpos = connection.scalar(text(query))
         if maxpos is None:
             maxpos = 1
@@ -108,7 +111,7 @@ class SDBSession:
                 raise FileNotFoundError(
                     f"SDB database {sdb_file} does not exists. Use `create` kwarg, if you want to create the new one."
                 )
-        self.sdb_engine = create_engine("sqlite:///{}".format(sdb_file))
+        self.sdb_engine = create_engine(f"sqlite:///{sdb_file}")
         if kwargs.get("create", False):
             metadata.create_all(self.sdb_engine)
         sdb_Session = sessionmaker(bind=self.sdb_engine)
@@ -568,7 +571,7 @@ class SDBSession:
         if isinstance(structype, Structype):
             return self.session.query(Structdata).filter_by(structype=structype).all()
         else:
-            raise ValueError("structype argument must be string or Structype")
+            raise ValueError("structype argument must be string or Structype")  # noqa: TRY004
 
     def df(self, structype, **kwargs):
         """Method to retrieve data from SDB database as ``pandas.DataFrame``.
@@ -636,12 +639,12 @@ class SDBSession:
                 .filter_by(**tag)
                 .all()
             ):
-                item = dict(
-                    site=row.site.name,
-                    x_coord=row.site.x_coord,
-                    y_coord=row.site.y_coord,
-                    unit=row.site.unit.name,
-                )
+                item = {
+                    "site": row.site.name,
+                    "x_coord": row.site.x_coord,
+                    "y_coord": row.site.y_coord,
+                    "unit": row.site.unit.name,
+                }
                 if apsg:
                     item[structype.structure] = None
                     sdata.append((row.azimuth, row.inclination))
@@ -667,7 +670,7 @@ class SDBSession:
                     )
             return df
         else:
-            raise ValueError("structype argument must be string or Structype")
+            raise ValueError("structype argument must be string or Structype")  # noqa: TRY004
 
     def getset(self, structype, **kwargs):
         """Method to retrieve data from SDB database to ``FeatureSet``.
@@ -754,9 +757,9 @@ class SDBSession:
                 )
             return res
         else:
-            raise ValueError("structype argument must be string or Structype")
+            raise ValueError("structype argument must be string or Structype")  # noqa: TRY004
 
-    def getpairs(self, ptype, ltype, site={}, unit={}, ptag={}, ltag={}):
+    def getpairs(self, ptype, ltype, site=None, unit=None, ptag=None, ltag=None):
         """Method to retrieve data from SDB database to ``PairSet``.
 
         Args:
@@ -770,6 +773,10 @@ class SDBSession:
             ltag (dict): keyword args passed to filter linear tag.
 
         """
+        site = {} if site is None else site
+        unit = {} if unit is None else unit
+        ptag = {} if ptag is None else ptag
+        ltag = {} if ltag is None else ltag
         if isinstance(ptype, str):
             dbstruct = self.session.query(Structype).filter_by(structure=ptype).first()
             assert dbstruct is not None, f"There is no structure {ptype} in db."
@@ -818,9 +825,11 @@ class SDBSession:
             res = PairSet(pairs, name=f"{ptype.structure}-{ltype.structure}")
             return res
         else:
-            raise ValueError("structype argument must be string or Structype")
+            raise ValueError("structype argument must be string or Structype")  # noqa: TRY004
 
-    def getfaults(self, ptype, ltype, sense, site={}, unit={}, ptag={}, ltag={}):
+    def getfaults(
+        self, ptype, ltype, sense, site=None, unit=None, ptag=None, ltag=None
+    ):
         """Method to retrieve data from SDB database to ``FaultSet``.
 
         Args:
@@ -836,6 +845,10 @@ class SDBSession:
             ltag (dict): keyword args passed to filter linear tag.
 
         """
+        site = {} if site is None else site
+        unit = {} if unit is None else unit
+        ptag = {} if ptag is None else ptag
+        ltag = {} if ltag is None else ltag
         if isinstance(ptype, str):
             dbstruct = self.session.query(Structype).filter_by(structure=ptype).first()
             assert dbstruct is not None, f"There is no structure {ptype} in db."
@@ -885,4 +898,4 @@ class SDBSession:
             res = FaultSet(faults, name=f"{ptype.structure}-{ltype.structure}")
             return res
         else:
-            raise ValueError("structype argument must be string or Structype")
+            raise ValueError("structype argument must be string or Structype")  # noqa: TRY004

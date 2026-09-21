@@ -10,7 +10,7 @@ from apsg.math._vector import Vector2, Vector3
 class Matrix(ABC):
     """Abstract base class for Matrix2 and Matrix3."""
 
-    __slots__ = ("_coefs", "_attrs", "_cache")
+    __slots__ = ("_attrs", "_cache", "_coefs")
     __shape__ = None
 
     @abstractmethod
@@ -30,7 +30,7 @@ class Matrix(ABC):
 
     def __repr__(self):
         n = apsg_conf.ndigits
-        return f"{self.label()}\n{str(np.asarray(self).round(n))}"
+        return f"{self.label()}\n{np.asarray(self).round(n)!s}"
 
     def label(self):
         return self.__class__.__name__
@@ -137,7 +137,7 @@ class Matrix(ABC):
         return self._coefs[1][1]
 
     @property
-    def I(self):  # noqa: E743
+    def I(self):
         return type(self)(np.linalg.inv(self))
 
     @property
@@ -211,7 +211,7 @@ class Matrix2(Matrix):
 
     """
 
-    __slots__ = ("_coefs", "_attrs", "_cache")
+    __slots__ = ("_attrs", "_cache", "_coefs")
     __shape__ = (2, 2)
 
     def __init__(self, *args, **kwargs):
@@ -358,7 +358,7 @@ class Matrix3(Matrix):
 
     """
 
-    __slots__ = ("_coefs", "_attrs", "_cache")
+    __slots__ = ("_attrs", "_cache", "_coefs")
     __shape__ = (3, 3)
 
     def __init__(self, *args, **kwargs):

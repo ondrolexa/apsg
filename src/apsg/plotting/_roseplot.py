@@ -69,7 +69,7 @@ class RosePlot:
     def to_json(self):
         """Return rose plot as JSON dict."""
         artists = [artist.to_json() for artist in self._artists]
-        return dict(kwargs=self._kwargs, artists=artists)
+        return {"kwargs": self._kwargs, "artists": artists}
 
     @classmethod
     def from_json(cls, json_dict):
@@ -116,14 +116,14 @@ class RosePlot:
         self._plot_artists()
         h, lbls = self.ax.get_legend_handles_labels()
         if h:
-            legend_kwargs = dict(
-                prop={"size": 11},
-                borderaxespad=0,
-                loc="center left",
-                bbox_to_anchor=(1.1, 0.5),
-                scatterpoints=1,
-                numpoints=1,
-            )
+            legend_kwargs = {
+                "prop": {"size": 11},
+                "borderaxespad": 0,
+                "loc": "center left",
+                "bbox_to_anchor": (1.1, 0.5),
+                "scatterpoints": 1,
+                "numpoints": 1,
+            }
             legend_kwargs.update(self._kwargs["legend_kws"])
             self._lgd = self.ax.legend(h, lbls, **legend_kwargs)
         if self._kwargs["title"] is not None:

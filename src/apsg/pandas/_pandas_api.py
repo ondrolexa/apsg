@@ -197,10 +197,7 @@ class _MaskedFeatureArray(ExtensionArray):
         data = []
         mask = []
         for v in scalars:
-            if v is pd.NA or v is None:
-                data.append(None)
-                mask.append(True)
-            elif isinstance(v, float) and np.isnan(v):
+            if v is pd.NA or v is None or isinstance(v, float) and np.isnan(v):
                 data.append(None)
                 mask.append(True)
             else:

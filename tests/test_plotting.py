@@ -5,6 +5,9 @@ matplotlib.use("Agg")
 import matplotlib.colors
 import matplotlib.contour
 import matplotlib.lines
+import matplotlib.patches
+import matplotlib.path
+import matplotlib.pyplot
 import matplotlib.quiver
 import numpy as np
 import pytest
@@ -35,15 +38,19 @@ from apsg import (
     vec,
     vec2set,
 )
-from apsg.config import apsg_conf_context
+from apsg.config import apsg_conf, apsg_conf_context
 from apsg.feature._geodata import Lineation
 from apsg.feature._tensor3 import Ellipsoid, Rotation3, Stress3
 from apsg.plotting import FlinnPlot, RamsayPlot, RosePlot, VollmerPlot
 from apsg.plotting._stereo_engine._axes import StereonetAxes
 from apsg.plotting._stereo_engine._utils import (
+    _as_vectors,
     _clip_ring_to_hemisphere,
     _crosses_geodesic,
+    _ring_contains,
+    _signed_area,
 )
+from apsg.plotting._stereonet import _dihedra_arcs
 
 
 def _tensor_sets(n=12, seed=3):
@@ -74,6 +81,13 @@ def _tensor_sets(n=12, seed=3):
         ("pair", (pair(140, 30, 110, 26),), (lin(10, 20),)),
         ("fault", (fault(140, 30, 110, 26, 1),), (lin(10, 20),)),
         ("hoeppner", (fault(140, 30, 110, 26, 1),), (lin(10, 20),)),
+        ("dihedra", (fault(140, 30, 110, 26, 1),), (lin(10, 20),)),
+        ("beachball", (stress([[8, 0, 0], [0, 5, 0], [0, 0, 1]]),), (lin(10, 20),)),
+        (
+            "beachball",
+            (stressset([stress([[8, 0, 0], [0, 5, 0], [0, 0, 1]])]),),
+            (lin(10, 20),),
+        ),
         ("arrow", (lin(10, 20), lin(30, 40)), ("bad", "bad")),
         (
             "tensor",
@@ -243,6 +257,21 @@ def test_arc_mixed_type_rejected(capsys):
     assert "Not valid arguments" in capsys.readouterr().out
 
 
+def test_arc_axial_endpoint_sign_does_not_change_plot():
+    # regression: arc(a, lin) with a = fol ** d (arbitrary sign) drew a different
+    # arc than arc(a.lower(), lin) although both are the same lineation
+    f = fault(120, 60, 110, 59, "N")
+    a = f.fol**f.d
+    assert a.is_upper()
+
+    def drawn(endpoint):
+        s = StereoNet()
+        s.arc(arc(endpoint, f.lin))
+        return _visible_axes_fractions(s)
+
+    np.testing.assert_allclose(drawn(a), drawn(a.lower()))
+
+
 def _visible_axes_fractions(s):
     """Render the net; axes-fraction (X, Y) of the last line's points inside the net."""
     s.init_figure()
@@ -254,6 +283,42 @@ def _visible_axes_fractions(s):
     xy = xy[np.isfinite(xy).all(axis=1)]
     frac = s.ax.transAxes.inverted().transform(line.get_transform().transform(xy))
     return frac[np.hypot(frac[:, 0] - 0.5, frac[:, 1] - 0.5) <= 0.5]
+
+
+@pytest.mark.parametrize("kind", ["line", "points", "filled"])
+def test_arc_coincident_endpoints_draws_nothing_visible(kind):
+    # regression: ValueError "cannot convert float NaN to integer"
+    s = StereoNet()
+    s.arc(arc(120, 10, 120, 10), kind=kind)
+    s.init_figure()
+    s._render()
+    if kind == "line":
+        line = [
+            c for c in s.ax.get_children() if isinstance(c, matplotlib.lines.Line2D)
+        ][-1]
+        assert line.get_marker() == "None"  # a single point, no marker: invisible
+
+
+@pytest.mark.parametrize("kind", ["line", "points", "filled"])
+def test_arc_coincident_endpoints_long_draws_full_circle(kind):
+    s = StereoNet()
+    s.arc(arc(120, 10, 120, 10, short=False), kind=kind)
+    s.init_figure()
+    s._render()
+
+
+def test_arc_coincident_endpoints_long_is_diameter_through_point():
+    s = StereoNet()
+    s.arc(arc(120, 10, 120, 10, short=False))
+    frac = _visible_axes_fractions(s)
+    x, y = frac[:, 0] - 0.5, frac[:, 1] - 0.5
+    assert len(frac) > 100
+    # straight line through the net centre along azimuth 120, rim to rim
+    azi = np.radians(120)
+    along = x * np.sin(azi) + y * np.cos(azi)
+    assert np.abs(x * np.cos(azi) - y * np.sin(azi)).max() < 0.01
+    assert np.hypot(x, y).min() < 0.01
+    assert along.min() < -0.49 and along.max() > 0.49
 
 
 @pytest.mark.parametrize("hemisphere", ["lower", "upper"])
@@ -327,12 +392,12 @@ def _inside_via_nadir(ring, x):
     return (parity(x, nadir) + nadir_zenith) % 2 == 1
 
 
-def _fill_mismatches(aset, n=400, seed=0):
+def _fill_mismatches(aset, n=400, seed=0, region="inside"):
     """Render the filled arcs and count sample points (away from the boundary and
     the center mark) whose pixel disagrees with the spherical classification."""
     ring = _ring_vectors(aset)
     s = StereoNet()
-    s.arc(aset, kind="filled", color="C0")
+    s.arc(aset, kind="filled", color="C0", region=region)
     s.init_figure()
     s._render()
     s.fig.canvas.draw()
@@ -348,8 +413,9 @@ def _fill_mismatches(aset, n=400, seed=0):
             continue
         X, Y = s.ax.project(v, clip_inside=False, fold=True)
         px, py = s.ax.transAxes.transform([X[0], Y[0]])
-        pixel = img[int(round(img.shape[0] - py)), int(round(px))]
-        bad += (np.abs(pixel - _FILL).sum() < 60) != _inside_via_nadir(ring, v)
+        pixel = img[round(img.shape[0] - py), round(px)]
+        expected = _inside_via_nadir(ring, v) != (region == "outside")
+        bad += (np.abs(pixel - _FILL).sum() < 60) != expected
         total += 1
     return bad
 
@@ -379,6 +445,81 @@ def test_arc_filled_with_short_false_arcs_through_the_hidden_hemisphere():
         ]
     )
     assert _fill_mismatches(bb) == 0
+
+
+_QUAD = arcset(
+    [
+        arc(50, 30, 120, 60),
+        arc(120, 60, 260, 50),
+        arc(260, 50, 310, 40),
+        arc(310, 40, 50, 30),
+    ]
+)
+_HIDDEN = arcset(
+    [
+        arc(50, 30, 210, 30, short=False),
+        arc(210, 30, 260, 40),
+        arc(260, 40, 85, 20, short=False),
+        arc(85, 20, 50, 30),
+    ]
+)
+
+
+@pytest.mark.parametrize("aset", [_QUAD, _HIDDEN], ids=["quad", "hidden"])
+def test_arc_filled_region_outside_is_the_complement(aset):
+    # the ring is a hole in the net (quad) / notches at the rim (through the zenith)
+    assert _fill_mismatches(aset, region="outside") == 0
+
+
+def test_arc_filled_region_outside_of_a_great_circle_is_the_other_half():
+    half = arcset([arc(120, 10, 120, 10, short=False)])
+    assert _fill_mismatches(half) == 0
+    assert _fill_mismatches(half, region="outside") == 0
+
+
+def test_arc_filled_region_outside_is_one_patch_with_the_ring_cut_out():
+    s = StereoNet()
+    s.arc(_QUAD, kind="filled", region="outside", color="r", alpha=0.3, label="rest")
+    s.init_figure()
+    s._render()
+    (patch,) = [p for p in s.ax.patches if isinstance(p, matplotlib.patches.PathPatch)]
+    codes = patch.get_path().codes
+    assert (codes == matplotlib.path.Path.MOVETO).sum() == 2  # net + one hole
+    assert patch.get_alpha() == 0.3
+    assert matplotlib.colors.same_color(patch.get_facecolor()[:3], "r")
+    assert patch.get_edgecolor()[3] == 0 or patch.get_linewidth() == 0
+    assert patch.get_label() == "rest"
+
+
+def test_arc_filled_region_inside_is_the_default_and_unchanged():
+    s = StereoNet()
+    s.arc(_QUAD, kind="filled")
+    s.init_figure()
+    s._render()
+    assert not [p for p in s.ax.patches if isinstance(p, matplotlib.patches.PathPatch)]
+    assert _fill_mismatches(_QUAD, region="inside") == 0
+
+
+def test_arc_region_is_validated_and_ignored_by_line_and_points(capsys):
+    s = StereoNet()
+    s.arc(_QUAD, kind="filled", region="middle")
+    with pytest.raises(ValueError, match="region"):
+        s.init_figure()
+        s._render()
+    for kind in ("line", "points"):
+        s = StereoNet()
+        s.arc(_QUAD, kind=kind, region="outside")
+        s.init_figure()
+        s._render()
+
+
+@pytest.mark.parametrize("region", ["inside", "outside"])
+def test_arc_filled_zero_length_arc_draws_nothing_for_either_region(region):
+    s = StereoNet()
+    s.arc(arc(120, 10, 120, 10), kind="filled", region=region)
+    s.init_figure()
+    s._render()
+    assert len(s.ax.patches) == 0
 
 
 def test_arc_filled_open_chain_is_closed_by_a_great_circle():
@@ -1721,11 +1862,11 @@ def test_great_circle_trace_mirrors_between_hemispheres():
     s_upper._render()
 
     def axes_fraction_xy(s):
-        line = [
+        line = next(
             c
             for c in s.ax.get_children()
             if isinstance(c, matplotlib.lines.Line2D) and c.get_color() != "black"
-        ][0]
+        )
         glon, glat = line.get_data()
         return s.ax._graticule_to_axes_fraction(glon, glat)
 
@@ -1995,3 +2136,345 @@ def test_format_coord_not_blank_inside_circle_on_upper_hemisphere():
             checked += 1
             assert s.format_coord(glon, glat) != ""
     assert checked > 0  # sanity: the sampling actually hit the circle
+
+
+# ---------------------------------------------------------------------------
+# dihedra(): filled extensional dihedra of faults
+# ---------------------------------------------------------------------------
+
+
+def _dihedra_fault(dip_dir, dip, rake, sense=1):
+    plane = fol(dip_dir, dip)
+    return fault(plane, plane.rake(rake), sense)
+
+
+def _dihedra_class(f, x):
+    """Checkerboard class of x between the fault plane and the auxiliary plane."""
+    return np.sign(np.asarray(f.fol) @ x) * np.sign(np.asarray(f.lin) @ x)
+
+
+def _dihedra_mismatches(f, n=150, seed=1, **net):
+    """Render the dihedra opaque and count sample points whose pixel disagrees with
+    'is in the same dihedron class as the T axis'."""
+    s = StereoNet(**net)
+    s.dihedra(f, color="C0", alpha=1)
+    s.init_figure()
+    s._render()
+    s.fig.canvas.draw()
+    img = np.asarray(s.fig.canvas.buffer_rgba())[:, :, :3].astype(int)
+    target = _dihedra_class(f, np.asarray(f.t))
+    n1, n2 = np.asarray(f.fol), np.asarray(f.lin)
+    rng = np.random.default_rng(seed)
+    bad = total = 0
+    while total < n:
+        v = rng.normal(size=3)
+        v[2] = abs(v[2])
+        v /= np.linalg.norm(v)
+        if (
+            v[2] < 0.08
+            or np.hypot(*v[:2]) < 0.06
+            or min(abs(n1 @ v), abs(n2 @ v)) < 0.04
+        ):
+            continue
+        X, Y = s.ax.project(v, clip_inside=False, fold=True)
+        px, py = s.ax.transAxes.transform([X[0], Y[0]])
+        pixel = img[round(img.shape[0] - py), round(px)]
+        filled = np.abs(pixel - _FILL).sum() < 60
+        bad += filled != (_dihedra_class(f, v) == target)
+        total += 1
+    matplotlib.pyplot.close(s.fig)
+    return bad
+
+
+_DIHEDRA_FAULTS = {
+    "reverse": fault(120, 60, 110, 59, "R"),
+    "generic dip-slip normal": _dihedra_fault(200, 55, 90),
+    "exact dip-slip 45 (rake 90)": _dihedra_fault(30, 45, 90),
+    "exact dip-slip 45 (rake -90)": _dihedra_fault(30, 45, -90),
+    "dip-slip 80": _dihedra_fault(200, 80, 90),
+    "oblique": _dihedra_fault(300, 80, 35, -1),
+    "vertical strike-slip": _dihedra_fault(120, 90, 0),
+    "vertical strike-slip, other sense": _dihedra_fault(120, 90, 180, -1),
+    "dip 89": _dihedra_fault(120, 89, 45),
+    "dip 5": _dihedra_fault(120, 5, 90),
+    "horizontal plane": _dihedra_fault(120, 0, 90),
+    "vertical dip-slip": _dihedra_fault(120, 90, 90),
+}
+
+
+@pytest.mark.parametrize("name", list(_DIHEDRA_FAULTS))
+def test_dihedra_fills_the_dihedra_containing_the_t_axis(name):
+    assert _dihedra_mismatches(_DIHEDRA_FAULTS[name]) == 0
+
+
+def test_dihedra_random_faults():
+    import random
+
+    random.seed(11)
+    np.random.seed(11)
+    for i in range(25):
+        assert _dihedra_mismatches(fault.random(), n=60, seed=i) == 0
+
+
+def test_dihedra_upper_hemisphere():
+    assert _dihedra_mismatches(_DIHEDRA_FAULTS["reverse"], hemisphere="upper") == 0
+    assert (
+        _dihedra_mismatches(
+            _DIHEDRA_FAULTS["exact dip-slip 45 (rake 90)"], hemisphere="upper"
+        )
+        == 0
+    )
+
+
+def test_dihedra_arcs_is_the_documented_closed_ring():
+    f = _DIHEDRA_FAULTS["reverse"]
+    arcs, outside = _dihedra_arcs(f)
+    assert len(arcs) == 4
+    for first, second in zip(arcs, list(arcs)[1:] + [arcs[0]]):
+        assert first.p2.angle(second.p1) < 1e-6  # closed chain
+    # for this fault the T axis is on the "outside" of the ring
+    assert outside is True
+    ring = _as_vectors([np.asarray(v) for a in arcs for v in a.path()])
+    t = np.asarray(f.t)
+    assert _ring_contains(ring, t if t[2] >= 0 else -t) is False
+
+
+def test_dihedra_is_one_color_and_one_legend_entry_for_a_set():
+    fs = faultset([_dihedra_fault(120 + 5 * i, 55, 90) for i in range(6)])
+    s = StereoNet()
+    s.dihedra(fs, label="extension")
+    s.init_figure()
+    s._render()
+    colors = {tuple(p.get_facecolor()) for p in s.ax.patches}
+    assert len(colors) == 1
+    assert [p.get_label() for p in s.ax.patches].count("extension") == 1
+
+
+def test_dihedra_alpha_default_scales_with_the_number_of_faults():
+    assert apsg_conf.stereonet_dihedra["alpha"] is None
+    for n, expected in [(1, 0.3), (3, 0.3), (25, 0.06)]:
+        s = StereoNet()
+        s.dihedra(faultset([_dihedra_fault(120 + i, 55, 90) for i in range(n)]))
+        s.init_figure()
+        s._render()
+        assert {p.get_alpha() for p in s.ax.patches} == {expected}
+    s = StereoNet()
+    s.dihedra(_DIHEDRA_FAULTS["reverse"], alpha=0.8, color="r")
+    s.init_figure()
+    s._render()
+    assert {p.get_alpha() for p in s.ax.patches} == {0.8}
+
+
+def test_dihedra_style_factory_and_accessor_kind():
+    from apsg.pandas._accessors import FaultAccessor
+
+    style = stereonet_styles.dihedra(color="k")
+    (artist,) = [style.create_artist(_DIHEDRA_FAULTS["reverse"])]
+    assert artist.kwargs["color"] == "k"
+    assert "dihedra" in FaultAccessor._PLOT_KINDS
+
+
+def test_clip_ring_handles_rings_crossing_exactly_on_the_horizon():
+    # exact dip-slip: both nodal circles cross the horizon at the same two points
+    # (coincident nodes). The clipped region must be a simple loop whose area (in
+    # the plane of the net, where the visible hemisphere has area pi) matches an
+    # independent Monte-Carlo estimate from the ring's parity classification. The
+    # former pairing produced a self-overlapping loop (area > pi).
+    arcs, _ = _dihedra_arcs(_DIHEDRA_FAULTS["exact dip-slip 45 (rake 90)"])
+    ring = _as_vectors([np.asarray(v) for a in arcs for v in a.path()])
+    loops = _clip_ring_to_hemisphere(ring)
+    assert loops
+    assert all(loop[:, 2].min() > -1e-9 for loop in loops)  # visible hemisphere only
+    area = sum(abs(_signed_area(loop[:, :2])) for loop in loops)
+    assert area < np.pi
+    rng = np.random.default_rng(0)
+    r, phi = np.sqrt(rng.uniform(size=1500)), rng.uniform(0, 2 * np.pi, 1500)
+    samples = np.column_stack([r * np.cos(phi), r * np.sin(phi), np.sqrt(1 - r**2)])
+    inside = np.mean([_ring_contains(ring, v) for v in samples])
+    assert area == pytest.approx(np.pi * inside, abs=0.15)
+
+
+# ---------------------------------------------------------------------------
+# beachball(): filled P-axis (compressive) quadrants of stress tensors
+# ---------------------------------------------------------------------------
+
+
+def _diag_stress(order, diag=(8.0, 5.0, 1.0)):
+    """Diagonal stress whose sigma1, sigma2, sigma3 lie on the given axes (0=x, 1=y,
+    2=z): exactly-zero components, i.e. the special orientations of every regime."""
+    m = np.zeros(3)
+    m[list(order)] = diag
+    return stress(np.diag(m))
+
+
+def _rotated_stress(seed, diag=(8.0, 5.0, 1.0)):
+    q, _ = np.linalg.qr(np.random.default_rng(seed).normal(size=(3, 3)))
+    q *= np.sign(np.linalg.det(q))
+    return stress(q @ np.diag(diag) @ q.T)
+
+
+def _beachball_axes(S):
+    p, t = np.asarray(S.sigma1dir), np.asarray(S.sigma3dir)
+    return p, t, (p + t) / np.sqrt(2), (p - t) / np.sqrt(2)
+
+
+def _beachball_mismatches(S, n=150, seed=1, **net):
+    """Render the beach ball opaque and count sample points whose pixel disagrees with
+    'is in the same quadrant class as the P axis (sigma1)'."""
+    p, _, n1, n2 = _beachball_axes(S)
+    s = StereoNet(**net)
+    s.beachball(S, color="C0", alpha=1)
+    s.init_figure()
+    s._render()
+    s.fig.canvas.draw()
+    img = np.asarray(s.fig.canvas.buffer_rgba())[:, :, :3].astype(int)
+
+    def quadrant(x):
+        return np.sign(n1 @ x) * np.sign(n2 @ x)
+
+    rng = np.random.default_rng(seed)
+    bad = total = 0
+    while total < n:
+        v = rng.normal(size=3)
+        v[2] = abs(v[2])
+        v /= np.linalg.norm(v)
+        if (
+            v[2] < 0.08
+            or np.hypot(*v[:2]) < 0.06
+            or min(abs(n1 @ v), abs(n2 @ v)) < 0.04
+        ):
+            continue
+        X, Y = s.ax.project(v, clip_inside=False, fold=True)
+        px, py = s.ax.transAxes.transform([X[0], Y[0]])
+        pixel = img[round(img.shape[0] - py), round(px)]
+        filled = np.abs(pixel - _FILL).sum() < 60
+        bad += filled != (quadrant(v) == quadrant(p))
+        total += 1
+    matplotlib.pyplot.close(s.fig)
+    return bad
+
+
+_BEACHBALL_STRESSES = {
+    "sigma1=x sigma2=y sigma3=z": _diag_stress((0, 1, 2)),
+    "sigma1=x sigma2=z sigma3=y (sigma2 vertical)": _diag_stress((0, 2, 1)),
+    "sigma1=y sigma2=x sigma3=z": _diag_stress((1, 0, 2)),
+    "sigma1=y sigma2=z sigma3=x (sigma2 vertical)": _diag_stress((1, 2, 0)),
+    "sigma1=z sigma2=x sigma3=y (sigma1 vertical)": _diag_stress((2, 0, 1)),
+    "sigma1=z sigma2=y sigma3=x (sigma1 vertical)": _diag_stress((2, 1, 0)),
+    "generic": stress([[5, 1.2, 0.4], [1.2, 3, -0.3], [0.4, -0.3, 1.0]]),
+}
+
+
+@pytest.mark.parametrize("name", list(_BEACHBALL_STRESSES))
+def test_beachball_fills_the_quadrants_containing_the_p_axis(name):
+    assert _beachball_mismatches(_BEACHBALL_STRESSES[name]) == 0
+
+
+def test_beachball_random_stresses():
+    for seed in range(25):
+        assert _beachball_mismatches(_rotated_stress(seed), n=60, seed=seed) == 0
+
+
+def test_beachball_upper_hemisphere():
+    for name in ("generic", "sigma1=z sigma2=x sigma3=y (sigma1 vertical)"):
+        assert _beachball_mismatches(_BEACHBALL_STRESSES[name], hemisphere="upper") == 0
+
+
+def test_beachball_and_dihedra_of_the_45_degree_fault_are_complementary():
+    S = _BEACHBALL_STRESSES["generic"]
+    p, t, n1, _ = _beachball_axes(S)
+    f = S.fault(vec(n1))  # plane at 45 degrees between sigma1 and sigma3
+    assert abs(np.asarray(f.t) @ t) > 0.999 and abs(np.asarray(f.p) @ p) > 0.999
+    images = []
+    for plot in ("beachball", "dihedra"):
+        s = StereoNet()
+        getattr(s, plot)(S if plot == "beachball" else f, color="C0", alpha=1)
+        s.init_figure()
+        s._render()
+        s.fig.canvas.draw()
+        images.append((s, np.asarray(s.fig.canvas.buffer_rgba())[:, :, :3].astype(int)))
+    rng = np.random.default_rng(3)
+    _, _, m1, m2 = _beachball_axes(S)
+    checked = 0
+    while checked < 120:
+        v = rng.normal(size=3)
+        v[2] = abs(v[2])
+        v /= np.linalg.norm(v)
+        if (
+            v[2] < 0.08
+            or np.hypot(*v[:2]) < 0.06
+            or min(abs(m1 @ v), abs(m2 @ v)) < 0.04
+        ):
+            continue
+        filled = []
+        for s, img in images:
+            X, Y = s.ax.project(v, clip_inside=False, fold=True)
+            px, py = s.ax.transAxes.transform([X[0], Y[0]])
+            filled.append(
+                np.abs(img[round(img.shape[0] - py), round(px)] - _FILL).sum() < 60
+            )
+        assert filled[0] != filled[1]  # exactly one of the two fills each quadrant
+        checked += 1
+    for s, _ in images:
+        matplotlib.pyplot.close(s.fig)
+
+
+@pytest.mark.parametrize(
+    "fvec,lvec",
+    [
+        ((1, 0, 0), (0, 1, 0)),  # vertical plane, strike-slip: T exactly horizontal
+        ((1, 0, 1), (1, 0, -1)),  # 45 degree dip-slip built from exact vectors
+        ((0, 0, 1), (1, 0, 0)),  # horizontal plane
+        ((0, 1, 0), (0, 0, 1)),  # vertical plane, vertical slip
+    ],
+)
+def test_dihedra_faults_from_exact_vectors(fvec, lvec):
+    # exactly-zero components put a nodal plane through the projection's singular
+    # point or the T axis on the horizon/at the nadir
+    f = fault(vec(*fvec), vec(*lvec))
+    assert _dihedra_mismatches(f) == 0
+
+
+def test_beachball_of_an_isotropic_stress_is_not_drawn():
+    from apsg.plotting._stereonet import _beachball_arcs
+
+    assert _beachball_arcs(stress(np.eye(3) * 4.0)) is None
+    s = StereoNet()
+    s.beachball(stress(np.eye(3) * 4.0))
+    s.init_figure()
+    s._render()
+    assert len(s.ax.patches) == 0
+
+
+def test_beachball_is_one_color_and_one_legend_entry_for_a_set():
+    sset = stressset([_rotated_stress(i) for i in range(6)])
+    s = StereoNet()
+    s.beachball(sset, label="P quadrants")
+    s.init_figure()
+    s._render()
+    assert len({tuple(p.get_facecolor()) for p in s.ax.patches}) == 1
+    assert [p.get_label() for p in s.ax.patches].count("P quadrants") == 1
+
+
+def test_beachball_defaults_and_alpha_scale_with_the_number_of_tensors():
+    assert apsg_conf.stereonet_beachball["color"] == "k"
+    assert apsg_conf.stereonet_beachball["alpha"] is None
+    for n, expected in [(1, 1.0), (25, 0.06)]:
+        s = StereoNet()
+        s.beachball(stressset([_rotated_stress(i) for i in range(n)]))
+        s.init_figure()
+        s._render()
+        assert {p.get_alpha() for p in s.ax.patches} == {expected}
+        assert matplotlib.colors.same_color(s.ax.patches[0].get_facecolor()[:3], "k")
+    s = StereoNet()
+    s.beachball(_rotated_stress(0), alpha=0.4, color="r")
+    s.init_figure()
+    s._render()
+    assert {p.get_alpha() for p in s.ax.patches} == {0.4}
+    assert matplotlib.colors.same_color(s.ax.patches[0].get_facecolor()[:3], "r")
+
+
+def test_beachball_style_factory():
+    style = stereonet_styles.beachball(color="r")
+    artist = style.create_artist(_rotated_stress(0))
+    assert artist.kwargs["color"] == "r"

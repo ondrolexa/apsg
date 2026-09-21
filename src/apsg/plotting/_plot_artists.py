@@ -32,12 +32,12 @@ class StereoNet_Artists:
 
     def to_json(self):
         """Serialize artist to JSON-compatible dict."""
-        return dict(
-            factory=self.factory,
-            stereonet_method=self.stereonet_method,  # ty: ignore
-            args=tuple(obj.to_json() for obj in self.args),  # ty: ignore
-            kwargs=self.kwargs.copy(),
-        )
+        return {
+            "factory": self.factory,
+            "stereonet_method": self.stereonet_method,  # ty: ignore
+            "args": tuple(obj.to_json() for obj in self.args),  # ty: ignore
+            "kwargs": self.kwargs.copy(),
+        }
 
 
 class _SimpleStereoNetArtist(StereoNet_Artists):
@@ -243,12 +243,12 @@ class StereoNet_Contour(StereoNet_Artists):
         holds a ``StereoGrid`` (its own ``to_json`` shape), not a feature
         object using the ``datatype``-based convention.
         """
-        return dict(
-            factory=self.factory,
-            stereonet_method=self.stereonet_method,
-            args=(self.args[0].to_json(),),
-            kwargs=self.kwargs.copy(),
-        )
+        return {
+            "factory": self.factory,
+            "stereonet_method": self.stereonet_method,
+            "args": (self.args[0].to_json(),),
+            "kwargs": self.kwargs.copy(),
+        }
 
 
 class StereoNetArtistFactory:
@@ -293,7 +293,7 @@ class StereoNetArtistFactory:
     @staticmethod
     def create_scatter(*args, **kwargs):
         """Create stereonet scatter artist from Vector3 data."""
-        if all([isinstance(arg, (Vector3, Vector3Set)) for arg in args]):
+        if all(isinstance(arg, (Vector3, Vector3Set)) for arg in args):
             return StereoNet_Scatter("create_scatter", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet scatter")
@@ -441,9 +441,35 @@ class StereoNetArtistFactory:
         )
 
     @staticmethod
+    def create_dihedra(*args, **kwargs):
+        """Create stereonet fault dihedra artist from Fault data."""
+        return StereoNetArtistFactory._create(
+            "create_dihedra",
+            (Fault, FaultSet),
+            "_dihedra",
+            "stereonet_dihedra",
+            "Dihedra",
+            *args,
+            **kwargs,
+        )
+
+    @staticmethod
+    def create_beachball(*args, **kwargs):
+        """Create stereonet stress beach ball artist from Stress3 data."""
+        return StereoNetArtistFactory._create(
+            "create_beachball",
+            (Stress3, Stress3Set),
+            "_beachball",
+            "stereonet_beachball",
+            "Beachball",
+            *args,
+            **kwargs,
+        )
+
+    @staticmethod
     def create_arrow(*args, **kwargs):
         """Create stereonet arrow artist from Vector3 data."""
-        if all([isinstance(arg, (Vector3, Vector3Set)) for arg in args[:2]]):
+        if all(isinstance(arg, (Vector3, Vector3Set)) for arg in args[:2]):
             return StereoNet_Arrow("create_arrow", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet arrow")
@@ -451,7 +477,7 @@ class StereoNetArtistFactory:
     @staticmethod
     def create_tensor(*args, **kwargs):
         """Create stereonet tensor artist from Tensor3 data."""
-        if all([isinstance(arg, Tensor3) for arg in args[:1]]):
+        if all(isinstance(arg, Tensor3) for arg in args[:1]):
             return StereoNet_Tensor("create_tensor", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet tensor")
@@ -459,7 +485,7 @@ class StereoNetArtistFactory:
     @staticmethod
     def create_stress(*args, **kwargs):
         """Create stereonet stress artist from Stress3 data."""
-        if all([isinstance(arg, Stress3) for arg in args[:1]]):
+        if all(isinstance(arg, Stress3) for arg in args[:1]):
             return StereoNet_Stress("create_stress", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet stress")
@@ -535,7 +561,7 @@ class RosePlotArtistFactory:
     @staticmethod
     def create_bar(*args, **kwargs):
         """Create rose plot bar artist from Vector2Set data."""
-        if all([isinstance(arg, Vector2Set) for arg in args]):
+        if all(isinstance(arg, Vector2Set) for arg in args):
             return RosePlot_Bar("create_bar", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Roseplot bar")
@@ -543,7 +569,7 @@ class RosePlotArtistFactory:
     @staticmethod
     def create_pdf(*args, **kwargs):
         """Create rose plot PDF artist from Vector2Set data."""
-        if all([isinstance(arg, Vector2Set) for arg in args]):
+        if all(isinstance(arg, Vector2Set) for arg in args):
             return RosePlot_Pdf("create_pdf", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Roseplot pdf")
@@ -551,7 +577,7 @@ class RosePlotArtistFactory:
     @staticmethod
     def create_muci(*args, **kwargs):
         """Create rose plot muci artist from Vector2Set data."""
-        if all([isinstance(arg, Vector2Set) for arg in args]):
+        if all(isinstance(arg, Vector2Set) for arg in args):
             return RosePlot_Muci("create_muci", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Roseplot muci")
@@ -572,12 +598,12 @@ class FabricPlot_Artists:
 
     def to_json(self):
         """Serialize fabric plot artist to JSON-compatible dict."""
-        return dict(
-            factory=self.factory,
-            fabricplot_method=self.fabricplot_method,  # ty: ignore
-            args=(obj.to_json() for obj in self.args),  # ty: ignore
-            kwargs=self.kwargs.copy(),
-        )
+        return {
+            "factory": self.factory,
+            "fabricplot_method": self.fabricplot_method,  # ty: ignore
+            "args": (obj.to_json() for obj in self.args),  # ty: ignore
+            "kwargs": self.kwargs.copy(),
+        }
 
 
 class FabricPlot_Point(FabricPlot_Artists):
@@ -622,7 +648,7 @@ class FabricPlotArtistFactory:
     @staticmethod
     def create_point(*args, **kwargs):
         """Create fabric plot point artist from Ellipsoid data."""
-        if all([isinstance(arg, (Ellipsoid, EllipsoidSet)) for arg in args]):
+        if all(isinstance(arg, (Ellipsoid, EllipsoidSet)) for arg in args):
             return FabricPlot_Point("create_point", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Fabric plot point")
@@ -630,7 +656,7 @@ class FabricPlotArtistFactory:
     @staticmethod
     def create_path(*args, **kwargs):
         """Create fabric plot path artist from EllipsoidSet data."""
-        if all([isinstance(arg, EllipsoidSet) for arg in args]):
+        if all(isinstance(arg, EllipsoidSet) for arg in args):
             return FabricPlot_Path("create_path", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Fabric plot path")

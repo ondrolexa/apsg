@@ -4,15 +4,16 @@ usable via ``plt.subplot(projection="schmidt")`` once ``apsg.plotting``
 has been imported.
 """
 
-import numpy as np
 import matplotlib as mpl
 import matplotlib.axis as maxis
 import matplotlib.spines as mspines
 import matplotlib.tri as mtri
+import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import CenteredNorm
 from matplotlib.lines import Line2D
-from matplotlib.patches import Circle
+from matplotlib.patches import Circle, PathPatch
+from matplotlib.path import Path
 from matplotlib.projections import register_projection
 from matplotlib.ticker import FixedLocator, Formatter, MaxNLocator, NullLocator
 from matplotlib.transforms import Affine2D, BboxTransformTo
@@ -25,7 +26,12 @@ from ._transforms import (
     ned_from_graticule,
     rotation_from_axis_angle,
 )
-from ._utils import _as_vectors, _clip_ring_to_hemisphere
+from ._utils import (
+    _as_vectors,
+    _clip_ring_to_hemisphere,
+    _horizon_ring,
+    _signed_area,
+)
 
 __all__ = ["SchmidtNetAxes", "WulffNetAxes"]
 
@@ -61,8 +67,7 @@ def _is_diverging_cmap(cmap):
     matplotlib's documented diverging colormaps."""
     name = cmap.name if hasattr(cmap, "name") else str(cmap)
     name = name.lower()
-    if name.endswith("_r"):
-        name = name[:-2]
+    name = name.removesuffix("_r")
     return name in _DIVERGING_CMAPS
 
 
@@ -583,13 +588,12 @@ class StereonetAxes(Axes):
             glon_a, glat_a = graticule_from_ned(-v[:, 0], -v[:, 1], -v[:, 2])
             glon = np.concatenate([glon, [np.nan], glon_a])
             glat = np.concatenate([glat, [np.nan], glat_a])
-        plot_kwargs = dict(transform=self._data_transform())
-        plot_kwargs.update(kwargs)
+        plot_kwargs = {"transform": self._data_transform(), **kwargs}
         (handle,) = self.plot(glon, glat, **plot_kwargs)
         handle.set_clip_path(self.patch)
         return handle
 
-    def polygon(self, vectors, **kwargs):
+    def polygon(self, vectors, outside=False, **kwargs):
         """Fill the region bounded by an already-computed NED-vector ring
         (closed automatically, last point to first), e.g. a chain of
         slerp-interpolated arcs.
@@ -604,19 +608,23 @@ class StereonetAxes(Axes):
         Args:
             vectors: NED vectors, shape (N, 3), the boundary in the given order
                 (no resampling is done here; the caller supplies dense points).
+            outside (bool): fill the rest of the displayed hemisphere instead,
+                i.e. the full net with the region above cut out. Default False.
             **kwargs: passed to ``self.fill``. If neither ``color`` nor
                 ``facecolor`` is given, the next color of the axes' color cycle
                 is used. ``label`` goes to the first patch only.
 
         Returns:
-            list of ``Polygon`` handles (one per separate visible piece; empty
-            if nothing of the region is visible).
+            list of patch handles (one ``Polygon`` per separate visible piece of
+            the region, or a single ``PathPatch`` with holes for ``outside``;
+            empty if nothing is visible).
         """
         loops = _clip_ring_to_hemisphere(self._hemisphere_rotate(vectors))
-        fill_kwargs = dict(transform=self._data_transform())
-        fill_kwargs.update(kwargs)
+        fill_kwargs = {"transform": self._data_transform(), **kwargs}
         if not {"color", "facecolor", "fc"} & fill_kwargs.keys():
             fill_kwargs["facecolor"] = self._get_lines.get_next_color()
+        if outside:
+            return [self._outside_patch(loops, fill_kwargs)]
         handles = []
         for loop in loops:
             glon, glat = graticule_from_ned(loop[:, 0], loop[:, 1], loop[:, 2])
@@ -625,6 +633,31 @@ class StereonetAxes(Axes):
             handles.append(handle)
             fill_kwargs.pop("label", None)  # one legend entry only
         return handles
+
+    def _outside_patch(self, loops, fill_kwargs):
+        """Fill the displayed hemisphere with the visible ``loops`` cut out.
+
+        One compound path: the primitive circle plus every loop as a hole. Holes are
+        made by orientation (nonzero winding rule), so the loops are wound opposite
+        to the circle, judged in graticule coordinates, where the visible hemisphere
+        is a single chart, so orientation is consistent between the loops.
+        """
+        rings = []
+        for ring in [_horizon_ring(), *loops]:
+            glon, glat = graticule_from_ned(ring[:, 0], ring[:, 1], ring[:, 2])
+            rings.append(np.column_stack([glon, glat]))
+        vertices, codes = [], []
+        for k, xy in enumerate(rings):
+            if (_signed_area(xy) > 0) != (k == 0):
+                xy = xy[::-1]
+            vertices.extend([*xy, xy[0]])
+            codes.extend(
+                [Path.MOVETO] + [Path.LINETO] * (len(xy) - 1) + [Path.CLOSEPOLY]
+            )
+        patch = PathPatch(Path(vertices, codes), **fill_kwargs)
+        self.add_patch(patch)
+        patch.set_clip_path(self.patch)
+        return patch
 
     # -- matplotlib custom-projection machinery --------------------------
 
@@ -847,8 +880,7 @@ class StereonetAxes(Axes):
             angles=angles, labels=labels, frac=frac, tick_frac=tick_frac, **kwargs
         )
 
-        text_kwargs = dict(ha="center", va="center", clip_on=False)
-        text_kwargs.update(kwargs)
+        text_kwargs = {"ha": "center", "va": "center", "clip_on": False, **kwargs}
         line_color = text_kwargs.get("color", "black")
 
         # (glon, glat) -> axes-fraction, the same rotation-aware pipeline
@@ -930,8 +962,12 @@ class StereonetAxes(Axes):
         """Plot axial data (poles/lines with no inherent direction) as
         filled points, folding each vector onto this axes' hemisphere."""
         glon, glat = self._fold_axial_to_data(vectors)
-        plot_kwargs = dict(ls="none", marker="o", transform=self._data_transform())
-        plot_kwargs.update(kwargs)
+        plot_kwargs = {
+            "ls": "none",
+            "marker": "o",
+            "transform": self._data_transform(),
+            **kwargs,
+        }
         (handle,) = self.plot(glon, glat, **plot_kwargs)
         handle.set_clip_path(self.patch)
         return handle
@@ -953,8 +989,12 @@ class StereonetAxes(Axes):
         """
         v = _as_vectors(vectors)
         glon, glat = self._vec_to_data(v)
-        plot_kwargs = dict(ls="none", marker="o", transform=self._data_transform())
-        plot_kwargs.update(kwargs)
+        plot_kwargs = {
+            "ls": "none",
+            "marker": "o",
+            "transform": self._data_transform(),
+            **kwargs,
+        }
         (h_filled,) = self.plot(glon, glat, **plot_kwargs)
         h_filled.set_clip_path(self.patch)
 
@@ -1006,8 +1046,7 @@ class StereonetAxes(Axes):
         # without that distortion.
         combined = self._hemisphere_rotate(combined)
         glon, glat = graticule_from_ned(combined[:, 0], combined[:, 1], combined[:, 2])
-        plot_kwargs = dict(transform=self._data_transform())
-        plot_kwargs.update(kwargs)
+        plot_kwargs = {"transform": self._data_transform(), **kwargs}
         (handle,) = self.plot(glon, glat, **plot_kwargs)
         handle.set_clip_path(self.patch)
         return [handle]
@@ -1042,8 +1081,7 @@ class StereonetAxes(Axes):
         glon_a, glat_a = graticule_from_ned(-curve[:, 0], -curve[:, 1], -curve[:, 2])
         all_glon = np.concatenate([glon, [np.nan], glon_a])
         all_glat = np.concatenate([glat, [np.nan], glat_a])
-        plot_kwargs = dict(transform=self._data_transform())
-        plot_kwargs.update(kwargs)
+        plot_kwargs = {"transform": self._data_transform(), **kwargs}
         (handle,) = self.plot(all_glon, all_glat, **plot_kwargs)
         handle.set_clip_path(self.patch)
         return handle

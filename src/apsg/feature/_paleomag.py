@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os
 import re
 from copy import deepcopy
@@ -16,7 +14,7 @@ from apsg.math._vector import Vector3
 __all__ = ("Core",)
 
 
-class Core(object):
+class Core:
     """
     ``Core`` class to store palemomagnetic analysis data.
 
@@ -54,7 +52,7 @@ class Core(object):
         self.bedding = kwargs.get("bedding", Foliation(0, 0))
         self.foldaxis = kwargs.get("foldaxis", Lineation(0, 0))
         self.volume = kwargs.get("volume", 1.0)
-        self.date = kwargs.get("date", datetime.now())
+        self.date = kwargs.get("date", datetime.now())  # noqa: DTZ005
         self.steps = kwargs.get("steps", [])
         self.a95 = kwargs.get("a95", [])
         self.comments = kwargs.get("comments", [])
@@ -84,24 +82,24 @@ class Core(object):
             res.a95 = [val for (val, ok) in zip(self.a95, ix) if ok]
             res.comments = [val for (val, ok) in zip(self.comments, ix) if ok]
             res._vectors = [val for (val, ok) in zip(self._vectors, ix) if ok]
-            res.name = self.specimen + "({}-{})".format(start_ok, stop_ok)
+            res.name = self.specimen + f"({start_ok}-{stop_ok})"
             return res
         if isinstance(key, str):
             if key in self.steps:
                 ix = self.steps.index(key)
-                return dict(
-                    step=key,
-                    MAG=self.MAG[ix],
-                    V=self._vectors[ix],
-                    geo=self.geo[ix],
-                    tilt=self.tilt[ix],
-                    a95=self.a95[ix],
-                    comment=self.comments[ix],
-                )
+                return {
+                    "step": key,
+                    "MAG": self.MAG[ix],
+                    "V": self._vectors[ix],
+                    "geo": self.geo[ix],
+                    "tilt": self.tilt[ix],
+                    "a95": self.a95[ix],
+                    "comment": self.comments[ix],
+                }
             else:
-                raise (Exception("Key {} not found.".format(key)))
+                raise KeyError(f"Key {key} not found.")
         else:
-            raise (Exception("Key of {} not supported.".format(type(key))))
+            raise TypeError(f"Key of {type(key)} not supported.")
 
     @classmethod
     def from_pmd(cls, filename):
@@ -131,7 +129,7 @@ class Core(object):
         data["strike"] = float(vline[30:40].strip().split("=")[1])
         data["dip"] = float(vline[40:50].strip().split("=")[1])
         data["volume"] = float(vline[50:63].strip().split("=")[1].strip("m3"))
-        data["date"] = datetime.strptime(vline[63:].strip(), "%m-%d-%Y %H:%M")
+        data["date"] = datetime.strptime(vline[63:].strip(), "%m-%d-%Y %H:%M")  # noqa: DTZ007
         data["steps"] = [ln[:4].strip() for ln in d[3:-1]]
         data["comments"] = [ln[73:].strip() for ln in d[3:-1]]
         data["a95"] = [float(ln[fields["a95"]].strip()) for ln in d[3:-1]]
@@ -170,7 +168,7 @@ class Core(object):
             "STEP  Xc [Am2]  Yc [Am2]  Zc [Am2]  MAG[A/m]   Dg    Ig    Ds    Is   a95 "
         )
         with open(filename, "w") as pmdfile:
-            print("/".join([self.site, self.name]), file=pmdfile, end="\r\n")
+            print(f"{self.site}/{self.name}", file=pmdfile, end="\r\n")
             print(ln0, file=pmdfile, end="\r\n")
             print(headln, file=pmdfile, end="\r\n")
             for ln in self.datatable:
@@ -178,7 +176,7 @@ class Core(object):
             pmdfile.write(chr(26))
 
     @classmethod
-    def from_rs3(cls, filename, exclude=["C", "G"]):
+    def from_rs3(cls, filename, exclude=("C", "G")):
         """Return ``Core`` instance generated from PMD file.
 
         Args:
@@ -273,7 +271,7 @@ class Core(object):
             if not pd.isna(head["FDec"][0]) and not pd.isna(head["FInc"][0])
             else None
         )
-        data["date"] = datetime.now()
+        data["date"] = datetime.now()  # noqa: DTZ005
         ix = body.iloc[:, 0].apply(lambda x: x not in exclude)
         data["steps"] = body[ix].iloc[:, 1].astype(int).to_list()
         data["comments"] = body[ix]["Note"].to_list()
@@ -345,19 +343,7 @@ class Core(object):
             self.a95,
             self.comments,
         ):
-            ln = "{:<4} {: 9.2E} {: 9.2E} {: 9.2E} {: 9.2E} {:5.1f} {:5.1f} {:5.1f} {:5.1f} {:4.1f} {}".format(
-                step,
-                V.x,
-                V.y,
-                V.z,
-                MAG,
-                geo.geo[0],
-                geo.geo[1],
-                tilt.geo[0],
-                tilt.geo[1],
-                a95,
-                comment,
-            )
+            ln = f"{step:<4} {V.x: 9.2E} {V.y: 9.2E} {V.z: 9.2E} {MAG: 9.2E} {geo.geo[0]:5.1f} {geo.geo[1]:5.1f} {tilt.geo[0]:5.1f} {tilt.geo[1]:5.1f} {a95:4.1f} {comment}"
             tb.append(ln)
         return tb
 

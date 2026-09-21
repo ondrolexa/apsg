@@ -1,5 +1,5 @@
 import csv
-from itertools import combinations
+from itertools import combinations, pairwise
 from os.path import basename
 
 import matplotlib.pyplot as plt
@@ -102,7 +102,7 @@ class FeatureSet:
     Base class for containers.
     """
 
-    __slots__ = ("data", "name", "_cache")
+    __slots__ = ("_cache", "data", "name")
 
     def __init__(self, data, name="Default"):
         self.data = tuple(data)
@@ -1279,7 +1279,7 @@ class Vector3Set(FeatureSet):
         return cls(data, name=name)
 
     @classmethod
-    def random_normal(cls, n=100, position=Vector3(0, 0, 1), sigma=20, name="Default"):
+    def random_normal(cls, n=100, position=None, sigma=20, name="Default"):
         """Method to create ``FeatureSet`` of normaly distributed features.
 
         Keyword Args:
@@ -1297,6 +1297,8 @@ class Vector3Set(FeatureSet):
         Returns:
             FeatureSet: The created feature set.
         """
+        if position is None:
+            position = Vector3(0, 0, 1)
         data = []
         orig = Vector3(0, 0, 1)
         ax = orig.cross(position)
@@ -1310,7 +1312,7 @@ class Vector3Set(FeatureSet):
         return cls(data, name=name)
 
     @classmethod
-    def random_fisher(cls, n=100, position=Vector3(0, 0, 1), kappa=20, name="Default"):
+    def random_fisher(cls, n=100, position=None, kappa=20, name="Default"):
         """Return ``FeatureSet`` of random vectors sampled from von Mises Fisher
         distribution around center position with concentration kappa.
 
@@ -1325,6 +1327,8 @@ class Vector3Set(FeatureSet):
         Returns:
             FeatureSet: The created feature set.
         """
+        if position is None:
+            position = Vector3(0, 0, 1)
         dc = vonMisesFisher(position, kappa, n)
         return cls([cls.__feature_class__(d) for d in dc], name=name)
 
@@ -2163,7 +2167,7 @@ class ArcSet(FeatureSet):
             )
         arcs = [
             Arc(p1, p2, curvature=curvature, positive=positive, short=short)
-            for p1, p2 in zip(points[:-1], points[1:])
+            for p1, p2 in pairwise(points)
         ]
         return cls(arcs, name=name)
 
@@ -2693,7 +2697,7 @@ class Stress3Set(FeatureSet):
         return _mean_tensor(self, level, normalize, anisoft)
 
 
-class ClusterSet(object):
+class ClusterSet:
     """
     Provides a hierarchical clustering using `scipy.cluster` routines.
     The distance matrix is calculated as an angle between features, where ``Foliation``
@@ -2712,11 +2716,9 @@ class ClusterSet(object):
     """
 
     def __init__(self, d, **kwargs):
-        assert (
-            isinstance(d, Vector2Set)
-            or isinstance(d, Vector3Set)
-            or isinstance(d, PairSet)
-        ), "Only vec2set, vecset and pairset could be clustered"
+        assert isinstance(d, (Vector2Set, Vector3Set, PairSet)), (
+            "Only vec2set, vecset and pairset could be clustered"
+        )
         self.data = d.copy()
         self.maxclust = kwargs.get("maxclust", 2)
         self.angle = kwargs.get("angle", None)
@@ -2783,7 +2785,7 @@ class ClusterSet(object):
     def dendrogram(self, **kwargs):
         """Show dendrogram."""
 
-        fig, ax = plt.subplots(figsize=apsg_conf.figsize)
+        _fig, ax = plt.subplots(figsize=apsg_conf.figsize)
         dendrogram(self.Z, ax=ax, **kwargs)
         plt.show()
 
@@ -2797,14 +2799,14 @@ class ClusterSet(object):
             nclust = list(np.arange(1, n + 1, dtype=int))
         within_grp_var = []
         mean_var = []
-        for n in nclust:
-            idx = fcluster(self.Z, n, criterion="maxclust")
+        for k in nclust:
+            idx = fcluster(self.Z, k, criterion="maxclust")
             grp = [np.flatnonzero(idx == c) for c in np.unique(idx)]
             var = [100 * self.data[ix].var() for ix in grp]
             within_grp_var.append(var)
             mean_var.append(np.mean(var))
         if not no_plot:
-            fig, ax = plt.subplots(figsize=apsg_conf.figsize)
+            _fig, ax = plt.subplots(figsize=apsg_conf.figsize)
             ax.boxplot(within_grp_var, positions=nclust)
             ax.plot(nclust, mean_var, "k")
             ax.set_xlabel("Number of clusters")

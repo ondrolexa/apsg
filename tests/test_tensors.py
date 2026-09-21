@@ -604,7 +604,7 @@ class TestDeformationGradient3:
             [[0.57, 0.92, -1.61], [-0.51, -0.56, -0.51], [-0.43, 0.35, 0.05]]
         )
         with pytest.raises(ValueError):
-            F.E1
+            _ = F.E1
 
     def test_eigenvectors_complex_raises(self):
         F = DeformationGradient3(
@@ -887,7 +887,7 @@ class TestVelocityGradient3:
         )
         L = F.velgrad()
         with pytest.raises(ValueError):
-            L.E1
+            _ = L.E1
 
     def test_eigenvectors_complex_raises(self):
         F = DeformationGradient3(
