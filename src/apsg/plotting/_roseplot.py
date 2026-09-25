@@ -143,7 +143,8 @@ class RosePlot:
 
     def show(self):
         """Show rose plot."""
-        plt.close(0)  # close previously rendered figure
+        if hasattr(self, "fig"):
+            plt.close(self.fig)  # close previously rendered figure
         self.init_figure()
         self._render()
         plt.show()
@@ -157,11 +158,12 @@ class RosePlot:
 
         All others kwargs are passed to matplotlib `Figure.savefig`
         """
-        plt.close(0)  # close previously rendered figure
+        if hasattr(self, "fig"):
+            plt.close(self.fig)  # close previously rendered figure
         self.init_figure()
         self._render()
         self.fig.savefig(filename, **kwargs)
-        plt.close(0)
+        plt.close(self.fig)  # don't leave open for Jupyter's auto-display
 
     ########################################
     # STYLED PLOTTING                      #

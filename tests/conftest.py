@@ -10,11 +10,9 @@ def _close_figures():
     """Close every matplotlib figure after each test.
 
     Tests that call a plot object's ``init_figure()``/``_render()``
-    directly (rather than ``show()``/``savefig()``, which already close
-    figure 0 first) leave figures open, which otherwise both accumulates
-    past matplotlib's max-open-figure warning threshold and makes
-    RosePlot/FabricPlot's hardcoded figure 0 collide with the next test
-    that reuses it.
+    directly (rather than ``show()``/``savefig()``, which close their own
+    figure by reference) leave figures open, which otherwise accumulates
+    past matplotlib's max-open-figure warning threshold.
     """
     yield
     plt.close("all")

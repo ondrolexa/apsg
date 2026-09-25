@@ -117,7 +117,8 @@ class FabricPlot:
     def show(self):
         """Show deformation plot."""
 
-        plt.close(0)  # close previously rendered figure
+        if hasattr(self, "fig"):
+            plt.close(self.fig)  # close previously rendered figure
         self.init_figure()
         self._render()
         plt.show()
@@ -133,11 +134,12 @@ class FabricPlot:
         Returns:
             None: The figure is saved to the specified graphics file.
         """
-        plt.close(0)  # close previously rendered figure
+        if hasattr(self, "fig"):
+            plt.close(self.fig)  # close previously rendered figure
         self.init_figure()
         self._render()
         self.fig.savefig(filename, **kwargs)
-        plt.close(0)
+        plt.close(self.fig)  # don't leave open for Jupyter's auto-display
 
     ########################################
     # STYLED PLOTTING                      #

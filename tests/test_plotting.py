@@ -201,6 +201,71 @@ def test_full_render_smoke(tmp_path, kind, hemisphere):
 
 
 # ---------------------------------------------------------------------------
+# Figure lifecycle: savefig()/show() must not leak open figures
+#
+# A leaked figure stays registered with pyplot, so Jupyter's inline backend
+# auto-displays it at the end of the cell even though only savefig() (not
+# show()) was called -- an unwanted, and with repeated calls duplicated, plot.
+# ---------------------------------------------------------------------------
+
+
+def _make_stereonet_for_savefig():
+    s = StereoNet()
+    s.point(lin(10, 20))
+    return s
+
+
+def _make_roseplot_for_savefig():
+    r = RosePlot()
+    r.bar(vec2set.random_vonmises(position=0, n=10))
+    return r
+
+
+def _make_vollmerplot_for_savefig():
+    v = VollmerPlot()
+    v.point(ellipsoidset([ellipsoid.from_stretch(2, 1, 0.5)]))
+    return v
+
+
+@pytest.mark.parametrize(
+    "make_plot",
+    [
+        _make_stereonet_for_savefig,
+        _make_roseplot_for_savefig,
+        _make_vollmerplot_for_savefig,
+    ],
+    ids=["StereoNet", "RosePlot", "VollmerPlot"],
+)
+def test_savefig_does_not_leave_a_figure_open(tmp_path, make_plot):
+    before = set(matplotlib.pyplot.get_fignums())
+    p = make_plot()
+    p.savefig(str(tmp_path / "out.png"))
+    assert set(matplotlib.pyplot.get_fignums()) == before
+
+
+def test_savefig_called_twice_does_not_accumulate_figures(tmp_path):
+    before = set(matplotlib.pyplot.get_fignums())
+    for i in range(2):
+        s = StereoNet()
+        s.point(lin(10, 20))
+        s.savefig(str(tmp_path / f"out{i}.png"))
+    assert set(matplotlib.pyplot.get_fignums()) == before
+
+
+def test_show_closes_a_previous_render_on_the_same_object(monkeypatch):
+    # show() (unlike savefig()) leaves its figure open for display -- but a
+    # second show()/render on the same object must close the first one
+    # rather than accumulate it
+    monkeypatch.setattr(matplotlib.pyplot, "show", lambda: None)
+    s = StereoNet()
+    s.point(lin(10, 20))
+    s.show()
+    first = set(matplotlib.pyplot.get_fignums())
+    s.show()
+    assert set(matplotlib.pyplot.get_fignums()) == first
+
+
+# ---------------------------------------------------------------------------
 # Arc-specific plotting
 # ---------------------------------------------------------------------------
 
