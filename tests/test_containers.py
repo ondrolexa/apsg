@@ -827,6 +827,21 @@ class TestLineationSet:
         v = LineationSet.from_array([110, 30], [26, 10])
         assert len(v) == 2
 
+    def test_from_csv_name_defaults_to_filename(self, tmp_path):
+        v = LineationSet.from_array([110, 30], [26, 10])
+        path = tmp_path / "mele.csv"
+        v.to_csv(str(path))
+        loaded = LineationSet.from_csv(str(path))
+        assert loaded.name == "mele.csv"
+
+    def test_from_csv_name_kwarg(self, tmp_path):
+        v = LineationSet.from_array([110, 30], [26, 10])
+        path = tmp_path / "mele.csv"
+        v.to_csv(str(path))
+        loaded = LineationSet.from_csv(str(path), name="Mele")
+        assert loaded.name == "Mele"
+        assert len(loaded) == 2
+
     def test_random_fisher(self):
         np.random.seed(42)
         v = LineationSet.random_fisher(10, position=Lineation(120, 40))
@@ -937,6 +952,16 @@ class TestPairSet:
     def test_len(self):
         p = PairSet([Pair(140, 30, 110, 26), Pair(200, 40, 180, 20)])
         assert len(p) == 2
+
+    def test_from_csv_name_kwarg(self, tmp_path):
+        p = PairSet([Pair(140, 30, 110, 26), Pair(200, 40, 180, 20)])
+        path = tmp_path / "mele.csv"
+        p.to_csv(str(path))
+        loaded = PairSet.from_csv(str(path), name="Mele")
+        assert loaded.name == "Mele"
+        assert len(loaded) == 2
+        loaded_default = PairSet.from_csv(str(path))
+        assert loaded_default.name == "mele.csv"
 
     def test_fol_property(self):
         p = PairSet([Pair(140, 30, 110, 26)])
@@ -1075,6 +1100,16 @@ class TestFaultSet:
             ]
         )
         assert len(f) == 2
+
+    def test_from_csv_name_kwarg(self, tmp_path):
+        f = FaultSet([Fault(140, 30, 110, 26, -1), Fault(200, 40, 180, 20, 1)])
+        path = tmp_path / "mele.csv"
+        f.to_csv(str(path))
+        loaded = FaultSet.from_csv(str(path), name="Mele")
+        assert loaded.name == "Mele"
+        assert len(loaded) == 2
+        loaded_default = FaultSet.from_csv(str(path))
+        assert loaded_default.name == "mele.csv"
 
     def test_sense_property(self):
         f = FaultSet([Fault(140, 30, 110, 26, -1)])

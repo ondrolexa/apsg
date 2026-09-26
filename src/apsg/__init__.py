@@ -195,6 +195,6 @@ __all__ = (
     "velgrad2",
 )
 
-__version__ = "2.0.1"
+__version__ = "2.0.2"
 __author__ = "Ondrej Lexa"
 __email__ = "lexa.ondrej@gmail.com"

@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Note: apsg's version numbers do not strictly follow [Semantic Versioning](https://semver.org/) --
 a patch-level release can include breaking changes, marked below as **BREAKING**.
 
+## [2.0.2] - master
+
+### Added
+- `StereoNet.hoeppner()` now also accepts `Pair`/`PairSet`; since a pair carries no movement sense, its lineation is drawn as a plain line through the plane's pole instead of an arrow.
+- `from_csv()` on `LineationSet`/`FoliationSet`/other feature sets, `PairSet` and `FaultSet` now accepts a `name` keyword argument, instead of always naming the set after the source filename.
+
+### Changed
+- `StereoNet.contour()`'s default `cmap` for `clip=False` is now `"RdBu_r"` instead of `"RdBu"`, so above-uniform density is red and below-uniform is blue.
+
+### Fixed
+- `StereoNet(grid=False)`/`RosePlot(grid=False)` no longer silently re-enables the grid (with a UserWarning) when a grid style option is also set.
+
 ## [2.0.1] - 2026-09-25
 
 ### Added

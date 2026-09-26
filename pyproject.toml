@@ -19,7 +19,7 @@ dependencies = ["numpy", "matplotlib>=3.9", "scipy", "sqlalchemy", "pandas", "py
 
 [project.optional-dependencies]
 lab = ["jupyterlab"]
-tests = ["pytest", "pytest-cov"]
+tests = ["pytest", "pytest-cov", "pytest-xdist"]
 docs = [
     "sphinx>=7.0",
     "shibuya",
@@ -49,6 +49,11 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.dynamic]
 version = { attr = "apsg.__version__" }
 
+[tool.pytest.ini_options]
+# parallel by default (pytest-xdist); use `-p no:xdist` or `-n0` to fall back to a single
+# process for interactive debugging (--pdb, -s with breakpoints don't work under a worker)
+addopts = ["-n", "auto"]
+
 [tool.ruff]
 line-length = 88
 target-version = "py310"
@@ -59,6 +64,8 @@ ignore = ["E731", "E741"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+"src/apsg/math/_matrix.py" = ["E743"]  # Matrix.I: numpy-style inverse property
+"src/apsg/shell.py" = ["F403"]  # from apsg import * populates the interactive shell
 
 [tool.ruff.format]
 quote-style = "double"

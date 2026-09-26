@@ -429,10 +429,10 @@ class StereoNetArtistFactory:
 
     @staticmethod
     def create_hoeppner(*args, **kwargs):
-        """Create stereonet Hoeppner plot artist from Fault data."""
+        """Create stereonet Hoeppner plot artist from Fault/Pair data."""
         return StereoNetArtistFactory._create(
             "create_hoeppner",
-            (Fault, FaultSet),
+            (Fault, FaultSet, Pair, PairSet),
             "_hoeppner",
             "stereonet_hoeppner",
             "Fault",

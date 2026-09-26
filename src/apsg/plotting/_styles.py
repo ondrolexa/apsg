@@ -153,7 +153,7 @@ class StereoNetFaultStyle(StereoNetStyle):
 class StereoNetHoeppnerStyle(StereoNetStyle):
     def __init__(self, **kwargs):
         """Initialize stereonet Hoeppner plot style."""
-        self._valid = (Fault, FaultSet)
+        self._valid = (Fault, FaultSet, Pair, PairSet)
         self.kwargs = apsg_conf.stereonet_hoeppner.copy()
         super().__init__(**kwargs)
 

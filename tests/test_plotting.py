@@ -2,6 +2,8 @@ import matplotlib
 
 matplotlib.use("Agg")
 
+import random
+
 import matplotlib.colors
 import matplotlib.contour
 import matplotlib.lines
@@ -30,6 +32,7 @@ from apsg import (
     ortensor,
     ortensorset,
     pair,
+    pairset,
     quicknet,
     rotation_from_axis_angle,
     stereonet_styles,
@@ -81,6 +84,7 @@ def _tensor_sets(n=12, seed=3):
         ("pair", (pair(140, 30, 110, 26),), (lin(10, 20),)),
         ("fault", (fault(140, 30, 110, 26, 1),), (lin(10, 20),)),
         ("hoeppner", (fault(140, 30, 110, 26, 1),), (lin(10, 20),)),
+        ("hoeppner", (pair(140, 30, 110, 26),), (lin(10, 20),)),
         ("dihedra", (fault(140, 30, 110, 26, 1),), (lin(10, 20),)),
         ("beachball", (stress([[8, 0, 0], [0, 5, 0], [0, 0, 1]]),), (lin(10, 20),)),
         (
@@ -1044,7 +1048,7 @@ def test_contour_clip_defaults_true():
     assert s._artists[-1].kwargs["clip"] is True
 
 
-def test_contour_default_cmap_is_greys_when_clipped_else_rdbu():
+def test_contour_default_cmap_is_greys_when_clipped_else_rdbu_r():
     l = linset.random_fisher(position=lin(60, 40), n=40)
     s = StereoNet()
     s.contour(l)  # clip defaults to True
@@ -1067,7 +1071,7 @@ def test_contour_default_cmap_is_greys_when_clipped_else_rdbu():
         for c in s2.ax.get_children()
         if isinstance(c, matplotlib.contour.ContourSet) and c.filled
     ]
-    assert filled2[0].get_cmap().name == "RdBu"
+    assert filled2[0].get_cmap().name == "RdBu_r"
     assert min(filled2[0].levels) < 0
 
 
@@ -1323,6 +1327,26 @@ def test_grid_color_reaches_gridlines():
     s._render()
     assert s.ax.xaxis.get_gridlines()[0].get_color() == "blue"
     assert s.ax.yaxis.get_gridlines()[0].get_color() == "blue"
+
+
+def test_grid_false_stays_off_and_does_not_warn(recwarn):
+    # regression: matplotlib's Axes.grid() re-enables the grid (and warns) if
+    # style kwargs (grid_style/grid_color) are passed alongside a false first
+    # argument -- those must be withheld entirely when grid=False
+    s = StereoNet(grid=False, grid_color="red")
+    s.init_figure()
+    s._render()
+    assert not any(l.get_visible() for l in s.ax.xaxis.get_gridlines())
+    assert not any(l.get_visible() for l in s.ax.yaxis.get_gridlines())
+    assert not [w for w in recwarn.list if issubclass(w.category, UserWarning)]
+
+
+def test_roseplot_grid_false_stays_off_and_does_not_warn(recwarn):
+    r = RosePlot(grid=False, grid_kws={"color": "red"})
+    r.init_figure()
+    r._render()
+    assert not any(l.get_visible() for l in r.ax.yaxis.get_gridlines())
+    assert not [w for w in recwarn.list if issubclass(w.category, UserWarning)]
 
 
 def test_stereogrid_default_n_and_type_from_config():
@@ -1637,6 +1661,71 @@ def test_hoeppner_arrow_pivots_on_point():
     px, py = s.ax.project(np.asarray(f[0].fol), clip_inside=True, fold=True)
     assert q.X[0] == pytest.approx(px[0], abs=1e-9)
     assert q.Y[0] == pytest.approx(py[0], abs=1e-9)
+
+
+def test_hoeppner_pair_draws_headless_line():
+    p = pair(140, 30, 110, 26)
+    s = StereoNet()
+    s.hoeppner(p)
+    s.init_figure()
+    s._render()
+
+    quivers = [
+        c for c in s.ax.get_children() if isinstance(c, matplotlib.quiver.Quiver)
+    ]
+    assert len(quivers) == 1
+    q = quivers[0]
+
+    assert q.headwidth == 0
+    assert q.headlength == 0
+    assert q.headaxislength == 0
+    assert q.pivot == "middle"
+    px, py = s.ax.project(np.asarray(p.fol), clip_inside=True, fold=True)
+    assert q.X[0] == pytest.approx(px[0], abs=1e-9)
+    assert q.Y[0] == pytest.approx(py[0], abs=1e-9)
+
+
+def test_hoeppner_fault_keeps_arrowhead():
+    # regression: the new Pair branch must not affect Fault's own arrow
+    f = fault(170, 60, 182, 59, -1)
+    s = StereoNet()
+    s.hoeppner(f)
+    s.init_figure()
+    s._render()
+
+    (q,) = [c for c in s.ax.get_children() if isinstance(c, matplotlib.quiver.Quiver)]
+    assert q.headwidth != 0
+    assert q.headlength != 0
+    assert q.headaxislength != 0
+
+
+def test_hoeppner_pairset():
+    ps = pairset([pair(140, 30, 110, 26), pair(160, 40, 90, 20)])
+    s = StereoNet()
+    s.hoeppner(ps)
+    s.init_figure()
+    s._render()
+
+    (q,) = [c for c in s.ax.get_children() if isinstance(c, matplotlib.quiver.Quiver)]
+    assert q.headlength == 0
+    assert q.N == 2
+
+
+def test_hoeppner_mixed_fault_and_pair():
+    f = fault(170, 60, 182, 59, -1)
+    p = pair(140, 30, 110, 26)
+    s = StereoNet()
+    s.hoeppner(f, p)
+    s.init_figure()
+    s._render()
+
+    quivers = [
+        c for c in s.ax.get_children() if isinstance(c, matplotlib.quiver.Quiver)
+    ]
+    assert len(quivers) == 2
+    headlengths = sorted(q.headlength for q in quivers)
+    assert headlengths[0] == 0
+    assert headlengths[1] != 0
 
 
 def test_hoeppner_pivot_is_configurable():
@@ -2272,13 +2361,15 @@ def test_dihedra_fills_the_dihedra_containing_the_t_axis(name):
     assert _dihedra_mismatches(_DIHEDRA_FAULTS[name]) == 0
 
 
-def test_dihedra_random_faults():
-    import random
-
-    random.seed(11)
-    np.random.seed(11)
-    for i in range(25):
-        assert _dihedra_mismatches(fault.random(), n=60, seed=i) == 0
+@pytest.mark.parametrize("seed", range(25))
+def test_dihedra_random_faults(seed):
+    # each case gets its own distinct, deterministic seed -- not the exact same 25
+    # faults a single seed-once-then-loop would draw, but an equally valid,
+    # equally reproducible sample for this fuzz test, and split into independent
+    # items so a parallel run can distribute them across workers
+    random.seed(11 + seed)
+    np.random.seed(11 + seed)
+    assert _dihedra_mismatches(fault.random(), n=60, seed=seed) == 0
 
 
 def test_dihedra_upper_hemisphere():
@@ -2315,14 +2406,20 @@ def test_dihedra_is_one_color_and_one_legend_entry_for_a_set():
     assert [p.get_label() for p in s.ax.patches].count("extension") == 1
 
 
-def test_dihedra_alpha_default_scales_with_the_number_of_faults():
+def test_dihedra_alpha_default_is_none():
     assert apsg_conf.stereonet_dihedra["alpha"] is None
-    for n, expected in [(1, 0.3), (3, 0.3), (25, 0.06)]:
-        s = StereoNet()
-        s.dihedra(faultset([_dihedra_fault(120 + i, 55, 90) for i in range(n)]))
-        s.init_figure()
-        s._render()
-        assert {p.get_alpha() for p in s.ax.patches} == {expected}
+
+
+@pytest.mark.parametrize("n,expected", [(1, 0.3), (3, 0.3), (25, 0.06)])
+def test_dihedra_alpha_default_scales_with_the_number_of_faults(n, expected):
+    s = StereoNet()
+    s.dihedra(faultset([_dihedra_fault(120 + i, 55, 90) for i in range(n)]))
+    s.init_figure()
+    s._render()
+    assert {p.get_alpha() for p in s.ax.patches} == {expected}
+
+
+def test_dihedra_alpha_is_configurable():
     s = StereoNet()
     s.dihedra(_DIHEDRA_FAULTS["reverse"], alpha=0.8, color="r")
     s.init_figure()
@@ -2435,9 +2532,11 @@ def test_beachball_fills_the_quadrants_containing_the_p_axis(name):
     assert _beachball_mismatches(_BEACHBALL_STRESSES[name]) == 0
 
 
-def test_beachball_random_stresses():
-    for seed in range(25):
-        assert _beachball_mismatches(_rotated_stress(seed), n=60, seed=seed) == 0
+@pytest.mark.parametrize("seed", range(25))
+def test_beachball_random_stresses(seed):
+    # split into independent items so a parallel run can distribute them across
+    # workers -- _rotated_stress(seed) is already independent per seed
+    assert _beachball_mismatches(_rotated_stress(seed), n=60, seed=seed) == 0
 
 
 def test_beachball_upper_hemisphere():
@@ -2521,16 +2620,22 @@ def test_beachball_is_one_color_and_one_legend_entry_for_a_set():
     assert [p.get_label() for p in s.ax.patches].count("P quadrants") == 1
 
 
-def test_beachball_defaults_and_alpha_scale_with_the_number_of_tensors():
+def test_beachball_defaults_are_black_and_no_alpha():
     assert apsg_conf.stereonet_beachball["color"] == "k"
     assert apsg_conf.stereonet_beachball["alpha"] is None
-    for n, expected in [(1, 1.0), (25, 0.06)]:
-        s = StereoNet()
-        s.beachball(stressset([_rotated_stress(i) for i in range(n)]))
-        s.init_figure()
-        s._render()
-        assert {p.get_alpha() for p in s.ax.patches} == {expected}
-        assert matplotlib.colors.same_color(s.ax.patches[0].get_facecolor()[:3], "k")
+
+
+@pytest.mark.parametrize("n,expected", [(1, 1.0), (25, 0.06)])
+def test_beachball_alpha_scales_with_the_number_of_tensors(n, expected):
+    s = StereoNet()
+    s.beachball(stressset([_rotated_stress(i) for i in range(n)]))
+    s.init_figure()
+    s._render()
+    assert {p.get_alpha() for p in s.ax.patches} == {expected}
+    assert matplotlib.colors.same_color(s.ax.patches[0].get_facecolor()[:3], "k")
+
+
+def test_beachball_alpha_and_color_are_configurable():
     s = StereoNet()
     s.beachball(_rotated_stress(0), alpha=0.4, color="r")
     s.init_figure()

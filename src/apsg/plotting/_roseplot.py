@@ -59,7 +59,13 @@ class RosePlot:
         # self.ax.format_coord = self.format_coord
         self.ax.set_theta_direction(-1)  # type: ignore
         self.ax.set_theta_zero_location("N")  # type: ignore
-        self.ax.grid(self._kwargs["grid"], **self._kwargs["grid_kws"])
+        if self._kwargs["grid"]:
+            self.ax.grid(True, **self._kwargs["grid_kws"])
+        else:
+            # matplotlib's grid() enables the grid regardless of a false first
+            # argument -- with a warning -- when grid_kws is non-empty, so it must
+            # be omitted entirely to actually keep the grid off
+            self.ax.grid(False)
 
     def _plot_artists(self):
         for artist in self._artists:

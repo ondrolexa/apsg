@@ -182,11 +182,17 @@ class StereoNet:
             self.ax.set_rotation(self._rotation)
 
     def _draw_layout(self):
-        self.ax.grid(
-            self._kwargs["grid"],
-            linestyle=self._kwargs["grid_style"],
-            color=self._kwargs["grid_color"],
-        )
+        if self._kwargs["grid"]:
+            self.ax.grid(
+                True,
+                linestyle=self._kwargs["grid_style"],
+                color=self._kwargs["grid_color"],
+            )
+        else:
+            # matplotlib's grid() enables the grid regardless of a false first
+            # argument -- with a warning -- when style kwargs are also given, so
+            # those must be omitted entirely to actually keep the grid off
+            self.ax.grid(False)
         self.ax.set_longitude_grid(self._kwargs["grid_step"])
         self.ax.set_latitude_grid(self._kwargs["grid_step"])
         self.ax.set_clip_pole(self._kwargs["clip_pole"])
@@ -606,14 +612,16 @@ class StereoNet:
 
     def hoeppner(self, *args, **kwargs):
         """
-        Plot fault feature(s) on Hoeppner (tangent lineation) plot.
+        Plot fault or pair feature(s) on Hoeppner (tangent lineation) plot.
 
         Note: Arrow is styled according to default arrow config, except its
             pivot, which is taken from apsg_conf.stereonet_hoeppner.pivot
-            (default "middle")
+            (default "middle"). A ``Pair``/``PairSet`` has no movement sense,
+            so its lineation is drawn as a plain line through the plane's
+            pole, with no arrowhead, instead of an arrow.
 
         Args:
-            Fault or FaultSet feature(s)
+            Fault, FaultSet, Pair or PairSet feature(s)
 
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
@@ -623,7 +631,7 @@ class StereoNet:
             lw (float): Set line width. Default 1.5
 
         Returns:
-            None: Fault features are plotted on Hoeppner plot.
+            None: Fault/pair features are plotted on Hoeppner plot.
         """
         self._add_artist(StereoNetArtistFactory.create_hoeppner, *args, **kwargs)
 
@@ -813,7 +821,7 @@ class StereoNet:
                 smoothing or "sph" for spherical harmonics method. Default "kamb"
             levels (int or list): number or values of contours. Default 6
             cmap: matplotlib colormap. Default "Greys" when `clip` is True, or
-                "RdBu" (diverging, centered on 0) when `clip` is False
+                "RdBu_r" (diverging, centered on 0) when `clip` is False
             clip (bool): restrict to the positive (above-uniform) region only.
                 Default True
             colorbar (bool): Show colorbar. Default False
@@ -1050,7 +1058,15 @@ class StereoNet:
         quiver_kwargs["pivot"] = pivot
         quiver_kwargs["color"] = h[0].get_color()
         for arg in args:
-            self._arrow(arg.fol, arg.lin, sense=arg.sense, **quiver_kwargs)
+            if isinstance(arg, (Fault, FaultSet)):
+                self._arrow(arg.fol, arg.lin, sense=arg.sense, **quiver_kwargs)
+            else:
+                # Pair/PairSet: no movement sense, so no arrowhead -- a plain
+                # line through the planar symbol's center (pivot="middle").
+                line_kwargs = dict(
+                    quiver_kwargs, headwidth=0, headlength=0, headaxislength=0
+                )
+                self._arrow(arg.fol, arg.lin, sense=1, **line_kwargs)
 
     def _fill_quadrants(self, quads, max_alpha, **kwargs):
         """Fill each ``(arcset, outside)`` of ``quads`` with one color and one legend
@@ -1173,10 +1189,11 @@ class StereoNet:
         linestyles = kwargs.pop("linestyles")
         # apsg_conf.stereonet_contour.clip defaults to True; when cmap isn't
         # given explicitly, apsg's own default is "Greys" for that clipped
-        # (positive/above-uniform only) view, or "RdBu" (diverging, centered
-        # on 0) for the full range when clip=False is requested.
+        # (positive/above-uniform only) view, or "RdBu_r" (diverging, centered
+        # on 0, blue below/red above uniform) for the full range when
+        # clip=False is requested.
         if kwargs.get("cmap") is None:
-            kwargs["cmap"] = "Greys" if kwargs.get("clip") else "RdBu"
+            kwargs["cmap"] = "Greys" if kwargs.get("clip") else "RdBu_r"
         if not filled:
             # linewidths/linestyles are meaningless for filled contours
             # (contourf ignores/warns about them) -- only forward for lines

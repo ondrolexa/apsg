@@ -1137,7 +1137,7 @@ class Vector3Set(FeatureSet):
         return Rotation3(R.as_matrix())
 
     @classmethod
-    def from_csv(cls, filename, acol=0, icol=1):
+    def from_csv(cls, filename, acol=0, icol=1, name=None):
         """Create ``FeatureSet`` object from csv file of azimuths and inclinations.
 
         Args:
@@ -1147,10 +1147,13 @@ class Vector3Set(FeatureSet):
             acol (int or str): azimuth column (starts from 0). Default 0.
             icol (int or str): inclination column (starts from 0). Default 1.
                 When acol and icol are strings they are used as column headers.
+            name (str): name of the created feature set. Default is the
+                filename without its directory part.
 
         Examples:
             >>> gf = folset.from_csv('file1.csv')                 #doctest: +SKIP
             >>> gl = linset.from_csv('file2.csv', acol=1, icol=2) #doctest: +SKIP
+            >>> gl = linset.from_csv('file2.csv', name='My data') #doctest: +SKIP
 
         Returns:
             FeatureSet: The created feature set.
@@ -1179,7 +1182,9 @@ class Vector3Set(FeatureSet):
                     raise ValueError("No header line in CSV file...")
 
         azi, inc = zip(*r)
-        return cls.from_array(azi, inc, name=basename(filename))
+        return cls.from_array(
+            azi, inc, name=name if name is not None else basename(filename)
+        )
 
     def to_csv(self, filename, delimiter=","):
         """Save ``FeatureSet`` object to csv file of azimuths and inclinations.
@@ -1595,8 +1600,14 @@ class PairSet(FeatureSet):
         lacol=2,
         licol=3,
         scol=4,
+        name=None,
     ):
-        """Read ``PairSet`` from csv file."""
+        """Read ``PairSet`` from csv file.
+
+        Keyword Args:
+            name (str): name of the created ``PairSet``. Default is the
+                filename without its directory part.
+        """
 
         with open(filename) as csvfile:
             has_header = csv.Sniffer().has_header(csvfile.read(1024))
@@ -1658,7 +1669,13 @@ class PairSet(FeatureSet):
                     raise ValueError("No header line in CSV file...")
 
         fazi, finc, lazi, linc = zip(*r)
-        return cls.from_array(fazi, finc, lazi, linc, name=basename(filename))
+        return cls.from_array(
+            fazi,
+            finc,
+            lazi,
+            linc,
+            name=name if name is not None else basename(filename),
+        )
 
     def to_csv(self, filename, delimiter=","):
         """Save ``PairSet`` object to csv file.
@@ -1819,8 +1836,14 @@ class FaultSet(PairSet):
         lacol=2,
         licol=3,
         scol=4,
+        name=None,
     ):
-        """Read ``FaultSet`` from csv file."""
+        """Read ``FaultSet`` from csv file.
+
+        Keyword Args:
+            name (str): name of the created ``FaultSet``. Default is the
+                filename without its directory part.
+        """
 
         with open(filename) as csvfile:
             has_header = csv.Sniffer().has_header(csvfile.read(1024))
@@ -1912,7 +1935,14 @@ class FaultSet(PairSet):
                     raise ValueError("No header line in CSV file...")
 
         fazi, finc, lazi, linc, sense = zip(*r)
-        return cls.from_array(fazi, finc, lazi, linc, sense, name=basename(filename))
+        return cls.from_array(
+            fazi,
+            finc,
+            lazi,
+            linc,
+            sense,
+            name=name if name is not None else basename(filename),
+        )
 
     def to_csv(self, filename, delimiter=",", sense_str=False):
         """Save ``FaultSet`` object to csv file.
