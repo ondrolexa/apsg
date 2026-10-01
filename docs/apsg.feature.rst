@@ -63,6 +63,21 @@ of its principal axes, following the linear perturbation method of Jelínek (197
     >>> res["ellipses"][0]["gamma"]                # semi-angles of its confidence ellipse (deg)
     >>> es.mean_tensor(anisoft=True)               # extra (n-1)/n factor as in jelinekstat/TomoFab
 
+Build a strain ellipse/ellipsoid directly from axial ratios, and recover the deformation
+gradient that produced it (the inverse of ``from_defgrad()``)::
+
+    >>> E = ellipsoid.from_ratios(Rxy=2, Ryz=3)
+    >>> F = E.defgrad()                            # F @ F.T == E (up to a rotational ambiguity)
+
+Strain analysis of a population of deformed markers -- the Rf/phi vector-mean method (2D only)
+and Robin's (1977) log-matrix mean (2D and 3D)::
+
+    >>> from apsg import ellipseset
+    >>> es = ellipseset([ellipse.from_ratio(R) for R in [1.8, 2.0, 2.2]])
+    >>> es.rfphi()                                 # strain ratio and orientation
+    >>> es.robin()                                 # log-Euclidean mean ellipse
+    >>> ellipsoidset([ellipsoid.from_ratios(Rxy=2, Ryz=r) for r in [2.8, 3.0, 3.2]]).robin()
+
 Serialization::
 
     >>> from apsg.feature import feature_from_json

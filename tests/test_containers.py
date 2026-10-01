@@ -22,6 +22,7 @@ from apsg.feature._container import (
     ArcSet,
     ConeSet,
     Direction2Set,
+    EllipseSet,
     EllipsoidSet,
     FaultSet,
     FoliationSet,
@@ -43,8 +44,8 @@ from apsg.feature._geodata import (
     Pair,
 )
 from apsg.feature._statistics import jelinek_statistics
-from apsg.feature._tensor2 import Stress2
-from apsg.feature._tensor3 import Ellipsoid, OrientationTensor3, Stress3
+from apsg.feature._tensor2 import Ellipse, Rotation2, Stress2
+from apsg.feature._tensor3 import Ellipsoid, OrientationTensor3, Rotation3, Stress3
 from apsg.math._vector import Vector2, Vector3
 
 # ---------------------------------------------------------------------------
@@ -706,8 +707,6 @@ class TestVector3Set:
         v1 = Vector3Set([Vector3(1, 0, 0), Vector3(0, 1, 0)])
         v2 = Vector3Set([Vector3(1, 0, 0), Vector3(0, 1, 0)])
         R = v1.align(v2)
-        from apsg.feature._tensor3 import Rotation3
-
         assert isinstance(R, Rotation3)
 
     def test_from_array(self):
@@ -1388,6 +1387,35 @@ class TestArcSet:
 
 
 # ---------------------------------------------------------------------------
+# EllipseSet
+# ---------------------------------------------------------------------------
+
+
+class TestEllipseSet:
+    def test_robin_degenerate(self):
+        e = Ellipse.from_ratio(R=4)
+        es = EllipseSet([e, e, e])
+        r = es.robin()
+        assert isinstance(r, Ellipse)
+        np.testing.assert_array_almost_equal(np.asarray(r), np.asarray(e))
+
+    def test_robin_mixed(self):
+        angles = [10, 12, 15, 18, 20]
+        ars = [2, 2.2, 2, 1.8, 2.1]
+        es = EllipseSet(
+            [
+                Ellipse.from_ratio(R=ar).transform(Rotation2.from_angle(phi))
+                for ar, phi in zip(ars, angles)
+            ]
+        )
+        r = es.robin()
+        assert isinstance(r, Ellipse)
+        assert np.asarray(r).dtype == np.float64
+        assert 1.5 < r.ar < 2.5
+        assert 10 < r.orientation < 20
+
+
+# ---------------------------------------------------------------------------
 # EllipsoidSet
 # ---------------------------------------------------------------------------
 
@@ -1421,6 +1449,28 @@ class TestEllipsoidSet:
 
     def test_lowercase_alias(self):
         assert ellipsoidset is EllipsoidSet
+
+    def test_robin_degenerate(self):
+        e = Ellipsoid.from_ratios(Rxy=2, Ryz=3)
+        es = EllipsoidSet([e, e, e])
+        r = es.robin()
+        assert isinstance(r, Ellipsoid)
+        np.testing.assert_array_almost_equal(np.asarray(r), np.asarray(e))
+
+    def test_robin_mixed(self):
+        base = Ellipsoid.from_ratios(Rxy=2, Ryz=3)
+        angles = [10, 12, 15, 18, 20]
+        es = EllipsoidSet(
+            [
+                base.transform(Rotation3.from_axisangle(Vector3(0, 0, 1), a))
+                for a in angles
+            ]
+        )
+        r = es.robin()
+        assert isinstance(r, Ellipsoid)
+        assert np.asarray(r).dtype == np.float64
+        assert 1 < r.S1 / r.S2 < 3
+        assert 1 < r.S2 / r.S3 < 4
 
 
 # ---------------------------------------------------------------------------

@@ -63,12 +63,16 @@ class DeformationGradient3(Matrix3):
         return cls([[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]])
 
     @classmethod
-    def from_ratios(cls, Rxy=1, Ryz=1):
+    def from_ratios(cls, Rxy=None, Rxz=None, Ryz=None) -> "DeformationGradient3":
         """Return isochoric ``DeformationGradient3`` tensor with axial stretches
-        defined by strain ratios. Default is identity tensor.
+        defined by strain ratios.
+
+        Exactly two of ``Rxy``, ``Rxz`` and ``Ryz`` must be given; the third
+        follows from ``Rxz = Rxy * Ryz``.
 
         Keyword Args:
             Rxy (float): XY strain ratio
+            Rxz (float): XZ strain ratio
             Ryz (float): YZ strain ratio
 
         Examples:
@@ -82,6 +86,12 @@ class DeformationGradient3(Matrix3):
         Returns:
             DeformationGradient3: isochoric ``DeformationGradient3`` tensor with axial stretches.
         """
+        if sum(v is not None for v in (Rxy, Rxz, Ryz)) != 2:
+            raise ValueError("Exactly two of Rxy, Rxz, Ryz must be provided.")
+        if Rxy is None:
+            Rxy = Rxz / Ryz
+        if Ryz is None:
+            Ryz = Rxz / Rxy
 
         assert Rxy >= 1, "Rxy must be greater than or equal to 1."
         assert Ryz >= 1, "Ryz must be greater than or equal to 1."
@@ -167,30 +177,38 @@ class DeformationGradient3(Matrix3):
         return tuple(Lineation(v) for v in eigenvectors)
 
     @classmethod
-    def from_ellipsoid(cls, E, R=None) -> "DeformationGradient3":
+    def from_ellipsoid(cls, E, form="left", R=None) -> "DeformationGradient3":
         """
-        Return ``DeformationGradient3`` recovered from a finite strain ellipsoid (the
-        left Cauchy–Green/Finger tensor FFᵀ, e.g. from ``Ellipsoid.from_defgrad``) up
-        to a rotational ambiguity, as F = Q @ D @ R, where Q and D come from the
+        Return ``DeformationGradient3`` recovered from a finite strain ellipsoid up
+        to a rotational ambiguity, as F = Q @ D @ R (form 'left'/'B', the Finger
+        tensor FFᵀ, e.g. from ``Ellipsoid.from_defgrad``) or F = R @ D @ Qᵗ (form
+        'right'/'C', the Green's tensor FᵗF), where Q and D come from the
         eigendecomposition of E (Flinn, 1979; Davis and Titus, 2011).
 
         Args:
-            E (Ellipsoid): finite strain ellipsoid (Finger tensor FFᵀ).
+            E (Ellipsoid): finite strain ellipsoid.
+            form: 'left' or 'B' for the Finger tensor FFᵀ (default), 'right' or 'C'
+                  for the Green's tensor FᵗF.
 
         Keyword Args:
-            R (Rotation3): rotation resolving the ambiguity in F = Q @ D @ R, to be
-                determined from independent data (e.g. paleomagnetic vectors or a
-                known shear-plane orientation). Default is the identity, i.e. the
-                simplest, purely coaxial solution.
+            R (Rotation3): rotation resolving the ambiguity, to be determined from
+                independent data (e.g. paleomagnetic vectors or a known shear-plane
+                orientation). Default is the identity, i.e. the simplest, purely
+                coaxial solution.
 
         Returns:
-            DeformationGradient3: ``DeformationGradient3`` F = Q @ D @ R.
+            DeformationGradient3: recovered ``DeformationGradient3``.
         """
         if R is None:
             R = Rotation3()
         Q = np.column_stack(E.eigenvectors())
         D = np.diag(np.sqrt(E.eigenvalues()))
-        return cls(Q @ D @ np.asarray(R))
+        if form in ("left", "B"):
+            return cls(Q @ D @ np.asarray(R))
+        elif form in ("right", "C"):
+            return cls(np.asarray(R) @ D @ Q.T)
+        else:
+            raise TypeError("Wrong form argument")
 
 
 class Rotation3(DeformationGradient3):
@@ -1080,6 +1098,32 @@ class Ellipsoid(Tensor3):
         """Return diagonal tensor defined by magnitudes of principal stretches."""
         return cls([[x * x, 0, 0], [0, y * y, 0], [0, 0, z * z]], **kwargs)
 
+    @classmethod
+    def from_ratios(cls, Rxy=None, Rxz=None, Ryz=None, **kwargs) -> "Ellipsoid":
+        """
+        Return diagonal tensor of unit volume (x*y*z=1) defined by axial ratios.
+
+        Exactly two of ``Rxy``, ``Rxz`` and ``Ryz`` must be given; the third
+        follows from ``Rxz = Rxy * Ryz``.
+
+        Keyword Args:
+            Rxy (float): x/y ratio
+            Rxz (float): x/z ratio
+            Ryz (float): y/z ratio
+        """
+        if sum(v is not None for v in (Rxy, Rxz, Ryz)) != 2:
+            raise ValueError("Exactly two of Rxy, Rxz, Ryz must be provided.")
+        if Rxy is None:
+            Rxy = Rxz / Ryz
+        if Ryz is None:
+            Ryz = Rxz / Rxy
+
+        assert Rxy >= 1, "Rxy must be greater than or equal to 1."
+        assert Ryz >= 1, "Ryz must be greater than or equal to 1."
+
+        y = (Ryz / Rxy) ** (1 / 3)
+        return cls.from_stretch(y * Rxy, y, y / Ryz, **kwargs)
+
     @property
     def kind(self) -> str:
         """Return descriptive type of ellipsoid."""
@@ -1297,6 +1341,16 @@ class Ellipsoid(Tensor3):
         fol = Foliation(f)
         P = np.array([fol.dipvec(), fol.rake(0)]).T
         return Ellipse(P.T @ np.asarray(self) @ P)
+
+    def defgrad(self, form="left", R=None) -> "DeformationGradient3":
+        """
+        Return ``DeformationGradient3`` recovered from this ellipsoid, inverse of
+        ``Ellipsoid.from_defgrad``.
+
+        See Also:
+            DeformationGradient3.from_ellipsoid
+        """
+        return DeformationGradient3.from_ellipsoid(self, form=form, R=R)
 
 
 class OrientationTensor3(Ellipsoid):

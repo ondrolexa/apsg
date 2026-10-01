@@ -6,7 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Note: apsg's version numbers do not strictly follow [Semantic Versioning](https://semver.org/) --
 a patch-level release can include breaking changes, marked below as **BREAKING**.
 
-## [2.0.2] - master
+## [2.0.3] - master
+
+### Added
+- `Ellipse.from_ratio()` and `Ellipsoid.from_ratios()` build a strain ellipse/ellipsoid directly from axial ratios (2D: one ratio; 3D: any two of the three pairwise ratios).
+- `Ellipse.defgrad()`/`Ellipsoid.defgrad()` recover the deformation gradient that produced a strain ellipse/ellipsoid -- the inverse of `from_defgrad()`.
+- `from_ellipse()`/`from_ellipsoid()` now also accept `form="right"` to invert the right Cauchy-Green/Green's strain convention, not just the default left one.
+- `EllipseSet.rfphi()` estimates strain ratio and orientation from a population of strain markers using the analytical Rf/phi vector-mean method.
+- `EllipseSet.robin()` and `EllipsoidSet.robin()` compute the mean strain ellipse/ellipsoid of a population using Robin's (1977) log-matrix method.
+
+### Changed
+- **BREAKING:** `DeformationGradient3.from_ratios()` now requires exactly two of `Rxy`, `Rxz` and `Ryz` (previously only `Rxy`/`Ryz`, defaulting to the identity tensor when neither was given); calling it with no arguments is no longer supported.
+- **BREAKING:** `DeformationGradient2.from_ratio()` now requires `R >= 1`.
+- **BREAKING:** `from_ellipse()`/`from_ellipsoid()` gained a `form` keyword before the existing `R` keyword -- pass `R` by keyword, not position.
+
+## [2.0.2] - 2026-09-30
 
 ### Added
 - `StereoNet.hoeppner()` now also accepts `Pair`/`PairSet`; since a pair carries no movement sense, its lineation is drawn as a plain line through the plane's pole instead of an arrow.

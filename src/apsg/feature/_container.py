@@ -4,6 +4,7 @@ from os.path import basename
 
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import linalg as spla
 from scipy import stats
 from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
 from scipy.integrate import quad
@@ -33,7 +34,7 @@ from apsg.feature._tensor3 import (
     Rotation3,
     Stress3,
 )
-from apsg.helpers._math import acosd, atand
+from apsg.helpers._math import acosd, atan2d, atand, cosd, sind
 from apsg.math._vector import Axial2, Axial3, Vector2, Vector3
 
 _WATSON_U2_ALPHA = np.array([0.005, 0.01, 0.025, 0.05, 0.10])
@@ -2263,6 +2264,45 @@ class EllipseSet(FeatureSet):
         """
         return type(self)([e.transform(F) for e in self], name=self.name)
 
+    def rfphi(self) -> Ellipse:
+        """Return strain ellipse from the Rf/phi analytical vector-mean method.
+
+        Doubles each ellipse orientation (ellipses have 180° periodicity) and
+        averages ``ln(Rf)`` in that doubled-angle Cartesian space before
+        converting back, following the standard Rf/phi vector-mean technique:
+
+            x_i = ln(Rf_i) * cos(2 * phi_i)
+            y_i = ln(Rf_i) * sin(2 * phi_i)
+            Rs = exp(sqrt(mean(x)**2 + mean(y)**2))
+            phi_s = atan2d(mean(y), mean(x)) / 2
+
+        Returns:
+            Ellipse: strain ellipse with axial ratio ``Rs`` and orientation ``phi_s``.
+        """
+        phi2 = np.radians(2 * self.orientation)
+        x = np.log(self.ar) * np.cos(phi2)
+        y = np.log(self.ar) * np.sin(phi2)
+        xbar, ybar = x.mean(), y.mean()
+        Rs = np.exp(np.sqrt(xbar**2 + ybar**2))
+        phi_s = atan2d(ybar, xbar) / 2
+        c, s = cosd(phi_s), sind(phi_s)
+        R = np.array([[c, -s], [s, c]])
+        return Ellipse(R @ np.diag([Rs, 1 / Rs]) @ R.T)
+
+    def robin(self) -> Ellipse:
+        """Return mean strain ellipse using the log-matrix method of Robin (1977).
+
+        Averages the matrix logarithms of all tensors in this set and maps the
+        result back with the matrix exponential (the log-Euclidean tensor mean),
+        avoiding the distortion a naive linear average of the tensors themselves
+        would introduce for anisotropic/high-strain ellipses.
+
+        Returns:
+            Ellipse: mean strain ellipse.
+        """
+        mean_log = np.mean([spla.logm(np.asarray(e)) for e in self], axis=0)
+        return Ellipse(spla.expm(mean_log).real)
+
 
 class OrientationTensor2Set(EllipseSet):
     """
@@ -2514,6 +2554,20 @@ class EllipsoidSet(FeatureSet):
             EllipsoidSet: The transformed feature set.
         """
         return type(self)([e.transform(F) for e in self], name=self.name)
+
+    def robin(self) -> Ellipsoid:
+        """Return mean strain ellipsoid using the log-matrix method of Robin (1977).
+
+        Averages the matrix logarithms of all tensors in this set and maps the
+        result back with the matrix exponential (the log-Euclidean tensor mean),
+        avoiding the distortion a naive linear average of the tensors themselves
+        would introduce for anisotropic/high-strain ellipsoids.
+
+        Returns:
+            Ellipsoid: mean strain ellipsoid.
+        """
+        mean_log = np.mean([spla.logm(np.asarray(e)) for e in self], axis=0)
+        return Ellipsoid(spla.expm(mean_log).real)
 
 
 class OrientationTensor3Set(EllipsoidSet):

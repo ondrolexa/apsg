@@ -431,6 +431,26 @@ class TestEllipse:
         with pytest.raises(TypeError):
             Ellipse.from_defgrad(F, form="bad")
 
+    def test_defgrad_left(self):
+        F = DeformationGradient2.from_ratio(R=4)
+        E = Ellipse.from_defgrad(F)
+        F2 = E.defgrad()
+        np.testing.assert_array_almost_equal(F2, F)
+
+    def test_defgrad_right(self):
+        R_true = Rotation2.from_angle(30)
+        D = np.diag([2.0, 1.5])
+        F_true = DeformationGradient2(np.asarray(R_true) @ D)
+        E = Ellipse.from_defgrad(F_true, form="right")
+        F2 = E.defgrad(form="right", R=R_true)
+        np.testing.assert_array_almost_equal(F2, F_true)
+
+    def test_defgrad_wrong_form(self):
+        F = DeformationGradient2.from_ratio(R=4)
+        E = Ellipse.from_defgrad(F)
+        with pytest.raises(TypeError):
+            E.defgrad(form="bad")
+
     def test_from_stretch(self):
         E = Ellipse.from_stretch(x=2, y=1)
         assert math.isclose(E.E1, 4)
@@ -539,6 +559,14 @@ class TestDeformationGradient3:
         F = DeformationGradient3.from_ratios(Rxy=2, Ryz=3)
         assert isinstance(F, DeformationGradient3)
         assert F.xx > 1
+
+    def test_from_ratios_value_error(self):
+        with pytest.raises(ValueError):
+            DeformationGradient3.from_ratios(Rxy=2)
+
+    def test_from_ratios_value_error_too_many(self):
+        with pytest.raises(ValueError):
+            DeformationGradient3.from_ratios(Rxy=2, Rxz=6, Ryz=3)
 
     def test_from_ratios_assertion(self):
         with pytest.raises(AssertionError):
@@ -1146,6 +1174,26 @@ class TestEllipsoid:
         F = DeformationGradient3.from_ratios(Rxy=2, Ryz=3)
         with pytest.raises(TypeError):
             Ellipsoid.from_defgrad(F, form="bad")
+
+    def test_defgrad_left(self):
+        F = DeformationGradient3.from_ratios(Rxy=2, Ryz=3)
+        E = Ellipsoid.from_defgrad(F)
+        F2 = E.defgrad()
+        np.testing.assert_array_almost_equal(F2, F)
+
+    def test_defgrad_right(self):
+        R_true = Rotation3.from_axisangle(Vector3(0, 0, 1), 30)
+        D = np.diag([2.0, 1.5, 0.7])
+        F_true = DeformationGradient3(np.asarray(R_true) @ D)
+        E = Ellipsoid.from_defgrad(F_true, form="right")
+        F2 = E.defgrad(form="right", R=R_true)
+        np.testing.assert_array_almost_equal(F2, F_true)
+
+    def test_defgrad_wrong_form(self):
+        F = DeformationGradient3.from_ratios(Rxy=2, Ryz=3)
+        E = Ellipsoid.from_defgrad(F)
+        with pytest.raises(TypeError):
+            E.defgrad(form="bad")
 
     def test_from_stretch(self):
         E = Ellipsoid.from_stretch(x=2, y=1.5, z=1)

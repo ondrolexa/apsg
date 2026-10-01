@@ -65,6 +65,8 @@ class DeformationGradient2(Matrix2):
 
         """
 
+        assert R >= 1, "R must be greater than or equal to 1."
+
         return cls.from_comp(xx=R ** (1 / 2), yy=R ** (-1 / 2))
 
     def is_rotation(self):
@@ -96,29 +98,37 @@ class DeformationGradient2(Matrix2):
         return VelocityGradient2(spla.logm(np.asarray(self)) / time)
 
     @classmethod
-    def from_ellipse(cls, E, R=None) -> "DeformationGradient2":
+    def from_ellipse(cls, E, form="left", R=None) -> "DeformationGradient2":
         """
-        Return ``DeformationGradient2`` recovered from a finite strain ellipse (the
-        left Cauchy–Green/Finger tensor FFᵀ, e.g. from ``Ellipse.from_defgrad``) up
-        to a rotational ambiguity, as F = Q @ D @ R, where Q and D come from the
-        eigendecomposition of E (Flinn, 1979; Davis and Titus, 2011).
+        Return ``DeformationGradient2`` recovered from a finite strain ellipse up to
+        a rotational ambiguity, as F = Q @ D @ R (form 'left'/'B', the Finger tensor
+        FFᵀ, e.g. from ``Ellipse.from_defgrad``) or F = R @ D @ Qᵗ (form 'right'/'C',
+        the Green's tensor FᵗF), where Q and D come from the eigendecomposition of E
+        (Flinn, 1979; Davis and Titus, 2011).
 
         Args:
-            E (Ellipse): finite strain ellipse (Finger tensor FFᵀ).
+            E (Ellipse): finite strain ellipse.
+            form: 'left' or 'B' for the Finger tensor FFᵀ (default), 'right' or 'C'
+                  for the Green's tensor FᵗF.
 
         Keyword Args:
-            R (Rotation2): rotation resolving the ambiguity in F = Q @ D @ R, to be
-                determined from independent data. Default is the identity, i.e. the
-                simplest, purely coaxial solution.
+            R (Rotation2): rotation resolving the ambiguity, to be determined from
+                independent data. Default is the identity, i.e. the simplest,
+                purely coaxial solution.
 
         Returns:
-            DeformationGradient2: ``DeformationGradient2`` F = Q @ D @ R.
+            DeformationGradient2: recovered ``DeformationGradient2``.
         """
         if R is None:
             R = Rotation2()
         Q = np.column_stack(E.eigenvectors())
         D = np.diag(np.sqrt(E.eigenvalues()))
-        return cls(Q @ D @ np.asarray(R))
+        if form in ("left", "B"):
+            return cls(Q @ D @ np.asarray(R))
+        elif form in ("right", "C"):
+            return cls(np.asarray(R) @ D @ Q.T)
+        else:
+            raise TypeError("Wrong form argument")
 
 
 class Rotation2(DeformationGradient2):
@@ -577,6 +587,14 @@ class Ellipse(Tensor2):
         """
         return cls([[x * x, 0], [0, y * y]], **kwargs)
 
+    @classmethod
+    def from_ratio(cls, R=1, **kwargs) -> "Ellipse":
+        """
+        Return diagonal tensor defined by axial ratio.
+        """
+        assert R >= 1, "R must be greater than or equal to 1."
+        return cls.from_stretch(R**0.5, R**-0.5, **kwargs)
+
     @property
     def S1(self) -> float:
         """
@@ -625,6 +643,16 @@ class Ellipse(Tensor2):
         Return the difference between natural principal strains.
         """
         return self.e1 - self.e2
+
+    def defgrad(self, form="left", R=None) -> "DeformationGradient2":
+        """
+        Return ``DeformationGradient2`` recovered from this ellipse, inverse of
+        ``Ellipse.from_defgrad``.
+
+        See Also:
+            DeformationGradient2.from_ellipse
+        """
+        return DeformationGradient2.from_ellipse(self, form=form, R=R)
 
 
 class OrientationTensor2(Ellipse):
