@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Note: apsg's version numbers do not strictly follow [Semantic Versioning](https://semver.org/) --
 a patch-level release can include breaking changes, marked below as **BREAKING**.
 
-## [2.0.3] - master
+## [2.0.3] - 2026-10-03
 
 ### Added
 - `apsg_conf.stress_convention` selects the sign convention of `Stress2`/`Stress3` inputs and reported values: `"geological"` (default, compression positive) or `"mechanical"` (tension positive). The tensor and all stress results are identical for the same physical state under either convention.

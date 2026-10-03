@@ -5,99 +5,106 @@ Installation
 Requirements
 ------------
 
-You need Python 3.12 or later to run APSG. The package requires NumPy, SciPy,
-Matplotlib, SQLAlchemy, pandas and pygeomag.
+APSG requires Python 3.12 or later. It depends on NumPy, SciPy, Matplotlib,
+SQLAlchemy, pandas and pygeomag. The installers below take care of these.
 
-Create a virtual environment
-----------------------------
+Install APSG into a separate environment. uv is the default and the fastest
+option; pip and conda/mamba are alternatives.
 
-It is strongly suggested to install APSG into a separate environment.
+With uv (recommended)
+---------------------
 
-For Linux and macOS::
+Install `uv <https://docs.astral.sh/uv/>`_, then create a virtual environment
+and install APSG into it::
 
-    python -m venv .venv
+    uv venv
+    uv pip install apsg
+
+Activate the environment on Linux and macOS::
+
     source .venv/bin/activate
 
-For Windows (Command Prompt or PowerShell)::
+On Windows (Command Prompt or PowerShell)::
 
-    python -m venv .venv
     .venv\Scripts\activate
 
-.. note::
-   On Microsoft Windows, it may be required to set the execution policy in
-   PowerShell. You can do this by issuing the following PowerShell command::
+To include JupyterLab and openpyxl (needed to read Excel files), use the ``lab`` extra::
 
-       Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+    uv pip install "apsg[lab]"
 
-Install with pip
-----------------
+In an existing project with a ``pyproject.toml``, add APSG as a dependency::
 
-Install the latest stable version from PyPI within your environment::
+    uv add apsg
 
-    pip install apsg
+Development install
+~~~~~~~~~~~~~~~~~~~
 
-To include JupyterLab and PyQt6 in the installation, use the ``extra`` option::
-
-    pip install apsg[extra]
-
-Upgrading via pip
-~~~~~~~~~~~~~~~~~
-
-To upgrade an existing version of APSG from PyPI::
-
-    pip install apsg --upgrade --no-deps
-
-Without the ``--no-deps`` flag, the dependencies (Matplotlib, NumPy, SciPy,
-etc.) will also be upgraded if newer versions are available; use the
-``--no-deps`` flag if you do not want this.
-
-Install the development version
--------------------------------
-
-The latest development version from the GitHub repository can be installed
-with::
-
-    pip install git+https://github.com/ondrolexa/apsg.git
-
-Alternatively, clone the repository and do a local install with
-`uv <https://docs.astral.sh/uv/>`_ (recommended for development)::
+To work on APSG itself, clone the repository and install it in editable mode
+with all extras and development tools::
 
     git clone https://github.com/ondrolexa/apsg.git
     cd apsg
     uv sync --all-extras --dev
 
-Comments on system-wide installations on Debian systems
--------------------------------------------------------
+Run the test suite with ``uv run pytest``.
 
-Latest Debian-based systems do not allow installing non-Debian packages
-system-wide. However, installing all requirements allows installing APSG
-system-wide without troubles.
+With pip
+--------
 
-Install requirements using apt::
+Create and activate a virtual environment. On Linux and macOS::
 
-    sudo apt install python3-numpy python3-matplotlib python3-scipy python3-sqlalchemy python3-pandas
+    python -m venv .venv
+    source .venv/bin/activate
 
-and then install APSG using pip::
+On Windows (Command Prompt or PowerShell)::
 
-    pip install --break-system-packages apsg
-
-Install with conda or mamba
----------------------------
-
-If you already have conda or mamba installed, you can create an environment
-with APSG by running::
-
-    conda config --add channels conda-forge
-    conda create -n apsg python apsg jupyterlab pyqt6
-
-or using mamba::
-
-    mamba create -n apsg python apsg jupyterlab pyqt6
-
-To install APSG into an existing environment::
-
-    conda install apsg
+    python -m venv .venv
+    .venv\Scripts\activate
 
 .. note::
-   The ``conda-forge`` channel must be configured if you have not added it
-   already (``conda config --add channels conda-forge``).
+   On Windows, PowerShell may refuse to run the activation script. To allow it
+   for the current user, run::
+
+       Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+Install the latest stable release from PyPI::
+
+    pip install apsg
+
+To include JupyterLab and openpyxl (needed to read Excel files), use the ``lab`` extra::
+
+    pip install "apsg[lab]"
+
+To upgrade an existing installation without touching its dependencies::
+
+    pip install --upgrade --no-deps apsg
+
+To install the master branch from GitHub::
+
+    pip install git+https://github.com/ondrolexa/apsg.git
+
+Debian and Ubuntu system-wide installation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Recent Debian-based systems do not allow installing non-Debian packages
+system-wide. Install the requirements with apt first, then install APSG with
+pip::
+
+    sudo apt install python3-numpy python3-matplotlib python3-scipy python3-sqlalchemy python3-pandas
+    pip install --break-system-packages apsg
+
+With conda or mamba
+-------------------
+
+If you already use conda or mamba, add the ``conda-forge`` channel and create
+an environment with APSG::
+
+    conda config --add channels conda-forge
+    conda create -n apsg python apsg jupyterlab
+
+or with mamba::
+
+    mamba create -n apsg python apsg jupyterlab
+
+To install APSG into an existing environment, run ``conda install apsg`` (or
+``mamba install apsg``).

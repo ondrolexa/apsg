@@ -9,13 +9,11 @@
 [![codecov](https://codecov.io/gh/ondrolexa/apsg/graph/badge.svg?token=YKXWmJJHw3)](https://codecov.io/gh/ondrolexa/apsg)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.593586-blue)](https://doi.org/10.5281/zenodo.593586)
 
-## 🤔 What is APSG?
-
-APSG is the package for structural geologists. It defines several new python classes to easily manage, analyze and visualize orientation structural geology data.
+APSG is the package for structural geologists. It defines several new Python classes to easily manage, analyze and visualize orientation structural geology data.
 
 Check [CHANGELOG.md](https://github.com/ondrolexa/apsg/blob/master/CHANGELOG.md) for recent updates.
 
-## 📈 Quick example
+## Quick example
 
 ```python
 from apsg import *
@@ -28,100 +26,162 @@ s.contour(f)
 s.show()
 ```
 
-``StereoNet`` supports both equal-area (Schmidt, default) and equal-angle (Wulff) projections,
-lower and upper hemisphere, and rotating the whole net independently of the plotted data --
-see the stereonet tutorial in the [documentation](https://apsg.readthedocs.org) for examples.
+`StereoNet` supports both equal-area (Schmidt, default) and equal-angle (Wulff) projections,
+lower and upper hemisphere, and rotating the whole net independently of the plotted data.
+See the stereonet tutorial in the [documentation](https://apsg.readthedocs.org) for examples.
 
-## 🛠️ Requirements
+## Requirements
 
-You need Python 3.12 or later to run APSG. The package requires [NumPy](https://numpy.org/),
-[SciPy](https://scipy.org/), [Matplotlib](https://matplotlib.org/), [SQLAlchemy](https://www.sqlalchemy.org/),
-[pandas](https://pandas.pydata.org/) and [pygeomag](https://github.com/boxpet/pygeomag).
+APSG requires Python 3.12 or later. It depends on [NumPy](https://numpy.org/),
+[SciPy](https://scipy.org/), [Matplotlib](https://matplotlib.org/),
+[SQLAlchemy](https://www.sqlalchemy.org/), [pandas](https://pandas.pydata.org/),
+[pygeomag](https://github.com/boxpet/pygeomag). The installers below take care of these.
 
-## 🚀 How to install
+## Installation
 
-It is strongly suggested to install **apsg** into separate environment. You can create
-Python virtual environment. For Linux and macOS use:
+Install APSG into a separate environment. Pick one of the options below. uv is the default
+and the fastest; pip and conda/mamba are alternatives.
 
-    python -m venv .venv
-    source .venv/bin/activate
+### With uv (recommended)
 
-for Windows use Command Prompt or PowerShell:
+Install [uv](https://docs.astral.sh/uv/), then create a virtual environment and install APSG
+into it:
 
-    python -m venv .venv
-    .venv\Scripts\activate
+```sh
+uv venv
+uv pip install apsg
+```
 
-> **Note:** On Microsoft Windows, it may be required to set the execution policy in PowerShell for the user.
-> You can do this by issuing the following PowerShell command:
-> ```
+Activate the environment on Linux and macOS:
+
+```sh
+source .venv/bin/activate
+```
+
+On Windows (Command Prompt or PowerShell):
+
+```powershell
+.venv\Scripts\activate
+```
+
+To include JupyterLab and [openpyxl](https://openpyxl.readthedocs.io/) (needed to read Excel files), use the `lab` extra:
+
+```sh
+uv pip install "apsg[lab]"
+```
+
+In an existing project with a `pyproject.toml`, add APSG as a dependency instead:
+
+```sh
+uv add apsg
+```
+
+### Development install
+
+To work on APSG itself, clone the repository and install it in editable mode with all extras
+and development tools:
+
+```sh
+git clone https://github.com/ondrolexa/apsg.git
+cd apsg
+uv sync --all-extras --dev
+```
+
+Run the test suite with `uv run pytest`.
+
+### With pip
+
+Create and activate a virtual environment. On Linux and macOS:
+
+```sh
+python -m venv .venv
+source .venv/bin/activate
+```
+
+On Windows (Command Prompt or PowerShell):
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+> **Note:** On Windows, PowerShell may refuse to run the activation script. To allow it for
+> the current user, run:
+>
+> ```powershell
 > Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 > ```
 
-and install latest stable version of **apsg** using pip within the environment:
+Install the latest stable release from PyPI:
 
-    pip install apsg
+```sh
+pip install apsg
+```
 
-To include jupyterlab in installation, use `lab` extra:
+To include JupyterLab and [openpyxl](https://openpyxl.readthedocs.io/) (needed to read Excel files), use the `lab` extra:
 
-    pip install apsg[lab]
+```sh
+pip install "apsg[lab]"
+```
 
-Or install **master** with:
+To upgrade an existing installation without touching its dependencies:
 
-    pip install git+https://github.com/ondrolexa/apsg.git
+```sh
+pip install --upgrade --no-deps apsg
+```
 
-Alternatively, you can clone the repository and do a local install with [uv](https://docs.astral.sh/uv/) (recommended for dev):
+To install the master branch from GitHub:
 
-    git clone https://github.com/ondrolexa/apsg.git
-    cd apsg
-    uv sync --all-extras --dev
+```sh
+pip install git+https://github.com/ondrolexa/apsg.git
+```
 
-#### Upgrading via pip
+#### Debian and Ubuntu system-wide installation
 
-To upgrade an existing version of APSG from PyPI, execute:
+Recent Debian-based systems do not allow installing non-Debian packages system-wide. Install
+the requirements with apt first, then install APSG with pip:
 
-    pip install apsg --upgrade --no-deps
+```sh
+sudo apt install python3-numpy python3-matplotlib python3-scipy python3-sqlalchemy python3-pandas
+pip install --break-system-packages apsg
+```
 
-#### Comments on system-wide installations on Debian systems
+### With conda or mamba
 
-Latest Debian-based systems do not allow installing non-Debian packages system-wide.
-However, installing all requirements allows to force install APSG system-wide without troubles.
+If you already use conda or mamba, add the `conda-forge` channel and create an environment
+with APSG:
 
-Install requirements using apt:
+```sh
+conda config --add channels conda-forge
+conda create -n apsg python apsg jupyterlab
+```
 
-    sudo apt install python3-numpy python3-matplotlib python3-scipy python3-sqlalchemy python3-pandas
+or with mamba:
 
-and then install apsg using pip:
+```sh
+mamba create -n apsg python apsg jupyterlab
+```
 
-    pip install --break-system-packages apsg
+To install APSG into an existing environment, run `conda install apsg` (or
+`mamba install apsg`).
 
-### I'm using conda or mamba to manage environments
-
-If you already have conda or mamba installed, you can create environment with:
-
-    conda config --add channels conda-forge
-    conda create -n apsg python apsg jupyterlab
-
-or using mamba
-
-    mamba create -n apsg python apsg jupyterlab
-
-#### Current release info
+### Current release
 
 | Name | Downloads | Version | Platforms |
 | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-apsg-green.svg)](https://anaconda.org/conda-forge/apsg) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/apsg.svg)](https://anaconda.org/conda-forge/apsg) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/apsg.svg)](https://anaconda.org/conda-forge/apsg) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/apsg.svg)](https://anaconda.org/conda-forge/apsg) |
 
-## 📘 Documentation
+## Documentation
 
-You can explore all the features of APSG in [documentation](https://apsg.readthedocs.org).
+Explore all features of APSG in the [documentation](https://apsg.readthedocs.org).
 
-## 💻 Contributing
+## Contributing
 
-Most discussion happens on [Github](https://github.com/ondrolexa/apsg). Feel free to open [an issue](https://github.com/ondrolexa/apsg/issues/new) or comment on any open issue or pull request. Check [CONTRIBUTING.md](https://github.com/ondrolexa/apsg/blob/master/CONTRIBUTING.md) for more details.
+Most discussion happens on [GitHub](https://github.com/ondrolexa/apsg). Feel free to open [an issue](https://github.com/ondrolexa/apsg/issues/new) or comment on any open issue or pull request. See [CONTRIBUTING.md](https://github.com/ondrolexa/apsg/blob/master/CONTRIBUTING.md) for more details.
 
-## 🪙 Donate
+## Donate
 
-APSG is an open-source project, available for you for free. It took a lot of time and resources to build this software. If you find this software useful and want to support its future development please consider donating to me.
+APSG is an open-source project, available for free. It took a lot of time and resources to build this software. If you find it useful and want to support its future development, please consider donating.
 
 [![Donate via PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=QTYZWVUNDUAH8&item_name=APSG+development+donation&currency_code=EUR&source=url)
 
