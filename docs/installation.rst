@@ -36,6 +36,24 @@ In an existing project with a ``pyproject.toml``, add APSG as a dependency::
 
     uv add apsg
 
+Command-line tool
+~~~~~~~~~~~~~~~~~
+
+To use APSG from the command line, install it as a tool. This puts an isolated
+copy of APSG on your ``PATH``, without activating an environment::
+
+    uv tool install apsg
+
+Then start the interactive APSG shell, which runs ``from apsg import *`` for you::
+
+    iapsg
+
+To try the shell without installing, run::
+
+    uvx --from apsg iapsg
+
+Add the ``lab`` extra with ``uv tool install "apsg[lab]"`` to include JupyterLab.
+
 Development install
 ~~~~~~~~~~~~~~~~~~~
 

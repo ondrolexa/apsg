@@ -76,6 +76,22 @@ In an existing project with a `pyproject.toml`, add APSG as a dependency instead
 uv add apsg
 ```
 
+To use APSG from the command line, install it as a tool. This puts an isolated copy of APSG
+on your `PATH`, without activating an environment:
+
+```sh
+uv tool install apsg
+```
+
+Then start the interactive APSG shell, which runs `from apsg import *` for you:
+
+```sh
+iapsg
+```
+
+To try the shell without installing, run `uvx --from apsg iapsg`. Add the `lab` extra with
+`uv tool install "apsg[lab]"` to include JupyterLab.
+
 ### Development install
 
 To work on APSG itself, clone the repository and install it in editable mode with all extras
@@ -134,16 +150,6 @@ To install the master branch from GitHub:
 
 ```sh
 pip install git+https://github.com/ondrolexa/apsg.git
-```
-
-#### Debian and Ubuntu system-wide installation
-
-Recent Debian-based systems do not allow installing non-Debian packages system-wide. Install
-the requirements with apt first, then install APSG with pip:
-
-```sh
-sudo apt install python3-numpy python3-matplotlib python3-scipy python3-sqlalchemy python3-pandas
-pip install --break-system-packages apsg
 ```
 
 ### With conda or mamba
