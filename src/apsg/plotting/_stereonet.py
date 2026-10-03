@@ -92,7 +92,7 @@ def _beachball_arcs(stress):
     sigma3 that contain the P axis (sigma1). ``None`` for an isotropic stress, which
     has no preferred orientation."""
     e1, e3 = stress.E1, stress.E3
-    if e1 - e3 <= 1e-12 * max(1.0, abs(e1), abs(e3)):
+    if abs(e1 - e3) <= 1e-12 * max(1.0, abs(e1), abs(e3)):
         return None
     p, t = np.asarray(stress.sigma1dir), np.asarray(stress.sigma3dir)
     return _quadrant_arcs((p + t) / np.sqrt(2), (p - t) / np.sqrt(2), p)

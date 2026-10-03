@@ -65,6 +65,9 @@ AppConfig
     * - ``notation``
       - ``"dd"``
       - Notation for geological measurements (``"dd"``, ``"rhr"`` or ``"quadrant"``)
+    * - ``stress_convention``
+      - ``"geological"``
+      - Sign convention of ``Stress2``/``Stress3`` inputs and reported values: ``"geological"`` (compression positive) or ``"mechanical"`` (tension positive). Internal storage is always mechanical
     * - ``vec2geo``
       - ``False``
       - Represent ``Vector3`` using geological notation

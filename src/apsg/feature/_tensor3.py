@@ -5,6 +5,7 @@ import numpy as np
 from scipy import linalg as spla
 from scipy.spatial.transform import Rotation
 
+from apsg.config import apsg_conf, stress_sign
 from apsg.feature._geodata import Fault, Foliation, Lineation, Pair
 from apsg.feature._tensor2 import Ellipse
 from apsg.helpers._math import atand
@@ -739,21 +740,23 @@ class Stress3(Tensor3):
     """
     The class to represent 3D stress tensor.
 
-    Uses the geosciences and rock-mechanics sign convention: normal stress
-    is positive for compression and negative for tension (the opposite of
-    the continuum-mechanics convention). The real eigenvalues of the stress
-    tensor are what we call the principal stresses. There are 3 of these in
-    3D, available as properties E1, E2, and E3 in descending order of
-    magnitude, with orientations available as properties V1, V2 and V3.
-    Because compressive stresses are positive here, E1 is directly the
-    greatest (most compressive) principal stress and E3 the least
-    (most tensile).
+    Sign convention is set by ``apsg_conf.stress_convention``. The default
+    ``"geological"`` convention is compression positive (normal stress is
+    positive for compression, the opposite of the continuum-mechanics
+    convention). ``"mechanical"`` is tension positive. The constructor, the
+    ``from_*`` methods and all reported values (principal stresses, invariants,
+    normal stress, eigenvalues, ``repr``) follow the active convention. The
+    internal matrix, returned by ``np.asarray()``, indexing and ``to_json()``,
+    is always the mechanical (tension-positive) one.
 
-    Note: Stress tensor has special properties sigma1, sigma2 and sigma3
-    to follow common geological terminology - they map directly to E1, E2
-    and E3: sigma1 is the greatest (most compressive) principal stress
-    while sigma3 is the least (most tensile). Their orientation could be
-    accessed with properties sigma1dir, sigma2dir and sigma3dir.
+    There are 3 principal stresses, available as properties E1, E2 and E3 with
+    orientations V1, V2 and V3. They are ordered from most compressive: E1
+    (also ``sigma1``) is the most compressive, E3 (``sigma3``) the least
+    compressive (most tensile).
+
+    The traction vector of ``cauchy()`` and ``stress_comp()`` is the physical
+    (tension-positive) Cauchy traction, ``σ·n``, in both conventions.
+    ``fault()`` is built from that traction and is convention-independent.
 
     Args:
         a (3x3 array_like): Input data, that can be converted to
@@ -762,6 +765,41 @@ class Stress3(Tensor3):
     Examples:
         >>> S = stress([[8, 0, 0],[0, 5, 0],[0, 0, 1]])
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # public input is in the active convention, stored internally as mechanical
+        sign = stress_sign()
+        self._coefs = tuple(tuple(sign * float(v) for v in row) for row in self._coefs)
+
+    @classmethod
+    def _from_canonical(cls, coefs, **kwargs):
+        obj = cls.__new__(cls)
+        Matrix3.__init__(obj, coefs, **kwargs)
+        return obj
+
+    def __repr__(self):
+        n = apsg_conf.ndigits
+        return f"{self.label()}\n{(stress_sign() * np.asarray(self)).round(n)!s}"
+
+    def to_json(self):
+        obj = super().to_json()
+        obj["stress_convention"] = "mechanical"
+        return obj
+
+    def _component(self, i, j):
+        return stress_sign() * self._coefs[i][j]
+
+    @property
+    def _eig(self):
+        # cache the canonical decomposition (ascending, so E1 is the most
+        # compressive); the convention sign is applied on every access
+        if "eig" not in self._cache:
+            evals, evecs = np.linalg.eigh(np.asarray(self._coefs, dtype=float))
+            evals[np.isclose(evals, np.zeros_like(evals))] = 0
+            self._cache["eig"] = evals, evecs
+        evals, evecs = self._cache["eig"]
+        return stress_sign() * evals, evecs
 
     @classmethod
     def from_comp(cls, **kwargs):
@@ -834,7 +872,7 @@ class Stress3(Tensor3):
     def deviatoric(self):
         """A stress deviator tensor component."""
 
-        return type(self)(self - self.hydrostatic)
+        return self - self.hydrostatic
 
     def effective(self, fp):
         """
@@ -847,7 +885,8 @@ class Stress3(Tensor3):
             Stress3: effective stress tensor reduced by fluid pressure.
         """
 
-        return type(self)(self - fp * Stress3())
+        # Terzaghi: pore pressure reduces compression, i.e. adds to tension
+        return self._derive(np.asarray(self) + fp * np.eye(3))
 
     @property
     def sigma1(self):
@@ -907,7 +946,7 @@ class Stress3(Tensor3):
     def I1(self):
         """First invariant."""
 
-        return float(np.trace(self))
+        return stress_sign() * float(np.trace(self))
 
     @property
     def I2(self):
@@ -919,7 +958,7 @@ class Stress3(Tensor3):
     def I3(self):
         """Third invariant."""
 
-        return self.det
+        return stress_sign() * self.det
 
     @property
     def diagonalized(self):
@@ -932,7 +971,8 @@ class Stress3(Tensor3):
 
     def cauchy(self, n):
         """
-        Return stress vector associated with plane given by normal vector.
+        Return physical (tension-positive) Cauchy traction vector ``σ·n`` on
+        plane given by normal vector, independent of ``stress_convention``.
 
         Args:
             n: normal given as ``Vector3`` or ``Foliation`` object
@@ -940,10 +980,10 @@ class Stress3(Tensor3):
         Examples:
             >>> S = stress.from_comp(xx=5, yy=2, zz=-10, xy=1)
             >>> S.cauchy(fol(160, 30))
-            Vector3(2.178, 0.128, -8.66)
+            Vector3(-2.178, -0.128, 8.66)
 
         Returns:
-            Vector3: stress vector associated with plane given by normal vector.
+            Vector3: physical traction vector on plane given by normal vector.
         """
 
         return Vector3(np.dot(self, n.normalized()))
@@ -965,14 +1005,17 @@ class Stress3(Tensor3):
         """
 
         _sn, tau = self.stress_comp(n)
-        return Fault(n.normalized(), tau.normalized())
+        # slip follows the shear traction acting on the hanging wall, which
+        # is minus the physical traction on the footwall-pointing normal
+        return Fault(n.normalized(), (-tau).normalized())
 
     def stress_comp(self, n):
-        """Return normal and shear stress ``Vector3`` components on plane given
-        by normal vector.
+        """Return normal and shear traction ``Vector3`` components on plane given
+        by normal vector, in the physical (tension-positive) sign convention
+        of ``cauchy()``.
 
         Returns:
-            tuple: normal and shear stress ``Vector3`` components.
+            tuple: normal and shear traction ``Vector3`` components.
         """
 
         t = self.cauchy(n)
@@ -982,12 +1025,14 @@ class Stress3(Tensor3):
 
     def normal_stress(self, n):
         """Return normal stress magnitude on plane given by normal vector.
+        Follows ``apsg_conf.stress_convention``: positive for compression
+        with the default ``"geological"`` convention.
 
         Returns:
             float: normal stress magnitude on plane given by normal vector.
         """
 
-        return float(np.dot(n, self.cauchy(n)))
+        return stress_sign() * float(np.dot(n.normalized(), self.cauchy(n)))
 
     def shear_stress(self, n):
         """Return shear stress magnitude on plane given by normal vector.

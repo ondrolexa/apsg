@@ -388,6 +388,7 @@ class AppConfig(BaseConfig):
     """Top-level application configuration."""
 
     notation: str = "dd"
+    stress_convention: str = "geological"
     vec2geo: bool = False
     ndigits: int = 3
     figsize: tuple = (8, 6)
@@ -443,6 +444,26 @@ class AppConfig(BaseConfig):
 
 
 apsg_conf = AppConfig()
+
+STRESS_CONVENTIONS = ("geological", "mechanical")
+
+
+def stress_sign():
+    """Sign that maps the canonical (mechanical, tension-positive) stress matrix
+    to the active ``apsg_conf.stress_convention``.
+
+    Returns:
+        float: -1.0 for ``"geological"`` (compression positive), +1.0 for
+        ``"mechanical"`` (tension positive). The mapping is its own inverse.
+    """
+    convention = apsg_conf.stress_convention
+    if convention == "geological":
+        return -1.0
+    if convention == "mechanical":
+        return 1.0
+    raise ValueError(
+        f"Unknown stress_convention {convention!r}, expected one of {STRESS_CONVENTIONS}"
+    )
 
 
 @contextmanager

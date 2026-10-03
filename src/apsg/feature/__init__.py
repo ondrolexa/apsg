@@ -1,5 +1,7 @@
 import sys
 
+import numpy as np
+
 from apsg.feature._container import (
     ArcSet,
     ClusterSet,
@@ -106,4 +108,10 @@ def feature_from_json(obj_json):
         else:
             args.append(arg)
     kwargs = obj_json.get("kwargs", {})
+    if dtype_cls in (Stress2, Stress3):
+        coefs = args[0]
+        if "stress_convention" not in obj_json:
+            # files written before the mechanical storage hold the geological matrix
+            coefs = (-np.asarray(coefs, dtype=float)).tolist()
+        return dtype_cls._from_canonical(coefs, **kwargs)
     return dtype_cls(*args, **kwargs)

@@ -9,6 +9,7 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 ## [2.0.3] - master
 
 ### Added
+- `apsg_conf.stress_convention` selects the sign convention of `Stress2`/`Stress3` inputs and reported values: `"geological"` (default, compression positive) or `"mechanical"` (tension positive). The tensor and all stress results are identical for the same physical state under either convention.
 - `Ellipse.from_ratio()` and `Ellipsoid.from_ratios()` build a strain ellipse/ellipsoid directly from axial ratios (2D: one ratio; 3D: any two of the three pairwise ratios).
 - `Ellipse.defgrad()`/`Ellipsoid.defgrad()` recover the deformation gradient that produced a strain ellipse/ellipsoid -- the inverse of `from_defgrad()`.
 - `from_ellipse()`/`from_ellipsoid()` now also accept `form="right"` to invert the right Cauchy-Green/Green's strain convention, not just the default left one.
@@ -19,6 +20,11 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - **BREAKING:** `DeformationGradient3.from_ratios()` now requires exactly two of `Rxy`, `Rxz` and `Ryz` (previously only `Rxy`/`Ryz`, defaulting to the identity tensor when neither was given); calling it with no arguments is no longer supported.
 - **BREAKING:** `DeformationGradient2.from_ratio()` now requires `R >= 1`.
 - **BREAKING:** `from_ellipse()`/`from_ellipsoid()` gained a `form` keyword before the existing `R` keyword -- pass `R` by keyword, not position.
+- **BREAKING:** `Stress2`/`Stress3` store the tensor internally in the mechanical (tension-positive) sign, so `np.asarray(S)`, indexing and `to_json()` return the negated matrix of the default geological convention. Constructors and reported values stay geological by default. Files written by 2.0.x are still read correctly.
+- **BREAKING:** `Stress2.cauchy()`/`Stress3.cauchy()` return the physical (tension-positive) traction `σ·n`, and the vector components of `stress_comp()` flip sign accordingly. `normal_stress()` keeps its compression-positive value under the default convention; `shear_stress()`, `slip_tendency()`, `dilation_tendency()` and the slip sense of `fault()` are unchanged.
+
+### Fixed
+- `Stress2.signed_shear_stress()` returned a wrong value for general normals (it was not the traction along the normal's tangent). It now returns the physical traction along the +90° tangent, with magnitude equal to `shear_stress()`.
 
 ## [2.0.2] - 2026-09-30
 

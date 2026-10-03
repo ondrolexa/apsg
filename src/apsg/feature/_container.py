@@ -12,7 +12,7 @@ from scipy.optimize import root_scalar
 from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
 
-from apsg.config import apsg_conf
+from apsg.config import apsg_conf, stress_sign
 from apsg.feature._geodata import (
     Arc,
     Cone,
@@ -72,12 +72,17 @@ def _mean_tensor(tensor_set, level, normalize, anisoft):
     Shared implementation of ``EllipsoidSet.mean_tensor`` and
     ``Stress3Set.mean_tensor``.
     """
+    tensor_cls = tensor_set.__feature_class__
     result = jelinek_statistics(
         np.array([np.asarray(t) for t in tensor_set]),
         level=level,
         normalize=normalize,
         anisoft=anisoft,
     )
+    eigenvalues = result["eigenvalues"]
+    if issubclass(tensor_cls, (Stress2, Stress3)):
+        # internal matrices are mechanical; report eigenvalues in the active convention
+        eigenvalues = stress_sign() * eigenvalues
     ellipses = tuple(
         {
             "mu": Vector3(e["mu"]),
@@ -88,8 +93,8 @@ def _mean_tensor(tensor_set, level, normalize, anisoft):
         for which, e in enumerate(result["ellipses"])
     )
     return {
-        "mean": tensor_set.__feature_class__(result["mean"]),
-        "eigenvalues": result["eigenvalues"],
+        "mean": tensor_cls._from_canonical(result["mean"]),
+        "eigenvalues": eigenvalues,
         "ellipses": ellipses,
         "n": result["n"],
         "level": result["level"],
@@ -2767,7 +2772,9 @@ class Stress3Set(FeatureSet):
 
         Returns:
             dict: with keys ``mean`` (mean tensor), ``eigenvalues`` (of the
-            mean tensor, descending), ``ellipses`` (tuple of three dicts, one
+            mean tensor, descending; for stress sets the sign follows
+            ``apsg_conf.stress_convention``, index-aligned with ``ellipses``),
+            ``ellipses`` (tuple of three dicts, one
             for each principal axis of the mean tensor, 0 is the largest
             eigenvalue, with keys ``mu`` (principal axis), ``axes`` (tuple of
             the two ellipse axes, perpendicular to ``mu``), ``gamma`` (tuple

@@ -20,9 +20,21 @@ class Matrix(ABC):
         self._cache = {}
 
     def __copy__(self):
-        return type(self)(self._coefs)
+        return self._derive(self._coefs)
 
     copy = __copy__
+
+    @classmethod
+    def _from_canonical(cls, coefs, **kwargs):
+        """Build an instance from coefficients already in the internal
+        representation. Subclasses with a convention-dependent public
+        constructor override this to skip the input conversion."""
+        return cls(coefs, **kwargs)
+
+    def _derive(self, coefs):
+        """Build a same-type result of an operation on this object, from
+        internal coefficients."""
+        return type(self)._from_canonical(coefs)
 
     @property
     def flat_coefs(self):
@@ -57,50 +69,56 @@ class Matrix(ABC):
         return not np.allclose(self, np.zeros(self.__shape__))
 
     def __add__(self, other):
-        return type(self)(np.add(self, other))
+        return self._derive(np.add(self, other))
 
     __radd__ = __add__
 
     def __sub__(self, other):
-        return type(self)(np.subtract(self, other))
+        return self._derive(np.subtract(self, other))
 
     def __rsub__(self, other):
-        return type(self)(np.subtract(other, self))
+        return self._derive(np.subtract(other, self))
 
     def __mul__(self, other):
-        return type(self)(np.multiply(self, other))
+        return self._derive(np.multiply(self, other))
 
     __rmul__ = __mul__
 
     def __floordiv__(self, other):
-        return type(self)(np.floor_divide(self, other))
+        return self._derive(np.floor_divide(self, other))
 
     def __rfloordiv__(self, other):
-        return type(self)(np.floor_divide(other, self))
+        return self._derive(np.floor_divide(other, self))
 
     def __truediv__(self, other):
-        return type(self)(np.true_divide(self, other))
+        return self._derive(np.true_divide(self, other))
 
     def __rtruediv__(self, other):
-        return type(self)(np.true_divide(other, self))
+        return self._derive(np.true_divide(other, self))
 
     __pos__ = __copy__
 
+    def _component(self, i, j):
+        """Component ``(i, j)`` as reported to the user, see ``Stress`` classes."""
+        return self._coefs[i][j]
+
     def __getitem__(self, key):
         if isinstance(key, tuple):
-            return self._coefs[key[0]][key[1]]
+            return self._component(key[0], key[1])
         else:
-            return self._coefs[key]
+            return tuple(self._component(key, j) for j in range(self.__shape__[1]))
 
     def __iter__(self):
         # what we want to iterate?
-        return iter(self._coefs)
+        return iter(self[i] for i in range(self.__shape__[0]))
 
     def __pow__(self, n):
-        return type(self)(np.linalg.matrix_power(self, n))
+        return self._derive(np.linalg.matrix_power(self, n))
 
     def _ensure_same(self, other):
         cls = type(self)
+        if isinstance(other, cls):
+            return other
         if np.asarray(other).shape == cls.__shape__:
             return cls(other)
         raise TypeError(f"Unsupported argument. Expecting {cls.__name__}")
@@ -116,38 +134,38 @@ class Matrix(ABC):
     def xx(self):
         """Return xx-element of the matrix."""
 
-        return self._coefs[0][0]
+        return self._component(0, 0)
 
     @property
     def xy(self):
         """Return xy-element of the matrix."""
 
-        return self._coefs[0][1]
+        return self._component(0, 1)
 
     @property
     def yx(self):
         """Return yx-element of the matrix."""
 
-        return self._coefs[1][0]
+        return self._component(1, 0)
 
     @property
     def yy(self):
         """Return yy-element of the matrix."""
 
-        return self._coefs[1][1]
+        return self._component(1, 1)
 
     @property
     def I(self):
-        return type(self)(np.linalg.inv(self))
+        return self._derive(np.linalg.inv(self))
 
     @property
     def T(self):
-        return type(self)(np.array(self).T)
+        return self._derive(np.array(self).T)
 
     def transform(self, other):
         """Coordinate transformations of matrix."""
-        other = np.asarray(self._ensure_same(other))
-        return type(self)(other @ self @ other.T)
+        other = np.asarray(other)  # transformation, not a tensor: no conversion
+        return self._derive(other @ self @ other.T)
 
     @property
     def _eig(self):
@@ -264,14 +282,14 @@ class Matrix2(Matrix):
     def __matmul__(self, other):
         r = np.dot(np.array(self), other)
         if np.asarray(r).shape == Matrix2.__shape__:
-            return type(self)(r)
+            return self._derive(r)
         else:
             return Vector2(r)
 
     def __rmatmul__(self, other):
         r = np.dot(other, np.array(self))
         if np.asarray(r).shape == Matrix2.__shape__:
-            return type(self)(r)
+            return self._derive(r)
         else:
             return Vector2(r)
 
@@ -421,14 +439,14 @@ class Matrix3(Matrix):
     def __matmul__(self, other):
         r = np.dot(np.array(self), other)
         if np.asarray(r).shape == Matrix3.__shape__:
-            return type(self)(r)
+            return self._derive(r)
         else:
             return Vector3(r)
 
     def __rmatmul__(self, other):
         r = np.dot(other, np.array(self))
         if np.asarray(r).shape == Matrix3.__shape__:
-            return type(self)(r)
+            return self._derive(r)
         else:
             return Vector3(r)
 
@@ -436,31 +454,31 @@ class Matrix3(Matrix):
     def xz(self):
         """Return xz-element of the matrix."""
 
-        return self._coefs[0][2]
+        return self._component(0, 2)
 
     @property
     def yz(self):
         """Return yz-element of the matrix."""
 
-        return self._coefs[1][2]
+        return self._component(1, 2)
 
     @property
     def zx(self):
         """Return zx-element of the matrix."""
 
-        return self._coefs[2][0]
+        return self._component(2, 0)
 
     @property
     def zy(self):
         """Return zy-element of the matrix."""
 
-        return self._coefs[2][1]
+        return self._component(2, 1)
 
     @property
     def zz(self):
         """Return zz-element of the matrix."""
 
-        return self._coefs[2][2]
+        return self._component(2, 2)
 
     @property
     def E1(self):

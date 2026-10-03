@@ -52,6 +52,24 @@ Tensor analysis::
     >>> s = stress.from_ratio(r=0.5, mag=1)
     >>> ot = ortensor.from_features(fols)
 
+Sign convention of stress tensors: ``apsg_conf.stress_convention`` selects ``"geological"``
+(default, compression positive) or ``"mechanical"`` (tension positive). The constructors and
+``from_*`` methods take input in the active convention, and reported values (principal
+stresses, invariants, ``normal_stress()``, eigenvalues, ``repr``) follow it. The internal
+matrix, returned by ``np.asarray()``, is always mechanical, so ``np.asarray(S)`` is the negative
+of the geological matrix. ``cauchy()`` and ``stress_comp()`` return the physical traction
+``σ·n`` in both conventions, and ``shear_stress()``, ``slip_tendency()`` and ``fault()`` do not
+depend on the convention::
+
+    >>> from apsg import fol
+    >>> from apsg.config import apsg_conf_context
+    >>> S = stress.from_comp(xx=1, yy=1, zz=10)   # vertical compression 10
+    >>> S.normal_stress(fol(90, 60))              # +3.25, compression positive
+    >>> S.cauchy(fol(90, 60))                     # physical traction, tension positive
+    >>> with apsg_conf_context(stress_convention="mechanical"):
+    ...     M = stress.from_comp(xx=-1, yy=-1, zz=-10)  # same state, tension positive
+    ...     M.normal_stress(fol(90, 60))                # -3.25
+
 Mean tensor of a group of tensors (``EllipsoidSet`` or ``Stress3Set``) with confidence ellipses
 of its principal axes, following the linear perturbation method of Jelínek (1978)::
 

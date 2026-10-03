@@ -3,6 +3,7 @@ import math
 import numpy as np
 from scipy import linalg as spla
 
+from apsg.config import apsg_conf, stress_sign
 from apsg.helpers._math import atan2d, cosd, sind
 from apsg.math._matrix import Matrix2
 from apsg.math._vector import Vector2
@@ -307,20 +308,22 @@ class Stress2(Tensor2):
     """
     The class to represent 2D stress tensor.
 
-    Uses the geosciences and rock-mechanics sign convention: normal stress
-    is positive for compression and negative for tension (the opposite of
-    the continuum-mechanics convention). The real eigenvalues of the stress
-    tensor are the principal stresses, available as properties E1 and E2 in
-    descending order of magnitude, with orientations available as V1 and
-    V2. Because compressive stresses are positive here, E1 is directly the
-    greatest (most compressive) principal stress and E2 the least
-    (most tensile).
+    Sign convention is set by ``apsg_conf.stress_convention``. The default
+    ``"geological"`` convention is compression positive (normal stress is
+    positive for compression, the opposite of the continuum-mechanics
+    convention). ``"mechanical"`` is tension positive. The constructor, the
+    ``from_*`` methods and all reported values (principal stresses, invariants,
+    normal stress, eigenvalues, ``repr``) follow the active convention. The
+    internal matrix, returned by ``np.asarray()``, indexing and ``to_json()``,
+    is always the mechanical (tension-positive) one.
 
-    Note: Stress tensor has special properties sigma1 and sigma2 to follow
-    common geological terminology - they map directly to E1 and E2: sigma1
-    is the greatest (most compressive) principal stress while sigma2 is the
-    least (most tensile). Their orientation could be accessed with
-    properties sigma1dir and sigma2dir.
+    Principal stresses are ordered from most compressive: ``E1`` (also
+    ``sigma1``) is the most compressive and ``E2`` (``sigma2``) the least
+    compressive (most tensile). Their orientations are available as
+    ``V1``/``sigma1dir`` and ``V2``/``sigma2dir``.
+
+    The traction vector of ``cauchy()`` and ``stress_comp()`` is the physical
+    (tension-positive) Cauchy traction, ``σ·n``, in both conventions.
 
     Args:
         a (2x2 array_like): Input data, that can be converted to
@@ -333,6 +336,41 @@ class Stress2(Tensor2):
         >>> S = Stress2([[8, 0], [0, 1]])
 
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # public input is in the active convention, stored internally as mechanical
+        sign = stress_sign()
+        self._coefs = tuple(tuple(sign * float(v) for v in row) for row in self._coefs)
+
+    @classmethod
+    def _from_canonical(cls, coefs, **kwargs):
+        obj = cls.__new__(cls)
+        Matrix2.__init__(obj, coefs, **kwargs)
+        return obj
+
+    def __repr__(self):
+        n = apsg_conf.ndigits
+        return f"{self.label()}\n{(stress_sign() * np.asarray(self)).round(n)!s}"
+
+    def to_json(self):
+        obj = super().to_json()
+        obj["stress_convention"] = "mechanical"
+        return obj
+
+    def _component(self, i, j):
+        return stress_sign() * self._coefs[i][j]
+
+    @property
+    def _eig(self):
+        # cache the canonical decomposition (ascending, so E1 is the most
+        # compressive); the convention sign is applied on every access
+        if "eig" not in self._cache:
+            evals, evecs = np.linalg.eigh(np.asarray(self._coefs, dtype=float))
+            evals[np.isclose(evals, np.zeros_like(evals))] = 0
+            self._cache["eig"] = evals, evecs
+        evals, evecs = self._cache["eig"]
+        return stress_sign() * evals, evecs
 
     @classmethod
     def from_comp(cls, **kwargs):
@@ -378,7 +416,7 @@ class Stress2(Tensor2):
         A stress deviator tensor component.
         """
 
-        return type(self)(self - self.hydrostatic)
+        return self - self.hydrostatic
 
     @property
     def sigma1(self):
@@ -436,7 +474,7 @@ class Stress2(Tensor2):
         First invariant.
         """
 
-        return float(np.trace(self))
+        return stress_sign() * float(np.trace(self))
 
     @property
     def I2(self):
@@ -468,7 +506,8 @@ class Stress2(Tensor2):
 
     def cauchy(self, n):
         """
-        Return stress vector associated with plane given by normal vector.
+        Return physical (tension-positive) Cauchy traction vector ``σ·n`` on
+        plane given by normal vector, independent of ``stress_convention``.
 
         Args:
             n: normal given as ``Vector2`` object
@@ -476,21 +515,22 @@ class Stress2(Tensor2):
         Examples:
             >>> S = stress2.from_comp(xx=5, yy=2, xy=1)
             >>> S.cauchy(vec2(1, 1))
-            Vector2(4.243, 2.121)
+            Vector2(-4.243, -2.121)
 
         Returns:
-            Vector2: stress vector associated with plane given by normal vector.
+            Vector2: physical traction vector on plane given by normal vector.
         """
 
         return Vector2(np.dot(self, n.normalized()))
 
     def stress_comp(self, n):
         """
-        Return normal and shear stress ``Vector2`` components on plane given
-        by normal vector.
+        Return normal and shear traction ``Vector2`` components on plane given
+        by normal vector, in the physical (tension-positive) sign convention
+        of ``cauchy()``.
 
         Returns:
-            tuple: normal and shear stress ``Vector2`` components.
+            tuple: normal and shear traction ``Vector2`` components.
         """
 
         t = self.cauchy(n)
@@ -501,12 +541,14 @@ class Stress2(Tensor2):
     def normal_stress(self, n):
         """
         Return normal stress magnitude on plane given by normal vector.
+        Follows ``apsg_conf.stress_convention``: positive for compression
+        with the default ``"geological"`` convention.
 
         Returns:
             float: normal stress magnitude on plane given by normal vector.
         """
 
-        return float(np.dot(n, self.cauchy(n)))
+        return stress_sign() * float(np.dot(n.normalized(), self.cauchy(n)))
 
     def shear_stress(self, n):
         """
@@ -523,11 +565,16 @@ class Stress2(Tensor2):
         """
         Return signed shear stress magnitude on plane given by normal vector.
 
+        The sign is that of the physical (tension-positive) traction along the
+        tangent obtained by rotating the normal by +90 degrees, so its magnitude
+        equals ``shear_stress()``. Independent of ``stress_convention``.
+
         Returns:
             float: signed shear stress magnitude on plane given by normal vector.
         """
-        R = Rotation2.from_angle(n.direction)
-        return self.transform(R)[1, 0]
+        _sn, tau = self.stress_comp(n)
+        nn = np.asarray(n.normalized())
+        return float(np.dot(np.asarray(tau), [-nn[1], nn[0]]))
 
 
 class Ellipse(Tensor2):

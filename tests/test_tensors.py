@@ -17,6 +17,8 @@ from apsg import (
     velgrad,
     velgrad2,
 )
+from apsg.config import apsg_conf_context
+from apsg.feature import Stress3Set, feature_from_json
 from apsg.feature._geodata import Foliation, Lineation, Pair
 from apsg.feature._tensor2 import (
     DeformationGradient2,
@@ -344,12 +346,24 @@ class TestStress2:
         D, Rmat = S.diagonalized
         assert isinstance(D, Stress2)
         assert isinstance(Rmat, DeformationGradient2)
-        np.testing.assert_array_almost_equal(np.array(D), np.diag(S.eigenvalues()))
+        # np.array holds the internal mechanical matrix, eigenvalues the reported ones
+        np.testing.assert_array_almost_equal(
+            np.array(D), np.diag(np.linalg.eigvalsh(np.array(S)))
+        )
 
     def test_cauchy(self):
         S = Stress2.from_comp(xx=5, yy=2, xy=1)
         t = S.cauchy(Vector2(1, 0))
         assert isinstance(t, Vector2)
+
+    def test_cauchy_is_physical_traction(self):
+        # stored tensor is compression positive, traction is tension positive
+        S = Stress2.from_comp(xx=5, yy=2, xy=1)
+        t = S.cauchy(Vector2(1, 1))
+        np.testing.assert_allclose(
+            np.asarray(t), np.dot(np.asarray(S), [1, 1]) / np.sqrt(2)
+        )
+        np.testing.assert_allclose(np.asarray(t), [-4.2426, -2.1213], atol=1e-4)
 
     def test_stress_comp(self):
         S = Stress2.from_comp(xx=5, yy=2, xy=1)
@@ -1059,6 +1073,29 @@ class TestStress3:
         t = S.cauchy(Foliation(160, 30))
         assert isinstance(t, Vector3)
 
+    def test_cauchy_is_physical_traction(self):
+        # stored tensor is compression positive, traction is tension positive
+        S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
+        n = Foliation(160, 30).normalized()
+        np.testing.assert_allclose(np.asarray(S.cauchy(n)), np.dot(np.asarray(S), n))
+        np.testing.assert_allclose(
+            np.asarray(S.cauchy(Foliation(160, 30))), [-2.178, -0.128, 8.66], atol=1e-3
+        )
+
+    def test_normal_stress_sign_and_traction(self):
+        # vertical compression of 10 is +10 for the compression-positive stress
+        S = Stress3.from_comp(xx=1, yy=1, zz=10)
+        n = Foliation(90, 60)
+        sn = S.normal_stress(n)
+        assert math.isclose(sn, 3.25, rel_tol=1e-9)
+        assert math.isclose(float(np.dot(n.normalized(), S.cauchy(n))), -sn)
+
+    def test_fault_sense_follows_principal_stress(self):
+        # vertical maximum compression -> normal fault, horizontal -> reverse
+        n = Foliation(90, 60)
+        assert str(Stress3.from_comp(xx=1, yy=1, zz=10).fault(n)).endswith(" N")
+        assert str(Stress3.from_comp(xx=10, yy=10, zz=1).fault(n)).endswith(" R")
+
     def test_fault(self):
         S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=8)
         f = S.fault(Foliation(160, 30))
@@ -1447,3 +1484,108 @@ class TestOrientationTensor3:
 
     def test_lowercase_alias(self):
         assert ortensor is OrientationTensor3
+
+
+class TestStressConvention:
+    """The same physical stress state gives the same results in both
+    ``apsg_conf.stress_convention`` settings; only the reported sign flips."""
+
+    @staticmethod
+    def _factor(convention):
+        # reported = factor * geological value; mechanical reports tension positive
+        return 1.0 if convention == "geological" else -1.0
+
+    @pytest.mark.parametrize("convention", ["geological", "mechanical"])
+    def test_stress3_same_physics(self, convention):
+        f = self._factor(convention)
+        n = Foliation(160, 30)
+        # reference values read under the default (geological) convention
+        geo = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)
+        ref = {
+            name: getattr(geo, name)
+            for name in ("sigma1", "sigma2", "sigma3", "I1", "I3", "mean_stress")
+        }
+        ref_normal = geo.normal_stress(n)
+        ref_cauchy = np.asarray(geo.cauchy(n))
+        ref_shear = geo.shear_stress(n)
+        ref_slip = geo.slip_tendency(n)
+        ref_dilation = geo.dilation_tendency(n)
+        ref_fault = str(geo.fault(n))
+        ref_sigma1dir = np.asarray(geo.sigma1dir)
+        with apsg_conf_context(stress_convention=convention):
+            S = Stress3.from_comp(xx=f * 5, yy=f * 2, zz=f * -10, xy=f * 1)
+            # the internal mechanical matrix is the same for the same physical state
+            np.testing.assert_allclose(np.asarray(S), np.asarray(geo))
+            for name, value in ref.items():
+                assert math.isclose(getattr(S, name), f * value, abs_tol=1e-9), name
+            assert math.isclose(S.I2, geo.I2)
+            assert math.isclose(S.normal_stress(n), f * ref_normal, abs_tol=1e-9)
+            np.testing.assert_allclose(np.asarray(S.cauchy(n)), ref_cauchy)
+            assert math.isclose(S.shear_stress(n), ref_shear)
+            assert math.isclose(S.slip_tendency(n), ref_slip)
+            assert math.isclose(S.dilation_tendency(n), ref_dilation)
+            assert str(S.fault(n)) == ref_fault
+            assert abs(np.dot(np.asarray(S.sigma1dir), ref_sigma1dir)) > 0.999
+
+    @pytest.mark.parametrize("convention", ["geological", "mechanical"])
+    def test_stress2_same_physics(self, convention):
+        f = self._factor(convention)
+        n = Vector2(1, 1)
+        geo = Stress2.from_comp(xx=5, yy=2, xy=1)
+        ref = {name: getattr(geo, name) for name in ("sigma1", "sigma2", "I1")}
+        ref_normal = geo.normal_stress(n)
+        ref_shear = geo.shear_stress(n)
+        ref_signed = geo.signed_shear_stress(n)
+        with apsg_conf_context(stress_convention=convention):
+            S = Stress2.from_comp(xx=f * 5, yy=f * 2, xy=f * 1)
+            for name, value in ref.items():
+                assert math.isclose(getattr(S, name), f * value, abs_tol=1e-9), name
+            assert math.isclose(S.normal_stress(n), f * ref_normal, abs_tol=1e-9)
+            assert math.isclose(S.shear_stress(n), ref_shear)
+            assert math.isclose(S.signed_shear_stress(n), ref_signed)
+
+    @pytest.mark.parametrize("convention", ["geological", "mechanical"])
+    def test_json_round_trip(self, convention):
+        f = self._factor(convention)
+        with apsg_conf_context(stress_convention=convention):
+            S = Stress3.from_comp(xx=f * 5, yy=f * 2, zz=f * -10, xy=f * 1)
+            S2 = feature_from_json(S.to_json())
+            assert math.isclose(S2.sigma1, S.sigma1)
+            assert np.allclose(np.asarray(S2), np.asarray(S))
+
+    def test_legacy_json_is_geological(self):
+        # files written before mechanical storage hold the geological matrix
+        legacy = {
+            "datatype": "Stress3",
+            "args": ([[5, 1, 0], [1, 2, 0], [0, 0, -10]],),
+            "kwargs": {},
+        }
+        S = feature_from_json(legacy)
+        assert math.isclose(
+            S.sigma1, Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1).sigma1
+        )
+        assert S.xx == 5
+
+    def test_mean_tensor_eigenvalues_follow_convention(self):
+        geo_comps = [(5, 2, -10, 1), (6, 2, -9, 1), (4, 3, -8, 0.5)]
+        geo = Stress3Set(
+            [Stress3.from_comp(xx=a, yy=b, zz=c, xy=d) for a, b, c, d in geo_comps]
+        )
+        geo_eig = geo.mean_tensor()["eigenvalues"]
+        with apsg_conf_context(stress_convention="mechanical"):
+            ms = Stress3Set(
+                [
+                    Stress3.from_comp(xx=-a, yy=-b, zz=-c, xy=-d)
+                    for a, b, c, d in geo_comps
+                ]
+            )
+            np.testing.assert_allclose(
+                ms.mean_tensor()["eigenvalues"], -np.asarray(geo_eig)
+            )
+
+    def test_invalid_convention(self):
+        with (
+            apsg_conf_context(stress_convention="bogus"),
+            pytest.raises(ValueError, match="stress_convention"),
+        ):
+            Stress3.from_comp(xx=1)
