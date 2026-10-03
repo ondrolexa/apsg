@@ -114,22 +114,23 @@ class DeformationGradient2(Matrix2):
 
         Keyword Args:
             R (Rotation2): rotation resolving the ambiguity, to be determined from
-                independent data. Default is the identity, i.e. the simplest,
-                purely coaxial solution.
+                independent data. Default None gives the simplest, purely coaxial
+                solution F = Q @ D @ Qᵗ (a symmetric stretch, no rotation).
 
         Returns:
             DeformationGradient2: recovered ``DeformationGradient2``.
         """
-        if R is None:
-            R = Rotation2()
+        if form not in ("left", "B", "right", "C"):
+            raise TypeError("Wrong form argument")
         Q = np.column_stack(E.eigenvectors())
         D = np.diag(np.sqrt(E.eigenvalues()))
+        if R is None:
+            # symmetric, so the left and right forms coincide
+            return cls(Q @ D @ Q.T)
         if form in ("left", "B"):
             return cls(Q @ D @ np.asarray(R))
-        elif form in ("right", "C"):
-            return cls(np.asarray(R) @ D @ Q.T)
         else:
-            raise TypeError("Wrong form argument")
+            return cls(np.asarray(R) @ D @ Q.T)
 
 
 class Rotation2(DeformationGradient2):
@@ -157,6 +158,12 @@ class Rotation2(DeformationGradient2):
             # Ensure a proper rotation (det=1)
             coefs = U @ np.diag([1, np.linalg.det(U @ Vt)]) @ Vt
             self._coefs = tuple(coefs[0]), tuple(coefs[1])
+
+    def _derive(self, coefs):
+        # products such as R @ F or R + R are rotations only when orthogonal
+        if np.allclose(np.dot(np.transpose(coefs), coefs), np.eye(2)):
+            return type(self)._from_canonical(coefs)
+        return DeformationGradient2._from_canonical(coefs)
 
     def angle(self):
         """Return rotation angle."""

@@ -2648,3 +2648,22 @@ def test_beachball_style_factory():
     style = stereonet_styles.beachball(color="r")
     artist = style.create_artist(_rotated_stress(0))
     assert artist.kwargs["color"] == "r"
+
+
+def test_flinn_point_set_is_one_artist():
+    es = ellipsoidset([ellipsoid.from_stretch(2 + 0.1 * i, 1, 0.5) for i in range(5)])
+    fp = FlinnPlot()
+    fp.point(es)
+    fp.init_figure()
+    fp._render()
+    points = [line for line in fp.ax.lines if len(line.get_xdata()) == 5]
+    assert len(points) == 1
+
+
+def test_stereonet_tensor_accepts_set():
+    es = ellipsoidset([ellipsoid.from_stretch(2 + 0.1 * i, 1, 0.5) for i in range(5)])
+    for planes in (True, False):
+        s = StereoNet()
+        s.tensor(es, planes=planes)
+        s.init_figure()
+        s._render()

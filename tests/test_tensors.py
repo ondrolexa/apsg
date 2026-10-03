@@ -1589,3 +1589,50 @@ class TestStressConvention:
             pytest.raises(ValueError, match="stress_convention"),
         ):
             Stress3.from_comp(xx=1)
+
+
+class TestCoaxialAndProducts:
+    def test_rotation_left_matmul_gives_general_defgrad(self):
+        R = rotation2.from_angle(30)
+        F = defgrad2.from_ratio(3)
+        assert isinstance(R @ F, DeformationGradient2)
+        assert not isinstance(R @ F, Rotation2)
+        assert np.allclose(np.asarray(R @ F), np.asarray(R) @ np.asarray(F))
+
+    def test_rotation_left_matmul_gives_general_defgrad_3d(self):
+        R = rotation.from_axisangle(Lineation(120, 60), 50)
+        F = defgrad.from_ratios(Rxy=2, Ryz=3)
+        assert isinstance(R @ F, DeformationGradient3)
+        assert not isinstance(R @ F, Rotation3)
+
+    def test_rotation_products_stay_rotations(self):
+        R1 = rotation2.from_angle(30)
+        R2 = rotation2.from_angle(20)
+        assert isinstance(R1 @ R2, Rotation2)
+        assert isinstance((R1 @ R2).T, Rotation2)
+        assert isinstance(rotation.from_axisangle(Lineation(120, 60), 50).T, Rotation3)
+
+    def test_rotation_transform_with_defgrad(self):
+        R = rotation2.from_angle(30)
+        F = defgrad2.from_ratio(3)
+        assert isinstance(R.transform(F), DeformationGradient2)
+
+    def test_ellipse_defgrad_is_purely_coaxial(self):
+        # default is symmetric stretch Q D Qᵗ: F Fᵗ = E and F = Fᵗ
+        E = ellipse.from_ratio(2)
+        F = np.asarray(E.defgrad())
+        assert np.allclose(F @ F.T, np.asarray(E))
+        assert np.allclose(F, F.T)
+
+    def test_ellipsoid_defgrad_is_purely_coaxial(self):
+        E = ellipsoid.from_ratios(Rxy=2, Ryz=3)
+        F = np.asarray(E.defgrad())
+        assert np.allclose(F @ F.T, np.asarray(E))
+        assert np.allclose(F, F.T)
+
+    def test_explicit_rotation_is_respected(self):
+        E = ellipse.from_ratio(2)
+        R = rotation2.from_angle(40)
+        F = np.asarray(E.defgrad(R=R))
+        assert np.allclose(F @ F.T, np.asarray(E))
+        assert not np.allclose(F, F.T)

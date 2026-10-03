@@ -12,6 +12,12 @@ from apsg.plotting._styles import FabricPlotStyle
 __all__ = ["FlinnPlot", "HsuPlot", "RamsayPlot", "VollmerPlot"]
 
 
+def _flat(values):
+    """Join per-argument values (scalars or arrays) into one 1-D array, so that a
+    set is drawn with a single artist and a single legend entry."""
+    return np.concatenate([np.atleast_1d(v) for v in values])
+
+
 class FabricPlot:
     """
     Metaclas for Fabric plots
@@ -352,9 +358,9 @@ class VollmerPlot(FabricPlot):
         self.ax.plot(x, y, **kwargs)
 
     def _point(self, *args, **kwargs):
-        P = [arg.P for arg in args]
-        G = [arg.G for arg in args]
-        R = [arg.R for arg in args]
+        P = _flat([arg.P for arg in args])
+        G = _flat([arg.G for arg in args])
+        R = _flat([arg.R for arg in args])
         self._triplot(P, G, R, **kwargs)
 
     def _path(self, *args, **kwargs):
@@ -470,8 +476,8 @@ class RamsayPlot(FabricPlot):
     ########################################
 
     def _point(self, *args, **kwargs):
-        e23 = [arg.e23 for arg in args]
-        e12 = [arg.e12 for arg in args]
+        e23 = _flat([arg.e23 for arg in args])
+        e12 = _flat([arg.e12 for arg in args])
 
         self.ax.plot(e23, e12, **kwargs)
 
@@ -585,8 +591,8 @@ class FlinnPlot(FabricPlot):
     ########################################
 
     def _point(self, *args, **kwargs):
-        Ryz = [arg.Ryz for arg in args]
-        Rxy = [arg.Rxy for arg in args]
+        Ryz = _flat([arg.Ryz for arg in args])
+        Rxy = _flat([arg.Rxy for arg in args])
 
         self.ax.plot(Ryz, Rxy, **kwargs)
 
@@ -683,8 +689,8 @@ class HsuPlot(FabricPlot):
     ########################################
 
     def _point(self, *args, **kwargs):
-        lode = [arg.lode * np.pi / 6 for arg in args]
-        eoct = [arg.eoct for arg in args]
+        lode = _flat([arg.lode for arg in args]) * np.pi / 6
+        eoct = _flat([arg.eoct for arg in args])
 
         self.ax.plot(lode, eoct, **kwargs)
 

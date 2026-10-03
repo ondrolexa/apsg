@@ -194,22 +194,23 @@ class DeformationGradient3(Matrix3):
         Keyword Args:
             R (Rotation3): rotation resolving the ambiguity, to be determined from
                 independent data (e.g. paleomagnetic vectors or a known shear-plane
-                orientation). Default is the identity, i.e. the simplest, purely
-                coaxial solution.
+                orientation). Default None gives the simplest, purely coaxial
+                solution F = Q @ D @ Qᵗ (a symmetric stretch, no rotation).
 
         Returns:
             DeformationGradient3: recovered ``DeformationGradient3``.
         """
-        if R is None:
-            R = Rotation3()
+        if form not in ("left", "B", "right", "C"):
+            raise TypeError("Wrong form argument")
         Q = np.column_stack(E.eigenvectors())
         D = np.diag(np.sqrt(E.eigenvalues()))
+        if R is None:
+            # symmetric, so the left and right forms coincide
+            return cls(Q @ D @ Q.T)
         if form in ("left", "B"):
             return cls(Q @ D @ np.asarray(R))
-        elif form in ("right", "C"):
-            return cls(np.asarray(R) @ D @ Q.T)
         else:
-            raise TypeError("Wrong form argument")
+            return cls(np.asarray(R) @ D @ Q.T)
 
 
 class Rotation3(DeformationGradient3):
@@ -234,6 +235,12 @@ class Rotation3(DeformationGradient3):
             # Ensure a proper rotation (det=1)
             coefs = U @ np.diag([1, 1, np.linalg.det(U @ Vt)]) @ Vt
             self._coefs = tuple(coefs[0]), tuple(coefs[1]), tuple(coefs[2])
+
+    def _derive(self, coefs):
+        # products such as R @ F or R + R are rotations only when orthogonal
+        if np.allclose(np.dot(np.transpose(coefs), coefs), np.eye(3)):
+            return type(self)._from_canonical(coefs)
+        return DeformationGradient3._from_canonical(coefs)
 
     def axisangle(self):
         """Return rotation as (axis, angle) tuple."""

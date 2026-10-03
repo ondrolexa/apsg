@@ -709,7 +709,7 @@ class StereoNet:
         Plot principal planes or principal directions of tensor.
 
         Args:
-            OrientationTensor3 like feature(s)
+            OrientationTensor3 like feature, or a set of them (e.g. ``EllipsoidSet``)
 
         Keyword Args:
             planes (bool): When True, plot principal planes, otherwise principal
@@ -1126,12 +1126,19 @@ class StereoNet:
         h.set_clip_path(self.primitive)
 
     def _tensor(self, *args, **kwargs):
+        # a set is drawn as one feature set per principal axis, so each axis gets
+        # a single legend entry
+        if isinstance(args[0], Tensor3):
+            fols = args[0].eigenfols()
+            lins = args[0].eigenlins()
+        else:
+            fols = [FoliationSet([t.eigenfols()[k] for t in args[0]]) for k in range(3)]
+            lins = [LineationSet([t.eigenlins()[k] for t in args[0]]) for k in range(3)]
         if kwargs.get("planes"):
             selkw = {
                 key: kwargs[key]
                 for key in kwargs.keys() & {"alpha", "ls", "lw", "label"}
             }
-            fols = args[0].eigenfols()
             if kwargs["color"] is None:
                 del kwargs["color"]
             self._great_circle(fols[0], color=kwargs.get("color", "red"), **selkw)
@@ -1144,7 +1151,6 @@ class StereoNet:
                 & {"alpha", "marker", "mec", "mew", "ms", "label"}
             }
             kwargs["ls"] = "none"
-            lins = args[0].eigenlins()
             if kwargs["color"] is None:
                 del kwargs["color"]
             if selkw["label"] != "_tensor":

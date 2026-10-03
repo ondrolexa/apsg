@@ -6,6 +6,7 @@ from apsg.feature._container import (
     ConeSet,
     EllipsoidSet,
     FaultSet,
+    FeatureSet,
     FoliationSet,
     PairSet,
     Stress3Set,
@@ -476,8 +477,14 @@ class StereoNetArtistFactory:
 
     @staticmethod
     def create_tensor(*args, **kwargs):
-        """Create stereonet tensor artist from Tensor3 data."""
-        if all(isinstance(arg, Tensor3) for arg in args[:1]):
+        """Create stereonet tensor artist from Tensor3 data or a set of them."""
+        if args and (
+            isinstance(args[0], Tensor3)
+            or (
+                isinstance(args[0], FeatureSet)
+                and all(isinstance(t, Tensor3) for t in args[0])
+            )
+        ):
             return StereoNet_Tensor("create_tensor", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet tensor")

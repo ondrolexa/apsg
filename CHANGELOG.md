@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Note: apsg's version numbers do not strictly follow [Semantic Versioning](https://semver.org/) --
 a patch-level release can include breaking changes, marked below as **BREAKING**.
 
+## [2.0.4] - 2026-10-03
+
+### Changed
+- `Ellipse.defgrad()`/`Ellipsoid.defgrad()` and `DeformationGradient{2,3}.from_ellipse()`/`from_ellipsoid()` without `R` now return the purely coaxial stretch `Q @ D @ Qᵗ` (symmetric), as documented. Previously they returned `Q @ D`. Both satisfy `F @ Fᵗ == E`; passing `R` keeps the previous `Q @ D @ R` / `R @ D @ Qᵗ` forms.
+
+### Fixed
+- A product of a rotation with a non-orthogonal matrix, such as `rotation2.from_angle(30) @ defgrad2.from_ratio(3)` or the 3D equivalent, raised `TypeError`. The result is now a `DeformationGradient2`/`DeformationGradient3`. Products and transforms that stay orthogonal are still rotations.
+- `FlinnPlot.point()`, `RamsayPlot.point()`, `VollmerPlot.point()` and `HsuPlot.point()` with an `EllipsoidSet` created one legend entry per member. A set is now one artist with one legend entry, the same as passing the members unpacked.
+- `StereoNet.tensor()` accepts a set of tensors (`EllipsoidSet`, `OrientationTensor3Set`, `Stress3Set`), drawing the principal axes of all members with one legend entry per axis.
+
 ## [2.0.3] - 2026-10-03
 
 ### Added
