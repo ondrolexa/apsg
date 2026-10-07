@@ -1274,3 +1274,26 @@ class TestJSONRoundtrip:
         j = a.to_json()
         a2 = feature_from_json(j)
         assert a == a2
+
+
+# Repr formatting: no "-0" and no "360"
+
+
+def test_repr_no_negative_zero():
+    assert repr(-lin(219, 0)) == "L:39/0"
+    assert repr(lin(Vector3(1, 1, -0.0))) == "L:45/0"
+    assert repr(Vector3(1, 0, -0.0)) == "Vector3(1, 0, 0)"
+    assert repr(Vector2(-0.0, 1)) == "Vector2(0, 1)"
+
+
+def test_repr_azimuth_wraps_to_zero():
+    assert repr(lin(359.8, 10)) == "L:0/10"
+    assert repr(fol(359.7, 30)) == "S:0/30"
+    assert repr(dir2(359.7)) == "D:0"
+    with apsg_conf_context(notation="rhr"):
+        assert repr(fol(359.7, 30)) == "S:0/30"
+
+
+def test_repr_quadrant_no_negative_zero():
+    with apsg_conf_context(notation="quadrant"):
+        assert repr(-lin(219, 0)) == "L:N39E,0"

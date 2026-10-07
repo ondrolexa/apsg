@@ -7,6 +7,7 @@ from apsg.config import apsg_conf
 from apsg.helpers._helper import is_jsonable
 from apsg.helpers._math import acosd, atan2d, cosd, sind
 from apsg.helpers._notation import (
+    _fmt_deg,
     geo2vec_linear,
     vec2geo_linear_signed,
 )
@@ -213,7 +214,7 @@ class Vector2(Vector):
 
     def __repr__(self):
         n = apsg_conf.ndigits
-        return f"Vector2({round(self.x, n):g}, {round(self.y, n):g})"
+        return f"Vector2({round(self.x, n) + 0.0:g}, {round(self.y, n) + 0.0:g})"
 
     def __len__(self):
         return 2
@@ -427,10 +428,11 @@ class Vector3(Vector):
     def __repr__(self):
         if apsg_conf.vec2geo:
             azi, inc = self.geo
-            return f"V:{azi:.0f}/{inc:.0f}"
+            return f"V:{_fmt_deg(azi, azimuth=True)}/{_fmt_deg(inc)}"
         else:
             n = apsg_conf.ndigits
-            return f"Vector3({round(self.x, n):g}, {round(self.y, n):g}, {round(self.z, n):g})"
+            x, y, z = (round(c, n) + 0.0 for c in (self.x, self.y, self.z))
+            return f"Vector3({x:g}, {y:g}, {z:g})"
 
     def __len__(self):
         return 3

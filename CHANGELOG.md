@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Note: apsg's version numbers do not strictly follow [Semantic Versioning](https://semver.org/) --
 a patch-level release can include breaking changes, marked below as **BREAKING**.
 
+## [2.0.5] - 2026-10-07
+
+### Changed
+- `openpyxl` is now installed with the `lab` extra.
+
+### Fixed
+- Printed features no longer show `-0` for horizontal lines and planes (e.g. `L:219/-0`) or `360` for azimuths just below 360; both print as `0`.
+
 ## [2.0.4] - 2026-10-03
 
 ### Changed

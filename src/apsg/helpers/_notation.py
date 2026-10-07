@@ -171,16 +171,24 @@ _LINEAR_QUADRANT_RE = re.compile(
 )
 
 
+def _fmt_deg(value, azimuth=False):
+    """Format angle rounded to whole degrees, without '-0' (and '360' for azimuths)."""
+    v = round(value)  # int, so no negative zero; same round-half-even as :.0f
+    if azimuth:
+        v %= 360
+    return str(v)
+
+
 def azi2bearing(azi):
     """Format azimuth (0-360 degrees) as quadrant bearing string, e.g. 45 -> 'N45E'."""
     azi = azi % 360
     if azi <= 90:
-        return f"N{azi:.0f}E"
+        return f"N{_fmt_deg(azi)}E"
     if azi <= 180:
-        return f"S{180 - azi:.0f}E"
+        return f"S{_fmt_deg(180 - azi)}E"
     if azi <= 270:
-        return f"S{azi - 180:.0f}W"
-    return f"N{360 - azi:.0f}W"
+        return f"S{_fmt_deg(azi - 180)}W"
+    return f"N{_fmt_deg(360 - azi)}W"
 
 
 def bearing2azi(s):
@@ -228,7 +236,7 @@ def format_quadrant_planar(strike, dip):
     """
     dip_azi = (strike + 90) % 360
     display_strike = strike if (strike <= 90 or strike > 270) else strike - 180
-    return f"{azi2bearing(display_strike)},{dip:.0f}{_dip_qualifier(dip_azi)}"
+    return f"{azi2bearing(display_strike)},{_fmt_deg(dip)}{_dip_qualifier(dip_azi)}"
 
 
 def parse_quadrant_linear(s):
@@ -242,18 +250,18 @@ def parse_quadrant_linear(s):
 
 def format_quadrant_linear(azi, inc):
     """Format (trend, plunge) as quadrant linear measurement string."""
-    return f"{azi2bearing(azi)},{inc:.0f}"
+    return f"{azi2bearing(azi)},{_fmt_deg(inc)}"
 
 
 def format_planar(azi, inc):
     """Format a planar geo-tuple according to the active `apsg_conf.notation`."""
     if apsg_conf.notation == "quadrant":
         return format_quadrant_planar(azi, inc)
-    return f"{azi:.0f}/{inc:.0f}"
+    return f"{_fmt_deg(azi, azimuth=True)}/{_fmt_deg(inc)}"
 
 
 def format_linear(azi, inc):
     """Format a linear geo-tuple according to the active `apsg_conf.notation`."""
     if apsg_conf.notation == "quadrant":
         return format_quadrant_linear(azi, inc)
-    return f"{azi:.0f}/{inc:.0f}"
+    return f"{_fmt_deg(azi, azimuth=True)}/{_fmt_deg(inc)}"

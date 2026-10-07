@@ -5,6 +5,7 @@ import numpy as np
 from apsg.helpers._helper import is_jsonable
 from apsg.helpers._math import atan2d
 from apsg.helpers._notation import (
+    _fmt_deg,
     fol2vec_rhr,
     format_linear,
     format_planar,
@@ -45,7 +46,7 @@ class Direction(Axial2):
     """
 
     def __repr__(self):
-        return f"D:{self.direction:.0f}"
+        return f"D:{_fmt_deg(self.direction, azimuth=True)}"
 
 
 class Lineation(Axial3):
