@@ -840,10 +840,11 @@ class Stress3(Tensor3):
     @classmethod
     def from_ratio(cls, r=0.5, mag=1):
         """
-        Return ``Stress`` tensor with given shape ration.
+        Return ``Stress`` tensor with given stress ratio.
 
         Keyword Args:
-            r (float): shape ratio between 0 and 1. Default 0.5
+            r (float): stress ratio R = (σ2 - σ3) / (σ1 - σ3) between 0 and 1.
+                Default 0.5
             mag (float): magnitude of differential stress. Default 1.
 
         Examples:
@@ -851,15 +852,16 @@ class Stress3(Tensor3):
             >>> S
             Stress3
             [[ 5.   0.   0. ]
-             [ 0.   2.5  0. ]
+             [ 0.  -2.5  0. ]
              [ 0.   0.  -5. ]]
 
         Returns:
-            Stress3: ``Stress`` tensor with given shape ration.
+            Stress3: ``Stress`` tensor with given stress ratio.
         """
 
         xx = mag / 2
-        yy = xx - r * mag
+        # sigma2 placed so that (σ2 - σ3) / (σ1 - σ3) == r in either convention
+        yy = stress_sign() * (xx - r * mag)
         zz = -mag / 2
         return cls([[xx, 0, 0], [0, yy, 0], [0, 0, zz]])
 
@@ -1092,9 +1094,14 @@ class Stress3(Tensor3):
         return np.where(np.isclose(denom, 0), np.nan, (Se.sigma1 - sn) / denom)
 
     @property
-    def shape_ratio(self):
-        """Return shape ratio R (Gephart & Forsyth 1984)."""
-        return float((self.sigma1 - self.sigma2) / (self.sigma1 - self.sigma3))
+    def stress_ratio(self):
+        """Return stress ratio R = (σ2 - σ3) / (σ1 - σ3).
+
+        Structural geology definition: R = 0 for σ2 = σ3 (prolate) and
+        R = 1 for σ2 = σ1 (oblate). Note that the seismological definition
+        (σ1 - σ2) / (σ1 - σ3) equals 1 - R.
+        """
+        return float((self.sigma2 - self.sigma3) / (self.sigma1 - self.sigma3))
 
 
 class Ellipsoid(Tensor3):

@@ -1139,9 +1139,21 @@ class TestStress3:
         t = S.dilation_tendency(Foliation(160, 30))
         assert 0 <= t <= 1
 
-    def test_shape_ratio(self):
+    def test_stress_ratio(self):
         S = Stress3.from_ratio(r=0.5, mag=1)
-        assert 0 <= S.shape_ratio <= 1
+        assert 0 <= S.stress_ratio <= 1
+
+    def test_stress_ratio_structural_definition(self):
+        # R = (s2 - s3) / (s1 - s3)
+        S = Stress3([[8, 0, 0], [0, 5, 0], [0, 0, 1]])
+        assert math.isclose(S.stress_ratio, 4 / 7)
+
+    def test_from_ratio_roundtrip(self):
+        for convention in ("geological", "mechanical"):
+            with apsg_conf_context(stress_convention=convention):
+                for r in (0.0, 0.25, 0.5, 0.8, 1.0):
+                    S = Stress3.from_ratio(r=r, mag=10)
+                    assert math.isclose(S.stress_ratio, r, abs_tol=1e-12)
 
     def test_eigenlins(self):
         S = Stress3.from_comp(xx=5, yy=2, zz=-10, xy=1)

@@ -52,6 +52,11 @@ Tensor analysis::
     >>> s = stress.from_ratio(r=0.5, mag=1)
     >>> ot = ortensor.from_features(fols)
 
+Stress ratio: ``Stress3.stress_ratio`` (and ``Stress3Set.stress_ratio``) uses the structural
+geology definition R = (σ2 - σ3) / (σ1 - σ3), so R = 0 for σ2 = σ3 and R = 1 for σ2 = σ1. The
+seismological definition (σ1 - σ2) / (σ1 - σ3) equals ``1 - S.stress_ratio``.
+``stress.from_ratio(r, mag)`` builds a tensor with ``stress_ratio == r``.
+
 Sign convention of stress tensors: ``apsg_conf.stress_convention`` selects ``"geological"``
 (default, compression positive) or ``"mechanical"`` (tension positive). The constructors and
 ``from_*`` methods take input in the active convention, and reported values (principal

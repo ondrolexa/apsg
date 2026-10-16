@@ -2731,10 +2731,10 @@ class Stress3Set(FeatureSet):
         return np.array([e.I3 for e in self])
 
     @property
-    def shape_ratio(self) -> np.ndarray:
-        """Return the array of shape ratios (Gephart & Forsyth, 1984)."""
+    def stress_ratio(self) -> np.ndarray:
+        """Return the array of stress ratios R = (σ2 - σ3) / (σ1 - σ3)."""
 
-        return np.array([e.shape_ratio for e in self])
+        return np.array([e.stress_ratio for e in self])
 
     def mean_tensor(self, level=0.95, normalize=False, anisoft=False):
         """Return mean tensor and confidence ellipses of its principal axes.

@@ -1510,14 +1510,14 @@ class TestStress3Set:
         assert isinstance(s.I3, np.ndarray)
         assert len(s.I1) == len(s.I2) == len(s.I3) == 2
 
-    def test_shape_ratio_property(self):
+    def test_stress_ratio_property(self):
         s = Stress3Set(
             [
                 Stress3([[10, 2, -3], [2, 5, 1], [-3, 1, -2]]),
                 Stress3([[8, 0, 0], [0, 5, 0], [0, 0, 1]]),
             ]
         )
-        r = s.shape_ratio
+        r = s.stress_ratio
         assert isinstance(r, np.ndarray)
         assert len(r) == 2
 

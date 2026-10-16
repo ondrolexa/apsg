@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Note: apsg's version numbers do not strictly follow [Semantic Versioning](https://semver.org/) --
 a patch-level release can include breaking changes, marked below as **BREAKING**.
 
+## [2.0.6] - 2026-10-16
+
+### Changed
+- **BREAKING** `Stress3.shape_ratio` and `Stress3Set.shape_ratio` are renamed to `stress_ratio` and, together with `Stress3.from_ratio()`, now use the structural geology definition of the stress ratio, R = (σ2 - σ3) / (σ1 - σ3). Previously they used the seismological definition (σ1 - σ2) / (σ1 - σ3), which equals 1 - R. `shape_ratio` is removed. `from_ratio(r)` now gives `stress_ratio == r` under both `stress_convention` settings.
+
 ## [2.0.5] - 2026-10-07
 
 ### Changed
