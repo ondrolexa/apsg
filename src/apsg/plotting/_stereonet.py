@@ -1218,7 +1218,12 @@ class StereoNet:
             line_kwargs["colors"] = line_color
             line_kwargs["linewidths"] = linewidth
             line_kwargs["linestyles"] = linestyles
-            self.ax.contour(grid=grid._engine, filled=False, **line_kwargs)
+            self.ax.contour(
+                grid=grid._engine,
+                filled=False,
+                _resample_cache=cf._resample_cache,
+                **line_kwargs,
+            )
         if colorbar:
             self.fig.colorbar(cf, ax=self.ax, **colorbar_kws)
 

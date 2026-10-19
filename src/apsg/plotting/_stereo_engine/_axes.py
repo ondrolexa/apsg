@@ -1099,6 +1099,7 @@ class StereonetAxes(Axes):
         trimzero=True,
         show_data=False,
         data_kws=None,
+        _resample_cache=None,
         **kwargs,
     ):
         """Plot a density-contour diagram of axial data (poles/lines).
@@ -1157,51 +1158,58 @@ class StereonetAxes(Axes):
             The ``ContourSet``. The ``StereoGrid`` used is available as
             ``self.stereogrids[-1]`` (or the ``grid`` passed in).
         """
-        if grid is None:
-            grid = StereoGrid(grid_n=grid_n, grid_type=grid_type)
-            grid.calculate_density(
-                features,
-                method=method,
-                sigma=sigma,
-                n_max=n_max,
-                trimzero=trimzero,
+        if _resample_cache is None:
+            if grid is None:
+                grid = StereoGrid(grid_n=grid_n, grid_type=grid_type)
+                grid.calculate_density(
+                    features,
+                    method=method,
+                    sigma=sigma,
+                    n_max=n_max,
+                    trimzero=trimzero,
+                )
+            self.stereogrids.append(grid)
+
+            # The counting grid spans the *whole* sphere, so it needs the same
+            # axial hemisphere handling as point()/project(fold=True) -- see
+            # _fold_axial_to_data -- rather than _data_axes_fraction's
+            # full-negation rule (correct only for
+            # genuinely directional data): that would fold each grid point to
+            # this axes' hemisphere and then negate it right back via
+            # _vec_to_data, leaving every point at its "lower" position
+            # regardless of hemisphere. Left unfolded at all, about half the
+            # grid projects outside the unit disk (r up to sqrt(2) at the
+            # antipode) into a self-overlapping fringe that Delaunay-
+            # triangulates against the in-disk points and produces spurious
+            # holes near the extrema.
+            glon, glat = self._fold_axial_to_data(grid.grid)
+            X, Y = self._graticule_to_axes_fraction(glon, glat)
+            values = grid.values
+            # A handful of counting-grid points can land close enough to the
+            # projection's own antipodal singularity to be masked to NaN (see
+            # transform_non_affine) --
+            # interpolation can't handle NaN input, so drop them here rather
+            # than let a rare, individually-insignificant point crash the
+            # whole contour.
+            finite = np.isfinite(X) & np.isfinite(Y)
+            if not finite.all():
+                X, Y, values = X[finite], Y[finite], values[finite]
+                glon, glat = glon[finite], glat[finite]
+
+            Xa, Ya, Va = _extend_antipodal(
+                glon, glat, values, self._graticule_to_axes_fraction
             )
-        self.stereogrids.append(grid)
+            X = np.concatenate([X, Xa])
+            Y = np.concatenate([Y, Ya])
+            values = np.concatenate([values, Va])
 
-        # The counting grid spans the *whole* sphere, so it needs the same
-        # axial hemisphere handling as point()/project(fold=True) -- see
-        # _fold_axial_to_data -- rather than _data_axes_fraction's
-        # full-negation rule (correct only for
-        # genuinely directional data): that would fold each grid point to
-        # this axes' hemisphere and then negate it right back via
-        # _vec_to_data, leaving every point at its "lower" position
-        # regardless of hemisphere. Left unfolded at all, about half the
-        # grid projects outside the unit disk (r up to sqrt(2) at the
-        # antipode) into a self-overlapping fringe that Delaunay-
-        # triangulates against the in-disk points and produces spurious
-        # holes near the extrema.
-        glon, glat = self._fold_axial_to_data(grid.grid)
-        X, Y = self._graticule_to_axes_fraction(glon, glat)
-        values = grid.values
-        # A handful of counting-grid points can land close enough to the
-        # projection's own antipodal singularity to be masked to NaN (see
-        # transform_non_affine) --
-        # interpolation can't handle NaN input, so drop them here rather
-        # than let a rare, individually-insignificant point crash the
-        # whole contour.
-        finite = np.isfinite(X) & np.isfinite(Y)
-        if not finite.all():
-            X, Y, values = X[finite], Y[finite], values[finite]
-            glon, glat = glon[finite], glat[finite]
-
-        Xa, Ya, Va = _extend_antipodal(
-            glon, glat, values, self._graticule_to_axes_fraction
-        )
-        X = np.concatenate([X, Xa])
-        Y = np.concatenate([Y, Ya])
-        values = np.concatenate([values, Va])
-
-        Xg, Yg, Vg = _resample_to_grid(X, Y, values)
+            Xg, Yg, Vg = _resample_to_grid(X, Y, values)
+        else:
+            # Reuse an already-resampled grid (e.g. the filled contour's own
+            # result, handed in by StereoNet._contour for its line overlay)
+            # instead of re-running the costly cubic resampling on identical
+            # input.
+            Xg, Yg, Vg = _resample_cache
 
         levels = kwargs.pop("levels", 6)
         clip = _resolve_cmap_and_clip(kwargs)
@@ -1231,6 +1239,7 @@ class StereonetAxes(Axes):
         if show_data and features is not None:
             self.point(features, **(data_kws or {}))
 
+        cs._resample_cache = (Xg, Yg, Vg)
         return cs
 
 

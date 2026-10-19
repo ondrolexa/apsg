@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Note: apsg's version numbers do not strictly follow [Semantic Versioning](https://semver.org/) --
 a patch-level release can include breaking changes, marked below as **BREAKING**.
 
+## [2.0.7] - Unreleased
+
+### Changed
+- `StereoNet.contour(..., filled=True)` no longer resamples the counting grid twice (once for the fill, once for the black line overlay) -- the line overlay now reuses the fill's own resampled grid, speeding up contouring. No change in output.
+
 ## [2.0.6] - 2026-10-16
 
 ### Changed
