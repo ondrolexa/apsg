@@ -13,21 +13,24 @@ from apsg.feature._container import (
     Vector2Set,
     Vector3Set,
 )
+from apsg.feature._distributions import OrientationDistribution
 from apsg.feature._geodata import Arc, Cone, Fault, Foliation, Pair
 from apsg.feature._tensor3 import Ellipsoid, Stress3, Tensor3
-from apsg.math._vector import Vector3
+from apsg.math._vector import Axial3, Vector3
+from apsg.plotting._confidence import CONFIDENCE_METHODS
 from apsg.plotting._stereogrid import StereoGrid
 
 # StereoNet
 
 
-class StereoNet_Artists:
+class StereoNetArtist:
     def __init__(self, factory, *args, **kwargs):
         """Initialize stereonet artist with factory reference."""
         self.factory = factory
 
     def update_kwargs(self, style):
         """Update kwargs from global style configuration."""
+        self._style = style
         self.kwargs = getattr(apsg_conf, style).copy()
         self.kwargs["label"] = self.stereonet_method  # ty: ignore
 
@@ -41,7 +44,7 @@ class StereoNet_Artists:
         }
 
 
-class _SimpleStereoNetArtist(StereoNet_Artists):
+class _SimpleStereoNetArtist(StereoNetArtist):
     """Generic artist for stereonet plot types that only need a config key
     and a fallback multi-feature label -- see ``StereoNetArtistFactory._create``.
     """
@@ -58,7 +61,7 @@ class _SimpleStereoNetArtist(StereoNet_Artists):
     def parse_kwargs(self, kwargs):
         """Parse and apply style kwargs."""
         super().update_kwargs(self._config_key)
-        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
                 self.kwargs["label"] = self.args[0].label()
@@ -66,7 +69,7 @@ class _SimpleStereoNetArtist(StereoNet_Artists):
                 self.kwargs["label"] = f"{self._label_template} ({len(self.args)})"
 
 
-class StereoNet_Scatter(StereoNet_Artists):
+class StereoNetScatterArtist(StereoNetArtist):
     def __init__(self, factory, *args, **kwargs):
         """Initialize stereonet scatter artist."""
         super().__init__(factory, *args, **kwargs)
@@ -77,7 +80,7 @@ class StereoNet_Scatter(StereoNet_Artists):
     def parse_kwargs(self, kwargs):
         """Parse scatter style kwargs and validate size/color arrays."""
         super().update_kwargs("stereonet_scatter")
-        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
                 self.kwargs["label"] = self.args[0].label()
@@ -102,7 +105,7 @@ class StereoNet_Scatter(StereoNet_Artists):
                 )
 
 
-class StereoNet_Arc(StereoNet_Artists):
+class StereoNetArcArtist(StereoNetArtist):
     def __init__(self, factory, *args, **kwargs):
         """Initialize stereonet arc artist."""
         super().__init__(factory, *args, **kwargs)
@@ -113,7 +116,7 @@ class StereoNet_Arc(StereoNet_Artists):
     def parse_kwargs(self, kwargs):
         """Parse and apply arc style kwargs."""
         super().update_kwargs("stereonet_arc")
-        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
                 self.kwargs["label"] = self.args[0].label()
@@ -121,7 +124,7 @@ class StereoNet_Arc(StereoNet_Artists):
                 self.kwargs["label"] = f"Arc ({len(self.args)})"
 
 
-# class StereoNet_Cone(StereoNet_Artists):
+# class StereoNet_Cone(StereoNetArtist):
 #     def __init__(self, factory, *args, **kwargs):
 #         super().__init__(factory, *args, **kwargs)
 #         self.stereonet_method = "_cone"
@@ -130,7 +133,7 @@ class StereoNet_Arc(StereoNet_Artists):
 
 #     def parse_kwargs(self, kwargs):
 #         super().update_kwargs("stereonet_cone")
-#         self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+#         getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
 #         self.kwargs["angle"] = np.atleast_1d(kwargs["angle"]).tolist()
 #         nof = np.vstack(self.args).shape[0]
 #         noa = len(self.kwargs["angle"])
@@ -150,7 +153,7 @@ class StereoNet_Arc(StereoNet_Artists):
 #                 self.kwargs["label"] = f"Cones ({len(self.args)})"
 
 
-class StereoNet_Arrow(StereoNet_Artists):
+class StereoNetArrowArtist(StereoNetArtist):
     def __init__(self, factory, *args, **kwargs):
         """Initialize stereonet arrow artist."""
         super().__init__(factory, *args, **kwargs)
@@ -161,7 +164,7 @@ class StereoNet_Arrow(StereoNet_Artists):
     def parse_kwargs(self, kwargs):
         """Parse arrow style kwargs and validate sense."""
         super().update_kwargs("stereonet_arrow")
-        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
                 self.kwargs["label"] = self.args[0].label()
@@ -172,7 +175,7 @@ class StereoNet_Arrow(StereoNet_Artists):
         )
 
 
-class StereoNet_Tensor(StereoNet_Artists):
+class StereoNetTensorArtist(StereoNetArtist):
     def __init__(self, factory, *args, **kwargs):
         """Initialize stereonet tensor artist."""
         super().__init__(factory, *args, **kwargs)
@@ -183,12 +186,12 @@ class StereoNet_Tensor(StereoNet_Artists):
     def parse_kwargs(self, kwargs):
         """Parse and apply tensor style kwargs."""
         super().update_kwargs("stereonet_tensor")
-        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
         if not isinstance(self.kwargs["label"], str):
             self.kwargs["label"] = self.args[0].label()
 
 
-class StereoNet_Stress(StereoNet_Artists):
+class StereoNetStressArtist(StereoNetArtist):
     def __init__(self, factory, *args, **kwargs):
         """Initialize stereonet stress artist."""
         super().__init__(factory, *args, **kwargs)
@@ -199,12 +202,12 @@ class StereoNet_Stress(StereoNet_Artists):
     def parse_kwargs(self, kwargs):
         """Parse and apply stress style kwargs."""
         super().update_kwargs("stereonet_stress")
-        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
         if not isinstance(self.kwargs["label"], str):
             self.kwargs["label"] = self.args[0].label()
 
 
-class StereoNet_Contour(StereoNet_Artists):
+class StereoNetContourArtist(StereoNetArtist):
     def __init__(self, factory, *args, **kwargs):
         """Initialize stereonet contour artist.
 
@@ -222,7 +225,7 @@ class StereoNet_Contour(StereoNet_Artists):
     def parse_kwargs(self, source, kwargs):
         """Parse contour style kwargs and resolve/calculate the grid."""
         super().update_kwargs("stereonet_contour")
-        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
         method = self.kwargs.pop("method")
         sigma = self.kwargs.pop("sigma")
         n_max = self.kwargs.pop("n_max")
@@ -240,7 +243,7 @@ class StereoNet_Contour(StereoNet_Artists):
     def to_json(self):
         """Serialize contour artist to JSON-compatible dict.
 
-        Overrides the base ``StereoNet_Artists.to_json`` since ``self.args``
+        Overrides the base ``StereoNetArtist.to_json`` since ``self.args``
         holds a ``StereoGrid`` (its own ``to_json`` shape), not a feature
         object using the ``datatype``-based convention.
         """
@@ -295,7 +298,7 @@ class StereoNetArtistFactory:
     def create_scatter(*args, **kwargs):
         """Create stereonet scatter artist from Vector3 data."""
         if all(isinstance(arg, (Vector3, Vector3Set)) for arg in args):
-            return StereoNet_Scatter("create_scatter", *args, **kwargs)
+            return StereoNetScatterArtist("create_scatter", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet scatter")
 
@@ -339,7 +342,7 @@ class StereoNetArtistFactory:
             except TypeError:
                 raise TypeError("Not valid arguments for Stereonet arc")
 
-        return StereoNet_Arc("create_arc", *args, **kwargs)
+        return StereoNetArcArtist("create_arc", *args, **kwargs)
 
     # @staticmethod
     # def create_cone(*args, **kwargs):
@@ -367,21 +370,23 @@ class StereoNetArtistFactory:
     @staticmethod
     def create_confidence(*args, **kwargs):
         """Create stereonet confidence cone/ellipse artist from Vector3Set data,
-        or (method "jelinek") from EllipsoidSet/Stress3Set data.
+        (method "jelinek") from EllipsoidSet/Stress3Set data or (method "lisle")
+        from PairSet data.
         """
         tensor_sets = (EllipsoidSet, Stress3Set)
         is_tensor = [isinstance(arg, tensor_sets) for arg in args]
-        if any(is_tensor) and not all(is_tensor):
-            raise TypeError(
-                "Not valid arguments for Stereonet confidence: "
-                "vector sets and tensor sets cannot be combined"
-            )
+        is_pair = [isinstance(arg, PairSet) for arg in args]
+        for kind, flags in (("tensor", is_tensor), ("pair", is_pair)):
+            if any(flags) and not all(flags):
+                raise TypeError(
+                    "Not valid arguments for Stereonet confidence: "
+                    f"{kind} sets cannot be combined with other sets"
+                )
         tensors = bool(args) and all(is_tensor)
-        if tensors:
-            kwargs.setdefault("method", "jelinek")
+        pairs = bool(args) and all(is_pair)
         artist = StereoNetArtistFactory._create(
             "create_confidence",
-            (Vector3Set, EllipsoidSet, Stress3Set),
+            (Vector3Set, EllipsoidSet, Stress3Set, PairSet),
             "_confidence",
             "stereonet_confidence",
             "Confidence",
@@ -389,6 +394,25 @@ class StereoNetArtistFactory:
             **kwargs,
         )
         method = artist.kwargs["method"]
+        if method is None:
+            axial = all(
+                issubclass(getattr(arg, "__feature_class__", object), Axial3)
+                for arg in args
+            )
+            if tensors:
+                method = "jelinek"
+            elif pairs:
+                method = "lisle"
+            else:
+                method = "watson" if axial else "fisher"
+            artist.kwargs["method"] = method
+        if method not in CONFIDENCE_METHODS:
+            raise ValueError(
+                f"Unknown confidence method {method!r}, "
+                f"expected one of {CONFIDENCE_METHODS}"
+            )
+        if artist.kwargs["which"] not in (None, 0, 1, 2):
+            raise ValueError("which must be None, 0, 1 or 2")
         if tensors and method != "jelinek":
             raise TypeError(
                 "Not valid arguments for Stereonet confidence: "
@@ -399,6 +423,11 @@ class StereoNetArtistFactory:
             raise TypeError(
                 "Not valid arguments for Stereonet confidence: "
                 "method 'jelinek' requires EllipsoidSet or Stress3Set"
+            )
+        if pairs != (method == "lisle"):
+            raise TypeError(
+                "Not valid arguments for Stereonet confidence: "
+                "method 'lisle' is the method for PairSet and FaultSet"
             )
         return artist
 
@@ -471,7 +500,7 @@ class StereoNetArtistFactory:
     def create_arrow(*args, **kwargs):
         """Create stereonet arrow artist from Vector3 data."""
         if all(isinstance(arg, (Vector3, Vector3Set)) for arg in args[:2]):
-            return StereoNet_Arrow("create_arrow", *args, **kwargs)
+            return StereoNetArrowArtist("create_arrow", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet arrow")
 
@@ -485,7 +514,7 @@ class StereoNetArtistFactory:
                 and all(isinstance(t, Tensor3) for t in args[0])
             )
         ):
-            return StereoNet_Tensor("create_tensor", *args, **kwargs)
+            return StereoNetTensorArtist("create_tensor", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet tensor")
 
@@ -493,7 +522,7 @@ class StereoNetArtistFactory:
     def create_stress(*args, **kwargs):
         """Create stereonet stress artist from Stress3 data."""
         if all(isinstance(arg, Stress3) for arg in args[:1]):
-            return StereoNet_Stress("create_stress", *args, **kwargs)
+            return StereoNetStressArtist("create_stress", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet stress")
 
@@ -501,7 +530,7 @@ class StereoNetArtistFactory:
     def create_contour(*args, **kwargs):
         """Create stereonet contour artist from a Vector3Set or a StereoGrid."""
         if len(args) >= 1 and isinstance(args[0], (Vector3Set, StereoGrid)):
-            return StereoNet_Contour("create_contour", *args, **kwargs)
+            return StereoNetContourArtist("create_contour", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Stereonet contour")
 
@@ -509,18 +538,34 @@ class StereoNetArtistFactory:
 # RosePlot
 
 
-class RosePlot_Artists:
+class RosePlotArtist:
     def __init__(self, factory, *args, **kwargs):
         """Initialize rose plot artist with factory reference."""
         self.factory = factory
 
     def update_kwargs(self, style):
         """Update kwargs from global rose plot style configuration."""
+        self._style = style
         self.kwargs = getattr(apsg_conf, style).copy()
         self.kwargs["label"] = self.roseplot_method  # ty: ignore
 
+    def _drop_unset_colors(self):
+        # a None fc/ec would override an explicit color in matplotlib
+        for key in ("color", "ec", "fc"):
+            if key in self.kwargs and self.kwargs[key] is None:
+                del self.kwargs[key]
 
-class RosePlot_Bar(RosePlot_Artists):
+    def to_json(self):
+        """Serialize rose plot artist to JSON-compatible dict."""
+        return {
+            "factory": self.factory,
+            "roseplot_method": self.roseplot_method,  # ty: ignore
+            "args": tuple(obj.to_json() for obj in self.args),  # ty: ignore
+            "kwargs": self.kwargs.copy(),
+        }
+
+
+class RosePlotBarArtist(RosePlotArtist):
     def __init__(self, factory, *args, **kwargs):
         """Initialize rose plot bar artist."""
         super().__init__(factory, *args, **kwargs)
@@ -531,10 +576,11 @@ class RosePlot_Bar(RosePlot_Artists):
     def parse_kwargs(self, kwargs):
         """Parse bar style kwargs."""
         super().update_kwargs("roseplot_bar")
-        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
+        self._drop_unset_colors()
 
 
-class RosePlot_Pdf(RosePlot_Artists):
+class RosePlotPdfArtist(RosePlotArtist):
     def __init__(self, factory, *args, **kwargs):
         """Initialize rose plot PDF artist."""
         super().__init__(factory, *args, **kwargs)
@@ -545,12 +591,11 @@ class RosePlot_Pdf(RosePlot_Artists):
     def parse_kwargs(self, kwargs):
         """Parse PDF style kwargs."""
         super().update_kwargs("roseplot_pdf")
-        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
-        if self.kwargs["color"] is None:
-            del self.kwargs["color"]
+        getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
+        self._drop_unset_colors()
 
 
-class RosePlot_Muci(RosePlot_Artists):
+class RosePlotMuciArtist(RosePlotArtist):
     def __init__(self, factory, *args, **kwargs):
         """Initialize rose plot muci artist."""
         super().__init__(factory, *args, **kwargs)
@@ -561,7 +606,22 @@ class RosePlot_Muci(RosePlot_Artists):
     def parse_kwargs(self, kwargs):
         """Parse muci style kwargs."""
         super().update_kwargs("roseplot_muci")
-        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
+
+
+class RosePlotDensityArtist(RosePlotArtist):
+    def __init__(self, factory, *args, **kwargs):
+        """Initialize rose plot density artist of circular distributions."""
+        super().__init__(factory, *args, **kwargs)
+        self.roseplot_method = "_density"
+        self.args = args
+        self.parse_kwargs(kwargs)
+
+    def parse_kwargs(self, kwargs):
+        """Parse density style kwargs (same as pdf)."""
+        super().update_kwargs("roseplot_pdf")
+        getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
+        self._drop_unset_colors()
 
 
 class RosePlotArtistFactory:
@@ -569,7 +629,7 @@ class RosePlotArtistFactory:
     def create_bar(*args, **kwargs):
         """Create rose plot bar artist from Vector2Set data."""
         if all(isinstance(arg, Vector2Set) for arg in args):
-            return RosePlot_Bar("create_bar", *args, **kwargs)
+            return RosePlotBarArtist("create_bar", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Roseplot bar")
 
@@ -577,15 +637,25 @@ class RosePlotArtistFactory:
     def create_pdf(*args, **kwargs):
         """Create rose plot PDF artist from Vector2Set data."""
         if all(isinstance(arg, Vector2Set) for arg in args):
-            return RosePlot_Pdf("create_pdf", *args, **kwargs)
+            return RosePlotPdfArtist("create_pdf", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Roseplot pdf")
+
+    @staticmethod
+    def create_density(*args, **kwargs):
+        """Create rose plot density artist from circular distributions."""
+        if args and all(
+            isinstance(arg, OrientationDistribution) and arg.dim == 2 for arg in args
+        ):
+            return RosePlotDensityArtist("create_density", *args, **kwargs)
+        else:
+            raise TypeError("Not valid arguments for Roseplot density")
 
     @staticmethod
     def create_muci(*args, **kwargs):
         """Create rose plot muci artist from Vector2Set data."""
         if all(isinstance(arg, Vector2Set) for arg in args):
-            return RosePlot_Muci("create_muci", *args, **kwargs)
+            return RosePlotMuciArtist("create_muci", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Roseplot muci")
 
@@ -593,13 +663,14 @@ class RosePlotArtistFactory:
 # FabricPlots
 
 
-class FabricPlot_Artists:
+class FabricPlotArtist:
     def __init__(self, factory, *args, **kwargs):
         """Initialize fabric plot artist with factory reference."""
         self.factory = factory
 
     def update_kwargs(self, style):
         """Update kwargs from global fabric plot style configuration."""
+        self._style = style
         self.kwargs = getattr(apsg_conf, style).copy()
         self.kwargs["label"] = self.fabricplot_method  # ty: ignore
 
@@ -608,12 +679,12 @@ class FabricPlot_Artists:
         return {
             "factory": self.factory,
             "fabricplot_method": self.fabricplot_method,  # ty: ignore
-            "args": (obj.to_json() for obj in self.args),  # ty: ignore
+            "args": tuple(obj.to_json() for obj in self.args),  # ty: ignore
             "kwargs": self.kwargs.copy(),
         }
 
 
-class FabricPlot_Point(FabricPlot_Artists):
+class FabricPlotPointArtist(FabricPlotArtist):
     def __init__(self, factory, *args, **kwargs):
         """Initialize fabric plot point artist."""
         super().__init__(factory, *args, **kwargs)
@@ -624,7 +695,7 @@ class FabricPlot_Point(FabricPlot_Artists):
     def parse_kwargs(self, kwargs):
         """Parse fabric point style kwargs."""
         super().update_kwargs("fabricplot_point")
-        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
                 self.kwargs["label"] = self.args[0].label()
@@ -632,7 +703,7 @@ class FabricPlot_Point(FabricPlot_Artists):
                 self.kwargs["label"] = f"Tensors ({len(self.args)})"
 
 
-class FabricPlot_Path(FabricPlot_Artists):
+class FabricPlotPathArtist(FabricPlotArtist):
     def __init__(self, factory, *args, **kwargs):
         """Initialize fabric plot path artist."""
         super().__init__(factory, *args, **kwargs)
@@ -643,7 +714,7 @@ class FabricPlot_Path(FabricPlot_Artists):
     def parse_kwargs(self, kwargs):
         """Parse fabric path style kwargs."""
         super().update_kwargs("fabricplot_path")
-        self.kwargs.update((k, kwargs[k]) for k in self.kwargs.keys() & kwargs.keys())
+        getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
         if not isinstance(self.kwargs["label"], str):
             if len(self.args) == 1:
                 self.kwargs["label"] = self.args[0].label()
@@ -656,7 +727,7 @@ class FabricPlotArtistFactory:
     def create_point(*args, **kwargs):
         """Create fabric plot point artist from Ellipsoid data."""
         if all(isinstance(arg, (Ellipsoid, EllipsoidSet)) for arg in args):
-            return FabricPlot_Point("create_point", *args, **kwargs)
+            return FabricPlotPointArtist("create_point", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Fabric plot point")
 
@@ -664,6 +735,6 @@ class FabricPlotArtistFactory:
     def create_path(*args, **kwargs):
         """Create fabric plot path artist from EllipsoidSet data."""
         if all(isinstance(arg, EllipsoidSet) for arg in args):
-            return FabricPlot_Path("create_path", *args, **kwargs)
+            return FabricPlotPathArtist("create_path", *args, **kwargs)
         else:
             raise TypeError("Not valid arguments for Fabric plot path")

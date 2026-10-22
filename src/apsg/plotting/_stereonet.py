@@ -1,4 +1,5 @@
 import pickle
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +11,7 @@ from apsg.feature._container import (
     ConeSet,
     EllipsoidSet,
     FaultSet,
+    FeatureSet,
     FoliationSet,
     LineationSet,
     PairSet,
@@ -19,6 +21,12 @@ from apsg.feature._container import (
 from apsg.feature._geodata import Arc, Cone, Fault, Foliation, Lineation, Pair
 from apsg.feature._tensor3 import Stress3, Tensor3
 from apsg.math._vector import Vector3
+from apsg.plotting._confidence import confidence_curve
+from apsg.plotting._layout import (
+    CornerInsetLocator,
+    FigureLayout,
+    check_legend_position,
+)
 from apsg.plotting._plot_artists import StereoNetArtistFactory
 from apsg.plotting._stereo_engine import rotation_from_axis_angle
 from apsg.plotting._stereo_engine._utils import _as_vectors, _ring_contains
@@ -106,7 +114,8 @@ class StereoNet:
         title (str): figure title. Default None.
         title_kws (dict): dictionary of keyword arguments passed to matplotlib suptitle
             method.
-        tight_layout (bool): Matplotlib figure tight_layout. Default False
+        figsize (tuple): Size of the figure without legend and title, in inches.
+            The figure grows to fit them. Default (5, 5)
         kind (str): Equal area ("equal-area", "schmidt" or "earea") or equal angle
             ("equal-angle", "wulff" or "eangle") projection. Default is "equal-area"
         hemisphere (str): "lower" or "upper". Default is "lower"
@@ -126,8 +135,12 @@ class StereoNet:
             the rim. Default False
         azimuth_ticks_kws (dict): Extra keyword arguments passed to the underlying
             ``set_azimuth_ticks``. Default {}
+        legend_position (str): Side of the net where the legend is placed, "right",
+            "left", "top" or "bottom". The number of legend columns is chosen so
+            the legend is not longer than the net. Default "right"
         legend_kws (dict): Extra keyword arguments passed to matplotlib's
-            ``legend``, overriding apsg's defaults. Default {}
+            ``legend``, overriding apsg's defaults. With ``loc`` or
+            ``bbox_to_anchor`` the legend is placed as given instead. Default {}
 
     Note:
         Each `contour()` call owns its own `StereoGrid` -- pass a `Vector3Set`
@@ -146,8 +159,9 @@ class StereoNet:
 
     def __init__(self, **kwargs):
         self._kwargs = apsg_conf.stereonet.copy()
-        self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
+        apsg_conf.stereonet.override(self._kwargs, kwargs)
         self._kwargs["title"] = kwargs.get("title", None)
+        check_legend_position(self._kwargs["legend_position"])
         self._projection = _kind_to_projection(self._kwargs["kind"])
         rotation = self._kwargs["rotation"]
         self._rotation = np.eye(3) if rotation is None else np.asarray(rotation)
@@ -219,6 +233,10 @@ class StereoNet:
 
     def _plot_artists(self):
         for artist in self._artists:
+            if artist.args and all(
+                isinstance(arg, FeatureSet) and len(arg) == 0 for arg in artist.args
+            ):
+                continue  # empty sets, nothing to draw
             plot_method = getattr(self, artist.stereonet_method)
             plot_method(*artist.args, **artist.kwargs)
 
@@ -266,15 +284,16 @@ class StereoNet:
 
     def init_figure(self):
         self.fig = plt.figure(
-            figsize=apsg_conf.figsize,
+            figsize=self._kwargs["figsize"],
             dpi=apsg_conf.dpi,
             facecolor=apsg_conf.facecolor,
+            layout="constrained",
         )
         netname = "Schmidt net" if self._projection == "schmidt" else "Wulff net"
         if hasattr(self.fig.canvas.manager, "set_window_title"):
             self.fig.canvas.manager.set_window_title(netname)
 
-    def _render(self):
+    def _render(self, owned=False):
         self.ax = self.fig.add_subplot(
             projection=self._projection,
             hemisphere=self._kwargs["hemisphere"],
@@ -282,27 +301,30 @@ class StereoNet:
             rotate_data=self._kwargs["rotate_data"],
         )
         self._draw_layout()
+        # legend entries of scatter sizes/colors and the colorbar inset, filled
+        # by _scatter and _contour
+        self._extra_legend = ([], [])
+        self._colorbar = None
         self._plot_artists()
         h, labels = self.ax.get_legend_handles_labels()
-        if h:
-            legend_kwargs = {
-                "bbox_to_anchor": (1.05, 1),
-                "prop": {"size": 11},
-                "loc": "upper left",
-                "borderaxespad": 0,
-                "scatterpoints": 1,
-                "numpoints": 1,
-                **self._kwargs["legend_kws"],
-            }
-            self.ax.legend(h, labels, **legend_kwargs)
-        if self._kwargs["title"] is not None:
-            self.fig.suptitle(self._kwargs["title"], **self._kwargs["title_kws"])
-        if self._kwargs["tight_layout"]:
-            self.fig.tight_layout()
+        self._layout = FigureLayout(
+            self.fig,
+            self.ax,
+            h + self._extra_legend[0],
+            labels + self._extra_legend[1],
+            position=self._kwargs["legend_position"],
+            legend_kws=self._kwargs["legend_kws"],
+            title=self._kwargs["title"],
+            title_kws=self._kwargs["title_kws"],
+        )
+        self._layout.apply(owned=owned)
 
     def render2fig(self, fig):
         """
         Plot stereonet to already existing figure or subfigure
+
+        The figure size is kept. Use a figure with constrained layout, so the
+        legend and title fit next to the net.
 
         Args:
             fig (Figure): A mtplotlib Figure artist
@@ -344,7 +366,12 @@ class StereoNet:
         if hasattr(self, "fig"):
             plt.close(self.fig)  # close previously rendered figure
         self.init_figure()
-        self._render()
+        try:
+            self._render(owned=True)
+        except Exception:
+            plt.close(self.fig)  # don't leak the figure of a failed render
+            raise
+        self._layout.connect_resize()
         self.ax.format_coord = self.format_coord  # ty: ignore
         plt.show()
 
@@ -362,7 +389,11 @@ class StereoNet:
         if hasattr(self, "fig"):
             plt.close(self.fig)  # close previously rendered figure
         self.init_figure()
-        self._render()
+        try:
+            self._render(owned=True)
+        except Exception:
+            plt.close(self.fig)  # don't leak the figure of a failed render
+            raise
         self.fig.savefig(filename, **kwargs)
         plt.close(self.fig)  # don't leave open for Jupyter's auto-display
 
@@ -376,7 +407,7 @@ class StereoNet:
 
         Args:
             style: apsg plotting style. See stereonet_styles
-            *arg: any number of features to be plotted
+            *args: any number of features to be plotted
 
         Note:
             Features in args are automatically filtered by style to accept only compatible features
@@ -384,12 +415,13 @@ class StereoNet:
         Returns:
             None: Features are plotted using the provided style.
         """
-        assert isinstance(style, StereoNetStyle), "Style must StereoNetStyle object"
+        if not isinstance(style, StereoNetStyle):
+            raise TypeError("Style must be StereoNetStyle object")
 
         try:
             artist = style.create_artist(*args)
         except TypeError as err:
-            print(err)
+            warnings.warn(str(err), stacklevel=2)
             return
         if len(artist.args) > 0:
             self._artists.append(artist)
@@ -398,7 +430,7 @@ class StereoNet:
         try:
             self._artists.append(factory_method(*args, **kwargs))
         except TypeError as err:
-            print(err)
+            warnings.warn(str(err), stacklevel=3)
 
     ########################################
     # PLOTTING METHODS                     #
@@ -409,7 +441,7 @@ class StereoNet:
         Plot linear feature(s) or poles of planar features as point(s).
 
         Args:
-            Vector3 or Vector3Set like feature(s)
+            *args: Vector3 or Vector3Set like feature(s)
 
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
@@ -437,7 +469,7 @@ class StereoNet:
         Note: Markers are filled on lower and open on upper hemisphere.
 
         Args:
-            Vector3 or Vector3Set like feature(s)
+            *args: Vector3 or Vector3Set like feature(s)
 
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
@@ -463,11 +495,11 @@ class StereoNet:
             or sizes of points
 
         Args:
-            Vector3 or Vector3Set like feature(s)
+            *args: Vector3 or Vector3Set like feature(s)
 
         Keyword Args:
-            s (list or array):
-            c (list or array)
+            s (list or array): Marker sizes.
+            c (list or array): Marker colors.
             alpha (scalar): Set the alpha value. Default None
             linewidths (float): The linewidth of the marker edges. Default 1.5
             marker (str): Marker style string. Default "o"
@@ -487,7 +519,7 @@ class StereoNet:
         Note: ``great_circle`` has also alias ``gc``
 
         Args:
-            Foliation or FoliationSet feature(s)
+            *args: Foliation or FoliationSet feature(s)
 
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
@@ -524,8 +556,8 @@ class StereoNet:
         net with ``hemisphere="upper"``.
 
         Args:
-            Arc or ArcSet instance(s), or Vector3/Vector3Set like feature(s) to
-            connect pairwise in sequence.
+            *args: Arc or ArcSet instance(s), or Vector3/Vector3Set like feature(s) to
+                connect pairwise in sequence.
 
         Keyword Args:
             kind (str): Rendering mode, "line", "points" or "filled". Default "line".
@@ -555,7 +587,7 @@ class StereoNet:
         Plot cone(s) as small circle(s) with given apical angle(s).
 
         Args:
-            Cone or ConeSet feature(s)
+            *args: Cone or ConeSet feature(s)
 
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
@@ -574,7 +606,7 @@ class StereoNet:
         Plot pair feature(s) as great circle and point.
 
         Args:
-            Pair or PairSet feature(s)
+            *args: Pair or PairSet feature(s)
 
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
@@ -596,7 +628,7 @@ class StereoNet:
         Note: Arrow is styled according to default arrow config
 
         Args:
-            Fault or FaultSet feature(s)
+            *args: Fault or FaultSet feature(s)
 
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
@@ -621,7 +653,7 @@ class StereoNet:
             pole, with no arrowhead, instead of an arrow.
 
         Args:
-            Fault, FaultSet, Pair or PairSet feature(s)
+            *args: Fault, FaultSet, Pair or PairSet feature(s)
 
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
@@ -644,7 +676,7 @@ class StereoNet:
         the T axis. Overlapping polygons of a ``FaultSet`` add up.
 
         Args:
-            Fault or FaultSet feature(s)
+            *args: Fault or FaultSet feature(s)
 
         Keyword Args:
             color (color): Set the fill color. Default None
@@ -669,7 +701,7 @@ class StereoNet:
         orientation and is not drawn.
 
         Args:
-            Stress3 or Stress3Set feature(s)
+            *args: Stress3 or Stress3Set feature(s)
 
         Keyword Args:
             color (color): Set the fill color. Default "k"
@@ -690,7 +722,7 @@ class StereoNet:
         Note: You should pass two features
 
         Args:
-            Vector3 or Vector3Set like feature(s)
+            *args: Vector3 or Vector3Set like feature(s)
 
         Keyword Args:
             color (color): Set the color of the arrow. Default None
@@ -709,7 +741,7 @@ class StereoNet:
         Plot principal planes or principal directions of tensor.
 
         Args:
-            OrientationTensor3 like feature, or a set of them (e.g. ``EllipsoidSet``)
+            *args: OrientationTensor3 like feature, or a set of them (e.g. ``EllipsoidSet``)
 
         Keyword Args:
             planes (bool): When True, plot principal planes, otherwise principal
@@ -735,7 +767,7 @@ class StereoNet:
         Plot principal stresses of stress tensor.
 
         Args:
-            Stress3 feature(s)
+            *args: Stress3 feature(s)
 
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
@@ -758,11 +790,19 @@ class StereoNet:
         confidence cone (single half-angle) is plotted around the mean direction. For
         ``method="bingham"`` an elliptical confidence region (two independent semi-angles)
         is plotted around a chosen eigenvector of the orientation tensor, using the
-        large-sample eigenvalue method of Fisher, Lewis & Embleton (1987). See
+        large-sample (central limit theorem) distribution of the eigenvector. For
+        girdle data the Watson cone is around the pole of the girdle. See
         ``Vector3Set.fisher_statistics``, ``Vector3Set.watson_statistics`` and
-        ``Vector3Set.bingham_statistics`` for the underlying statistics; the bootstrap
+        ``Vector3Set.bingham_statistics`` for the underlying statistics. ``"kent"`` and
+        ``"esag"`` plot the confidence ellipse of the mean direction of the fitted
+        ``Kent`` or ``ESAG`` distribution (``mean_confidence``); axial data are flipped
+        into one hemisphere first, as for ``"fisher"``. The bootstrap
         cone resamples the data with replacement and takes the ``level``-percentile of
         the angular deviation of the resampled principal eigenvectors from the sample's.
+
+        For pairs (``PairSet`` or ``FaultSet``) ``method="lisle"`` (the default for
+        them) plots the confidence ellipses of the mean lineation and the mean foliation
+        normal of Lisle (1989), see ``PairSet.lisle_statistics``.
 
         For groups of symmetric tensors (``EllipsoidSet`` or ``Stress3Set``) use
         ``method="jelinek"`` (the default when only tensor sets are passed): the
@@ -772,13 +812,16 @@ class StereoNet:
         ``Stress3Set.mean_tensor``.
 
         Args:
-            Vector3Set like feature(s), e.g. LineationSet or FoliationSet, or
-            EllipsoidSet and Stress3Set feature(s) for ``method="jelinek"``. Vector
-            sets and tensor sets cannot be combined in one call.
+            *args: Vector3Set like feature(s), e.g. LineationSet or FoliationSet, or
+                EllipsoidSet and Stress3Set feature(s) for ``method="jelinek"``. Vector
+                sets and tensor sets cannot be combined in one call.
 
         Keyword Args:
-            method (str): "fisher", "bingham", "watson", "bootstrap" or "jelinek".
-                Default "fisher" for vector sets and "jelinek" for tensor sets
+            method (str): "fisher", "bingham", "watson", "bootstrap", "kent",
+                "esag", "jelinek" or "lisle". Default "fisher" for vector sets,
+                "watson" for lineation and foliation sets (``fisher_statistics`` of
+                axial data is deprecated), "jelinek" for tensor sets and "lisle"
+                for pair and fault sets
             which (int): index (0, 1 or 2) of the eigenvector the ellipse is
                 centered on (``method="bingham"`` and ``method="jelinek"`` only). 0 is
                 the major eigenvector, 2 is the minor (pole) eigenvector. Default None,
@@ -824,9 +867,14 @@ class StereoNet:
                 "RdBu_r" (diverging, centered on 0) when `clip` is False
             clip (bool): restrict to the positive (above-uniform) region only.
                 Default True
-            colorbar (bool): Show colorbar. Default False
+            colorbar (bool): Show colorbar, in the bottom right corner of the net
+                (only one per stereonet). Default False
             colorbar_kws (dict): Extra keyword arguments passed to
-                ``Figure.colorbar``. Default {"shrink": 0.5, "anchor": (0.0, 0.3)}
+                ``Figure.colorbar``. Default {}
+            colorbar_bounds (tuple): Position of the colorbar as (x0, y0, width,
+                height) in fractions of the net box, shifted right and down by the
+                margin of the azimuth tick labels. Default (0.955, 0.02, 0.03, 0.17)
+            colorbar_fontsize (float): Font size of colorbar tick labels. Default 7
             alpha (float): transparency. Default None
             antialiased (bool): Default True
             n_max (int): maximum harmonic degree i.e. the angular resolution. Must be
@@ -845,6 +893,34 @@ class StereoNet:
             kwargs["linewidth"] = kwargs.pop("lw")
         artist = StereoNetArtistFactory.create_contour(source, **kwargs)
         self._artists.append(artist)
+
+    def density(self, dist, **kwargs):
+        """
+        Plot contours of the density of an orientation distribution.
+
+        The density is shown in multiples of uniform distribution, for the axis
+        (a direction and its antipode combined), see
+        ``StereoGrid.apply_distribution``.
+
+        Args:
+            dist: 3D orientation distribution, e.g. ``dist_kent.fit(l)``.
+
+        Keyword Args:
+            **kwargs: Same as ``contour`` (``levels``, ``cmap``, ``filled``, ...), except
+                the density estimation options. ``label`` defaults to the name of
+                the distribution.
+
+        Returns:
+            None: Contours of the density are plotted.
+        """
+        try:
+            grid = StereoGrid()
+            grid.apply_distribution(dist)
+        except TypeError as err:
+            warnings.warn(str(err), UserWarning, stacklevel=2)
+            return
+        kwargs.setdefault("label", type(dist).__name__)
+        self.contour(grid, **kwargs)
 
     ########################################
     # PLOTTING ROUTINES                    #
@@ -924,14 +1000,9 @@ class StereoNet:
         sc = self.ax.scatter(X, Y, transform=self.ax.transAxes, **kwargs)
         if legend:
             prop = "colors" if kwargs.get("c") is not None else "sizes"
-            legend_kwargs = {
-                "bbox_to_anchor": (1.05, 1),
-                "prop": {"size": 11},
-                "loc": "upper left",
-                "borderaxespad": 0,
-                **self._kwargs["legend_kws"],
-            }
-            self.ax.legend(*sc.legend_elements(prop, num=num), **legend_kwargs)
+            handles, labels = sc.legend_elements(prop, num=num)
+            self._extra_legend[0].extend(handles)
+            self._extra_legend[1].extend(labels)
         sc.set_clip_path(self.primitive)
 
     def _cone(self, *args, **kwargs):
@@ -950,85 +1021,24 @@ class StereoNet:
         return [self.ax.path(combined, antipodal=False, **kwargs)]
 
     def _confidence(self, *args, **kwargs):
-        method = kwargs.pop("method")
-        which = kwargs.pop("which")
-        level = kwargs.pop("level")
-        n_resamples = kwargs.pop("n_resamples")
-        normalize = kwargs.pop("normalize")
-        anisoft = kwargs.pop("anisoft")
+        options = {
+            key: kwargs.pop(key)
+            for key in (
+                "method",
+                "which",
+                "level",
+                "n_resamples",
+                "normalize",
+                "anisoft",
+            )
+        }
+        gap = np.full((1, 3), np.nan)
         segments = []
         for arg in args:
-            if method == "jelinek":
-                if which not in (None, 0, 1, 2):
-                    raise ValueError("which must be 0, 1 or 2")
-                ellipses = arg.mean_tensor(
-                    level=level, normalize=normalize, anisoft=anisoft
-                )["ellipses"]
-                # all three principal axes unless a single one is selected
-                selected = ellipses if which is None else [ellipses[which]]
-                theta = np.linspace(0, 2 * np.pi, 181)
-                curves = []
-                for ell in selected:
-                    mu = np.asarray(ell["mu"])
-                    u = np.asarray(ell["axes"][0])
-                    v = np.asarray(ell["axes"][1])
-                    t0, t1 = np.tan(np.radians(ell["gamma"]))
-                    curve = (
-                        mu
-                        + (t0 * np.cos(theta))[:, None] * u
-                        + (t1 * np.sin(theta))[:, None] * v
-                    )
-                    curves.append(curve / np.linalg.norm(curve, axis=1)[:, None])
-                gap = np.full((1, 3), np.nan)
-                pts = curves[0]
-                for curve in curves[1:]:
-                    pts = np.vstack([pts, gap, curve])
-            elif method == "bingham":
-                stats = arg.bingham_statistics(
-                    level=level, which=0 if which is None else which
-                )
-                mu = np.asarray(stats["mu"])
-                u = np.asarray(stats["axes"][0])
-                v = np.asarray(stats["axes"][1])
-                g0, g1 = np.radians(stats["gamma"])
-                theta = np.linspace(0, 2 * np.pi, 181)
-                denom = np.sqrt((g1 * np.cos(theta)) ** 2 + (g0 * np.sin(theta)) ** 2)
-                rho = np.divide(
-                    g0 * g1, denom, out=np.zeros_like(denom), where=denom > 0
-                )
-                pts = np.cos(rho)[:, None] * mu + np.sin(rho)[:, None] * (
-                    np.cos(theta)[:, None] * u + np.sin(theta)[:, None] * v
-                )
-            else:
-                if method == "fisher":
-                    stats = arg.fisher_statistics(level=level)
-                elif method == "watson":
-                    stats = arg.watson_statistics(level=level)
-                elif method == "bootstrap":
-                    # Bootstrap confidence cone from resampled orientation-tensor eigenvectors
-                    mu = arg.ortensor().eigenvectors(0)
-                    deviations = []
-                    for sample in arg.bootstrap(n=n_resamples):
-                        v = sample.ortensor().eigenvectors(0)
-                        if v.dot(mu) < 0:
-                            v = -v
-                        deviations.append(mu.angle(v))
-                    alpha = float(np.percentile(deviations, 100 * level))
-                    stats = {"mu": mu, "alpha": alpha}
-                else:
-                    raise ValueError(f"Unknown confidence method {method!r}")
-                azi, inc = stats["mu"].geo
-                secant = Vector3(azi, inc + stats["alpha"])
-                angles = np.linspace(0, 360, 360)
-                pts = np.array(
-                    [np.asarray(secant.rotate(stats["mu"], a)) for a in angles]
-                )
-            segments.append(pts)
-            segments.append(np.full((1, 3), np.nan))
-            segments.append(-pts)
-            segments.append(np.full((1, 3), np.nan))
-        combined = np.vstack(segments)
-        return [self.ax.path(combined, antipodal=False, **kwargs)]
+            # a confidence region is axial: draw it around the antipode too
+            pts = confidence_curve(arg, **options)
+            segments.extend([pts, gap, -pts, gap])
+        return [self.ax.path(np.vstack(segments), antipodal=False, **kwargs)]
 
     def _pair(self, *args, **kwargs):
         line_marker = kwargs.pop("line_marker")
@@ -1188,6 +1198,8 @@ class StereoNet:
     def _contour(self, grid, **kwargs):
         colorbar = kwargs.pop("colorbar")
         colorbar_kws = kwargs.pop("colorbar_kws")
+        colorbar_bounds = kwargs.pop("colorbar_bounds")
+        colorbar_fontsize = kwargs.pop("colorbar_fontsize")
         line_color = kwargs.pop("line_color")
         _ = kwargs.pop("label")
         filled = kwargs.pop("filled")
@@ -1225,13 +1237,32 @@ class StereoNet:
                 **line_kwargs,
             )
         if colorbar:
-            self.fig.colorbar(cf, ax=self.ax, **colorbar_kws)
+            self._add_colorbar(cf, colorbar_bounds, colorbar_fontsize, colorbar_kws)
+
+    def _add_colorbar(self, mappable, bounds, fontsize, colorbar_kws):
+        # an inset in the bottom right corner of the net, left out of the layout,
+        # so it neither moves nor shrinks the net; it is shifted into the margin
+        # taken by the E and S azimuth tick labels, away from the primitive circle
+        if self._colorbar is not None:
+            warnings.warn(
+                "Only one contour colorbar can be shown, the next one is skipped.",
+                UserWarning,
+                stacklevel=2,
+            )
+            return
+        cax = self.ax.inset_axes(bounds)
+        cax.set_in_layout(False)
+        cax.set_axes_locator(CornerInsetLocator(self.ax, bounds))
+        self._colorbar = self.fig.colorbar(
+            mappable, cax=cax, **{"ticklocation": "left", **colorbar_kws}
+        )
+        cax.tick_params(labelsize=fontsize)
 
 
 def stereonetartist_from_json(obj_json):
     if obj_json["factory"] == "create_contour":
         # a contour artist's args[0] is a StereoGrid's own to_json shape
-        # (no "datatype" key), not a feature -- see StereoNet_Contour.to_json
+        # (no "datatype" key), not a feature -- see StereoNetContourArtist.to_json
         grid = StereoGrid.from_json(obj_json["args"][0])
         return StereoNetArtistFactory.create_contour(grid, **obj_json["kwargs"])
     args = tuple([feature_from_json(arg_json) for arg_json in obj_json["args"]])
@@ -1240,44 +1271,43 @@ def stereonetartist_from_json(obj_json):
     )
 
 
+# ``quicknet()`` dispatch: (accepted types, ``StereoNet`` method, whether the
+# method takes one item per call so a set is plotted item by item). The first
+# match wins, so a subclass is listed before its base class (``Fault`` before
+# ``Pair``, ``Lineation`` before ``Vector3``, ``Stress3`` before ``Tensor3``).
+# ``Foliation``/``FoliationSet`` are handled before, as they depend on
+# ``fol_as_pole``.
+_QUICKNET_DISPATCH = (
+    ((Lineation, LineationSet), "point", False),
+    ((Fault, FaultSet), "fault", False),
+    ((Pair, PairSet), "pair", False),
+    ((Cone, ConeSet), "cone", False),
+    ((Arc, ArcSet), "arc", False),
+    ((Stress3,), "stress", False),
+    ((Stress3Set,), "stress", True),
+    ((Tensor3,), "tensor", False),
+    # also matches OrientationTensor3Set (an EllipsoidSet subclass)
+    ((EllipsoidSet,), "tensor", True),
+    ((StereoGrid,), "contour", False),
+    ((Vector3, Vector3Set), "vector", False),
+)
+
+
 def _quicknet_plot_one(s, arg, fol_as_pole, **kwargs):
-    """Plot a single ``quicknet()`` argument on ``s`` -- dispatches by type to
-    whichever ``StereoNet`` method has an artist representation for it,
-    accepting a single feature or its ``*Set`` counterpart alike. Order
-    matters: a subclass (``Fault`` vs ``Pair``, ``Lineation``/``Foliation``
-    vs ``Vector3``, ``Stress3`` vs ``Tensor3``, ``OrientationTensor3Set`` vs
-    ``EllipsoidSet``) is checked before its more general base class."""
+    """Plot a single ``quicknet()`` argument on ``s`` with the ``StereoNet``
+    method that has an artist representation for its type (see
+    ``_QUICKNET_DISPATCH``), accepting a single feature or its ``*Set``
+    counterpart alike."""
     if isinstance(arg, (Foliation, FoliationSet)):
         (s.point if fol_as_pole else s.great_circle)(arg, **kwargs)
-    elif isinstance(arg, (Lineation, LineationSet)):
-        s.point(arg, **kwargs)
-    elif isinstance(arg, (Fault, FaultSet)):
-        s.fault(arg, **kwargs)
-    elif isinstance(arg, (Pair, PairSet)):
-        s.pair(arg, **kwargs)
-    elif isinstance(arg, (Cone, ConeSet)):
-        s.cone(arg, **kwargs)
-    elif isinstance(arg, (Arc, ArcSet)):
-        s.arc(arg, **kwargs)
-    elif isinstance(arg, Stress3):
-        s.stress(arg, **kwargs)
-    elif isinstance(arg, Stress3Set):
-        # .stress() only ever plots one Stress3 per call
-        for item in arg:
-            s.stress(item, **kwargs)
-    elif isinstance(arg, Tensor3):
-        s.tensor(arg, **kwargs)
-    elif isinstance(arg, EllipsoidSet):
-        # .tensor() only ever plots one Tensor3-like object per call;
-        # also matches OrientationTensor3Set (an EllipsoidSet subclass)
-        for item in arg:
-            s.tensor(item, **kwargs)
-    elif isinstance(arg, StereoGrid):
-        s.contour(arg, **kwargs)
-    elif isinstance(arg, (Vector3, Vector3Set)):
-        s.vector(arg, **kwargs)
-    else:
-        print(f"{type(arg)} not supported.")
+        return
+    for types, name, per_item in _QUICKNET_DISPATCH:
+        if isinstance(arg, types):
+            method = getattr(s, name)
+            for item in arg if per_item else (arg,):
+                method(item, **kwargs)
+            return
+    warnings.warn(f"{type(arg)} not supported.", stacklevel=3)
 
 
 def quicknet(*args, **kwargs):
@@ -1301,7 +1331,7 @@ def quicknet(*args, **kwargs):
         savefig_kwargs (dict): dict passed to ``plt.savefig``
         fol_as_pole (bool): True to plot planar features as poles,
             False for plotting as great circle. Default `False`
-        Additional kwargs are passed to StereoNet method
+        **kwargs: Additional kwargs are passed to StereoNet method
 
     Examples:
         >>> l = linset.random_fisher(position=lin(120, 50))

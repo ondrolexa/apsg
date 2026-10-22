@@ -21,10 +21,13 @@ except ImportError:  # pragma: no cover
 
 __all__ = ["StereoGrid"]
 
+# number of grid x features kernel values computed at once by the Kamb method
+_KAMB_CHUNK = 2**22
+
 
 def _golden_section_spiral(n):
     """``n`` NED unit vectors, Golden Section Spiral -- apsg's
-    ``Vector3Set.gss`` (``apsg/feature/_container.py``), formula copied
+    ``Vector3Set.gss`` (``apsg/feature/_container/_vectorsets.py``), formula copied
     verbatim (isotropic distribution, so the NED axis labeling is moot)."""
     inc = np.pi * (3 - np.sqrt(5))
     off = 2.0 / n
@@ -143,10 +146,22 @@ class StereoGrid:
             trimzero (bool): if True, exact-zero values are bumped to a
                 tiny positive number so a zero contour isn't drawn.
                 Default True.
+
+        References:
+            Kamb, W.B. (1959). Ice petrofabric observations from Blue
+                Glacier, Washington, in relation to theory and experiment.
+                Journal of Geophysical Research 64, 1891-1909.
+            Vollmer, F.W. (1995). C program for automatic contouring of
+                spherical orientation data using a modified Kamb method.
+                Computers & Geosciences 21, 31-49.
+            Lanczos, C. (1956). Applied Analysis. Prentice-Hall (sigma
+                factors for damping Gibbs oscillations).
         """
         features = _as_vectors(features)
-        self.features = features
         n = len(features)
+        if n == 0:
+            raise ValueError("The density of no data is undefined")
+        self.features = features
 
         sigma = kwargs.get("sigma", None)
         if sigma is None:
@@ -161,6 +176,10 @@ class StereoGrid:
                 )
             n_max = kwargs.get("n_max", None)
             if n_max is None:
+                # match the angular resolution to the Kamb kernel of the same
+                # sigma, whose width is about 1 / sqrt(k) radians, i.e. degrees
+                # up to about sqrt(k); the factor 1.15 and the 2..40 bounds are
+                # this implementation's choice (no literature source recorded)
                 n_max = int(2 * round(1.15 * np.sqrt(k)))
                 n_max = max(2, min(n_max, 40))
             if n_max % 2 != 0:
@@ -203,8 +222,14 @@ class StereoGrid:
             # statistic (mean 0, SD 1 under uniform data). Not clipped, for
             # the same reason `sph` isn't.
             scale = np.sqrt(n * (k / 2.0 - 1) / k**2)
-            cnt = np.exp(k * (np.abs(self.grid @ features.T) - 1))
-            self.values = cnt.sum(axis=1) / scale - sigma
+            # summed over chunks of features, as the whole grid x features
+            # matrix of a large data set doesn't fit in memory
+            chunk = max(1, _KAMB_CHUNK // len(self.grid))
+            counts = np.zeros(len(self.grid))
+            for start in range(0, n, chunk):
+                block = features[start : start + chunk]
+                counts += np.exp(k * (np.abs(self.grid @ block.T) - 1)).sum(axis=1)
+            self.values = counts / scale - sigma
         else:
             raise ValueError(f"Unknown method {method!r}, expected 'sph' or 'kamb'")
 

@@ -9,8 +9,23 @@ from apsg.config import apsg_conf, stress_sign
 from apsg.feature._geodata import Fault, Foliation, Lineation, Pair
 from apsg.feature._tensor2 import Ellipse
 from apsg.helpers._math import atand
-from apsg.math._matrix import Matrix3
+from apsg.math._matrix import Matrix3, rounded
 from apsg.math._vector import Vector3
+
+
+def _log(x):
+    """Natural log, -inf for zero (a degenerate ellipsoid axis)."""
+    return math.log(x) if x > 0 else -math.inf
+
+
+def _lode(e1, e2, e3):
+    """Lode parameter of logarithmic strains, with its limits for zero axes
+    (1 for one zero axis, -1 for two)."""
+    if not (e1 - e3) > 0:
+        return 0
+    if math.isinf(e3):
+        return -1.0 if math.isinf(e2) else 1.0
+    return (2 * e2 - e1 - e3) / (e1 - e3)
 
 
 class DeformationGradient3(Matrix3):
@@ -94,8 +109,10 @@ class DeformationGradient3(Matrix3):
         if Ryz is None:
             Ryz = Rxz / Rxy
 
-        assert Rxy >= 1, "Rxy must be greater than or equal to 1."
-        assert Ryz >= 1, "Ryz must be greater than or equal to 1."
+        if Rxy < 1:
+            raise ValueError("Rxy must be greater than or equal to 1.")
+        if Ryz < 1:
+            raise ValueError("Ryz must be greater than or equal to 1.")
 
         y = (Ryz / Rxy) ** (1 / 3)
         return cls.from_comp(xx=y * Rxy, yy=y, zz=y / Ryz)
@@ -228,17 +245,20 @@ class Rotation3(DeformationGradient3):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not np.allclose(np.dot(np.transpose(self), self), np.eye(3)):
-            raise TypeError("Not valid arguments for Rotation3")
-        # fix improper rotations
-        if np.allclose(-1, np.linalg.det(self)):
-            U, _S, Vt = np.linalg.svd(self)
-            # Ensure a proper rotation (det=1)
-            coefs = U @ np.diag([1, 1, np.linalg.det(U @ Vt)]) @ Vt
-            self._coefs = tuple(coefs[0]), tuple(coefs[1]), tuple(coefs[2])
+            raise ValueError("Rotation3 must be orthogonal (R.T @ R == I)")
+        det = np.linalg.det(self)
+        if det < 0:  # +-1 for an orthogonal matrix
+            raise ValueError(
+                f"Rotation3 must be a proper rotation (det == 1), got det {det:.3g}: "
+                "a reflection is not a rotation"
+            )
 
     def _derive(self, coefs):
         # products such as R @ F or R + R are rotations only when orthogonal
-        if np.allclose(np.dot(np.transpose(coefs), coefs), np.eye(3)):
+        if (
+            np.allclose(np.dot(np.transpose(coefs), coefs), np.eye(3))
+            and np.linalg.det(coefs) > 0
+        ):
             return type(self)._from_canonical(coefs)
         return DeformationGradient3._from_canonical(coefs)
 
@@ -303,7 +323,7 @@ class Rotation3(DeformationGradient3):
         """
         try:
             p = Pair(p)
-        except Exception as err:
+        except (TypeError, ValueError) as err:
             raise TypeError(
                 "Unsupported argument for from_pair. Expecting Pair"
             ) from err
@@ -333,7 +353,7 @@ class Rotation3(DeformationGradient3):
         """
         try:
             vector = Vector3(vector)
-        except Exception as err:
+        except (TypeError, ValueError) as err:
             raise TypeError(
                 "Unsupported argument for from_axisangle. Expecting Vector3"
             ) from err
@@ -357,13 +377,13 @@ class Rotation3(DeformationGradient3):
         """
         try:
             v1 = Vector3(v1)
-        except Exception as err:
+        except (TypeError, ValueError) as err:
             raise TypeError(
                 "Unsupported first argument for from_two_vectors. Expecting Vector3"
             ) from err
         try:
             v2 = Vector3(v2)
-        except Exception as err:
+        except (TypeError, ValueError) as err:
             raise TypeError(
                 "Unsupported second argument for from_two_vectors. Expecting Vector3"
             ) from err
@@ -396,19 +416,19 @@ class Rotation3(DeformationGradient3):
         """
         try:
             v1 = Vector3(v1)
-        except Exception as err:
+        except (TypeError, ValueError) as err:
             raise TypeError(
                 "Unsupported first argument for axisangle_from_vectors_axis. Expecting Vector3"
             ) from err
         try:
             v2 = Vector3(v2)
-        except Exception as err:
+        except (TypeError, ValueError) as err:
             raise TypeError(
                 "Unsupported second argument for axisangle_from_vectors_axis. Expecting Vector3"
             ) from err
         try:
             a = Vector3(a)
-        except Exception as err:
+        except (TypeError, ValueError) as err:
             raise TypeError(
                 "Unsupported third argument for axisangle_from_vectors_axis. Expecting Vector3"
             ) from err
@@ -519,7 +539,7 @@ class Rotation3(DeformationGradient3):
 
         geo_mag = GeoMag(high_resolution=True)
         if year is None:
-            now = datetime.now()  # noqa: DTZ005
+            now = datetime.now()
             year = now.year + now.month / 12
         result = geo_mag.calculate(
             glat=lat, glon=lon, alt=0, time=year, allow_date_outside_lifespan=True
@@ -787,7 +807,7 @@ class Stress3(Tensor3):
 
     def __repr__(self):
         n = apsg_conf.ndigits
-        return f"{self.label()}\n{(stress_sign() * np.asarray(self)).round(n)!s}"
+        return f"{self.label()}\n{rounded(stress_sign() * np.asarray(self), n)!s}"
 
     def to_json(self):
         obj = super().to_json()
@@ -1177,8 +1197,10 @@ class Ellipsoid(Tensor3):
         if Ryz is None:
             Ryz = Rxz / Rxy
 
-        assert Rxy >= 1, "Rxy must be greater than or equal to 1."
-        assert Ryz >= 1, "Ryz must be greater than or equal to 1."
+        if Rxy < 1:
+            raise ValueError("Rxy must be greater than or equal to 1.")
+        if Ryz < 1:
+            raise ValueError("Ryz must be greater than or equal to 1.")
 
         y = (Ryz / Rxy) ** (1 / 3)
         return cls.from_stretch(y * Rxy, y, y / Ryz, **kwargs)
@@ -1214,32 +1236,32 @@ class Ellipsoid(Tensor3):
     @property
     def S1(self) -> float:
         """Return the maximum principal stretch."""
-        return math.sqrt(self.E1)
+        return math.sqrt(max(self.E1, 0.0))
 
     @property
     def S2(self) -> float:
         """Return the middle principal stretch."""
-        return math.sqrt(self.E2)
+        return math.sqrt(max(self.E2, 0.0))
 
     @property
     def S3(self) -> float:
         """Return the minimum principal stretch."""
-        return math.sqrt(self.E3)
+        return math.sqrt(max(self.E3, 0.0))
 
     @property
     def e1(self) -> float:
         """Return the maximum natural principal strain."""
-        return math.log(self.S1)
+        return _log(self.S1)
 
     @property
     def e2(self) -> float:
         """Return the middle natural principal strain."""
-        return math.log(self.S2)
+        return _log(self.S2)
 
     @property
     def e3(self) -> float:
         """Return the minimum natural principal strain."""
-        return math.log(self.S3)
+        return _log(self.S3)
 
     @property
     def Rxy(self) -> float:
@@ -1304,15 +1326,13 @@ class Ellipsoid(Tensor3):
     @property
     def lode(self) -> float:
         """Return Lode parameter (Lode, 1926)."""
-        return (
-            (2 * self.e2 - self.e1 - self.e3) / (self.e1 - self.e3)
-            if (self.e1 - self.e3) > 0
-            else 0
-        )
+        return _lode(self.e1, self.e2, self.e3)
 
     @property
     def P_j(self) -> float:
         """Return the corrected anisotropy degree (Jelínek, 1981)."""
+        if math.isinf(self.e3):
+            return math.inf
         eta = (self.e1 + self.e2 + self.e3) / 3
         return math.exp(
             math.sqrt(
@@ -1323,11 +1343,7 @@ class Ellipsoid(Tensor3):
     @property
     def T(self) -> float:
         """Return the shape parameter (Jelínek, 1981)."""
-        return (
-            (2 * self.e2 - self.e1 - self.e3) / (self.e1 - self.e3)
-            if (self.e1 - self.e3) > 0
-            else 0
-        )
+        return _lode(self.e1, self.e2, self.e3)
 
     @property
     def P(self) -> float:
@@ -1367,6 +1383,8 @@ class Ellipsoid(Tensor3):
     @property
     def MAD_p(self) -> float:
         """Return maximum angular deviation (MAD) of planarly distributed vectors."""
+        if self.E3 <= 0:  # all axes in the plane
+            return 0.0
         return float(atand(np.sqrt(self.E3 / self.E2 + self.E3 / self.E1)))
 
     @property
@@ -1472,9 +1490,20 @@ class OrientationTensor3(Ellipsoid):
         Lisle, R. (1989). The Statistical Analysis of Orthogonal Orientation Data.
             The Journal of Geology, 97(3), 360-364.
 
-        Note: Tensor is by default shifted towards positive eigenvalues, so it
-            could be used as Scheidegger orientation tensor for plotting. When
-            original Lisle tensor is needed, set shift to False.
+        Lisle's tensor ``mean(l l' - n n')`` (``shift=False``) has eigenvalues
+        summing to 0, ``(1, 0, -1)`` for identical pairs; its first and last
+        eigenvectors are the mean lineation and the mean foliation normal (see
+        ``PairSet.lisle_statistics``).
+
+        Note: Tensor is by default shifted towards positive eigenvalues,
+            ``(T + I) / 3``, so it could be used as Scheidegger orientation
+            tensor for plotting. The shifted tensor equals the orientation
+            tensor of the lineations weighted 2/3 and the intermediate axes
+            ``n x l`` weighted 1/3, ``(2 T_l + T_m) / 3``, so identical pairs
+            give eigenvalues ``(2/3, 1/3, 0)``: its fabric indices (``shape``,
+            ``P``, ``G``, ``R``, ``Intensity``, ...) are not comparable with
+            those of an orientation tensor of axes. When original Lisle tensor
+            is needed, set shift to False.
 
         Args:
             p: ``PairSet``

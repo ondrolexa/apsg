@@ -86,7 +86,33 @@ def _clip_ring_to_hemisphere(ring, step=1.0):
     Returns:
         list of (M, 3) arrays: closed boundary loops of the visible region
         (empty if nothing of the region is visible).
+
+    Algorithm:
+
+    1. Find the ring edges that cross the horizon and their crossing points
+       (nodes). Walking the ring, nodes alternate entry (hidden -> visible)
+       and exit; the vertices between an entry and the next exit form a
+       visible *run*.
+    2. Sort the nodes by azimuth around the primitive circle. Neighbouring
+       nodes are joined by *rim arcs*, which alternate between lying inside
+       and outside the region, because the region boundary is crossed at
+       every node. Only the widest rim arc is tested with ``_ring_contains``
+       (the narrow ones can be numerically degenerate); the others follow by
+       alternation. Coincident nodes (two rings crossing on the horizon, e.g.
+       an exactly dip-slip fault) are ordered by ``lean``, the azimuth at
+       which the ring leaves them into the visible hemisphere.
+    3. Chain run -> inside rim arc -> run ... until the loop closes. Each
+       closed chain is one loop of the clipped region.
+
+    Sketch of one loop (net seen from above, ``o`` the primitive circle)::
+
+              E ~~~~~~~~~~~~ X        ~ : visible run of the ring, E -> X
+          o                      o
+        o                          o  the loop returns from X to E along
+          o                      o    the inside rim arc (the lower part
+              o   o   o   o   o       of the primitive circle here)
     """
+    # 1. crossings of the horizon (nodes) and visible runs between them
     v = _as_vectors(ring).copy()
     v[np.abs(v[:, 2]) < 1e-9, 2] = 0.0  # points on the horizon count as visible
     v = _as_vectors(v)
@@ -132,7 +158,7 @@ def _clip_ring_to_hemisphere(ring, step=1.0):
         idx = np.arange(i0 + 1, i1 + 1 + (n if i1 < i0 else 0)) % n
         runs.append(np.vstack([nodes[2 * r], v[idx], nodes[2 * r + 1]]))
 
-    # arcs of the primitive circle between neighbouring crossings alternate
+    # 2. arcs of the primitive circle between neighbouring crossings alternate
     # inside/outside the region (the region flips at every crossing, also across a
     # zero-width gap between coincident ones); the inside ones connect the runs
     phi = np.arctan2(nodes[:, 1], nodes[:, 0])
@@ -157,6 +183,7 @@ def _clip_ring_to_hemisphere(ring, step=1.0):
         ang = phi[a] + np.linspace(0.0, sweep[a, b], count)
         return np.column_stack([np.cos(ang), np.sin(ang), np.zeros(count)])
 
+    # 3. chain runs and inside rim arcs into closed loops
     loops, seen = [], set()
     for start in range(len(nodes)):
         if start in seen or start not in partner:

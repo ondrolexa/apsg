@@ -1,11 +1,108 @@
-from collections.abc import Mapping
+import numbers
+from collections.abc import Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+NOTATIONS = ("dd", "rhr", "quadrant")
+STRESS_CONVENTIONS = ("geological", "mechanical")
+NET_KINDS = ("equal-area", "schmidt", "earea", "equal-angle", "wulff", "eangle")
+HEMISPHERES = ("lower", "upper")
+LEGEND_POSITIONS = ("right", "left", "top", "bottom")
+GRID_TYPES = ("gss", "sfs")
+CONTOUR_METHODS = ("kamb", "sph")
+
+
+# validated configuration fields: the check, and what it expects for the message
+
+
+def _number(value):
+    return isinstance(value, numbers.Real) and not isinstance(value, bool)
+
+
+def _checked(default, check, expect, **kwargs):
+    return field(default=default, metadata={"check": check, "expect": expect}, **kwargs)
+
+
+def _choice(default, options):
+    return _checked(default, lambda v: v in options, f"one of {options}")
+
+
+def _positive(default, integer=False, minimum=0, strict=True):
+    kind = int if integer else numbers.Real
+
+    def check(v):
+        if not isinstance(v, kind) or isinstance(v, bool):
+            return False
+        return v > minimum if strict else v >= minimum
+
+    sign = ">" if strict else ">="
+    expect = f"{'an integer' if integer else 'a number'} {sign} {minimum}"
+    return _checked(default, check, expect)
+
+
+def _figsize(default):
+    def check(v):
+        return (
+            isinstance(v, Sequence)
+            and len(v) == 2
+            and all(_number(x) and x > 0 for x in v)
+        )
+
+    return _checked(default, check, "two positive numbers (width, height)")
+
+
+def _levels(v):
+    if isinstance(v, int) and not isinstance(v, bool):
+        return v >= 1
+    return isinstance(v, Sequence) and len(v) > 0 and all(_number(x) for x in v)
+
+
+def _optional_positive(v):
+    return v is None or (_number(v) and v > 0)
+
+
+def _bounds(v):
+    return isinstance(v, Sequence) and len(v) == 4 and all(_number(x) for x in v)
+
 
 class BaseConfig(Mapping):
-    """Base configuration class with dict-like access."""
+    """Base configuration class with dict-like access.
+
+    Fields declared with a ``check`` in their metadata are validated whenever
+    they are set (directly, by ``update`` or by ``apsg_conf_context``), and
+    unknown keys can't be set.
+    """
+
+    def __setattr__(self, key, value):
+        fields = type(self).__dataclass_fields__
+        if key not in fields:
+            raise AttributeError(f"'{key}' is not a valid configuration key.")
+        self.validate(key, value)
+        super().__setattr__(key, value)
+
+    def validate(self, key, value):
+        """Raise ``ValueError`` unless `value` is valid for the field `key`."""
+        meta = type(self).__dataclass_fields__[key].metadata
+        check = meta.get("check")
+        if check is None:
+            return
+        try:
+            valid = check(value)
+        except (TypeError, ValueError):
+            valid = False
+        if not valid:
+            raise ValueError(f"{key} must be {meta['expect']}, got {value!r}")
+
+    def override(self, target, overrides):
+        """Update the dict `target` (a copy of this configuration) with the
+        values in `overrides` for its keys, validating those of this
+        configuration's fields. Other keys of `overrides` are ignored."""
+        fields = type(self).__dataclass_fields__
+        for key in target.keys() & overrides.keys():
+            if key in fields:
+                self.validate(key, overrides[key])
+            target[key] = overrides[key]
 
     def __getitem__(self, key: str) -> Any:
         """Get item by key."""
@@ -61,21 +158,22 @@ class StereonetMarkerConfig(BaseConfig):
 class StereonetConfig(BaseConfig):
     """Stereonet global configuration."""
 
-    kind: str = "equal-area"
+    kind: str = _choice("equal-area", NET_KINDS)
     rotation: Any = None
     rotate_data: bool = True
     grid: bool = True
-    grid_step: int = 15
+    grid_step: int = _positive(15)
     grid_color: str = "grey"
     grid_style: str = ":"
-    clip_pole: int = 15
-    hemisphere: str = "lower"
-    primitive_lw: float = 1.5
+    clip_pole: int = _checked(15, lambda v: _number(v) and 0 <= v < 90, "in [0, 90)")
+    hemisphere: str = _choice("lower", HEMISPHERES)
+    primitive_lw: float = _positive(1.5, strict=False)
     primitive_color: Any = None
     azimuth_ticks: bool = True
     azimuth_ticks_kws: dict = field(default_factory=dict)
-    tight_layout: bool = False
+    figsize: tuple = _figsize((5, 5))
     title_kws: dict = field(default_factory=dict)
+    legend_position: str = _choice("right", LEGEND_POSITIONS)
     legend_kws: dict = field(default_factory=dict)
 
 
@@ -105,8 +203,8 @@ class StereonetGreatCircleConfig(BaseConfig):
 class StereonetArcConfig(BaseConfig):
     """Stereonet arc style configuration (line, points or filled)."""
 
-    kind: str = "line"  # "line", "points" or "filled"
-    region: str = "inside"  # "inside" or "outside" (kind="filled" only)
+    kind: str = _choice("line", ("line", "points", "filled"))
+    region: str = _choice("inside", ("inside", "outside"))  # kind="filled" only
     alpha: Any = None
     color: Any = None
     ls: str = "-"
@@ -146,10 +244,11 @@ class StereonetConeConfig(BaseConfig):
 class StereonetConfidenceConfig(BaseConfig):
     """Stereonet confidence cone/ellipse style configuration."""
 
-    method: str = "fisher"
+    # None: "fisher" for vectors, "watson" for axes, "jelinek" for tensors
+    method: Any = None
     which: Any = None
-    level: float = 0.95
-    n_resamples: int = 1000
+    level: float = _checked(0.95, lambda v: _number(v) and 0 < v < 1, "in (0, 1)")
+    n_resamples: int = _positive(1000, integer=True)
     normalize: bool = False
     anisoft: bool = False
     alpha: Any = None
@@ -248,19 +347,21 @@ class StereonetContourConfig(BaseConfig):
 
     alpha: Any = None
     antialiased: bool = True
-    method: str = "kamb"
+    method: str = _choice("kamb", CONTOUR_METHODS)
     n_max: Any = None
     cmap: Any = None
-    levels: int = 6
+    levels: int = _checked(6, _levels, "an integer >= 1 or a non-empty sequence")
     filled: bool = True
-    linewidth: float = 1
+    linewidth: float = _positive(1, strict=False)
     linestyles: Any = None
     colorbar: bool = False
-    colorbar_kws: dict = field(
-        default_factory=lambda: {"shrink": 0.5, "anchor": (0.0, 0.3)}
+    colorbar_kws: dict = field(default_factory=dict)
+    colorbar_bounds: tuple = _checked(
+        (0.955, 0.02, 0.03, 0.17), _bounds, "four numbers (x0, y0, width, height)"
     )
+    colorbar_fontsize: float = _positive(7)
     line_color: str = "k"
-    sigma: Any = None
+    sigma: float | None = _checked(None, _optional_positive, "None or a number > 0")
     clip: bool = True
 
 
@@ -268,26 +369,27 @@ class StereonetContourConfig(BaseConfig):
 class StereogridConfig(BaseConfig):
     """StereoGrid global configuration."""
 
-    type: str = "gss"
-    n: int = 3000
+    type: str = _choice("gss", GRID_TYPES)
+    n: int = _positive(3000, integer=True, minimum=10, strict=False)
 
 
 @dataclass
 class RoseplotConfig(BaseConfig):
     """Rose plot global configuration."""
 
-    bins: int = 36
+    bins: int = _positive(36, integer=True)
     density: bool = True
     arrowness: float = 0.95
     rwidth: float = 1
     scaled: bool = False
-    kappa: int = 250
-    pdf_res: int = 901
+    kappa: int = _positive(250)
+    pdf_res: int = _positive(901, integer=True, minimum=2, strict=False)
     title: Any = None
     grid: bool = True
     grid_kws: dict = field(default_factory=dict)
-    tight_layout: bool = False
+    figsize: tuple = _figsize((5, 5))
     title_kws: dict = field(default_factory=dict)
+    legend_position: str = _choice("right", LEGEND_POSITIONS)
     legend_kws: dict = field(default_factory=dict)
 
 
@@ -321,12 +423,14 @@ class RoseplotPdfConfig(BaseConfig):
 class RoseplotMuciConfig(BaseConfig):
     """Rose plot confidence interval line style configuration."""
 
-    confidence_level: int = 95
+    confidence_level: int = _checked(
+        95, lambda v: _number(v) and 0 < v < 100, "a percentage in (0, 100)"
+    )
     alpha: Any = None
     color: str = "r"
     ls: str = "-"
     lw: float = 1.5
-    n_resamples: int = 9999
+    n_resamples: int = _positive(9999, integer=True)
 
 
 @dataclass
@@ -334,9 +438,9 @@ class FabricplotConfig(BaseConfig):
     """Fabric plot global configuration."""
 
     ticks: bool = True
-    n_ticks: int = 10
-    tick_size: float = 0.2
-    margin: float = 0.05
+    n_ticks: int = _positive(10, integer=True)
+    tick_size: float = _positive(0.2, strict=False)
+    margin: float = _positive(0.05, strict=False)
     grid: bool = True
     grid_color: str = "k"
     grid_style: str = ":"
@@ -344,13 +448,14 @@ class FabricplotConfig(BaseConfig):
     border_lw: float = 2
     tick_color: str = "k"
     tick_lw: float = 1
-    label_fontsize: int = 14
+    label_fontsize: int = _positive(14)
     refline_color: str = "k"
     refline_lw: float = 0.5
     background_color: str = "w"
     title: Any = None
-    tight_layout: bool = False
+    figsize: tuple = _figsize((5, 5))
     title_kws: dict = field(default_factory=dict)
+    legend_position: str = _choice("right", LEGEND_POSITIONS)
     legend_kws: dict = field(default_factory=dict)
 
 
@@ -387,12 +492,12 @@ class FabricplotPathConfig(BaseConfig):
 class AppConfig(BaseConfig):
     """Top-level application configuration."""
 
-    notation: str = "dd"
-    stress_convention: str = "geological"
+    notation: str = _choice("dd", NOTATIONS)
+    stress_convention: str = _choice("geological", STRESS_CONVENTIONS)
     vec2geo: bool = False
-    ndigits: int = 3
-    figsize: tuple = (8, 6)
-    dpi: int = 100
+    ndigits: int = _positive(3, integer=True, strict=False)
+    figsize: tuple = _figsize((8, 6))
+    dpi: int = _positive(100)
     facecolor: str = "white"
     stereonet: StereonetConfig = field(default_factory=StereonetConfig)
     stereonet_point: StereonetPointConfig = field(default_factory=StereonetPointConfig)
@@ -445,8 +550,6 @@ class AppConfig(BaseConfig):
 
 apsg_conf = AppConfig()
 
-STRESS_CONVENTIONS = ("geological", "mechanical")
-
 
 def stress_sign():
     """Sign that maps the canonical (mechanical, tension-positive) stress matrix
@@ -470,8 +573,10 @@ def stress_sign():
 def apsg_conf_context(**kwargs):
     """Context manager to temporarily override configuration."""
     saved = apsg_conf.copy()
-    apsg_conf.update(kwargs)
     try:
+        # inside the try, so a value failing validation doesn't leave the
+        # values set before it changed
+        apsg_conf.update(kwargs)
         yield
     finally:
         apsg_conf.update(saved)

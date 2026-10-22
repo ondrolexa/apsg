@@ -2,6 +2,28 @@
 stereonets. Registered as the ``"schmidt"`` and ``"wulff"`` projections,
 usable via ``plt.subplot(projection="schmidt")`` once ``apsg.plotting``
 has been imported.
+
+Coordinate pipeline, from a plotted feature to the screen:
+
+1. Data are NED unit vectors (x north, y east, z down, so the lower
+   hemisphere is z >= 0).
+2. Hemisphere: axial data are folded to their z >= 0 representative and,
+   for an upper-hemisphere net, rotated 180 degrees about the vertical
+   (``_fold_axial_to_data``/``_hemisphere_rotate``); directional vectors
+   are negated instead (``_vec_to_data``).
+3. The vectors are converted to the axes' native data coordinates, the
+   graticule longitude/latitude (``graticule_from_ned`` in
+   ``_transforms.py``).
+4. ``transProjection`` (``EqualAreaTransform``/``EqualAngleTransform``)
+   applies the net ``rotation`` and projects onto the unit disk. Data
+   plotted with ``rotate_data=False`` go through ``_fixed_transData``, a copy
+   frozen at the identity rotation.
+5. ``transAffine`` maps the unit disk to the axes box and ``transAxes`` to
+   the display, as in any matplotlib Axes.
+
+Most of the undocumented methods below are the matplotlib projection API
+(``_set_lim_and_transforms``, ``get_xaxis_transform``, ...) wiring these
+transforms into the axes.
 """
 
 import matplotlib as mpl
@@ -256,9 +278,8 @@ def _validate_rotation(matrix):
     """Coerce ``matrix`` to a validated 3x3 proper-rotation array (accepts
     apsg's ``Rotation3`` directly, since it implements ``__array__``).
 
-    Raises ``ValueError`` rather than silently correcting an invalid
-    input -- unlike apsg's own ``Rotation3``, which SVD-corrects a
-    det=-1 matrix back to the nearest proper rotation.
+    Raises ``ValueError`` for an invalid input, as apsg's own ``Rotation3``
+    does.
     """
     R = np.asarray(matrix, dtype=float)
     if R.shape != (3, 3):
@@ -279,8 +300,19 @@ def _validate_rotation(matrix):
 class StereonetAxes(Axes):
     """Shared base class for the Schmidt-net and Wulff-net projections.
 
-    Not registered directly -- see :class:`SchmidtNetAxes` and
-    :class:`WulffNetAxes`.
+    Not registered directly -- see ``SchmidtNetAxes`` and
+    ``WulffNetAxes``.
+
+    Hemisphere: for axial features (points, great circles, cones, paths,
+    contours), where a vector and its antipode are the same feature, an
+    upper-hemisphere net is the lower one rotated 180 degrees about the
+    vertical. That single rotation (``_hemisphere_rotate``) handles every
+    axial artist, with no per-method special cases. ``vector()`` is the
+    exception: a true vector and its antipode differ, so switching
+    hemisphere swaps which of the two is drawn filled and which open.
+
+    Rotation: ``rotation`` tilts the net. Tick labels stay fixed and only the
+    data rotate; with ``rotate_data=False`` data are drawn unrotated.
     """
 
     RESOLUTION = 60
@@ -1104,7 +1136,7 @@ class StereonetAxes(Axes):
     ):
         """Plot a density-contour diagram of axial data (poles/lines).
 
-        Creates a new :class:`~stereonet.StereoGrid`, computes its density
+        Creates a new ``StereoGrid``, computes its density
         via ``calculate_density(features, method=...)``, and draws it with
         ``tricontourf``/``tricontour``. Each call appends its
         ``StereoGrid`` to ``self.stereogrids`` rather than replacing a
@@ -1118,7 +1150,7 @@ class StereonetAxes(Axes):
         diverging colormap (``cmap="Spectral"`` unless overridden) whose
         normalization is centered so 0 (the uniform/null expectation)
         always maps to the exact middle of the colormap
-        (:class:`~matplotlib.colors.CenteredNorm`), regardless of how
+        (``matplotlib.colors.CenteredNorm``), regardless of how
         asymmetric the actual min/max happen to be.
 
         Pass ``clip=True`` to restrict to the positive (above-uniform)

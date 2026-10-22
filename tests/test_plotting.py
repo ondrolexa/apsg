@@ -3,6 +3,7 @@ import matplotlib
 matplotlib.use("Agg")
 
 import random
+import warnings
 
 import matplotlib.colors
 import matplotlib.contour
@@ -21,6 +22,8 @@ from apsg import (
     arcset,
     cone,
     coneset,
+    defgrad,
+    dir2set,
     ellipsoid,
     ellipsoidset,
     fault,
@@ -40,11 +43,12 @@ from apsg import (
     stressset,
     vec,
     vec2set,
+    vecset,
 )
 from apsg.config import apsg_conf, apsg_conf_context
 from apsg.feature._geodata import Lineation
 from apsg.feature._tensor3 import Ellipsoid, Rotation3, Stress3
-from apsg.plotting import FlinnPlot, RamsayPlot, RosePlot, VollmerPlot
+from apsg.plotting import FlinnPlot, HsuPlot, RamsayPlot, RosePlot, VollmerPlot
 from apsg.plotting._stereo_engine._axes import StereonetAxes
 from apsg.plotting._stereo_engine._utils import (
     _as_vectors,
@@ -104,15 +108,14 @@ def _tensor_sets(n=12, seed=3):
         ("confidence", (_tensor_sets()[1],), (lin(10, 20),)),
     ],
 )
-def test_artist_type_validation(capsys, method, valid_args, invalid_args):
+def test_artist_type_validation(method, valid_args, invalid_args):
     s = StereoNet()
     getattr(s, method)(*valid_args)
     assert len(s._artists) == 1
-    capsys.readouterr()
 
-    getattr(s, method)(*invalid_args)
+    with pytest.warns(UserWarning, match="Not valid arguments"):
+        getattr(s, method)(*invalid_args)
     assert len(s._artists) == 1  # unchanged -- invalid call was rejected
-    assert "Not valid arguments" in capsys.readouterr().out
 
 
 def test_contour_does_not_swallow_type_errors():
@@ -189,7 +192,7 @@ def test_full_render_smoke(tmp_path, kind, hemisphere):
     s.arrow(lin(30, 10), lin(60, 20))
     s.tensor(ortensor([[3, 0, 0], [0, 2, 0], [0, 0, 1]]))
     s.stress(stress([[3, 0, 0], [0, 2, 0], [0, 0, 1]]))
-    s.confidence(l, method="fisher")
+    s.confidence(l.halfspace().to_vec(), method="fisher")
     s.confidence(l, method="bootstrap", n_resamples=20)
     s.confidence(f, method="bingham")
     es, ss = _tensor_sets()
@@ -319,11 +322,11 @@ def test_arc_legacy_raw_vector_chain_unchanged():
     assert len(s._artists) == 1
 
 
-def test_arc_mixed_type_rejected(capsys):
+def test_arc_mixed_type_rejected():
     s = StereoNet()
-    s.arc(lin(0, 0), arc(lin(0, 0), lin(90, 0)))
+    with pytest.warns(UserWarning, match="Not valid arguments"):
+        s.arc(lin(0, 0), arc(lin(0, 0), lin(90, 0)))
     assert len(s._artists) == 0
-    assert "Not valid arguments" in capsys.readouterr().out
 
 
 def test_arc_axial_endpoint_sign_does_not_change_plot():
@@ -569,12 +572,11 @@ def test_arc_filled_region_inside_is_the_default_and_unchanged():
     assert _fill_mismatches(_QUAD, region="inside") == 0
 
 
-def test_arc_region_is_validated_and_ignored_by_line_and_points(capsys):
+def test_arc_region_is_validated_and_ignored_by_line_and_points():
     s = StereoNet()
-    s.arc(_QUAD, kind="filled", region="middle")
+    # validated when the arc is added, not later at render
     with pytest.raises(ValueError, match="region"):
-        s.init_figure()
-        s._render()
+        s.arc(_QUAD, kind="filled", region="middle")
     for kind in ("line", "points"):
         s = StereoNet()
         s.arc(_QUAD, kind=kind, region="outside")
@@ -650,12 +652,10 @@ def test_arc_filled_single_curved_arc_fills_lens_to_its_chord():
     )
 
 
-def test_arc_unknown_kind_raises_at_render():
+def test_arc_unknown_kind_raises():
     s = StereoNet()
-    s.arc(arc(50, 30, 210, 40), kind="hatched")
-    s.init_figure()
-    with pytest.raises(ValueError):
-        s._render()
+    with pytest.raises(ValueError, match="kind"):
+        s.arc(arc(50, 30, 210, 40), kind="hatched")
 
 
 def test_clip_ring_to_hemisphere():
@@ -742,13 +742,13 @@ def test_confidence_jelinek_is_default_for_tensor_sets():
         ("both", {}),
     ],
 )
-def test_confidence_jelinek_rejects_mismatched_input(capsys, args, kwargs):
+def test_confidence_jelinek_rejects_mismatched_input(args, kwargs):
     es, _ = _tensor_sets()
     l = linset.random_fisher(n=10)
     s = StereoNet()
-    s.confidence(*{"es": (es,), "l": (l,), "both": (es, l)}[args], **kwargs)
+    with pytest.warns(UserWarning, match="Not valid arguments"):
+        s.confidence(*{"es": (es,), "l": (l,), "both": (es, l)}[args], **kwargs)
     assert len(s._artists) == 0
-    assert "Not valid arguments" in capsys.readouterr().out
 
 
 def test_confidence_jelinek_draws_all_three_ellipses(monkeypatch):
@@ -785,10 +785,16 @@ def test_confidence_jelinek_which_selects_ellipse(monkeypatch):
 def test_confidence_jelinek_invalid_which():
     es, _ = _tensor_sets()
     s = StereoNet()
-    s.confidence(es, which=3)
-    s.init_figure()
-    with pytest.raises(ValueError):
-        s._render()
+    with pytest.raises(ValueError, match="which"):
+        s.confidence(es, which=3)
+    assert len(s._artists) == 0
+
+
+def test_confidence_unknown_method():
+    s = StereoNet()
+    with pytest.raises(ValueError, match="Unknown confidence method"):
+        s.confidence(linset.random_fisher(n=10), method="nonsense")
+    assert len(s._artists) == 0
 
 
 def test_confidence_jelinek_anisoft(monkeypatch):
@@ -872,15 +878,15 @@ def test_styled_plotting_smoke(tmp_path):
     assert out.exists()
 
 
-def test_plot_does_not_crash_on_style_type_error(capsys):
+def test_plot_does_not_crash_on_style_type_error():
     # style.create_artist() can raise TypeError (e.g. scatter's s/c length
     # check) -- plot() must catch it like _add_artist() does for direct
     # calls, not propagate it to the caller
     l = linset.random_fisher(n=5)
     s = StereoNet()
-    s.plot(stereonet_styles.scatter(s=[1, 2, 3]), l)
+    with pytest.warns(UserWarning, match="do not match"):
+        s.plot(stereonet_styles.scatter(s=[1, 2, 3]), l)
     assert len(s._artists) == 0
-    assert "do not match" in capsys.readouterr().out
 
 
 def test_quicknet_dispatch_branches(tmp_path):
@@ -943,7 +949,21 @@ def test_quicknet_dispatch_branches_with_artist_representation():
         (ortensorset([ot, ot]), "_tensor", 2),
         (stressset([st, st, st]), "_stress", 3),
         (g, "_contour", 1),
+        (st, "_stress", 1),
+        (fol(10, 20), "_great_circle", 1),
+        (folset([fol(10, 20), fol(30, 40)]), "_great_circle", 1),
+        (lin(10, 20), "_point", 1),
+        (linset([lin(10, 20)]), "_point", 1),
+        (fault(140, 30, 110, 26, -1), "_fault", 1),
+        (faultset([fault(140, 30, 110, 26, -1)]), "_fault", 1),
+        (pair(140, 30, 110, 26), "_pair", 1),
+        (pairset([pair(140, 30, 110, 26)]), "_pair", 1),
+        (vec(1, 2, 3), "_vector", 1),
+        (vecset([vec(1, 2, 3)]), "_vector", 1),
     ]
+    s = StereoNet()
+    _quicknet_plot_one(s, fol(10, 20), fol_as_pole=True)
+    assert [a.stereonet_method for a in s._artists] == ["_point"]
     for arg, expected_method, expected_count in cases:
         s = StereoNet()
         _quicknet_plot_one(s, arg, fol_as_pole=False)
@@ -2666,4 +2686,383 @@ def test_stereonet_tensor_accepts_set():
         s = StereoNet()
         s.tensor(es, planes=planes)
         s.init_figure()
+        s._render()
+
+
+@pytest.mark.parametrize("plot_cls", [VollmerPlot, RamsayPlot, FlinnPlot])
+def test_fabricplot_invalid_args_warn(plot_cls):
+    s = plot_cls()
+    s.point(ellipsoid([[3, 0, 0], [0, 2, 0], [0, 0, 1]]))
+    with pytest.warns(UserWarning):
+        s.point(lin(10, 20))
+    with pytest.warns(UserWarning):
+        s.path(lin(10, 20))
+    assert len(s._artists) == 1
+
+
+def test_roseplot_invalid_args_warn():
+    s = RosePlot()
+    for method in ("bar", "pdf", "muci"):
+        with pytest.warns(UserWarning):
+            getattr(s, method)(lin(10, 20))
+    assert len(s._artists) == 0
+
+
+def test_quicknet_unsupported_type_warns():
+    from apsg.plotting._stereonet import _quicknet_plot_one
+
+    s = StereoNet()
+    with pytest.warns(UserWarning, match="not supported"):
+        _quicknet_plot_one(s, "text", fol_as_pole=False)
+    assert len(s._artists) == 0
+
+
+# Distributions ----------------------------------------------------------------
+
+
+def _kent_lineations():
+    from apsg import dist_kent
+
+    d = dist_kent(np.asarray(lin(120, 40)), np.asarray(lin(30, 0)), 30, 10)
+    return d.rvs(80, rng=1, feature=Lineation)
+
+
+def test_stereogrid_apply_distribution():
+    from apsg import dist_bingham, dist_fisher, dist_vonmises
+
+    grid = StereoGrid()
+    d = dist_bingham((0, 0, 1), (1, 0, 0), -3, -12)
+    grid.apply_distribution(d)
+    X = np.asarray(grid.grid)
+    assert np.allclose(grid.values, 4 * np.pi * d.pdf(X))
+    f = dist_fisher((0, 0, 1), 5)
+    grid.apply_distribution(f)
+    assert np.allclose(grid.values, 2 * np.pi * (f.pdf(X) + f.pdf(-X)))
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        restored = StereoGrid.from_json(grid.to_json())
+    assert np.allclose(restored.values, grid.values)
+    with pytest.raises(TypeError):
+        grid.apply_distribution(dist_vonmises(30, 2))
+
+
+def test_stereonet_density():
+    from apsg import dist_kent, dist_vonmises
+
+    data = _kent_lineations()
+    with pytest.warns(UserWarning, match="halfspace"):
+        fitted = data.fit(dist_kent)
+    s = StereoNet()
+    s.density(fitted, levels=5)
+    assert s._artists[-1].kwargs["label"] == "Kent"
+    s.init_figure()
+    s._render()
+    assert any(
+        isinstance(c, matplotlib.contour.ContourSet) for c in s.ax.get_children()
+    )
+    restored = StereoNet.from_json(s.to_json())
+    assert restored._artists[0].args[0].values.max() > 1
+    with pytest.warns(UserWarning):
+        s.density(dist_vonmises(30, 2))
+    assert len(s._artists) == 1
+
+
+@pytest.mark.parametrize("method", ["kent", "esag"])
+def test_stereonet_confidence_fitted_region(method):
+    from apsg.feature import ESAG, Kent
+    from apsg.plotting._confidence import confidence_curve
+
+    data = _kent_lineations()
+    curve = confidence_curve(data, method=method, level=0.9)
+    model = {"kent": Kent, "esag": ESAG}[method]
+    region = model.fit(np.asarray(data.halfspace())).mean_confidence(0.9)
+    angles = np.degrees(np.arccos(curve @ np.asarray(region.mu)))
+    assert np.isclose(angles.min(), min(region.gamma), atol=0.1)
+    assert np.isclose(angles.max(), max(region.gamma), atol=0.1)
+    s = StereoNet()
+    s.confidence(data, method=method)
+    s.init_figure()
+    s._render()
+
+
+def test_roseplot_density():
+    from apsg import dist_axial_vonmises, dist_fisher, dist_vonmises
+
+    data = dir2set.from_directions([10, 20, 190, 15, 200, 25])
+    d = dist_axial_vonmises.fit(data)
+    r = RosePlot()
+    r.density(d, dist_vonmises(120, 3), color="red")
+    r.init_figure()
+    r._render()
+    polys = r.ax.collections
+    assert len(polys) == 2
+    assert matplotlib.colors.same_color(polys[0].get_facecolor()[0], "red")
+    restored = RosePlot.from_json(r.to_json())
+    assert restored._artists[0].args[0] == d
+    with pytest.warns(UserWarning):
+        r.density(dist_fisher())
+    assert len(r._artists) == 1
+
+
+def test_roseplot_and_fabricplot_serialize(tmp_path):
+    import pickle
+
+    r = RosePlot()
+    r.bar(vec2set.random_vonmises(10))
+    r.save(tmp_path / "rose.pkl")
+    assert len(RosePlot.load(tmp_path / "rose.pkl")._artists) == 1
+    v = VollmerPlot()
+    v.point(linset.random_fisher(10).ortensor())
+    pickle.dumps(v.to_json())
+
+
+def test_roseplot_colors_are_used():
+    data = vec2set.random_vonmises(30, position=60, kappa=3)
+    r = RosePlot()
+    r.bar(data, color="green")
+    r.pdf(data, color="red")
+    r.init_figure()
+    r._render()
+    assert matplotlib.colors.same_color(r.ax.patches[0].get_facecolor(), "green")
+    assert matplotlib.colors.same_color(r.ax.collections[0].get_facecolor()[0], "red")
+
+
+def test_confidence_default_method_depends_on_data():
+    es, _ = _tensor_sets()
+    s = StereoNet()
+    s.confidence(linset.random_fisher(n=20))
+    s.confidence(folset.random_fisher(n=20))
+    s.confidence(vecset.random_fisher(n=20))
+    s.confidence(es)
+    methods = [artist.kwargs["method"] for artist in s._artists]
+    assert methods == ["watson", "watson", "fisher", "jelinek"]
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", FutureWarning)
+        s.init_figure()
+        s._render()
+
+
+def test_confidence_lisle_for_pairs():
+    from apsg import dist_lisle, faultset
+
+    ps = dist_lisle(pair(120, 40, 160, 35), 15, 6).rvs(40, rng=1)
+    s = StereoNet()
+    s.confidence(ps)
+    s.confidence(faultset.random(20))
+    assert [a.kwargs["method"] for a in s._artists] == ["lisle", "lisle"]
+    with pytest.warns(UserWarning, match="lisle"):
+        s.confidence(ps, method="fisher")
+    with pytest.warns(UserWarning, match="combined"):
+        s.confidence(ps, linset.random_fisher(n=10))
+    with pytest.warns(UserWarning, match="lisle"):
+        s.confidence(linset.random_fisher(n=10), method="lisle")
+    assert len(s._artists) == 2
+    s.init_figure()
+    s._render()
+    restored = StereoNet.from_json(s.to_json())
+    assert len(restored._artists) == 2
+
+
+# -- figure layout: legend placement, content-fitted figure size, colorbar --
+
+
+def _owned(plot):
+    """Render ``plot`` the way show()/savefig() do, on a figure apsg owns."""
+    plot.init_figure()
+    plot._render(owned=True)
+    plot.fig.draw_without_rendering()
+    return plot.fig._get_renderer()
+
+
+def _labelled_plot(cls, position, n=4, title=None):
+    p = cls(legend_position=position, title=title)
+    if cls is StereoNet:
+        for i in range(n):
+            p.point(lin(360 * i / n, 30), label=f"item {i}")
+    elif cls is RosePlot:
+        for i in range(n):
+            p.bar(vec2set.random_vonmises(position=90 * i, n=10), label=f"item {i}")
+    else:
+        for i in range(n):
+            e = ellipsoid.from_defgrad(defgrad.from_comp(xx=1 + i / 3, zz=1 / (1 + i)))
+            p.point(e, label=f"item {i}")
+    return p
+
+
+def _inside(inner, outer, tol=1):
+    return (
+        inner.x0 >= outer.x0 - tol
+        and inner.x1 <= outer.x1 + tol
+        and inner.y0 >= outer.y0 - tol
+        and inner.y1 <= outer.y1 + tol
+    )
+
+
+@pytest.mark.parametrize("position", ["right", "left", "top", "bottom"])
+@pytest.mark.parametrize("cls", [StereoNet, RosePlot, VollmerPlot, HsuPlot])
+def test_legend_position_keeps_everything_visible(cls, position):
+    p = _labelled_plot(cls, position, title="Title")
+    r = _owned(p)
+    legend = p._layout.legend.get_window_extent(r)
+    axes = p.ax.get_window_extent(r)
+    title = p.fig._suptitle.get_window_extent(r)
+    assert _inside(legend, p.fig.bbox)
+    assert _inside(title, p.fig.bbox)
+    assert not legend.overlaps(axes)
+    assert not legend.overlaps(title)
+    side = {
+        "right": legend.x0 >= axes.x1,
+        "left": legend.x1 <= axes.x0,
+        "top": legend.y0 >= axes.y1,
+        "bottom": legend.y1 <= axes.y0,
+    }
+    assert side[position]
+
+
+def test_side_legend_wraps_into_columns_limited_by_plot_height():
+    s = _labelled_plot(StereoNet, "right", n=30)
+    r = _owned(s)
+    legend = s._layout.legend
+    assert legend._ncols > 1
+    assert legend.get_window_extent(r).height <= s.ax.get_window_extent(r).height + 1
+
+
+def test_top_legend_wraps_into_rows_limited_by_plot_width_row_major():
+    s = _labelled_plot(StereoNet, "top", n=30)
+    r = _owned(s)
+    legend = s._layout.legend
+    ncols = legend._ncols
+    assert 1 < ncols < 30
+    assert legend.get_window_extent(r).width <= s.ax.get_window_extent(r).width + 1
+    # the first row reads item 0 .. ncols - 1 from left to right
+    texts = legend.get_texts()
+    first_row = sorted(
+        (t for t in texts if t.get_text() in {f"item {i}" for i in range(ncols)}),
+        key=lambda t: t.get_window_extent(r).x0,
+    )
+    assert [t.get_text() for t in first_row] == [f"item {i}" for i in range(ncols)]
+    rows = {round(t.get_window_extent(r).y0) for t in first_row}
+    assert len(rows) == 1
+
+
+def test_figure_grows_by_legend_and_title():
+    plain = StereoNet()
+    plain.point(lin(10, 20))
+    _owned(plain)
+    w0, h0 = plain.fig.get_size_inches()
+    assert w0 == pytest.approx(h0, rel=0.02)  # a stereonet is square
+
+    right = _labelled_plot(StereoNet, "right")
+    _owned(right)
+    w, h = right.fig.get_size_inches()
+    assert w > w0 + 0.5
+    assert h == pytest.approx(h0, rel=0.02)
+
+    bottom = _labelled_plot(StereoNet, "bottom")
+    _owned(bottom)
+    w, h = bottom.fig.get_size_inches()
+    assert w == pytest.approx(w0, rel=0.02)
+    assert h > h0 + 0.2
+
+    titled = StereoNet(title="Title")
+    titled.point(lin(10, 20))
+    _owned(titled)
+    w, h = titled.fig.get_size_inches()
+    assert w == pytest.approx(w0, rel=0.02)
+    assert h > h0
+
+
+def test_figsize_sets_the_base_size():
+    s = StereoNet(figsize=(3, 3))
+    s.point(lin(10, 20))
+    _owned(s)
+    assert s.fig.get_size_inches() == pytest.approx((3, 3), abs=0.15)
+
+
+def test_legend_refits_after_resize():
+    s = _labelled_plot(StereoNet, "right", n=30, title="Title")
+    _owned(s)
+    s.fig.set_size_inches(6, 3.5)
+    s._layout.fit_legend()
+    s.fig.draw_without_rendering()
+    r = s.fig._get_renderer()
+    assert s._layout.legend._ncols > 2
+    assert _inside(s._layout.legend.get_window_extent(r), s.fig.bbox)
+
+
+def test_render2fig_keeps_figure_size_and_fits_legend():
+    fig = matplotlib.pyplot.figure(layout="constrained", figsize=(10, 4))
+    subfigs = fig.subfigures(1, 2)
+    for subfig in subfigs:
+        s = _labelled_plot(StereoNet, "right", title="Title")
+        s.render2fig(subfig)
+    fig.draw_without_rendering()
+    r = fig._get_renderer()
+    assert tuple(fig.get_size_inches()) == (10, 4)
+    assert _inside(s._layout.legend.get_window_extent(r), subfigs[1].bbox)
+    assert not s._layout.legend.get_window_extent(r).overlaps(s.ax.get_window_extent(r))
+
+
+def test_legend_kws_ncols_is_kept():
+    s = StereoNet(legend_kws={"ncols": 3})
+    for i in range(6):
+        s.point(lin(60 * i, 30), label=f"item {i}")
+    _owned(s)
+    assert s._layout.legend._ncols == 3
+
+
+def test_invalid_legend_position_raises():
+    with pytest.raises(ValueError, match="legend_position"):
+        StereoNet(legend_position="inside")
+    with pytest.raises(ValueError, match="legend_position"):
+        RosePlot(legend_position="middle")
+    with pytest.raises(ValueError, match="legend_position"):
+        VollmerPlot(legend_position=None)
+
+
+def test_scatter_legend_joins_the_layout_legend():
+    s = StereoNet()
+    s.point(lin(10, 20), label="points")
+    s.scatter(linset.random_fisher(n=10), s=np.arange(10) * 5 + 5, legend=True)
+    _owned(s)
+    texts = [t.get_text() for t in s._layout.legend.get_texts()]
+    assert texts[0] == "points"
+    assert len(texts) > 1
+
+
+@pytest.mark.parametrize(
+    "position,kappa,levels",
+    [(lin(120, 40), 20, 6), (lin(40, 15), 10, 8)],  # the latter: wide "17.5" labels
+)
+def test_contour_colorbar_is_corner_inset_outside_layout(position, kappa, levels):
+    np.random.seed(0)
+    l = linset.random_fisher(position=position, kappa=kappa)
+    plain = StereoNet()
+    plain.contour(l, levels=levels)
+    _owned(plain)
+    with_bar = StereoNet()
+    with_bar.contour(l, levels=levels, colorbar=True)
+    r = _owned(with_bar)
+    assert with_bar.fig.get_size_inches() == pytest.approx(plain.fig.get_size_inches())
+    assert with_bar.ax.get_position().bounds == pytest.approx(
+        plain.ax.get_position().bounds
+    )
+    cax = with_bar._colorbar.ax
+    assert not cax.get_in_layout()
+    # the bar and its tick labels stay in the corner, inside the figure and
+    # outside the primitive circle
+    assert _inside(cax.get_tightbbox(r), with_bar.fig.bbox)
+    to_axes = with_bar.ax.transAxes.inverted()
+    bbox = cax.get_tightbbox(r).transformed(to_axes)
+    for x, y in [(bbox.x0, bbox.y1), (bbox.x0, bbox.y0), (bbox.x1, bbox.y1)]:
+        assert (x - 0.5) ** 2 + (y - 0.5) ** 2 > 0.25
+
+
+def test_second_contour_colorbar_warns():
+    l = linset.random_fisher(position=lin(120, 40), n=30)
+    s = StereoNet()
+    s.contour(l, colorbar=True)
+    s.contour(l, colorbar=True, filled=False)
+    s.init_figure()
+    with pytest.warns(UserWarning, match="one contour colorbar"):
         s._render()

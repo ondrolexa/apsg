@@ -2,8 +2,8 @@ import warnings
 
 import numpy as np
 
-from apsg.helpers._helper import is_jsonable
-from apsg.helpers._math import atan2d
+from apsg.helpers._helper import axis_coords, checked_attrs
+from apsg.helpers._math import atan2d, real
 from apsg.helpers._notation import (
     _fmt_deg,
     fol2vec_rhr,
@@ -143,38 +143,23 @@ class Foliation(Axial3):
 
     def __init__(self, *args, **kwargs):
         if len(args) == 0:
-            coords = (0, 0, 1)
-        elif len(args) == 1:
-            if np.asarray(args[0]).shape == Foliation.__shape__:
-                coords = np.asarray(args[0])
-            elif isinstance(args[0], str):
-                if args[0].lower() == "x":
-                    coords = (1, 0, 0)
-                elif args[0].lower() == "y":
-                    coords = (0, 1, 0)
-                elif args[0].lower() == "z":
-                    coords = (0, 0, 1)
-                else:
-                    try:
-                        strike, dip = parse_quadrant_planar(args[0])
-                    except ValueError:
-                        raise TypeError(
-                            f"Not valid arguments for {type(self).__name__}"
-                        ) from None
-                    coords = fol2vec_rhr(strike, dip)
-            else:
-                raise TypeError(f"Not valid arguments for {type(self).__name__}")
+            args = ((0, 0, 1),)
+        elif len(args) == 1 and isinstance(args[0], str):
+            if axis_coords(args[0]) is None:
+                try:
+                    strike, dip = parse_quadrant_planar(args[0])
+                except ValueError:
+                    raise TypeError(
+                        f"Not valid arguments for {type(self).__name__}"
+                    ) from None
+                args = (fol2vec_rhr(strike, dip),)
         elif len(args) == 2:
-            coords = geo2vec_planar(*args)
-        elif len(args) == 3:
-            coords = [float(v) for v in args]
-        else:
-            raise TypeError("Not valid arguments for Foliation")
-        self._coords = tuple(coords)
-        if is_jsonable(kwargs):
-            self._attrs = kwargs
-        else:
-            raise TypeError("Provided attributes are not serializable.")
+            # unlike Vector3, two angles follow the planar notation
+            try:
+                args = (geo2vec_planar(*args),)
+            except (TypeError, ValueError) as err:
+                raise type(err)(f"{type(self).__name__} {err}") from None
+        super().__init__(*args, **kwargs)
 
     def __repr__(self):
         return f"S:{format_planar(*self.geo)}"
@@ -291,53 +276,72 @@ class Pair:
     __shape__ = (6,)
 
     def __init__(self, *args, **kwargs):
-        if len(args) == 0:
-            fvec, lvec = Vector3(0, 0, 1), Vector3(1, 0, 0)
-        elif len(args) == 1 and isinstance(args[0], Pair):
-            fvec, lvec = args[0].fvec, args[0].lvec
-        elif len(args) == 1 and np.asarray(args[0]).shape == (4,):
-            fazi, finc, lazi, linc = (float(v) for v in args[0])
-            fvec, lvec = Foliation(fazi, finc), Lineation(lazi, linc)
-        elif len(args) == 1 and np.asarray(args[0]).shape == Pair.__shape__:
-            fvec, lvec = Vector3(args[0][:3]), Vector3(args[0][-3:])
-        elif len(args) == 2:
-            if isinstance(args[0], Vector3) and isinstance(args[1], Vector3):
-                fvec, lvec = args
-            else:
-                raise TypeError("Not valid arguments for Pair")
-        elif len(args) == 4:
-            fvec = Foliation(args[0], args[1])
-            lvec = Lineation(args[2], args[3])
-        else:
-            raise TypeError("Not valid arguments for Pair")
-
+        fvec, lvec = self._parse_vectors(args)
         fvec = Vector3(fvec)
         lvec = Vector3(lvec)
+        if not (any(fvec) and any(lvec)):
+            raise ValueError(f"{type(self).__name__} vectors must not be zero")
+        if not any(fvec.cross(lvec)):
+            raise ValueError(
+                f"{type(self).__name__} lineation is parallel to the normal of the "
+                "plane (misfit 90 degrees)"
+            )
+        # A lineation lying in the plane is perpendicular to its normal; the
+        # measured deviation from 90 degrees is the misfit. Pairs beyond 20
+        # degrees are warned about (SDBSession turns the warning into skipping
+        # the pair).
         misfit = abs(90 - fvec.angle(lvec))
         if misfit > 20:
             warnings.warn(f"Warning: Misfit angle is {misfit:.1f} degrees.")
+        # Both vectors are rotated by half the misfit, in opposite directions,
+        # about the normal of the plane they span, so they become perpendicular
+        # without preferring either measurement.
         ax = fvec.cross(lvec)
         ang = (lvec.angle(fvec) - 90) / 2
         self.fvec = Vector3(fvec.rotate(ax, ang))
         self.lvec = Vector3(lvec.rotate(ax, -ang))
         self.misfit = misfit
-        if is_jsonable(kwargs):
-            self._attrs = kwargs
-        else:
-            raise TypeError("Provided attributes are not serializable.")
+        self._attrs = checked_attrs(kwargs)
+
+    @staticmethod
+    def _parse_vectors(args):
+        """Return planar and linear vectors from the constructor arguments."""
+        match args:
+            case ():
+                return Vector3(0, 0, 1), Vector3(1, 0, 0)
+            case (Pair() as p,):
+                return p.fvec, p.lvec
+            case (Vector3() as fvec, Vector3() as lvec):
+                return fvec, lvec
+            case (fazi, finc, lazi, linc):
+                return Foliation(fazi, finc), Lineation(lazi, linc)
+            case (data,):
+                arr = np.asarray(data)
+                if arr.shape == (4,):
+                    fazi, finc, lazi, linc = (float(v) for v in arr)
+                    return Foliation(fazi, finc), Lineation(lazi, linc)
+                if arr.shape == Pair.__shape__:
+                    return Vector3(arr[:3]), Vector3(arr[-3:])
+        raise TypeError(
+            "Not valid arguments for Pair, see help(Pair) for the accepted forms"
+        )
 
     def __repr__(self):
         return f"P:{format_planar(*self.fol.geo)}-{format_linear(*self.lin.geo)}"
 
     def __eq__(self, other):
-        """Return `True` if pairs are equal, otherwise `False`."""
+        """Return `True` if pairs are equal, otherwise `False`.
+
+        The foliation normal and the lineation are axes, so reversing either
+        of them gives the same pair.
+        """
         cls = type(self)
         if not isinstance(other, cls):
             if np.asarray(other).shape == cls.__shape__:
                 other = cls(other)
             else:
                 return NotImplemented
-        return (self.fvec == other.fvec) and (self.lvec == other.lvec)
+        return (self.fol == other.fol) and (self.lin == other.lin)
 
     def __ne__(self, other):
         """Return `True` if pairs are not equal, otherwise `False`."""
@@ -367,7 +371,7 @@ class Pair:
         """Random Pair."""
 
         lin, p = Vector3.random(), Vector3.random()
-        fol = lin.cross(p)
+        fol = lin.cross(p).normalized()
         return cls(fol, lin)
 
     def rotate(self, axis, phi):
@@ -454,10 +458,11 @@ class Fault(Pair):
     - without arguments create default ``Fault`` with `fol(0,0)` and `lin(0,0)`
     - with single argument `p`:
 
-        - `p` could be Fault
+        - `p` could be Pair or Fault
         - `p` could be tuple of (fazi, finc, lazi, linc, sense)
-        - `p` could be tuple of (fx, fy ,fz, lx, ly, lz)
     - with 2 arguments p (Pair object) and sense
+    - with 2 arguments f, l (Vector3 like objects), e.g. ``Foliation``
+      and ``Lineation``
     - with 3 arguments f, l (Vector3 like objects), e.g. ``Foliation``
       and ``Lineation`` and sense
     - with 3 arguments fazi, finc, rake
@@ -489,69 +494,65 @@ class Fault(Pair):
     __shape__ = (7,)
 
     def __init__(self, *args, **kwargs):
-        if len(args) == 0:
-            fvec, lvec = Vector3(0, 0, 1), Vector3(1, 0, 0)
-        elif len(args) == 1 and np.asarray(args[0]).shape == (5,):
-            fazi, finc, lazi, linc, sense = (float(v) for v in args[0])
-            fvec, lvec = Foliation(fazi, finc), Lineation(lazi, linc)
-            sense = self.calc_sense(fvec, lvec, sense)
-            if sense < 0:
-                lvec = -lvec
-        elif len(args) == 1 and isinstance(args[0], Pair):
-            fvec, lvec = args[0].fvec, args[0].lvec
-        elif len(args) == 2 and isinstance(args[0], Pair):
-            fvec, lvec = args[0].fvec, args[0].lvec
-            if Fault(fvec, lvec).sense != self.calc_sense(fvec, lvec, args[1]):
-                lvec = -lvec
-        elif len(args) == 2:
-            if isinstance(args[0], Vector3) and isinstance(args[1], Vector3):
-                fvec, lvec = args[0], args[1]
-        elif len(args) == 3:
-            if isinstance(args[0], Vector3) and isinstance(args[1], Vector3):
-                fvec, lvec = args[0], args[1]
-                if Fault(fvec, lvec).sense != self.calc_sense(fvec, lvec, args[2]):
-                    lvec = -lvec
-            else:
-                fvec = Foliation(args[0], args[1])
-                lvec = fvec.rake(args[2])
-        elif len(args) == 5:
-            fvec = Foliation(args[0], args[1])
-            lvec = Lineation(args[2], args[3])
-            if Fault(fvec, lvec).sense != self.calc_sense(fvec, lvec, args[4]):
-                lvec = -lvec
-        else:
-            raise TypeError("Not valid arguments for Fault")
-        super().__init__(fvec, lvec)
-        if is_jsonable(kwargs):
-            self._attrs = kwargs
-        else:
-            raise TypeError("Provided attributes are not serializable.")
+        fvec, lvec, sense = self._parse_args(args)
+        if sense is not None and Fault(fvec, lvec).sense != self.calc_sense(
+            fvec, lvec, sense
+        ):
+            lvec = -lvec
+        super().__init__(fvec, lvec, **kwargs)
+
+    @staticmethod
+    def _parse_args(args):
+        """Return planar and linear vectors and the requested sense (``None``
+        to keep the sense given by the vectors) from the constructor arguments."""
+        match args:
+            case ():
+                return Vector3(0, 0, 1), Vector3(1, 0, 0), None
+            case (Pair() as p,):
+                return p.fvec, p.lvec, None
+            case (Pair() as p, sense):
+                return p.fvec, p.lvec, sense
+            case (Vector3() as fvec, Vector3() as lvec):
+                return fvec, lvec, None
+            case (Vector3() as fvec, Vector3() as lvec, sense):
+                return fvec, lvec, sense
+            case (fazi, finc, rake):
+                fvec = Foliation(fazi, finc)
+                return fvec, fvec.rake(rake), None
+            case (fazi, finc, lazi, linc, sense):
+                return Foliation(fazi, finc), Lineation(lazi, linc), sense
+            case (data,) if np.asarray(data).shape == (5,):
+                fazi, finc, lazi, linc = (float(v) for v in data[:4])
+                return Foliation(fazi, finc), Lineation(lazi, linc), data[4]
+        raise TypeError(
+            "Not valid arguments for Fault, see help(Fault) for the accepted forms"
+        )
 
     @classmethod
     def calc_sense(cls, fvec, lvec, sense) -> int:
-        if isinstance(sense, str):
-            p = Pair(fvec, lvec)
-            if sense.lower() == "s":
-                if abs(p.rake) < 90:
-                    res = 1
-                else:
-                    res = -1
-            elif sense.lower() == "d":
-                if abs(p.rake) < 90:
-                    res = -1
-                else:
-                    res = 1
-            elif sense.lower() == "n":
-                res = 1
-            elif sense.lower() == "r":
-                res = -1
-            else:
-                raise ValueError(
-                    f"Invallid sense '{sense}'. Must be one of 's', 'd', 'n', 'r'."
-                )
-            return res
-        else:
-            return int(sense)
+        """Return the requested sense of movement as +1 or -1.
+
+        +1 is hanging wall down (normal), -1 hanging wall up (reverse), the
+        same convention as ``Fault.sense``. A numeric `sense` is taken by its
+        sign; a string is one of ``'n'`` (normal), ``'r'`` (reverse), ``'s'``
+        (sinistral) or ``'d'`` (dextral). For ``'s'`` and ``'d'`` the result
+        depends on the rake of `lvec` on `fvec`: sinistral is +1 when the
+        absolute rake is below 90 degrees, dextral the opposite.
+        """
+        if not isinstance(sense, str):
+            value = real(sense, "Fault sense")
+            if value == 0:
+                raise ValueError("Fault sense must be positive or negative, got 0")
+            return 1 if value > 0 else -1
+        match sense.lower():
+            case "n":
+                return 1
+            case "r":
+                return -1
+            case "s" | "d":
+                sinistral = 1 if abs(Pair(fvec, lvec).rake) < 90 else -1
+                return sinistral if sense.lower() == "s" else -sinistral
+        raise ValueError(f"Invalid sense '{sense}'. Must be one of 's', 'd', 'n', 'r'.")
 
     def __repr__(self):
         schar = self.sense_str
@@ -567,8 +568,9 @@ class Fault(Pair):
                 other = cls(other)
             else:
                 return NotImplemented
+        # the normal is an axis, the slip direction is a vector (it sets the sense)
         return (
-            (self.fvec == other.fvec)
+            (self.fol == other.fol)
             and (self.lvec == other.lvec)
             and (self.sense == other.sense)
         )
@@ -597,15 +599,22 @@ class Fault(Pair):
         import random
 
         lvec, p = Vector3.random(), Vector3.random()
-        fvec = lvec.cross(p)
+        fvec = lvec.cross(p).normalized()
         return cls(fvec, lvec, random.choice([-1, 1]))
 
     @property
     def sense(self):
+        """Return sense of movement, +1 hanging wall down or -1 hanging wall up."""
         return int(np.sign(self.rake))
 
     @property
     def sense_str(self):
+        """Return sense of movement as ``'N'`` (normal), ``'R'`` (reverse),
+        ``'S'`` (sinistral) or ``'D'`` (dextral).
+
+        A fault whose rotation axis (``rax``) plunges more than 60 degrees is
+        classified as strike-slip, otherwise as dip-slip.
+        """
         if abs(self.rax.geo[1]) > 60:
             if abs(self.rake) < 90:
                 schar = "S"
@@ -677,8 +686,12 @@ class Cone:
     - with single argument `c`, where `c` could be ``Cone``, 5-tuple of
       `(aazi, ainc, sazi, sinc, revangle)` or 7-tuple of
       `(ax, ay ,az, sx, sy, sz, revangle)`
+    - with 2 arguments, axis and secant line as Vector3 like objects, or axis
+      and apical angle in degrees (full revolution)
     - with 3 arguments, where axis and secant line could be Vector3 like objects,
       e.g. Lineation and third argument is revolution angle
+    - with 4 arguments defining axis `lin(aazi, ainc)` and secant line
+      `lin(sazi, sinc)` (full revolution)
     - with 5 arguments defining axis `lin(aazi, ainc)`, secant line
       `lin(sazi, sinc)` and angle of revolution
 
@@ -704,55 +717,50 @@ class Cone:
     __shape__ = (7,)
 
     def __init__(self, *args, **kwargs):
-        if len(args) == 0:
-            axis, secant, revangle = Vector3(0, 0, 1), Vector3(1, 0, 0), 360
-        elif len(args) == 1 and isinstance(args[0], Cone):
-            axis, secant, revangle = args[0].axis, args[0].secant, args[0].revangle
-        elif len(args) == 1 and np.asarray(args[0]).shape == (5,):
-            aazi, ainc, sazi, sinc, revangle = (float(v) for v in args[0])
-            axis, secant = Lineation(aazi, ainc), Lineation(sazi, sinc)
-        elif len(args) == 1 and np.asarray(args[0]).shape == Cone.__shape__:
-            axis, secant, revangle = (
-                Vector3(args[0][:3]),
-                Vector3(args[0][3:6]),
-                args[0][-1],
-            )
-        elif len(args) == 2:
-            if isinstance(args[0], Vector3) and isinstance(args[1], Vector3):
-                axis, secant = args
-                revangle = 360
-            elif isinstance(args[0], Vector3) and np.isscalar(args[1]):
-                axis = args[0]
-                azi, inc = axis.geo
-                secant = Vector3(azi, inc + args[1])
-                revangle = 360
-            else:
-                raise TypeError("Not valid arguments for Cone")
-        elif len(args) == 3:
-            if isinstance(args[0], Vector3) and isinstance(args[1], Vector3):
-                axis, secant, revangle = args
-            else:
-                raise TypeError("Not valid arguments for Cone")
-        elif len(args) == 4:
-            axis = Lineation(args[0], args[1])
-            secant = Lineation(args[2], args[3])
-            revangle = 360
-        elif len(args) == 5:
-            axis = Lineation(args[0], args[1])
-            secant = Lineation(args[2], args[3])
-            revangle = args[4]
-        else:
-            raise TypeError("Not valid arguments for Cone")
-
+        axis, secant, revangle = self._parse_args(args)
         self.axis = Vector3(axis)
         self.secant = Vector3(secant)
         self.revangle = float(revangle)
         if self.axis.angle(self.secant) > 90:
             self.secant = -self.secant
-        if is_jsonable(kwargs):
-            self._attrs = kwargs
-        else:
-            raise TypeError("Provided attributes are not serializable.")
+        self._attrs = checked_attrs(kwargs)
+
+    @staticmethod
+    def _parse_args(args):
+        """Return axis, secant and revangle from the constructor arguments."""
+        match args:
+            case ():
+                return Vector3(0, 0, 1), Vector3(1, 0, 0), 360
+            case (Cone() as c,):
+                return c.axis, c.secant, c.revangle
+            case (Vector3() as axis, Vector3() as secant):
+                return axis, secant, 360
+            case (Vector3() as axis, apical_angle) if np.isscalar(apical_angle):
+                apical_angle = real(apical_angle, "Cone apical angle")
+                if not 0 <= apical_angle <= 180:
+                    raise ValueError(
+                        f"Cone apical angle must be in [0, 180], got {apical_angle:g}"
+                    )
+                # the secant is the axis tilted down by the apical angle in its
+                # vertical plane, i.e. rotated about the perpendicular horizontal
+                azi, _ = axis.geo
+                return axis, axis.rotate(Vector3(azi + 90, 0), -apical_angle), 360
+            case (Vector3() as axis, Vector3() as secant, revangle):
+                return axis, secant, revangle
+            case (aazi, ainc, sazi, sinc):
+                return Lineation(aazi, ainc), Lineation(sazi, sinc), 360
+            case (aazi, ainc, sazi, sinc, revangle):
+                return Lineation(aazi, ainc), Lineation(sazi, sinc), revangle
+            case (data,):
+                arr = np.asarray(data)
+                if arr.shape == (5,):
+                    aazi, ainc, sazi, sinc, revangle = (float(v) for v in arr)
+                    return Lineation(aazi, ainc), Lineation(sazi, sinc), revangle
+                if arr.shape == Cone.__shape__:
+                    return Vector3(arr[:3]), Vector3(arr[3:6]), arr[-1]
+        raise TypeError(
+            "Not valid arguments for Cone, see help(Cone) for the accepted forms"
+        )
 
     def __repr__(self):
         azi, inc = vec2geo_linear(self.axis)
@@ -890,30 +898,28 @@ class Arc:
     def __init__(
         self, *args, curvature=_UNSET, positive=_UNSET, short=_UNSET, **kwargs
     ):
-        if len(args) == 0:
-            p1, p2 = Lineation(0, 0), Lineation(90, 0)
-        elif len(args) == 1 and isinstance(args[0], Arc):
-            other = args[0]
-            p1, p2 = other.p1, other.p2
-            if curvature is _UNSET:
-                curvature = other.curvature
-            if positive is _UNSET:
-                positive = other.positive
-            if short is _UNSET:
-                short = other.short
-        elif len(args) == 1 and np.asarray(args[0]).shape == Arc.__shape__:
-            p1, p2 = Vector3(args[0][:3]), Vector3(args[0][3:6])
-        elif (
-            len(args) == 2
-            and isinstance(args[0], Vector3)
-            and isinstance(args[1], Vector3)
-        ):
-            p1, p2 = args
-        elif len(args) == 4:
-            p1 = Lineation(args[0], args[1])
-            p2 = Lineation(args[2], args[3])
-        else:
-            raise TypeError("Not valid arguments for Arc")
+        match args:
+            case ():
+                p1, p2 = Lineation(0, 0), Lineation(90, 0)
+            case (Arc() as other,):
+                p1, p2 = other.p1, other.p2
+                if curvature is _UNSET:
+                    curvature = other.curvature
+                if positive is _UNSET:
+                    positive = other.positive
+                if short is _UNSET:
+                    short = other.short
+            case (Vector3() as p1, Vector3() as p2):
+                pass
+            case (azi1, inc1, azi2, inc2):
+                p1, p2 = Lineation(azi1, inc1), Lineation(azi2, inc2)
+            case (data,) if np.asarray(data).shape == Arc.__shape__:
+                arr = np.asarray(data)
+                p1, p2 = Vector3(arr[:3]), Vector3(arr[3:6])
+            case _:
+                raise TypeError(
+                    "Not valid arguments for Arc, see help(Arc) for the accepted forms"
+                )
 
         # A lineation/foliation and its antipode are the same feature, so axial
         # endpoints are taken in the lower hemisphere to make the path independent
@@ -927,10 +933,7 @@ class Arc:
         )
         self.positive = bool(True if positive is _UNSET else positive)
         self.short = bool(True if short is _UNSET else short)
-        if is_jsonable(kwargs):
-            self._attrs = kwargs
-        else:
-            raise TypeError("Provided attributes are not serializable.")
+        self._attrs = checked_attrs(kwargs)
 
     def __repr__(self):
         azi1, inc1 = vec2geo_linear(self.p1)

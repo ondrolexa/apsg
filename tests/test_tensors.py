@@ -17,7 +17,7 @@ from apsg import (
     velgrad,
     velgrad2,
 )
-from apsg.config import apsg_conf_context
+from apsg.config import apsg_conf, apsg_conf_context
 from apsg.feature import Stress3Set, feature_from_json
 from apsg.feature._geodata import Foliation, Lineation, Pair
 from apsg.feature._tensor2 import (
@@ -192,8 +192,10 @@ class TestRotation2:
         assert R.is_rotation()
 
     def test_invalid_raises(self):
-        with pytest.raises(TypeError, match="Rotation2"):
+        with pytest.raises(ValueError, match="Rotation2 must be orthogonal"):
             Rotation2([[2, 0], [0, 1]])
+        with pytest.raises(ValueError, match="proper rotation"):
+            Rotation2([[-1, 0], [0, 1]])
 
     def test_repr(self):
         R = Rotation2()
@@ -582,8 +584,8 @@ class TestDeformationGradient3:
         with pytest.raises(ValueError):
             DeformationGradient3.from_ratios(Rxy=2, Rxz=6, Ryz=3)
 
-    def test_from_ratios_assertion(self):
-        with pytest.raises(AssertionError):
+    def test_from_ratios_ratio_below_one(self):
+        with pytest.raises(ValueError):
             DeformationGradient3.from_ratios(Rxy=0.5, Ryz=3)
 
     def test_is_rotation_true(self):
@@ -833,8 +835,11 @@ class TestRotation3:
         assert R.is_rotation()
 
     def test_invalid_raises(self):
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError, match="Rotation3 must be orthogonal"):
             Rotation3([[2, 0, 0], [0, 1, 0], [0, 0, 0.5]])
+        # an improper matrix used to be kept, with det -1
+        with pytest.raises(ValueError, match="proper rotation"):
+            Rotation3([[1, 0, 0], [0, 1, 0], [0, 0, -1]])
 
     def test_compose(self):
         R1 = Rotation3.from_axisangle(Vector3(0, 0, 1), 45)
@@ -1596,11 +1601,13 @@ class TestStressConvention:
             )
 
     def test_invalid_convention(self):
+        # rejected when set, so no stress is ever built with it
         with (
-            apsg_conf_context(stress_convention="bogus"),
             pytest.raises(ValueError, match="stress_convention"),
+            apsg_conf_context(stress_convention="bogus"),
         ):
             Stress3.from_comp(xx=1)
+        assert apsg_conf.stress_convention == "geological"
 
 
 class TestCoaxialAndProducts:

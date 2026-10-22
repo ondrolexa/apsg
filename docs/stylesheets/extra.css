@@ -1,0 +1,44 @@
+/* Indigo primary matching the former Sphinx theme (#5c6bc0 / #7986cb) */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #5c6bc0;
+  --md-primary-fg-color--light: #7986cb;
+  --md-primary-fg-color--dark: #3f51b5;
+  --md-accent-fg-color: #3f51b5;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #3f4a8a;
+  --md-primary-fg-color--light: #5c6bc0;
+  --md-primary-fg-color--dark: #2c3570;
+  --md-accent-fg-color: #9fa8da;
+  --md-typeset-a-color: #9fa8da;
+}
+
+/* Lead paragraph on the home page */
+.md-typeset .lead {
+  font-size: 1.1em;
+  line-height: 1.6;
+}
+
+/* Header logo is a full-colour stereonet, give it a light disc behind */
+.md-header__button.md-logo img {
+  height: 1.8rem;
+  width: auto;
+  background: #fff;
+  border-radius: 50%;
+}
+
+/* mkdocstrings: separate API objects and use code font for symbol headings */
+.md-typeset .doc-object + .doc-object {
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+  padding-top: 0.6rem;
+}
+
+.md-typeset .doc-heading code {
+  font-weight: 600;
+}
+
+/* Long config tables scroll horizontally instead of squeezing */
+.md-typeset__table {
+  min-width: 100%;
+}

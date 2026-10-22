@@ -4,13 +4,39 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from apsg.config import apsg_conf
-from apsg.helpers._helper import is_jsonable
-from apsg.helpers._math import acosd, atan2d, cosd, sind
+from apsg.helpers._helper import axis_coords, checked_attrs
+from apsg.helpers._math import acosd, atan2d, cosd, real, sind
 from apsg.helpers._notation import (
     _fmt_deg,
     geo2vec_linear,
     vec2geo_linear_signed,
 )
+
+
+def _checked_coords(values, name):
+    """Return the vector components in `values` as a tuple, raising unless they
+    are finite real numbers."""
+    # fast path for plain numbers
+    if type(values) is tuple and all(
+        isinstance(v, (float, int)) and not isinstance(v, bool) for v in values
+    ):
+        try:
+            if all(map(math.isfinite, values)):
+                return values
+        except OverflowError:  # an int too large for a float
+            pass
+    if isinstance(values, tuple) and any(
+        isinstance(v, (bool, np.bool_)) for v in values
+    ):
+        raise TypeError(f"{name} components must be real numbers, got {values!r}")
+    arr = np.asarray(values)
+    if arr.dtype.kind in "iu":
+        return tuple(arr.tolist())
+    if arr.dtype.kind == "f":
+        if not np.isfinite(arr).all():
+            raise ValueError(f"{name} components must be finite, got {arr.tolist()}")
+        return tuple(arr.tolist())
+    return tuple(real(c, f"{name} component") for c in np.ravel(arr).tolist())
 
 
 class Vector(ABC):
@@ -126,6 +152,8 @@ class Vector(ABC):
         """Return the angle to the vector other."""
 
         other = self._ensure_same(other)
+        if not (any(self._coords) and any(other._coords)):
+            raise ValueError("The angle to a zero vector is undefined")
         return acosd(self.normalized().dot(other.normalized()))
 
     def project(self, other):
@@ -187,30 +215,23 @@ class Vector2(Vector):
     __shape__ = (2,)
 
     def __init__(self, *args, **kwargs):
+        name = type(self).__name__
+        coords = None
         if len(args) == 0:
             coords = (1, 0)
-        elif len(args) == 1:
-            if np.asarray(args[0]).shape == Vector2.__shape__:
-                coords = tuple(c.item() for c in np.asarray(args[0]))
-            elif isinstance(args[0], str):
-                if args[0].lower() == "x":
-                    coords = (1, 0)
-                elif args[0].lower() == "y":
-                    coords = (0, 1)
-                else:
-                    raise TypeError(f"Not valid arguments for {type(self).__name__}")
-            else:
-                coords = cosd(args[0]), sind(args[0])
+        elif len(args) == 1 and isinstance(args[0], str):
+            coords = axis_coords(args[0], dim=2)
+        elif len(args) == 1 and np.shape(args[0]) == Vector2.__shape__:
+            coords = _checked_coords(args[0], name)
+        elif len(args) == 1 and np.ndim(args[0]) == 0:
+            direction = real(args[0], f"{name} direction")
+            coords = cosd(direction), sind(direction)
         elif len(args) == 2:
-            coords = args
-        else:
-            raise TypeError(f"Not valid arguments for {type(self).__name__}")
+            coords = _checked_coords(args, name)
+        if coords is None:
+            raise TypeError(f"Not valid arguments for {name}")
         self._coords = tuple(coords)
-        self._attrs = {}
-        if kwargs:
-            if not is_jsonable(kwargs):
-                raise TypeError("Provided attributes are not serializable.")
-            self._attrs = kwargs
+        self._attrs = checked_attrs(kwargs)
 
     def __repr__(self):
         n = apsg_conf.ndigits
@@ -306,7 +327,7 @@ class Vector2(Vector):
             norm: normalize transformed vectors. [True or False] Default False
 
         Examples:
-            # Reflexion of `y` axis.
+            >>> # Reflexion of `y` axis.
             >>> F = [[1, 0], [0, -1]]
             >>> u = vec2([1, 1])
             >>> u.transform(F)
@@ -327,6 +348,11 @@ class Axial2(Vector2):  # Do we need it?
 
     Note: the angle between axial data cannot be more than 90°
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not any(self._coords):
+            raise ValueError(f"{type(self).__name__} can't be a zero vector")
 
     def __eq__(self, other):
         cls = type(self)
@@ -390,34 +416,25 @@ class Vector3(Vector):
     __shape__ = (3,)
 
     def __init__(self, *args, **kwargs):
+        name = type(self).__name__
+        coords = None
         if len(args) == 0:
             coords = (1, 0, 0)
-        elif len(args) == 1:
-            if np.asarray(args[0]).shape == Vector3.__shape__:
-                coords = tuple(c.item() for c in np.asarray(args[0]))
-            elif isinstance(args[0], str):
-                if args[0].lower() == "x":
-                    coords = (1, 0, 0)
-                elif args[0].lower() == "y":
-                    coords = (0, 1, 0)
-                elif args[0].lower() == "z":
-                    coords = (0, 0, 1)
-                else:
-                    raise TypeError(f"Not valid arguments for {type(self).__name__}")
-            else:
-                raise TypeError(f"Not valid arguments for {type(self).__name__}")
+        elif len(args) == 1 and isinstance(args[0], str):
+            coords = axis_coords(args[0], dim=3)
+        elif len(args) == 1 and np.shape(args[0]) == Vector3.__shape__:
+            coords = _checked_coords(args[0], name)
         elif len(args) == 2:
-            coords = geo2vec_linear(*args)
+            try:
+                coords = geo2vec_linear(*args)
+            except (TypeError, ValueError) as err:
+                raise type(err)(f"{name} {err}") from None
         elif len(args) == 3:
-            coords = args
-        else:
-            raise TypeError(f"Not valid arguments for {type(self).__name__}")
+            coords = _checked_coords(args, name)
+        if coords is None:
+            raise TypeError(f"Not valid arguments for {name}")
         self._coords = tuple(coords)
-        self._attrs = {}
-        if kwargs:
-            if not is_jsonable(kwargs):
-                raise TypeError("Provided attributes are not serializable.")
-            self._attrs = kwargs
+        self._attrs = checked_attrs(kwargs)
 
     @property
     def z(self):
@@ -556,6 +573,8 @@ class Vector3(Vector):
     def rotate(self, axis, theta):
         """Return the vector rotated around axis through angle theta. Right-hand rule."""
         axis = self._ensure_same(axis)
+        if not any(axis._coords):
+            raise ValueError("Can't rotate about a zero vector")
         v = Vector3(self)  # ensure vector
         k = Vector3(axis.uv())
         return type(self)(
@@ -568,6 +587,8 @@ class Vector3(Vector):
         """Return the angle to the vector other."""
 
         other = self._ensure_same(other)
+        if not (any(self._coords) and any(other._coords)):
+            raise ValueError("The angle to a zero vector is undefined")
         return acosd(np.clip(self.uv().dot(other.uv()), -1, 1))
 
     def transform(self, F, **kwargs):
@@ -581,7 +602,7 @@ class Vector3(Vector):
             norm: normalize transformed vectors. [True or False] Default False
 
         Examples:
-            # Reflexion of `y` axis.
+            >>> # Reflexion of `y` axis.
             >>> F = [[1, 0, 0], [0, -1, 0], [0, 0, 1]]
             >>> u = Vector3([1, 1, 1])
             >>> u.transform(F)
@@ -602,6 +623,11 @@ class Axial3(Vector3):
 
     Note: the angle between axial data cannot be more than 90°
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not any(self._coords):
+            raise ValueError(f"{type(self).__name__} can't be a zero vector")
 
     def __eq__(self, other):
         cls = type(self)

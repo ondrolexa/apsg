@@ -53,6 +53,13 @@ def geo_df():
 
 
 @pytest.fixture
+def spread_df():
+    # spread in all directions, so concentrations can be estimated (the two
+    # items of geo_df are identical poles or lie on one great circle)
+    return pd.DataFrame({"azi": [10, 70, 130, 200], "inc": [20, 45, 30, 60]})
+
+
+@pytest.fixture
 def fault_df():
     return pd.DataFrame(
         {
@@ -493,9 +500,11 @@ class TestFolAccessor:
         r = geo_df.fol().R()
         assert isinstance(r, fol)
 
-    def test_stat_methods(self, geo_df):
-        assert isinstance(geo_df.fol().R(), fol)
-        assert isinstance(geo_df.fol().fisher_statistics()["k"], float)
+    def test_stat_methods(self, spread_df):
+        assert isinstance(spread_df.fol().R(), fol)
+        with pytest.warns(FutureWarning):
+            stats = spread_df.fol().fisher_statistics()
+        assert isinstance(stats["k"], float)
 
     def test_set_columns_and_wide_format(self):
         df = pd.DataFrame(
@@ -538,14 +547,18 @@ class TestLinAccessor:
         r = geo_df.lin().R()
         assert isinstance(r, lin)
 
-    def test_stat_methods(self, geo_df):
-        assert isinstance(geo_df.lin().R(), lin)
-        assert isinstance(geo_df.lin().fisher_statistics()["k"], float)
-        assert isinstance(geo_df.lin().fisher_statistics(level=0.99)["alpha"], float)
-        assert isinstance(geo_df.lin().var(), float)
-        assert isinstance(geo_df.lin().delta(), float)
-        assert isinstance(geo_df.lin().rdegree(), float)
-        assert geo_df.lin().ortensor() is not None
+    def test_stat_methods(self, spread_df):
+        assert isinstance(spread_df.lin().R(), lin)
+        for name in ("var", "delta", "rdegree"):
+            with pytest.warns(FutureWarning):
+                value = getattr(spread_df.lin(), name)()
+            assert isinstance(value, float)
+        with pytest.warns(FutureWarning):
+            stats = spread_df.lin().fisher_statistics(level=0.99)
+        assert isinstance(stats["k"], float)
+        assert isinstance(stats["alpha"], float)
+        assert isinstance(spread_df.lin().watson_statistics()["k"], float)
+        assert spread_df.lin().ortensor() is not None
 
     def test_set_columns_custom(self):
         df = pd.DataFrame({"trend": [110, 200], "plunge": [26, 45]})

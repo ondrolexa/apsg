@@ -28,17 +28,20 @@ s.show()
 
 `StereoNet` supports both equal-area (Schmidt, default) and equal-angle (Wulff) projections,
 lower and upper hemisphere, and rotating the whole net independently of the plotted data.
-See the stereonet tutorial in the [documentation](https://apsg.readthedocs.org) for examples.
+See the [stereonet tutorial](https://apsg.readthedocs.io/en/stable/notebooks/03_apsg_stereonet/) for examples.
 
 ## Requirements
 
+<!-- --8<-- [start:requirements] -->
 APSG requires Python 3.12 or later. It depends on [NumPy](https://numpy.org/),
 [SciPy](https://scipy.org/), [Matplotlib](https://matplotlib.org/),
 [SQLAlchemy](https://www.sqlalchemy.org/), [pandas](https://pandas.pydata.org/),
 [pygeomag](https://github.com/boxpet/pygeomag). The installers below take care of these.
+<!-- --8<-- [end:requirements] -->
 
 ## Installation
 
+<!-- --8<-- [start:install] -->
 Install APSG into a separate environment. Pick one of the options below. uv is the default
 and the fastest; pip and conda/mamba are alternatives.
 
@@ -176,10 +179,13 @@ To install APSG into an existing environment, run `conda install apsg` (or
 | Name | Downloads | Version | Platforms |
 | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-apsg-green.svg)](https://anaconda.org/conda-forge/apsg) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/apsg.svg)](https://anaconda.org/conda-forge/apsg) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/apsg.svg)](https://anaconda.org/conda-forge/apsg) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/apsg.svg)](https://anaconda.org/conda-forge/apsg) |
+<!-- --8<-- [end:install] -->
 
 ## Documentation
 
-Explore all features of APSG in the [documentation](https://apsg.readthedocs.org).
+Explore all features of APSG in the [documentation](https://apsg.readthedocs.io), with
+[tutorials](https://apsg.readthedocs.io/en/stable/tutorials/) and the
+[API reference](https://apsg.readthedocs.io/en/stable/api/).
 
 ## Contributing
 

@@ -52,7 +52,7 @@ class Core:
         self.bedding = kwargs.get("bedding", Foliation(0, 0))
         self.foldaxis = kwargs.get("foldaxis", Lineation(0, 0))
         self.volume = kwargs.get("volume", 1.0)
-        self.date = kwargs.get("date", datetime.now())  # noqa: DTZ005
+        self.date = kwargs.get("date", datetime.now())
         self.steps = kwargs.get("steps", [])
         self.a95 = kwargs.get("a95", [])
         self.comments = kwargs.get("comments", [])
@@ -129,7 +129,7 @@ class Core:
         data["strike"] = float(vline[30:40].strip().split("=")[1])
         data["dip"] = float(vline[40:50].strip().split("=")[1])
         data["volume"] = float(vline[50:63].strip().split("=")[1].strip("m3"))
-        data["date"] = datetime.strptime(vline[63:].strip(), "%m-%d-%Y %H:%M")  # noqa: DTZ007
+        data["date"] = datetime.strptime(vline[63:].strip(), "%m-%d-%Y %H:%M")
         data["steps"] = [ln[:4].strip() for ln in d[3:-1]]
         data["comments"] = [ln[73:].strip() for ln in d[3:-1]]
         data["a95"] = [float(ln[fields["a95"]].strip()) for ln in d[3:-1]]
@@ -271,7 +271,7 @@ class Core:
             if not pd.isna(head["FDec"][0]) and not pd.isna(head["FInc"][0])
             else None
         )
-        data["date"] = datetime.now()  # noqa: DTZ005
+        data["date"] = datetime.now()
         ix = body.iloc[:, 0].apply(lambda x: x not in exclude)
         data["steps"] = body[ix].iloc[:, 1].astype(int).to_list()
         data["comments"] = body[ix]["Note"].to_list()

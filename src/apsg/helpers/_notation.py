@@ -1,21 +1,23 @@
 import re
 
-from apsg.config import apsg_conf
-from apsg.helpers._math import asind, atan2d, cosd, sind
-
-NOTATIONS = ("dd", "rhr", "quadrant")
+from apsg.config import NOTATIONS, apsg_conf
+from apsg.helpers._math import asind, atan2d, cosd, real, sind
 
 # NOTATION TRANSORMATIONS
 
 
 def fol2vec_dd(azi, inc):
     """Convert dip direction/dip to normal vector components."""
+    azi = real(azi, "azimuth")
+    inc = real(inc, "dip")
+    if not 0 <= inc <= 180:
+        raise ValueError(f"dip must be in [0, 180], got {inc:g}")
     return -cosd(azi) * sind(inc), -sind(azi) * sind(inc), cosd(inc)
 
 
 def fol2vec_rhr(strike, dip):
     """Convert strike/dip (RHR) to normal vector components."""
-    return fol2vec_dd(strike + 90, dip)
+    return fol2vec_dd(real(strike, "strike") + 90, dip)
 
 
 def _notation_fn(table):
@@ -48,6 +50,10 @@ def geo2vec_planar(*args):
 
 def lin2vec_dd(azi, inc):
     """Convert plunge direction/plunge to vector components."""
+    azi = real(azi, "azimuth")
+    inc = real(inc, "plunge")
+    if not -90 <= inc <= 90:
+        raise ValueError(f"plunge must be in [-90, 90], got {inc:g}")
     return cosd(azi) * cosd(inc), sind(azi) * cosd(inc), sind(inc)
 
 

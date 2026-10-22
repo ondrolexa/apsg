@@ -6,15 +6,71 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Note: apsg's version numbers do not strictly follow [Semantic Versioning](https://semver.org/) --
 a patch-level release can include breaking changes, marked below as **BREAKING**.
 
-## [2.0.7] - Unreleased
+## [2.1.0] - Unreleased
+
+### Added
+- Orientation distributions with a common interface for fitting, sampling, density and model selection: uniform, von Mises, wrapped normal, Fisher, Kent, ESAG, Watson, Bingham, ACG and Lisle (for pairs).
+- `fit()` method on feature sets, e.g. `linset.fit("kent")`; distributions are available as `dist_fisher`, `dist_kent`, ...
+- `StereoNet.density()` and `RosePlot.density()` to plot the density of a fitted distribution.
+- `StereoNet.confidence()` methods `"kent"`, `"esag"` and `"lisle"`.
+- `PairSet.lisle_statistics()` for the mean pair after Lisle (1989).
+- Documentation page and tutorial on orientation distributions.
 
 ### Changed
-- `StereoNet.contour(..., filled=True)` no longer resamples the counting grid twice (once for the fill, once for the black line overlay) -- the line overlay now reuses the fill's own resampled grid, speeding up contouring. No change in output.
+- Documentation moved to MkDocs with the Material theme.
+- `from_csv()`/`to_csv()` honour the `delimiter` argument.
+- Invalid arguments raise `TypeError`/`ValueError` or warn with `UserWarning` instead of failing with `AssertionError` or printing.
+- Statistics of lineation and foliation sets no longer depend on the stored signs of the axes.
+- `StereoNet.confidence()` draws the Watson cone by default for lineations and foliations.
+- `random_kent()` is faster on concentrated data.
+- Pairwise `angle()` of a set and clustering are vectorized: 2000 items take 0.1 s instead of about 50 s. Pairwise `cross()` is vectorized too.
+- `StereoNet`, `RosePlot` and the fabric plots size their figure to the content and use constrained layout: the figure keeps the plot at the size given by the new `figsize` keyword and grows by the legend and title.
+- The legend can be placed on any side of the plot with the new `legend_position` keyword (`"right"`, `"left"`, `"top"` or `"bottom"`); its number of columns is chosen so it is not longer than the plot, and is re-fitted when the window is resized.
+- The `StereoNet.contour()` colorbar is a small inset in the bottom right corner of the net and no longer changes the layout (new `colorbar_bounds` and `colorbar_fontsize` keywords).
+- **BREAKING:** The `tight_layout` keyword of `StereoNet`, `RosePlot` and the fabric plots is removed, and these plots no longer use `apsg_conf.figsize`.
+- **BREAKING:** `random_kent()` uses `beta = kappa / 4` by default.
+- **BREAKING:** `PairSet.from_csv()` no longer accepts `sense_str` and `scol`.
+- **BREAKING:** `SDBSession.getfaults()` is removed: the SDB format stores no sense of movement, so it only assigned one given sense to every pair. Use `getpairs()` and build the faults, e.g. `FaultSet([Fault(p, 1) for p in pairs])`.
+- `SDBSession.getpairs()` raises `ValueError` when `ptype` is not a planar or `ltype` not a linear structure, instead of returning an empty set.
+
+### Deprecated
+- `fisher_statistics()`, `var()`, `delta()`, `rdegree()` and `csd()` of lineation and foliation sets; use `watson_statistics()`, `bingham_statistics()` or the distributions.
+- `random_normal()`; use `random_fisher()` or `random_kent()`.
+
+### Fixed
+- Sampling no longer hangs with an infinite concentration (`random_vonmises(kappa=inf)`, Watson and Bingham `rvs()`): distribution parameters must be finite numbers and mean/axis vectors finite and non-zero, else `ValueError`/`TypeError`.
+- `rvs(0)` returns an empty set instead of failing; the sample size must be a non-negative integer (`random_fisher(n=None)` no longer returns one item). `G()` takes a `feature` argument to create an empty set.
+- **BREAKING:** Features validate their input instead of storing it: components and angles must be finite real numbers (`TypeError` for strings, `None`, booleans or complex numbers, `ValueError` for NaN or infinity, also when produced by arithmetic such as `lin / 0`), plunge must be in [-90, 90], dip in [0, 180] and a cone apical angle in [0, 180]. Azimuths stay periodic.
+- **BREAKING:** Lineations, foliations and directions can't be zero vectors, and `angle()` with or `rotate()` about a zero vector raise `ValueError` (they returned 90 degrees and did nothing). `Vector2`/`Vector3` can still be zero.
+- `Pair`/`Fault` of zero or parallel vectors raise `ValueError`; a numeric `Fault` sense is taken by its sign as documented (`sense=7` gave a reverse fault).
+- `from_array()` and item-by-item `angle()`/`cross()` of sets of different lengths raise `ValueError` instead of dropping the extra items.
+- `feature_from_json()` raises `TypeError`/`ValueError` for malformed input (it returned `L:0/0` for bad arguments) and only resolves public apsg classes.
+- Tensor entries must be finite real numbers.
+- **BREAKING:** `Rotation2`/`Rotation3` of an improper matrix (determinant -1, a reflection) raise `ValueError`; it was kept with determinant -1, although the docs promised a correction. A non-orthogonal matrix raises `ValueError` instead of `TypeError`, and the product of a rotation with a reflection is a deformation gradient.
+- Statistics of an empty set (`R()`, `var()`, `delta()`, `rdegree()`, `csd()`, `uniformity_test()`, `ortensor()`) raise `ValueError` instead of `ZeroDivisionError`/`AttributeError`/`LinAlgError`; `mean_tensor()` needs at least 3 tensors. The pairwise `cross()` of a single item returns an empty set, `gss(n)`/`sfs(n)` need `n >= 1`, and empty sets plot as nothing (`great_circle()` of an empty set failed). The density (`contour()`) of no data raises `ValueError` instead of producing NaN values.
+- **BREAKING:** Configuration values are validated whenever they are set (directly, by `update()` or `apsg_conf_context()`), and unknown keys can't be set: `apsg_conf.notation = "xx"` raises `ValueError` instead of breaking every later `fol()`. `apsg_conf_context()` restores all values when one of them is invalid.
+- Plot parameters are validated when given, with `ValueError` instead of failing at render: `grid_step`, `clip_pole`, `figsize`, `kind`, `hemisphere`, `legend_position` of the plots, `bins`, `pdf_res`, `kappa` of `RosePlot`, `n` and `type` of `StereoGrid`, `levels`, `sigma`, `method` of `contour()`/`density()` (`levels=0` and `sigma=0` divided by zero, `sigma=-1` was accepted), and arc `kind`/`region`. A failed `show()`/`savefig()` closes its figure.
+- `from_csv()` raises `ValueError` naming the file and line for malformed files (empty file, undetectable delimiter, missing columns, values that are not finite numbers) instead of `csv.Error`/`IndexError`; a file with only a header gives an empty set. The delimiter is detected among `, ; tab space |` only.
+- Printing never fails: the axial ratio of a degenerate 2D tensor is `inf` (printing the orientation tensor of a single direction raised `ZeroDivisionError`), and huge matrix entries no longer print as `inf`.
+- Kamb density contouring of large data sets: the kernel is summed over chunks of the data, so 1,000,000 points need about 0.6 GB instead of 22 GiB.
+- **BREAKING:** Fitting a distribution, and `fisher_statistics()`/`watson_statistics()`/`bingham_statistics()`, raise `ValueError` for degenerate data (fewer than 2 items, all identical, or all on one great circle) instead of returning an infinite concentration.
+- **BREAKING:** Bingham confidence ellipse was too large and could be wrongly oriented.
+- **BREAKING:** `FaultSet.stress_inversion()` returned wrong stress tensors.
+- **BREAKING:** Circular statistics of `Vector2Set` and `Direction2Set` (confidence interval, axial directions).
+- **BREAKING:** `watson_statistics()` now recognizes girdle distributions.
+- `RosePlot.muci()` confidence level for axial data.
+- Saving rose diagrams and fabric plots.
+- `RosePlot.bar()`/`pdf()` ignored `color`.
+- Mean direction of identical vectors.
+- Comparison of pairs and faults with reversed normals.
+- Tensors with a zero eigenvalue failed on shape parameters.
+- `from apsg.helpers import *`.
+- Several smaller bugs in `G()`, `Fault()`, `FaultSet.from_csv()` and `SDBSession`.
 
 ## [2.0.6] - 2026-10-16
 
 ### Changed
-- **BREAKING** `Stress3.shape_ratio` and `Stress3Set.shape_ratio` are renamed to `stress_ratio` and, together with `Stress3.from_ratio()`, now use the structural geology definition of the stress ratio, R = (σ2 - σ3) / (σ1 - σ3). Previously they used the seismological definition (σ1 - σ2) / (σ1 - σ3), which equals 1 - R. `shape_ratio` is removed. `from_ratio(r)` now gives `stress_ratio == r` under both `stress_convention` settings.
+- **BREAKING:** `Stress3.shape_ratio` renamed to `stress_ratio`, now R = (σ2 - σ3) / (σ1 - σ3).
 
 ## [2.0.5] - 2026-10-07
 
@@ -22,59 +78,57 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - `openpyxl` is now installed with the `lab` extra.
 
 ### Fixed
-- Printed features no longer show `-0` for horizontal lines and planes (e.g. `L:219/-0`) or `360` for azimuths just below 360; both print as `0`.
+- Printed features no longer show `-0` or `360`.
 
 ## [2.0.4] - 2026-10-03
 
 ### Changed
-- `Ellipse.defgrad()`/`Ellipsoid.defgrad()` and `DeformationGradient{2,3}.from_ellipse()`/`from_ellipsoid()` without `R` now return the purely coaxial stretch `Q @ D @ Qᵗ` (symmetric), as documented. Previously they returned `Q @ D`. Both satisfy `F @ Fᵗ == E`; passing `R` keeps the previous `Q @ D @ R` / `R @ D @ Qᵗ` forms.
+- `defgrad()` of ellipses/ellipsoids returns the coaxial (symmetric) stretch by default.
 
 ### Fixed
-- A product of a rotation with a non-orthogonal matrix, such as `rotation2.from_angle(30) @ defgrad2.from_ratio(3)` or the 3D equivalent, raised `TypeError`. The result is now a `DeformationGradient2`/`DeformationGradient3`. Products and transforms that stay orthogonal are still rotations.
-- `FlinnPlot.point()`, `RamsayPlot.point()`, `VollmerPlot.point()` and `HsuPlot.point()` with an `EllipsoidSet` created one legend entry per member. A set is now one artist with one legend entry, the same as passing the members unpacked.
-- `StereoNet.tensor()` accepts a set of tensors (`EllipsoidSet`, `OrientationTensor3Set`, `Stress3Set`), drawing the principal axes of all members with one legend entry per axis.
+- Product of a rotation with a non-orthogonal matrix.
+- Fabric plots created one legend entry per member of an `EllipsoidSet`.
+- `StereoNet.tensor()` accepts sets of tensors.
 
 ## [2.0.3] - 2026-10-03
 
 ### Added
-- `apsg_conf.stress_convention` selects the sign convention of `Stress2`/`Stress3` inputs and reported values: `"geological"` (default, compression positive) or `"mechanical"` (tension positive). The tensor and all stress results are identical for the same physical state under either convention.
-- `Ellipse.from_ratio()` and `Ellipsoid.from_ratios()` build a strain ellipse/ellipsoid directly from axial ratios (2D: one ratio; 3D: any two of the three pairwise ratios).
-- `Ellipse.defgrad()`/`Ellipsoid.defgrad()` recover the deformation gradient that produced a strain ellipse/ellipsoid -- the inverse of `from_defgrad()`.
-- `from_ellipse()`/`from_ellipsoid()` now also accept `form="right"` to invert the right Cauchy-Green/Green's strain convention, not just the default left one.
-- `EllipseSet.rfphi()` estimates strain ratio and orientation from a population of strain markers using the analytical Rf/phi vector-mean method.
-- `EllipseSet.robin()` and `EllipsoidSet.robin()` compute the mean strain ellipse/ellipsoid of a population using Robin's (1977) log-matrix method.
+- `apsg_conf.stress_convention` to select geological or mechanical sign convention of stress.
+- `Ellipse.from_ratio()` and `Ellipsoid.from_ratios()`.
+- `defgrad()` method on ellipses/ellipsoids.
+- `form` option for `from_ellipse()`/`from_ellipsoid()`.
+- `EllipseSet.rfphi()` for Rf/phi strain analysis.
+- `robin()` mean strain of ellipse/ellipsoid sets (Robin 1977).
 
 ### Changed
-- **BREAKING:** `DeformationGradient3.from_ratios()` now requires exactly two of `Rxy`, `Rxz` and `Ryz` (previously only `Rxy`/`Ryz`, defaulting to the identity tensor when neither was given); calling it with no arguments is no longer supported.
-- **BREAKING:** `DeformationGradient2.from_ratio()` now requires `R >= 1`.
-- **BREAKING:** `from_ellipse()`/`from_ellipsoid()` gained a `form` keyword before the existing `R` keyword -- pass `R` by keyword, not position.
-- **BREAKING:** `Stress2`/`Stress3` store the tensor internally in the mechanical (tension-positive) sign, so `np.asarray(S)`, indexing and `to_json()` return the negated matrix of the default geological convention. Constructors and reported values stay geological by default. Files written by 2.0.x are still read correctly.
-- **BREAKING:** `Stress2.cauchy()`/`Stress3.cauchy()` return the physical (tension-positive) traction `σ·n`, and the vector components of `stress_comp()` flip sign accordingly. `normal_stress()` keeps its compression-positive value under the default convention; `shear_stress()`, `slip_tendency()`, `dilation_tendency()` and the slip sense of `fault()` are unchanged.
+- **BREAKING:** `DeformationGradient3.from_ratios()` requires two ratios, `DeformationGradient2.from_ratio()` requires `R >= 1`.
+- **BREAKING:** Stress tensors are stored in the mechanical sign convention.
+- **BREAKING:** `cauchy()` returns the physical (tension-positive) traction.
 
 ### Fixed
-- `Stress2.signed_shear_stress()` returned a wrong value for general normals (it was not the traction along the normal's tangent). It now returns the physical traction along the +90° tangent, with magnitude equal to `shear_stress()`.
+- `Stress2.signed_shear_stress()`.
 
 ## [2.0.2] - 2026-09-30
 
 ### Added
-- `StereoNet.hoeppner()` now also accepts `Pair`/`PairSet`; since a pair carries no movement sense, its lineation is drawn as a plain line through the plane's pole instead of an arrow.
-- `from_csv()` on `LineationSet`/`FoliationSet`/other feature sets, `PairSet` and `FaultSet` now accepts a `name` keyword argument, instead of always naming the set after the source filename.
+- `StereoNet.hoeppner()` accepts pairs.
+- `name` option for `from_csv()`.
 
 ### Changed
-- `StereoNet.contour()`'s default `cmap` for `clip=False` is now `"RdBu_r"` instead of `"RdBu"`, so above-uniform density is red and below-uniform is blue.
+- Default `cmap` of unclipped contours is `"RdBu_r"`.
 
 ### Fixed
-- `StereoNet(grid=False)`/`RosePlot(grid=False)` no longer silently re-enables the grid (with a UserWarning) when a grid style option is also set.
+- `grid=False` was ignored when a grid style option was set.
 
 ## [2.0.1] - 2026-09-25
 
 ### Added
-- `StereoNet.dihedra()` fills the extensional dihedra (the quadrants containing the T axis) of faults; a `FaultSet` shows where its dihedra overlap.
-- `StereoNet.beachball()` plots the beach ball of a stress tensor, filling the compressive quadrants (those containing the P axis); a `Stress3Set` shows where its beach balls overlap.
-- `Arc`/`ArcSet` (and `StereoNet.arc()`) for plotting a curved path between two vectors, with an optional bow away from the plain great-circle connection. Arcs can be drawn as a line, as points, or as the filled polygon they bound (or the rest of the net, with `region="outside"`).
+- `StereoNet.dihedra()` for faults.
+- `StereoNet.beachball()` for stress tensors.
+- Filled arcs.
 
 ### Fixed
-- `savefig()` on `StereoNet`, `RosePlot` and fabric plots no longer leaves its figure open, which caused Jupyter to display it even though only saving to a file was requested.
+- `savefig()` left the figure open.
 
 ## [2.0.0] - 2026-09-21
 

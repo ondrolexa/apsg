@@ -1,9 +1,21 @@
 from apsg.config import apsg_conf, apsg_conf_context
 from apsg.feature import (
+    ACG as dist_acg,
+)
+from apsg.feature import (
+    ESAG as dist_esag,
+)
+from apsg.feature import (
     Arc as arc,
 )
 from apsg.feature import (
     ArcSet as arcset,
+)
+from apsg.feature import (
+    AxialVonMises as dist_axial_vonmises,
+)
+from apsg.feature import (
+    Bingham as dist_bingham,
 )
 from apsg.feature import (
     ClusterSet as cluster,
@@ -52,10 +64,16 @@ from apsg.feature import (
 )
 from apsg.feature import G
 from apsg.feature import (
+    Kent as dist_kent,
+)
+from apsg.feature import (
     Lineation as lin,
 )
 from apsg.feature import (
     LineationSet as linset,
+)
+from apsg.feature import (
+    Lisle as dist_lisle,
 )
 from apsg.feature import (
     OrientationTensor2 as ortensor2,
@@ -104,6 +122,18 @@ from apsg.feature import (
 )
 from apsg.feature import (
     VelocityGradient3 as velgrad,
+)
+from apsg.feature import (
+    VonMises as dist_vonmises,
+)
+from apsg.feature import (
+    VonMisesFisher as dist_fisher,
+)
+from apsg.feature import (
+    Watson as dist_watson,
+)
+from apsg.feature import (
+    WrappedNormal as dist_wrapped_normal,
 )
 from apsg.math import (
     Matrix2 as matrix2,
@@ -158,6 +188,16 @@ __all__ = (
     "defgrad2",
     "dir2",
     "dir2set",
+    "dist_acg",
+    "dist_axial_vonmises",
+    "dist_bingham",
+    "dist_esag",
+    "dist_fisher",
+    "dist_kent",
+    "dist_lisle",
+    "dist_vonmises",
+    "dist_watson",
+    "dist_wrapped_normal",
     "ellipse",
     "ellipseset",
     "ellipsoid",
@@ -195,6 +235,6 @@ __all__ = (
     "velgrad2",
 )
 
-__version__ = "2.0.7"
+__version__ = "2.1.0"
 __author__ = "Ondrej Lexa"
 __email__ = "lexa.ondrej@gmail.com"

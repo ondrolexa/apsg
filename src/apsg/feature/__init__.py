@@ -22,6 +22,23 @@ from apsg.feature._container import (
     Vector2Set,
     Vector3Set,
 )
+from apsg.feature._distributions import (
+    ACG,
+    ESAG,
+    AxialUniform2,
+    AxialUniform3,
+    AxialVonMises,
+    Bingham,
+    Kent,
+    Lisle,
+    OrientationDistribution,
+    Uniform2,
+    Uniform3,
+    VonMises,
+    VonMisesFisher,
+    Watson,
+    WrappedNormal,
+)
 from apsg.feature._geodata import (
     Arc,
     Cone,
@@ -52,10 +69,16 @@ from apsg.math._matrix import Matrix2, Matrix3
 from apsg.math._vector import Axial2, Axial3, Vector2, Vector3
 
 __all__ = (
+    "ACG",
+    "ESAG",
     "Arc",
     "ArcSet",
     "Axial2",
     "Axial3",
+    "AxialUniform2",
+    "AxialUniform3",
+    "AxialVonMises",
+    "Bingham",
     "ClusterSet",
     "Cone",
     "ConeSet",
@@ -74,10 +97,13 @@ __all__ = (
     "Foliation",
     "FoliationSet",
     "G",
+    "Kent",
     "Lineation",
     "LineationSet",
+    "Lisle",
     "Matrix2",
     "Matrix3",
+    "OrientationDistribution",
     "OrientationTensor2",
     "OrientationTensor2Set",
     "OrientationTensor3",
@@ -90,17 +116,33 @@ __all__ = (
     "Stress2Set",
     "Stress3",
     "Stress3Set",
+    "Uniform2",
+    "Uniform3",
     "Vector2",
     "Vector2Set",
     "Vector3",
     "Vector3Set",
     "VelocityGradient2",
     "VelocityGradient3",
+    "VonMises",
+    "VonMisesFisher",
+    "Watson",
+    "WrappedNormal",
 )
 
 
 def feature_from_json(obj_json):
-    dtype_cls = getattr(sys.modules[__name__], obj_json["datatype"])
+    if not isinstance(obj_json, dict) or "datatype" not in obj_json:
+        raise TypeError("JSON of a feature must be a dict with a 'datatype' key")
+    datatype = obj_json["datatype"]
+    # only the public classes of this module, not any of its attributes
+    dtype_cls = getattr(sys.modules[__name__], datatype, None)
+    if datatype not in __all__ or not hasattr(dtype_cls, "__mro__"):
+        raise ValueError(f"Unknown datatype {datatype!r}")
+    if issubclass(dtype_cls, OrientationDistribution):
+        return dtype_cls.from_json(obj_json)
+    if not isinstance(obj_json.get("args"), (list, tuple)):
+        raise TypeError(f"JSON of {datatype} must have a list of 'args'")
     args = []
     for arg in obj_json["args"]:
         if isinstance(arg, dict):

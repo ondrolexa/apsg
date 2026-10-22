@@ -1,0 +1,253 @@
+# apsg.plotting
+
+The `apsg.plotting` module provides plotting classes for structural geology data. It includes
+`StereoNet` for stereographic projection, `RosePlot` for rose diagrams, and fabric plot types
+(`VollmerPlot`, `RamsayPlot`, `FlinnPlot`, `HsuPlot`) for strain and fabric analysis.
+
+## Usage
+
+Stereonet plots:
+
+```pycon
+>>> from apsg import folset, linset
+>>> from apsg.plotting import StereoNet
+>>> fols = folset.random_fisher(kappa=50, n=20)
+>>> lins = linset.random_fisher(kappa=100, n=20)
+>>> f = fols.data[0]
+>>> s = StereoNet(title="My data")
+>>> s.point(fols)
+>>> s.point(lins)
+>>> s.great_circle(f)
+>>> s.show()
+```
+
+Customize plot appearance:
+
+```pycon
+>>> s = StereoNet(title="Custom", kind="equal-angle", hemisphere="upper")
+>>> s.point(lins, marker="s", mfc="red", ms=8)
+>>> s.contour(fols, levels=4, cmap="Blues", colorbar=True)
+>>> s.show()
+```
+
+`kind` selects equal-area (`"equal-area"`/`"schmidt"`, the default -- also known as a
+Schmidt net) or equal-angle (`"equal-angle"`/`"wulff"`, a Wulff net) projection.
+`hemisphere` selects which hemisphere axial data (`point`, `great_circle`, `cone`,
+`contour`, ...) is projected onto -- `"lower"` (default) or `"upper"`: a line plunging
+into the lower hemisphere at a given azimuth plots at that azimuth on a lower net, and at the
+antipodal azimuth (same distance from center) on an upper net. Genuinely directional data
+(`vector`) behaves differently: since it already draws a filled marker and an open one at
+its antipode, the two markers' positions stay the same between the nets and only which one is
+filled vs open swaps:
+
+```pycon
+>>> s = StereoNet(kind="equal-angle", hemisphere="upper")
+>>> s.point(fols)
+>>> s.show()
+```
+
+N/E/S/W compass tick labels are shown around the rim by default; pass `azimuth_ticks=False`
+to remove them, or `azimuth_ticks_kws` to customize their angles/labels/position. Legend
+placement and styling for any of `StereoNet`, `RosePlot` or the fabric plots can be
+overridden via `legend_kws`, without disturbing apsg's own defaults for the options you
+don't pass:
+
+```pycon
+>>> s = StereoNet(azimuth_ticks=False, legend_kws={"loc": "lower left"})
+>>> s.point(fols, label="Poles")
+>>> s.show()
+```
+
+`rotation` rotates the whole net (grid, ticks and, when `rotate_data` is True, the
+default, plotted data too, so a fabric's appearance relative to the grid is unchanged).
+Pass `rotate_data=False` to rotate only the grid, leaving already-plotted data anchored to
+the true, unrotated frame:
+
+```pycon
+>>> from apsg import lin, rotation_from_axis_angle
+>>> R = rotation_from_axis_angle(lin(90, 0), 30)  # 30 degrees about a horizontal E-W axis
+>>> s = StereoNet(rotation=R, rotate_data=False)
+>>> s.point(fols)
+>>> s.show()
+```
+
+Arcs:
+
+```pycon
+>>> from apsg import arc, arcset, lin
+>>> a = arc(lin(0, 0), lin(90, 0), curvature=0.4)
+>>> path = arcset.from_vectors(lin(0, 0), lin(45, 20), lin(90, 0))
+>>> s = StereoNet()
+>>> s.arc(a, path)
+>>> s.show()
+```
+
+An arc is drawn as a path, only where it runs through the displayed hemisphere. With
+`short=False` the arc takes the other way around the great circle, so only the remaining
+pieces beyond the endpoints are shown, leaving a gap where the short arc is:
+
+```pycon
+>>> s = StereoNet()
+>>> s.arc(arc(lin(50, 30), lin(210, 40)), color="C0")               # short arc
+>>> s.arc(arc(lin(50, 30), lin(210, 40), short=False), color="C3")  # the rest
+>>> s.show()
+```
+
+`kind="points"` draws the path as markers and `kind="filled"` fills the polygon bounded by
+the arcs taken in order, closed by a great-circle arc from the last point to the first. The
+fill uses only `color` and `alpha` (no outline). It is clipped to the displayed hemisphere;
+the filled region is the side of the boundary not containing the point antipodal to the net's
+center:
+
+```pycon
+>>> quad = arcset([arc(50, 30, 120, 60), arc(120, 60, 260, 50),
+...                arc(260, 50, 310, 40), arc(310, 40, 50, 30)])
+>>> s = StereoNet()
+>>> s.arc(quad, kind="filled", color="C0", alpha=0.5)
+>>> s.show()
+```
+
+`region="outside"` fills the rest of the net instead, the remaining area of the full circle
+without the polygon (`region="inside"` is the default):
+
+```pycon
+>>> s = StereoNet()
+>>> s.arc(quad, kind="filled", region="outside", color="C0", alpha=0.5)
+>>> s.show()
+```
+
+Fault dihedra -- each fault is drawn as the filled pair of opposite quadrants between the fault
+plane and the auxiliary plane (perpendicular to the slip) that contain its T axis; the polygons
+of a `FaultSet` add up where they overlap. Leave `alpha` unset for a default that gets
+lighter as the number of faults grows:
+
+```pycon
+>>> from apsg import fault, faultset
+>>> f = fault(120, 60, 110, 59, "R")
+>>> s = StereoNet()
+>>> s.dihedra(f, color="C0")
+>>> s.point(f.t, color="k")
+>>> s.show()
+```
+
+Beach ball of a stress tensor -- the two planes through the intermediate principal stress at
+45 degrees to the maximum (P axis) and minimum (T axis) principal stresses divide the net into
+four quadrants, and the compressive ones, those containing the P axis, are filled. A
+`Stress3Set` adds its beach balls up where they overlap:
+
+```pycon
+>>> from apsg import stress
+>>> S = stress([[8, 1, 0], [1, 5, 0], [0, 0, 1]])
+>>> s = StereoNet()
+>>> s.beachball(S)
+>>> s.stress(S)
+>>> s.show()
+```
+
+Confidence cones and ellipses -- around the mean of orientation data (`method` `"fisher"`,
+`"watson"`, `"bootstrap"` or `"bingham"`), or, for a group of tensors (`EllipsoidSet` or
+`Stress3Set`), around the principal axes of their mean tensor following Jelínek (1978)
+(`method="jelinek"`, the default for tensor sets). All three ellipses are drawn unless
+`which` (0, 1 or 2) selects a single principal axis; `normalize` and `anisoft` are passed
+on to `mean_tensor()`:
+
+```pycon
+>>> s = StereoNet()
+>>> s.point(lins, color="k", ms=3)
+>>> s.confidence(lins, method="watson", level=0.99, color="g")
+>>> s.confidence(es)                       # es: EllipsoidSet of at least 3 tensors
+>>> s.confidence(es, which=2, lw=3)        # only the ellipse of the minor axis
+>>> s.confidence(es, anisoft=True, ls=":")
+>>> s.show()
+```
+
+Quick plot one-liner -- dispatches each argument to whichever plotting method matches its
+type (lines/poles, planes, pairs, faults, cones, arcs, tensors, stress tensors, or a
+`StereoGrid` contour):
+
+```pycon
+>>> from apsg import quicknet
+>>> quicknet(fols, lins, title="Quick net")
+```
+
+Rose diagrams:
+
+```pycon
+>>> from apsg import vec2set
+>>> from apsg.plotting import RosePlot
+>>> v = vec2set.random_vonmises(position=120, kappa=100, n=50)
+>>> p = RosePlot(grid=False)
+>>> p.bar(v, fc="none", ec="k")
+>>> p.pdf(v)
+>>> p.muci(v)
+>>> p.show()
+```
+
+Fabric plots:
+
+```pycon
+>>> from apsg.feature import Ellipsoid, EllipsoidSet
+>>> from apsg.plotting import VollmerPlot, FlinnPlot, RamsayPlot, HsuPlot
+>>> e1 = Ellipsoid.from_stretch(2, 1, 0.5)
+>>> e2 = Ellipsoid.from_stretch(1.5, 1.2, 0.8)
+>>> es = EllipsoidSet([e1, e2])
+>>> vp = VollmerPlot()
+>>> vp.point(es)
+>>> vp.show()
+>>>
+>>> fp = FlinnPlot()
+>>> fp.point(es)
+>>> fp.show()
+>>>
+>>> rp = RamsayPlot()
+>>> rp.point(es)
+>>> rp.show()
+>>>
+>>> hp = HsuPlot()
+>>> hp.point(es)
+>>> hp.show()
+```
+
+Save and load plots:
+
+```pycon
+>>> s.save('stereonet.pkl')
+>>> s2 = StereoNet.load('stereonet.pkl')
+>>> s2.show()
+```
+
+## Reference
+
+### Stereonets
+
+::: apsg.plotting.StereoNet
+
+::: apsg.plotting.StereoGrid
+
+::: apsg.plotting.quicknet
+
+### Rose diagrams
+
+::: apsg.plotting.RosePlot
+
+### Fabric plots
+
+::: apsg.plotting.VollmerPlot
+
+::: apsg.plotting.RamsayPlot
+
+::: apsg.plotting.FlinnPlot
+
+::: apsg.plotting.HsuPlot
+
+### Styles
+
+::: apsg.plotting.StereoNetStyleFactory
+
+::: apsg.plotting.RosePlotStyleFactory
+
+::: apsg.plotting.FabricPlotStyleFactory
+
+### Utilities
+
+::: apsg.plotting.rotation_from_axis_angle

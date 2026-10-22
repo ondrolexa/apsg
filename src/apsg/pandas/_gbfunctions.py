@@ -5,14 +5,12 @@ Each function takes a ``FeatureSet`` directly (the argument
 ``df.<accessor>.groupby(by).apply/transform/aggregate(func)`` passes to
 ``func`` for each group), and chains APSG methods on it.
 
-Import via::
+Import via:
 
     from apsg.pandas import gbf
 
 The functions are designed as **examples of the pattern** so users can easily
 write their own:
-
-::
 
     def my_apply_func(fs):
         \"""Compute … for each group.
@@ -156,7 +154,7 @@ def mean(fs):
 def angle_to_mean(fs):
     """Per-element angular distance (in degrees) to the group mean.
 
-    The mean is computed via :func:`mean`, which dispatches based on
+    The mean is computed via [`mean`][apsg.pandas._gbfunctions.mean], which dispatches based on
     the feature type of `fs`.
 
     Args:
@@ -188,7 +186,7 @@ def angle_to_mean(fs):
 def eigenlin(fs, which=0):
     """N-th eigenvector of the orientation tensor as a ``Lineation``.
 
-    This is a generalised version of :func:`mean` for Lineation data that accepts
+    This is a generalised version of [`mean`][apsg.pandas._gbfunctions.mean] for Lineation data that accepts
     an extra ``which`` parameter, demonstrating how to write custom
     groupby functions with additional arguments.
 

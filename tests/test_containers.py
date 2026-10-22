@@ -18,6 +18,7 @@ from apsg import (
     vec2set,
     vecset,
 )
+from apsg.config import apsg_conf_context
 from apsg.feature._container import (
     ArcSet,
     ConeSet,
@@ -703,6 +704,31 @@ class TestVector3Set:
         _stat, _pval, same = v1.similarity(v2, method="mmd", n_permutations=99)
         assert same
 
+    def test_similarity_rejects_unknown_options(self):
+        v = Vector3Set([Vector3(1, 0, 0), Vector3(0, 1, 0)])
+        with pytest.raises(ValueError, match="Unknown method"):
+            v.similarity(v, method="kolmogorov")
+        with pytest.raises(TypeError):
+            v.similarity(v, methd="mmd")
+
+    def test_bootstrap_statistics(self):
+        np.random.seed(42)
+        v = LineationSet.random_fisher(n=50, position=Lineation(120, 40), kappa=50)
+        stats = v.bootstrap_statistics(n=50)
+        assert stats["mu"].angle(Lineation(120, 40)) < 5
+        assert 0 < stats["alpha"] < 10
+        wider = v.bootstrap_statistics(level=0.99, n=50)
+        assert wider["alpha"] >= stats["alpha"] - 1
+
+    @pytest.mark.parametrize("method", ["energy_distance", "hotelling", "mmd"])
+    def test_similarity_different_distributions(self, method):
+        np.random.seed(42)
+        v1 = LineationSet.random_fisher(position=Lineation(120, 50))
+        v2 = LineationSet.random_fisher(position=Lineation(300, 10))
+        _stat, pval, same = v1.similarity(v2, method=method, n_permutations=99)
+        assert pval < 0.05
+        assert not same
+
     def test_align(self):
         v1 = Vector3Set([Vector3(1, 0, 0), Vector3(0, 1, 0)])
         v2 = Vector3Set([Vector3(1, 0, 0), Vector3(0, 1, 0)])
@@ -727,7 +753,8 @@ class TestVector3Set:
 
     def test_random_normal(self):
         np.random.seed(42)
-        v = Vector3Set.random_normal(10, position=Vector3(0, 0, 1), sigma=20)
+        with pytest.warns(FutureWarning, match="deprecated"):
+            v = Vector3Set.random_normal(10, position=Vector3(0, 0, 1), sigma=20)
         assert len(v) == 10
 
     def test_random_fisher(self):
@@ -840,6 +867,32 @@ class TestLineationSet:
         loaded = LineationSet.from_csv(str(path), name="Mele")
         assert loaded.name == "Mele"
         assert len(loaded) == 2
+
+    def test_from_csv_column_names(self, tmp_path):
+        path = tmp_path / "data.csv"
+        path.write_text("id,inc,azi\n1,26,110\n2,10,30\n")
+        loaded = LineationSet.from_csv(str(path), acol="azi", icol="inc")
+        assert np.allclose(loaded.geo, [[110, 30], [26, 10]])
+        loaded = LineationSet.from_csv(str(path), acol=2, icol=1)
+        assert np.allclose(loaded.geo, [[110, 30], [26, 10]])
+        with pytest.raises(ValueError):
+            LineationSet.from_csv(str(path), acol="dir", icol="inc")
+
+    def test_from_csv_no_header(self, tmp_path):
+        path = tmp_path / "data.csv"
+        path.write_text("110;26\n30;10\n")
+        loaded = LineationSet.from_csv(str(path))
+        assert np.allclose(loaded.geo, [[110, 30], [26, 10]])
+        with pytest.raises(ValueError):
+            LineationSet.from_csv(str(path), acol="azi", icol="inc")
+
+    def test_to_csv_delimiter(self, tmp_path):
+        v = LineationSet.from_array([110, 30], [26, 10])
+        path = tmp_path / "mele.csv"
+        v.to_csv(str(path), delimiter=";")
+        assert path.read_text().splitlines()[0] == "azi;inc"
+        loaded = LineationSet.from_csv(str(path), delimiter=";")
+        assert np.allclose(loaded.geo, v.geo)
 
     def test_random_fisher(self):
         np.random.seed(42)
@@ -961,6 +1014,14 @@ class TestPairSet:
         assert len(loaded) == 2
         loaded_default = PairSet.from_csv(str(path))
         assert loaded_default.name == "mele.csv"
+
+    def test_csv_delimiter_roundtrip(self, tmp_path):
+        p = PairSet([Pair(140, 30, 110, 26), Pair(200, 40, 180, 20)])
+        path = tmp_path / "mele.csv"
+        p.to_csv(str(path), delimiter=";")
+        assert path.read_text().splitlines()[0] == "fazi;finc;lazi;linc"
+        loaded = PairSet.from_csv(str(path), delimiter=";")
+        assert np.allclose(np.asarray(loaded), np.asarray(p), atol=1e-3)
 
     def test_fol_property(self):
         p = PairSet([Pair(140, 30, 110, 26)])
@@ -1110,6 +1171,19 @@ class TestFaultSet:
         loaded_default = FaultSet.from_csv(str(path))
         assert loaded_default.name == "mele.csv"
 
+    def test_from_csv_no_header_sense(self, tmp_path):
+        path = tmp_path / "faults.csv"
+        path.write_text("140,30,110,26,-1\n200,40,180,20,1\n")
+        loaded = FaultSet.from_csv(str(path))
+        np.testing.assert_array_equal(loaded.sense, [-1, 1])
+
+    def test_from_csv_sense_str(self, tmp_path):
+        f = FaultSet([Fault(140, 30, 110, 26, -1), Fault(200, 40, 180, 20, 1)])
+        path = tmp_path / "mele.csv"
+        f.to_csv(str(path), delimiter=";", sense_str=True)
+        loaded = FaultSet.from_csv(str(path), delimiter=";", sense_str=True)
+        np.testing.assert_array_equal(loaded.sense, f.sense)
+
     def test_sense_property(self):
         f = FaultSet([Fault(140, 30, 110, 26, -1)])
         np.testing.assert_array_equal(f.sense, [-1])
@@ -1210,6 +1284,58 @@ class TestFaultSet:
         from apsg.feature._tensor3 import Stress3
 
         assert isinstance(stress, Stress3)
+
+    @staticmethod
+    def _synthetic_faults(stress, seed=0, n=40):
+        """Faults slipping exactly along the shear traction of `stress`."""
+        rng = np.random.default_rng(seed)
+        return FaultSet(
+            [
+                stress.fault(Foliation(azi, dip))
+                for azi, dip in zip(
+                    rng.uniform(0, 360, n), rng.uniform(20, 85, n), strict=True
+                )
+            ]
+        )
+
+    @pytest.mark.parametrize("seed", range(4))
+    def test_stress_inversion_recovers_known_tensor(self, seed):
+        from apsg.feature._tensor3 import Stress3
+
+        def axis_angle(a, b):
+            return min(a.angle(b), 180 - a.angle(b))
+
+        S = Stress3([[6, 1, 0.5], [1, 3, -0.8], [0.5, -0.8, 1]])
+        faults = self._synthetic_faults(S, seed=seed)
+        E = faults.stress_inversion()
+        # Michael's method assumes equal shear stress on all faults, which
+        # synthetic faults of random orientation violate a little
+        assert axis_angle(S.sigma1dir, E.sigma1dir) < 10
+        assert axis_angle(S.sigma3dir, E.sigma3dir) < 10
+        assert abs(E.stress_ratio - S.stress_ratio) < 0.1
+        assert np.mean(faults.angular_misfit(E)) < 10
+
+    @pytest.mark.parametrize("convention", ["geological", "mechanical"])
+    def test_stress_inversion_andersonian_normal_faults(self, convention):
+        faults = FaultSet(
+            [Fault(azi, 60, azi, 60, "n") for azi in (85, 90, 95, 265, 270, 275)]
+        )
+        with apsg_conf_context(stress_convention=convention):
+            S = faults.stress_inversion()
+            assert abs(S.sigma1dir.z) == pytest.approx(1, abs=1e-6)
+            assert np.allclose(faults.angular_misfit(S), 0, atol=1e-6)
+
+    def test_stress_inversion_independent_of_convention(self):
+        from apsg.feature._tensor3 import Stress3
+
+        faults = self._synthetic_faults(
+            Stress3([[6, 1, 0.5], [1, 3, -0.8], [0.5, -0.8, 1]])
+        )
+        with apsg_conf_context(stress_convention="geological"):
+            geo = faults.stress_inversion()
+        with apsg_conf_context(stress_convention="mechanical"):
+            mech = faults.stress_inversion()
+        np.testing.assert_allclose(np.asarray(geo), np.asarray(mech))
 
     def test_stress_inversion_bootstrap(self):
         np.random.seed(42)

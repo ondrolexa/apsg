@@ -3,8 +3,27 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from apsg.config import apsg_conf
-from apsg.helpers._helper import is_jsonable
+from apsg.helpers._helper import checked_attrs
 from apsg.math._vector import Vector2, Vector3
+
+
+def rounded(arr, n):
+    """Return `arr` rounded to `n` decimals for display, keeping the values
+    that overflow when rounded (rounding 1e308 gives inf)."""
+    with np.errstate(over="ignore", invalid="ignore"):
+        r = np.round(arr, n)
+    return np.where(np.isfinite(r), r, arr)
+
+
+def _checked_coefs(values, name):
+    """Return the matrix `values` as an array, raising unless its entries are
+    finite real numbers."""
+    arr = np.asarray(values)
+    if arr.dtype.kind not in "iuf":
+        raise TypeError(f"{name} entries must be real numbers, got {arr.dtype}")
+    if not np.isfinite(arr).all():
+        raise ValueError(f"{name} entries must be finite, got {arr.tolist()}")
+    return arr
 
 
 class Matrix(ABC):
@@ -42,7 +61,7 @@ class Matrix(ABC):
 
     def __repr__(self):
         n = apsg_conf.ndigits
-        return f"{self.label()}\n{np.asarray(self).round(n)!s}"
+        return f"{self.label()}\n{rounded(np.asarray(self), n)!s}"
 
     def label(self):
         return self.__class__.__name__
@@ -237,14 +256,11 @@ class Matrix2(Matrix):
         if len(args) == 0:
             coefs = ((1, 0), (0, 1))
         elif len(args) == 1 and np.asarray(args[0]).shape == Matrix2.__shape__:
-            coefs = [[float(v) for v in row] for row in args[0]]
+            coefs = _checked_coefs(args[0], type(self).__name__).astype(float).tolist()
         else:
             raise TypeError("Not valid arguments for Matrix2")
         self._coefs = tuple(coefs[0]), tuple(coefs[1])
-        if kwargs:
-            if not is_jsonable(kwargs):
-                raise TypeError("Provided attributes are not serializable.")
-            self._attrs = kwargs
+        self._attrs = checked_attrs(kwargs)
 
     @classmethod
     def from_comp(cls, **kwargs):
@@ -384,14 +400,11 @@ class Matrix3(Matrix):
         if len(args) == 0:
             coefs = ((1, 0, 0), (0, 1, 0), (0, 0, 1))
         elif len(args) == 1 and np.asarray(args[0]).shape == Matrix3.__shape__:
-            coefs = np.asarray(args[0]).tolist()
+            coefs = _checked_coefs(args[0], type(self).__name__).tolist()
         else:
             raise TypeError("Not valid arguments for Matrix3")
         self._coefs = tuple(coefs[0]), tuple(coefs[1]), tuple(coefs[2])
-        if kwargs:
-            if not is_jsonable(kwargs):
-                raise TypeError("Provided attributes are not serializable.")
-            self._attrs = kwargs
+        self._attrs = checked_attrs(kwargs)
 
     @classmethod
     def from_comp(cls, **kwargs):

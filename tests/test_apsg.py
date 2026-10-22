@@ -834,6 +834,10 @@ class TestFault:
         assert isinstance(f.fvec, Vector3)
         assert isinstance(f.lvec, Vector3)
 
+    def test_two_non_vector_args_raise(self):
+        with pytest.raises(TypeError):
+            Fault(120, 30)
+
     def test_from_five_args(self):
         f = Fault(140, 30, 110, 26, -1)
         fazi, _finc = f.fol.geo

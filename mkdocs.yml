@@ -1,0 +1,162 @@
+site_name: APSG
+site_description: The package for structural geologists
+site_author: Ondrej Lexa
+site_url: !ENV [READTHEDOCS_CANONICAL_URL, "https://apsg.readthedocs.io/en/latest/"]
+repo_url: https://github.com/ondrolexa/apsg
+repo_name: ondrolexa/apsg
+edit_uri: edit/master/docs/
+copyright: Copyright &copy; 2015-2026 Ondrej Lexa
+
+theme:
+  name: material
+  logo: images/apsg_logo.svg
+  favicon: images/apsg_logo.svg
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to system preference
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - navigation.instant
+    - navigation.instant.progress
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+    - content.tabs.link
+
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ondrolexa/apsg
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/apsg/
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search
+  - mkdocs-jupyter:
+      include: ["notebooks/*.ipynb"]
+      ignore: ["*.md"]
+      execute: true
+      cache: false  # key ignores apsg itself, so outputs would go stale
+      allow_errors: false
+      include_source: true
+      ignore_h1_titles: true
+      theme: auto
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          inventories:
+            - https://docs.python.org/3/objects.inv
+            - https://numpy.org/doc/stable/objects.inv
+            - https://docs.scipy.org/doc/scipy/objects.inv
+            - https://matplotlib.org/stable/objects.inv
+            - https://pandas.pydata.org/pandas-docs/stable/objects.inv
+            - https://docs.sqlalchemy.org/en/20/objects.inv
+          options:
+            docstring_style: google
+            docstring_options:
+              # types live in signatures or prose, and *args constructors
+              # document their positional values by name (lin(azi, inc))
+              warn_missing_types: false
+              warn_unknown_params: false
+            docstring_section_style: table
+            members_order: source
+            merge_init_into_class: true
+            filters: ["!^_"]
+            heading_level: 4
+            show_root_heading: true
+            show_source: true
+            show_bases: true
+            show_signature_annotations: true
+            separate_signature: true
+            signature_crossrefs: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            summary: true
+
+validation:
+  links:
+    not_found: warn
+    anchors: warn
+    unrecognized_links: warn
+
+exclude_docs: |
+  notebooks/rerender_notebooks.sh
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Tutorials:
+      - tutorials/index.md
+      - Basics: notebooks/01_apsg_basics.ipynb
+      - Tensors: notebooks/02_apsg_tensors.ipynb
+      - Stereonet: notebooks/03_apsg_stereonet.ipynb
+      - Distributions: notebooks/04_apsg_distributions.ipynb
+      - Fabric plots: notebooks/05_apsg_fabricplots.ipynb
+      - Pandas: notebooks/06_apsg_pandas.ipynb
+      - Various: notebooks/07_apsg_various.ipynb
+      - Database: notebooks/08_apsg_database.ipynb
+  - Distributions: distributions.md
+  - API reference:
+      - api/index.md
+      - feature: api/feature.md
+      - plotting: api/plotting.md
+      - pandas: api/pandas.md
+      - database: api/database.md
+      - math: api/math.md
+      - config: api/config.md
+      - helpers: api/helpers.md
+  - About:
+      - Contributing: contributing.md
+      - Changelog: changelog.md
+      - Authors: authors.md

@@ -8,11 +8,12 @@ repos:
           - id: check-merge-conflict
           - id: check-toml
           - id: check-yaml
+            args: [--unsafe]  # syntax only: mkdocs.yml uses custom tags (!ENV)
           - id: end-of-file-fixer
           - id: trailing-whitespace
 
     - repo: https://github.com/astral-sh/ruff-pre-commit
-      rev: v0.16.8
+      rev: v0.17.1
       hooks:
           - id: ruff-check
             args: [--fix]

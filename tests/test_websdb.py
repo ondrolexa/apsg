@@ -24,7 +24,7 @@ from apsg.database import (
     WebSDBSession,
 )
 from apsg.database._webtransport import _WebsdbTransport
-from apsg.feature._geodata import Fault, Foliation, Pair
+from apsg.feature._geodata import Fault, Foliation, Lineation, Pair
 
 # --- transport-level tests (real urllib error-mapping / pagination code) ---
 
@@ -660,6 +660,65 @@ def test_add_fol_and_update_and_delete_writeback(fake, project):
 
     session.delete_fol(fol)
     assert fol._attrs["id"] not in fake.geodata
+
+
+def test_update_values_keep_unspecified_fields(fake, project):
+    pid = project["id"]
+    site = fake.add_site(pid, "S1")
+    rock = fake.add_rock(pid, site["id"], "Default")
+    session = WebSDBSession(project=project["name"], token="tok", mode="rw")
+
+    fol = session.add_fol(rock["id"], 120, 45, tags=["x"])
+    updated = session.update_fol(fol, inclination=30)
+    assert fake.geodata[fol._attrs["id"]]["value"]["args"] == [120, 30]
+    assert updated._attrs["tags"] == ["x"]
+    updated = session.update_fol(fol, tags=["y"])
+    assert fake.geodata[fol._attrs["id"]]["value"]["args"] == [120, 30]
+    assert updated._attrs["tags"] == ["y"]
+
+
+def test_add_lin_update_and_delete(fake, project):
+    pid = project["id"]
+    site = fake.add_site(pid, "S1")
+    rock = fake.add_rock(pid, site["id"], "Default")
+    session = WebSDBSession(project=project["name"], token="tok", mode="rw")
+
+    lin = session.add_lin(rock["id"], 110, 26, description="first")
+    assert isinstance(lin, Lineation)
+    assert lin._attrs["description"] == "first"
+    updated = session.update_lin(lin, azimuth=100)
+    assert isinstance(updated, Lineation)
+    assert fake.geodata[lin._attrs["id"]]["value"]["args"] == [100, 26]
+    session.delete_lin(lin)
+    assert lin._attrs["id"] not in fake.geodata
+
+
+def test_add_fault_update_and_delete(fake, project):
+    pid = project["id"]
+    site = fake.add_site(pid, "S1")
+    rock = fake.add_rock(pid, site["id"], "Default")
+    session = WebSDBSession(project=project["name"], token="tok", mode="rw")
+
+    fault = session.add_fault(rock["id"], Fault(140, 30, 110, 26, -1))
+    assert isinstance(fault, Fault)
+    assert fault.sense == -1
+    stored = fake.geodata[fault._attrs["id"]]["value"]
+    assert stored["datatype"] == "Fault"
+    assert stored["args"][-1] == "R"
+
+    updated = session.update_fault(fault, sense="N")
+    assert updated.sense == 1
+    assert fake.geodata[fault._attrs["id"]]["value"]["args"][:4] == stored["args"][:4]
+    session.delete_fault(fault)
+    assert fault._attrs["id"] not in fake.geodata
+
+
+def test_write_methods_need_rw_mode(fake, project):
+    session = WebSDBSession(project=project["name"], token="tok")
+    with pytest.raises(ReadOnlySessionError):
+        session.add_lin(1, 110, 26)
+    with pytest.raises(ReadOnlySessionError):
+        session.delete_fault(1)
 
 
 def test_update_fol_missing_attrs_raises_clear_error(fake, project):

@@ -1,12 +1,15 @@
 import pickle
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import circmean, vonmises
+from scipy.stats import circmean
 
 from apsg.config import apsg_conf
 from apsg.feature import feature_from_json
+from apsg.feature._distributions import vonmises_kde
 from apsg.math._vector import Axial2
+from apsg.plotting._layout import FigureLayout, check_legend_position
 from apsg.plotting._plot_artists import RosePlotArtistFactory
 from apsg.plotting._styles import RosePlotStyle
 
@@ -30,10 +33,15 @@ class RosePlot:
         ticks (bool): show ticks. Default True
         grid (bool): show grid lines. Default False
         grid_kws (dict): Dict passed to Axes.grid. Default {}
+        figsize (tuple): Size of the figure without legend and title, in inches.
+            The figure grows to fit them. Default (5, 5)
+        legend_position (str): Side of the plot where the legend is placed, "right",
+            "left", "top" or "bottom". The number of legend columns is chosen so
+            the legend is not longer than the plot. Default "right"
         legend_kws (dict): Extra keyword arguments passed to matplotlib's
-            ``legend``, overriding apsg's defaults. Default {}
-
-        Other keyword arguments are passed to matplotlib plot.
+            ``legend``, overriding apsg's defaults. With ``loc`` or
+            ``bbox_to_anchor`` the legend is placed as given instead. Default {}
+        **kwargs: Other keyword arguments are passed to matplotlib plot.
 
     Note: Roseplot is weighted by magnitude of Direction or Vector2 features
 
@@ -48,7 +56,8 @@ class RosePlot:
 
     def __init__(self, **kwargs):
         self._kwargs = apsg_conf.roseplot.copy()
-        self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
+        apsg_conf.roseplot.override(self._kwargs, kwargs)
+        check_legend_position(self._kwargs["legend_position"])
         self._artists = []
 
     def clear(self):
@@ -108,34 +117,30 @@ class RosePlot:
 
     def init_figure(self):
         self.fig = plt.figure(
-            0,
-            figsize=apsg_conf.figsize,
+            figsize=self._kwargs["figsize"],
             dpi=apsg_conf.dpi,
             facecolor=apsg_conf.facecolor,
+            layout="constrained",
         )
         if hasattr(self.fig.canvas.manager, "set_window_title"):
             self.fig.canvas.manager.set_window_title("Rose diagram")
 
-    def _render(self):
+    def _render(self, owned=False):
         self.ax = self.fig.add_subplot(111, polar=True)
         self._draw_layout()
         self._plot_artists()
         h, lbls = self.ax.get_legend_handles_labels()
-        if h:
-            legend_kwargs = {
-                "prop": {"size": 11},
-                "borderaxespad": 0,
-                "loc": "center left",
-                "bbox_to_anchor": (1.1, 0.5),
-                "scatterpoints": 1,
-                "numpoints": 1,
-            }
-            legend_kwargs.update(self._kwargs["legend_kws"])
-            self._lgd = self.ax.legend(h, lbls, **legend_kwargs)
-        if self._kwargs["title"] is not None:
-            self.fig.suptitle(self._kwargs["title"], **self._kwargs["title_kws"])
-        if self._kwargs["tight_layout"]:
-            self.fig.tight_layout()
+        self._layout = FigureLayout(
+            self.fig,
+            self.ax,
+            h,
+            lbls,
+            position=self._kwargs["legend_position"],
+            legend_kws=self._kwargs["legend_kws"],
+            title=self._kwargs["title"],
+            title_kws=self._kwargs["title_kws"],
+        )
+        self._layout.apply(owned=owned)
 
     def render2fig(self, fig):
         """
@@ -152,7 +157,12 @@ class RosePlot:
         if hasattr(self, "fig"):
             plt.close(self.fig)  # close previously rendered figure
         self.init_figure()
-        self._render()
+        try:
+            self._render(owned=True)
+        except Exception:
+            plt.close(self.fig)  # don't leak the figure of a failed render
+            raise
+        self._layout.connect_resize()
         plt.show()
 
     def savefig(self, filename="roseplot.png", **kwargs):
@@ -167,7 +177,11 @@ class RosePlot:
         if hasattr(self, "fig"):
             plt.close(self.fig)  # close previously rendered figure
         self.init_figure()
-        self._render()
+        try:
+            self._render(owned=True)
+        except Exception:
+            plt.close(self.fig)  # don't leak the figure of a failed render
+            raise
         self.fig.savefig(filename, **kwargs)
         plt.close(self.fig)  # don't leave open for Jupyter's auto-display
 
@@ -181,17 +195,24 @@ class RosePlot:
 
         Args:
             style: apsg plotting style. See roseplot_styles
-            *arg: any number of features to be plotted
+            *args: any number of features to be plotted
 
         Note:
             Features in args are automatically filtered by style to accept only compatible features
 
         """
-        assert isinstance(style, RosePlotStyle), "Style must RosePlotStyle object"
+        if not isinstance(style, RosePlotStyle):
+            raise TypeError("Style must be RosePlotStyle object")
 
         artist = style.create_artist(*args)
         if len(artist.args) > 0:
             self._artists.append(artist)
+
+    def _add_artist(self, factory_method, *args, **kwargs):
+        try:
+            self._artists.append(factory_method(*args, **kwargs))
+        except TypeError as err:
+            warnings.warn(str(err), stacklevel=3)
 
     ########################################
     # PLOTTING METHODS                     #
@@ -202,7 +223,7 @@ class RosePlot:
         Plot rose histogram of angles
 
         Args:
-            Vector2Set feature(s)
+            *args: Vector2Set feature(s)
 
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
@@ -215,18 +236,14 @@ class RosePlot:
             legend (bool): Whether to show legend. Default False
 
         """
-        try:
-            artist = RosePlotArtistFactory.create_bar(*args, **kwargs)
-            self._artists.append(artist)
-        except TypeError as err:
-            print(err)
+        self._add_artist(RosePlotArtistFactory.create_bar, *args, **kwargs)
 
     def pdf(self, *args, **kwargs):
         """
         Plot Von Mises probability density function from angles
 
         Args:
-            Vector2Set feature(s)
+            *args: Vector2Set feature(s)
 
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
@@ -239,18 +256,34 @@ class RosePlot:
             legend (bool): Whether to show legend. Default False
 
         """
-        try:
-            artist = RosePlotArtistFactory.create_pdf(*args, **kwargs)
-            self._artists.append(artist)
-        except TypeError as err:
-            print(err)
+        self._add_artist(RosePlotArtistFactory.create_pdf, *args, **kwargs)
+
+    def density(self, *args, **kwargs):
+        """
+        Plot the density of circular distributions
+
+        Args:
+            *args: circular distribution(s), e.g. ``VonMises.fit(data)``
+
+        Keyword Args:
+            alpha (scalar): Set the alpha value. Default None
+            color (color): Set the color of the point. Default None
+            ec (color): Patch edge color. Default None
+            fc (color): Patch face color. Default None
+            ls (str): Line style string (only for multiple features).
+                Default "-"
+            lw (float): Set line width. Default 1.5
+            legend (bool): Whether to show legend. Default False
+
+        """
+        self._add_artist(RosePlotArtistFactory.create_density, *args, **kwargs)
 
     def muci(self, *args, **kwargs):
         """
         Plot circular mean with bootstrapped confidence interval
 
         Args:
-            Vector2Set feature(s)
+            *args: Vector2Set feature(s)
 
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
@@ -263,11 +296,7 @@ class RosePlot:
                 Default 9999
 
         """
-        try:
-            artist = RosePlotArtistFactory.create_muci(*args, **kwargs)
-            self._artists.append(artist)
-        except TypeError as err:
-            print(err)
+        self._add_artist(RosePlotArtistFactory.create_muci, *args, **kwargs)
 
     ########################################
     # PLOTTING ROUTINES                    #
@@ -311,27 +340,14 @@ class RosePlot:
             ang = arg.direction % 360
             weights = abs(arg)
             weights = len(weights) * weights / sum(weights)
-            radii = np.zeros_like(theta)
-            if issubclass(arg.__feature_class__, Axial2):
-                for a, weight in zip(ang, weights):
-                    radii += (
-                        weight
-                        * vonmises.pdf(theta, self._kwargs["kappa"], loc=np.radians(a))
-                        / 2
-                    )
-                    radii += (
-                        weight
-                        * vonmises.pdf(
-                            theta, self._kwargs["kappa"], loc=np.radians(a + 180)
-                        )
-                        / 2
-                    )
-            else:
-                for a in ang:
-                    radii += vonmises.pdf(
-                        theta, self._kwargs["kappa"], loc=np.radians(a)
-                    )
-            radii /= len(ang)
+            axial = issubclass(arg.__feature_class__, Axial2)
+            radii = vonmises_kde(
+                theta,
+                np.radians(ang),
+                self._kwargs["kappa"],
+                axial=axial,
+                weights=weights if axial else None,
+            )
             if self._kwargs["scaled"]:
                 radii = np.sqrt(radii)
             if legend:
@@ -341,28 +357,40 @@ class RosePlot:
                 self.ax.fill_between(theta, bottom + radii, y2=bottom, **kwargs)
             bottom = bottom + radii
 
+    def _density(self, *args, **kwargs):
+        bottom = np.zeros(self._kwargs["pdf_res"])
+        legend = kwargs.pop("legend")
+        theta = np.linspace(-np.pi, np.pi, self._kwargs["pdf_res"])
+        X = np.column_stack([np.cos(theta), np.sin(theta)])
+        for dist in args:
+            radii = dist.pdf(X)
+            if self._kwargs["scaled"]:
+                radii = np.sqrt(radii)
+            if legend:
+                kwargs["label"] = type(dist).__name__
+            self.ax.fill_between(theta, bottom + radii, y2=bottom, **kwargs)
+            bottom = bottom + radii
+
     def _muci(self, *args, **kwargs):
         conflevel = kwargs.pop("confidence_level")
         n_resamples = kwargs.pop("n_resamples")
         for arg in args:
             radii = []
-            p = 0
             ang = np.radians(arg.direction)
-            if issubclass(arg.__feature_class__, Axial2):
+            axial = issubclass(arg.__feature_class__, Axial2)
+            if axial:
                 mu = circmean(2 * ang) / 2
                 ang_shift = ang + np.pi / 2 - mu
                 bsmu = [
                     circmean(np.random.choice(2 * ang_shift, size=len(ang_shift)))
                     for i in range(n_resamples)
                 ]
-                low = np.percentile(bsmu, 100 - conflevel) / 2 + mu - np.pi / 2
-                high = np.percentile(bsmu, conflevel) / 2 + mu - np.pi / 2
-                for a in arg.direction:
-                    p += vonmises.pdf(mu, self._kwargs["kappa"], loc=np.radians(a)) / 2
-                    p += (
-                        vonmises.pdf(mu, self._kwargs["kappa"], loc=np.radians(a + 180))
-                        / 2
-                    )
+                low = np.percentile(bsmu, (100 - conflevel) / 2) / 2 + mu - np.pi / 2
+                high = (
+                    np.percentile(bsmu, 100 - (100 - conflevel) / 2) / 2
+                    + mu
+                    - np.pi / 2
+                )
             else:
                 mu = circmean(ang)
                 ang_shift = ang + np.pi - mu
@@ -372,9 +400,8 @@ class RosePlot:
                 ]
                 low = np.percentile(bsmu, (100 - conflevel) / 2) + mu - np.pi
                 high = np.percentile(bsmu, 100 - (100 - conflevel) / 2) + mu - np.pi
-                for a in arg.direction:
-                    p += vonmises.pdf(mu, self._kwargs["kappa"], loc=np.radians(a))
-            radii.append(p / len(arg))
+            p = vonmises_kde(mu, ang, self._kwargs["kappa"], axial=axial)[0]
+            radii.append(p)
             if self._kwargs["scaled"]:
                 radii = np.sqrt(radii)
             mur = 1.1 * sum(radii)

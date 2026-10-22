@@ -258,41 +258,36 @@ class WebSDBSession:
         rock_by_id = {r["id"]: r for r in rocks}
         tag_set = set(tags) if tags else None
 
+        def name_matches(name, exact, contains):
+            return (exact is None or name == exact) and (
+                contains is None or contains.casefold() in name.casefold()
+            )
+
+        def unit_matches(row_unit_id):
+            return (unit_id is None or row_unit_id == unit_id) and (
+                unit_ids is None or row_unit_id in unit_ids
+            )
+
+        def tags_match(value):
+            # any of the requested tags is enough
+            row_tags = value.get("kwargs", {}).get("tags", [])
+            return tag_set is None or not tag_set.isdisjoint(row_tags)
+
         out = []
         for gd in geodata:
             value = gd.get("value") or {}
             if value.get("datatype") != datatype:
                 continue
             rock_row = rock_by_id.get(gd["rock_id"])
-            if rock_row is None:
-                continue
-            site_row = site_by_id.get(rock_row["site_id"])
-            if site_row is None:
-                continue
-            if site is not None and site_row["name"] != site:
-                continue
+            site_row = site_by_id.get(rock_row["site_id"]) if rock_row else None
             if (
-                site_contains is not None
-                and site_contains.casefold() not in site_row["name"].casefold()
+                site_row is not None
+                and name_matches(site_row["name"], site, site_contains)
+                and name_matches(rock_row["name"], rock, rock_contains)
+                and unit_matches(rock_row.get("unit_id"))
+                and tags_match(value)
             ):
-                continue
-            if rock is not None and rock_row["name"] != rock:
-                continue
-            if (
-                rock_contains is not None
-                and rock_contains.casefold() not in rock_row["name"].casefold()
-            ):
-                continue
-            if unit_id is not None and rock_row.get("unit_id") != unit_id:
-                continue
-            if unit_ids is not None and rock_row.get("unit_id") not in unit_ids:
-                continue
-            if tag_set is not None:
-                row_tags = set(value.get("kwargs", {}).get("tags", []))
-                if not (tag_set & row_tags):
-                    continue
-            gd = dict(gd, _rock=rock_row, _site=site_row)
-            out.append(gd)
+                out.append(dict(gd, _rock=rock_row, _site=site_row))
         return out
 
     @staticmethod
@@ -416,7 +411,7 @@ class WebSDBSession:
         handed to ``Fault``'s ``'n'``/``'r'``/``'s'``/``'d'`` convention. Records with
         an empty (unknown) sense, or whose planar/linear halves misfit by more than
         20 degrees, are skipped with a ``warnings.warn`` diagnostic rather than
-        raising, mirroring ``SDBSession.getfaults()``'s existing skip behavior.
+        raising, as ``SDBSession.getpairs()`` skips misfit pairs.
         """
 
         rows = self._fetch_filtered_geodata(
@@ -685,86 +680,60 @@ class WebSDBSession:
 
     # --- write: geodata construction from a fresh row ---
 
-    def _foliation_from_geodata(self, gd):
+    def _feature_from_geodata(self, gd):
+        """Return the apsg feature of a geodata row returned by a write request."""
         rock_row = self._rock_by_id(gd["rock_id"])
         site_row = self._site_by_id(rock_row["site_id"])
         gd = dict(gd, _rock=rock_row, _site=site_row)
-        unit_names, structype_names = self._name_lookups()
-        return Foliation(
-            *gd["value"]["args"], **self._make_attrs(gd, unit_names, structype_names)
-        )
-
-    def _lineation_from_geodata(self, gd):
-        rock_row = self._rock_by_id(gd["rock_id"])
-        site_row = self._site_by_id(rock_row["site_id"])
-        gd = dict(gd, _rock=rock_row, _site=site_row)
-        unit_names, structype_names = self._name_lookups()
-        return Lineation(
-            *gd["value"]["args"], **self._make_attrs(gd, unit_names, structype_names)
-        )
-
-    def _fault_from_geodata(self, gd):
-        rock_row = self._rock_by_id(gd["rock_id"])
-        site_row = self._site_by_id(rock_row["site_id"])
-        gd = dict(gd, _rock=rock_row, _site=site_row)
-        unit_names, structype_names = self._name_lookups()
-        fazi, finc, lazi, linc, sense = gd["value"]["args"]
-        return Fault(
-            fazi,
-            finc,
-            lazi,
-            linc,
-            sense.lower(),
-            **self._make_attrs(gd, unit_names, structype_names),
-        )
+        attrs = self._make_attrs(gd, *self._name_lookups())
+        args = gd["value"]["args"]
+        match gd["value"]["datatype"]:
+            case "Foliation":
+                return Foliation(*args, **attrs)
+            case "Lineation":
+                return Lineation(*args, **attrs)
+            case "Fault":
+                *angles, sense = args
+                return Fault(*angles, sense.lower(), **attrs)
+        raise ValueError(f"Unsupported datatype {gd['value']['datatype']!r}")
 
     # --- write: add ---
+
+    def _add_geodata(self, rock, datatype, args, structype, description, tags):
+        self._require_write()
+        gd = self._t.request(
+            "POST",
+            f"/api/projects/{self.project_id}/geodata",
+            json_body={
+                "rock_id": self._rock_id(rock),
+                "value": {
+                    "datatype": datatype,
+                    "args": list(args),
+                    "kwargs": {"tags": tags or []},
+                },
+                "description": description,
+                "structype_id": self._resolve_structype_id(structype),
+            },
+        )
+        return self._feature_from_geodata(gd)
 
     def add_fol(
         self, rock, azimuth, inclination, structype=None, description=None, tags=None
     ):
         """Create a Foliation geodata row on `rock` (id or rock dict)."""
 
-        self._require_write()
-        value = {
-            "datatype": "Foliation",
-            "args": [azimuth, inclination],
-            "kwargs": {"tags": tags or []},
-        }
-        gd = self._t.request(
-            "POST",
-            f"/api/projects/{self.project_id}/geodata",
-            json_body={
-                "rock_id": self._rock_id(rock),
-                "value": value,
-                "description": description,
-                "structype_id": self._resolve_structype_id(structype),
-            },
+        return self._add_geodata(
+            rock, "Foliation", (azimuth, inclination), structype, description, tags
         )
-        return self._foliation_from_geodata(gd)
 
     def add_lin(
         self, rock, azimuth, inclination, structype=None, description=None, tags=None
     ):
         """Create a Lineation geodata row on `rock` (id or rock dict)."""
 
-        self._require_write()
-        value = {
-            "datatype": "Lineation",
-            "args": [azimuth, inclination],
-            "kwargs": {"tags": tags or []},
-        }
-        gd = self._t.request(
-            "POST",
-            f"/api/projects/{self.project_id}/geodata",
-            json_body={
-                "rock_id": self._rock_id(rock),
-                "value": value,
-                "description": description,
-                "structype_id": self._resolve_structype_id(structype),
-            },
+        return self._add_geodata(
+            rock, "Lineation", (azimuth, inclination), structype, description, tags
         )
-        return self._lineation_from_geodata(gd)
 
     def add_fault(
         self, rock, fault: Fault, structype=None, description=None, tags=None
@@ -774,25 +743,8 @@ class WebSDBSession:
         ``'D'``) for the written sense.
         """
 
-        self._require_write()
-        fazi, finc = fault.fol.geo
-        lazi, linc = fault.lin.geo
-        value = {
-            "datatype": "Fault",
-            "args": [fazi, finc, lazi, linc, fault.sense_str],
-            "kwargs": {"tags": tags or []},
-        }
-        gd = self._t.request(
-            "POST",
-            f"/api/projects/{self.project_id}/geodata",
-            json_body={
-                "rock_id": self._rock_id(rock),
-                "value": value,
-                "description": description,
-                "structype_id": self._resolve_structype_id(structype),
-            },
-        )
-        return self._fault_from_geodata(gd)
+        args = (*fault.fol.geo, *fault.lin.geo, fault.sense_str)
+        return self._add_geodata(rock, "Fault", args, structype, description, tags)
 
     def add_pair(
         self,
@@ -848,6 +800,41 @@ class WebSDBSession:
 
     # --- write: update / delete geodata ---
 
+    def _update_geodata(self, obj, datatype, args, structype, description, tags, rock):
+        """Update a geodata row; entries of `args` left ``None`` (and `tags` when
+        ``None``) keep their current value."""
+
+        self._require_write()
+        gd_id = self._resolve_geodata_id(obj)
+        body = {}
+        if tags is not None or any(arg is not None for arg in args):
+            current = self._t.request("GET", f"/api/geodata/{gd_id}")["value"]
+            body["value"] = {
+                "datatype": datatype,
+                "args": [
+                    cur if new is None else new
+                    for new, cur in zip(args, current["args"], strict=True)
+                ],
+                "kwargs": {
+                    "tags": current.get("kwargs", {}).get("tags", [])
+                    if tags is None
+                    else tags
+                },
+            }
+        if description is not None:
+            body["description"] = description
+        if structype is not None:
+            body["structype_id"] = self._resolve_structype_id(structype)
+        if rock is not None:
+            body["rock_id"] = self._rock_id(rock)
+        gd = self._t.request("PUT", f"/api/geodata/{gd_id}", json_body=body)
+        return self._feature_from_geodata(gd)
+
+    def _delete_geodata(self, obj):
+        self._require_write()
+        gd_id = self._resolve_geodata_id(obj)
+        self._t.request("DELETE", f"/api/geodata/{gd_id}")
+
     def update_fol(
         self,
         fol,
@@ -862,36 +849,20 @@ class WebSDBSession:
         ``Foliation`` (reads ``_attrs['id']``) or a raw geodata id.
         """
 
-        self._require_write()
-        gd_id = self._resolve_geodata_id(fol)
-        body = {}
-        if azimuth is not None or inclination is not None or tags is not None:
-            current = self._t.request("GET", f"/api/geodata/{gd_id}")
-            cur_azi, cur_inc = current["value"]["args"]
-            cur_tags = current["value"].get("kwargs", {}).get("tags", [])
-            body["value"] = {
-                "datatype": "Foliation",
-                "args": [
-                    azimuth if azimuth is not None else cur_azi,
-                    inclination if inclination is not None else cur_inc,
-                ],
-                "kwargs": {"tags": tags if tags is not None else cur_tags},
-            }
-        if description is not None:
-            body["description"] = description
-        if structype is not None:
-            body["structype_id"] = self._resolve_structype_id(structype)
-        if rock is not None:
-            body["rock_id"] = self._rock_id(rock)
-        gd = self._t.request("PUT", f"/api/geodata/{gd_id}", json_body=body)
-        return self._foliation_from_geodata(gd)
+        return self._update_geodata(
+            fol,
+            "Foliation",
+            (azimuth, inclination),
+            structype,
+            description,
+            tags,
+            rock,
+        )
 
     def delete_fol(self, fol):
         """Delete a Foliation geodata row. `fol` may be a ``Foliation`` or a raw id."""
 
-        self._require_write()
-        gd_id = self._resolve_geodata_id(fol)
-        self._t.request("DELETE", f"/api/geodata/{gd_id}")
+        self._delete_geodata(fol)
 
     def update_lin(
         self,
@@ -905,36 +876,20 @@ class WebSDBSession:
     ):
         """Update a Lineation geodata row (see ``update_fol``)."""
 
-        self._require_write()
-        gd_id = self._resolve_geodata_id(lin)
-        body = {}
-        if azimuth is not None or inclination is not None or tags is not None:
-            current = self._t.request("GET", f"/api/geodata/{gd_id}")
-            cur_azi, cur_inc = current["value"]["args"]
-            cur_tags = current["value"].get("kwargs", {}).get("tags", [])
-            body["value"] = {
-                "datatype": "Lineation",
-                "args": [
-                    azimuth if azimuth is not None else cur_azi,
-                    inclination if inclination is not None else cur_inc,
-                ],
-                "kwargs": {"tags": tags if tags is not None else cur_tags},
-            }
-        if description is not None:
-            body["description"] = description
-        if structype is not None:
-            body["structype_id"] = self._resolve_structype_id(structype)
-        if rock is not None:
-            body["rock_id"] = self._rock_id(rock)
-        gd = self._t.request("PUT", f"/api/geodata/{gd_id}", json_body=body)
-        return self._lineation_from_geodata(gd)
+        return self._update_geodata(
+            lin,
+            "Lineation",
+            (azimuth, inclination),
+            structype,
+            description,
+            tags,
+            rock,
+        )
 
     def delete_lin(self, lin):
         """Delete a Lineation geodata row. `lin` may be a ``Lineation`` or a raw id."""
 
-        self._require_write()
-        gd_id = self._resolve_geodata_id(lin)
-        self._t.request("DELETE", f"/api/geodata/{gd_id}")
+        self._delete_geodata(lin)
 
     def update_fault(
         self,
@@ -953,49 +908,21 @@ class WebSDBSession:
         ``'N'``/``'R'``/``'S'``/``'D'``/``''`` (websdb's convention, not apsg's).
         """
 
-        self._require_write()
-        gd_id = self._resolve_geodata_id(fault)
-        body = {}
-        if any(
-            v is not None
-            for v in (
-                planar_azimuth,
-                planar_inclination,
-                linear_azimuth,
-                linear_inclination,
-                sense,
-                tags,
-            )
-        ):
-            current = self._t.request("GET", f"/api/geodata/{gd_id}")
-            cur_fazi, cur_finc, cur_lazi, cur_linc, cur_sense = current["value"]["args"]
-            cur_tags = current["value"].get("kwargs", {}).get("tags", [])
-            body["value"] = {
-                "datatype": "Fault",
-                "args": [
-                    planar_azimuth if planar_azimuth is not None else cur_fazi,
-                    planar_inclination if planar_inclination is not None else cur_finc,
-                    linear_azimuth if linear_azimuth is not None else cur_lazi,
-                    linear_inclination if linear_inclination is not None else cur_linc,
-                    sense if sense is not None else cur_sense,
-                ],
-                "kwargs": {"tags": tags if tags is not None else cur_tags},
-            }
-        if description is not None:
-            body["description"] = description
-        if structype is not None:
-            body["structype_id"] = self._resolve_structype_id(structype)
-        if rock is not None:
-            body["rock_id"] = self._rock_id(rock)
-        gd = self._t.request("PUT", f"/api/geodata/{gd_id}", json_body=body)
-        return self._fault_from_geodata(gd)
+        args = (
+            planar_azimuth,
+            planar_inclination,
+            linear_azimuth,
+            linear_inclination,
+            sense,
+        )
+        return self._update_geodata(
+            fault, "Fault", args, structype, description, tags, rock
+        )
 
     def delete_fault(self, fault):
         """Delete a Fault geodata row. `fault` may be a ``Fault`` or a raw id."""
 
-        self._require_write()
-        gd_id = self._resolve_geodata_id(fault)
-        self._t.request("DELETE", f"/api/geodata/{gd_id}")
+        self._delete_geodata(fault)
 
     def update_pair(
         self,

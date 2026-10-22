@@ -21,14 +21,12 @@ dependencies = ["numpy", "matplotlib>=3.9", "scipy", "sqlalchemy", "pandas", "py
 lab = ["jupyterlab", "openpyxl"]
 tests = ["pytest", "pytest-cov", "pytest-xdist"]
 docs = [
-    "sphinx>=7.0",
-    "shibuya",
-    "sphinx-copybutton",
-    "sphinx-design",
-    "nbsphinx",
-    "pandoc",
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.6",
+    "mkdocstrings[python]>=0.29",
+    "mkdocs-jupyter>=0.25",
+    "pymdown-extensions",
     "ipykernel",
-    "autodocsumm",
 ]
 dev = ["apsg[lab,tests,docs]", "ruff"]
 

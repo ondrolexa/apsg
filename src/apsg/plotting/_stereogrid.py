@@ -46,7 +46,7 @@ class StereoGrid:
 
     def __init__(self, **kwargs):
         self._kwargs = apsg_conf.stereogrid.copy()
-        self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
+        apsg_conf.stereogrid.override(self._kwargs, kwargs)
         self.grid_n = self._kwargs["n"]
         self.grid_type = self._kwargs["type"]
         self._engine = _EngineStereoGrid(grid_n=self.grid_n, grid_type=self.grid_type)
@@ -94,6 +94,9 @@ class StereoGrid:
         "level=3" means "3 sigma", regardless of which method computed it.
 
         Args:
+            features: ``FeatureSet`` of vectors, lines or poles.
+
+        Keyword Args:
             method (str): "kamb" for modified Kamb contouring technique with
                 exponential smoothing or "sph" for spherical harmonics method.
                 Default "sph"
@@ -146,6 +149,31 @@ class StereoGrid:
         self._engine.apply_func(wrapped, *args, **kwargs)
         self._last_calculation = "apply_func"
 
+    def apply_distribution(self, dist):
+        """Evaluate the density of a fitted or given orientation distribution.
+
+        The values are the density of the axis, i.e. of a direction and its
+        antipode combined (``2 pi (f(x) + f(-x))``), in multiples of the uniform
+        distribution, as a point of the net stands for both. For an axial
+        distribution it is ``4 pi f(x)``.
+
+        Unlike ``apply_func``, the grid can be serialized with ``to_json``.
+
+        Args:
+            dist (OrientationDistribution): a 3D distribution, e.g. ``Kent``
+                or ``Bingham``.
+        """
+        if getattr(dist, "dim", None) != 3:
+            raise TypeError("dist must be a 3D orientation distribution")
+        X = np.asarray(self._engine.grid, dtype=float)
+        self._engine.values = 2 * np.pi * (dist.pdf(X) + dist.pdf(-X))
+        self._engine.calculated = True
+        self._last_calculation = {
+            "op": "apply_distribution",
+            "data": dist,
+            "kwargs": {},
+        }
+
     def angmech(self, faults, **kwargs):
         """Implementation of Angelier-Mechler dihedra method
 
@@ -182,7 +210,8 @@ class StereoGrid:
         """Return ``StereoGrid`` as a JSON-compatible dict.
 
         Serializes constructor kwargs plus the *inputs and parameters* of the
-        last ``calculate_density``/``angmech`` call (not the computed ``values``
+        last ``calculate_density``/``angmech``/``apply_distribution`` call (not
+        the computed ``values``
         array) -- ``from_json`` rebuilds the grid and recomputes them, matching
         how ``StereoNet`` itself never persists computed contour data.
         """
@@ -218,6 +247,8 @@ class StereoGrid:
                 grid.calculate_density(data, **calculation["kwargs"])
             elif calculation["op"] == "angmech":
                 grid.angmech(data, **calculation["kwargs"])
+            elif calculation["op"] == "apply_distribution":
+                grid.apply_distribution(data)
         return grid
 
     def save(self, filename):

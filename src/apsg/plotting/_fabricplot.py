@@ -1,4 +1,5 @@
 import pickle
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -6,6 +7,7 @@ from matplotlib.patches import Polygon
 
 from apsg.config import apsg_conf
 from apsg.feature import feature_from_json
+from apsg.plotting._layout import FigureLayout, check_legend_position
 from apsg.plotting._plot_artists import FabricPlotArtistFactory
 from apsg.plotting._styles import FabricPlotStyle
 
@@ -25,8 +27,13 @@ class FabricPlot:
 
     def __init__(self, **kwargs):
         self._kwargs = apsg_conf.fabricplot.copy()
-        self._kwargs.update((k, kwargs[k]) for k in self._kwargs.keys() & kwargs.keys())
+        apsg_conf.fabricplot.override(self._kwargs, kwargs)
+        check_legend_position(self._kwargs["legend_position"])
         self._artists = []
+
+    def _finish_layout(self):
+        """Hook to adjust the axes after the artists are plotted, before the
+        legend is placed."""
 
     def clear(self):
         """Clear fabric plot."""
@@ -80,33 +87,30 @@ class FabricPlot:
 
     def init_figure(self):
         self.fig = plt.figure(
-            0,
-            figsize=apsg_conf.figsize,
+            figsize=self._kwargs["figsize"],
             dpi=apsg_conf.dpi,
             facecolor=apsg_conf.facecolor,
+            layout="constrained",
         )
         if hasattr(self.fig.canvas.manager, "set_window_title"):
             self.fig.canvas.manager.set_window_title(self.window_title)  # ty: ignore
 
-    def _render(self):
+    def _render(self, owned=False):
         self._draw_layout()  # ty: ignore
         self._plot_artists()
+        self._finish_layout()
         h, lbls = self.ax.get_legend_handles_labels()  # ty: ignore
-        if h:
-            legend_kwargs = {
-                "prop": {"size": 11},
-                "borderaxespad": 0,
-                "loc": "center left",
-                "bbox_to_anchor": (1.1, 0.5),
-                "scatterpoints": 1,
-                "numpoints": 1,
-            }
-            legend_kwargs.update(self._kwargs["legend_kws"])
-            self._lgd = self.ax.legend(h, lbls, **legend_kwargs)  # ty: ignore
-        if self._kwargs["title"] is not None:
-            self.fig.suptitle(self._kwargs["title"], **self._kwargs["title_kws"])
-        if self._kwargs["tight_layout"]:
-            self.fig.tight_layout()
+        self._layout = FigureLayout(
+            self.fig,
+            self.ax,  # ty: ignore
+            h,
+            lbls,
+            position=self._kwargs["legend_position"],
+            legend_kws=self._kwargs["legend_kws"],
+            title=self._kwargs["title"],
+            title_kws=self._kwargs["title_kws"],
+        )
+        self._layout.apply(owned=owned)
 
     def render2fig(self, fig):
         """
@@ -126,7 +130,12 @@ class FabricPlot:
         if hasattr(self, "fig"):
             plt.close(self.fig)  # close previously rendered figure
         self.init_figure()
-        self._render()
+        try:
+            self._render(owned=True)
+        except Exception:
+            plt.close(self.fig)  # don't leak the figure of a failed render
+            raise
+        self._layout.connect_resize()
         plt.show()
 
     def savefig(self, filename="fabricplot.png", **kwargs):
@@ -143,7 +152,11 @@ class FabricPlot:
         if hasattr(self, "fig"):
             plt.close(self.fig)  # close previously rendered figure
         self.init_figure()
-        self._render()
+        try:
+            self._render(owned=True)
+        except Exception:
+            plt.close(self.fig)  # don't leak the figure of a failed render
+            raise
         self.fig.savefig(filename, **kwargs)
         plt.close(self.fig)  # don't leave open for Jupyter's auto-display
 
@@ -157,7 +170,7 @@ class FabricPlot:
 
         Args:
             style: apsg plotting style. See fabricplot_styles
-            *arg: any number of features to be plotted
+            *args: any number of features to be plotted
 
         Note:
             Features in args are automatically filtered by style to accept only compatible features
@@ -165,11 +178,32 @@ class FabricPlot:
         Returns:
             None: Features are plotted using the provided style.
         """
-        assert isinstance(style, FabricPlotStyle), "Style must FabricPlotStyle object"
+        if not isinstance(style, FabricPlotStyle):
+            raise TypeError("Style must be FabricPlotStyle object")
 
         artist = style.create_artist(*args)
         if len(artist.args) > 0:
             self._artists.append(artist)
+
+    def _add_artist(self, factory_method, *args, **kwargs):
+        try:
+            self._artists.append(factory_method(*args, **kwargs))
+        except TypeError as err:
+            warnings.warn(str(err), stacklevel=3)
+
+    ########################################
+    # PLOTTING METHODS                     #
+    ########################################
+
+    def point(self, *args, **kwargs):
+        """Plot Ellipsoid as point."""
+
+        self._add_artist(FabricPlotArtistFactory.create_point, *args, **kwargs)
+
+    def path(self, *args, **kwargs):
+        """Plot EllipsoidSet as path."""
+
+        self._add_artist(FabricPlotArtistFactory.create_path, *args, **kwargs)
 
 
 class VollmerPlot(FabricPlot):
@@ -198,8 +232,14 @@ class VollmerPlot(FabricPlot):
             Default 0.5
         background_color (color): Background fill color (Vollmer triangle).
             Default "w"
+        figsize (tuple): Size of the figure without legend and title, in inches.
+            The figure grows to fit them. Default (5, 5)
+        legend_position (str): Side of the plot where the legend is placed, "right",
+            "left", "top" or "bottom". The number of legend columns is chosen so
+            the legend is not longer than the plot. Default "right"
         legend_kws (dict): Extra keyword arguments passed to matplotlib's
-            ``legend``, overriding apsg's defaults. Default {}
+            ``legend``, overriding apsg's defaults. With ``loc`` or
+            ``bbox_to_anchor`` the legend is placed as given instead. Default {}
 
     Examples:
         >>> l = linset.random_fisher(position=lin(120, 40))
@@ -323,28 +363,6 @@ class VollmerPlot(FabricPlot):
             self.ax.plot(x, y, color=tick_color, lw=tick_lw)
 
     ########################################
-    # PLOTTING METHODS                     #
-    ########################################
-
-    def point(self, *args, **kwargs):
-        """Plot ellipsoid as point."""
-
-        try:
-            artist = FabricPlotArtistFactory.create_point(*args, **kwargs)
-            self._artists.append(artist)
-        except TypeError as err:
-            print(err)
-
-    def path(self, *args, **kwargs):
-        """Plot EllipsoidSet as path."""
-
-        try:
-            artist = FabricPlotArtistFactory.create_path(*args, **kwargs)
-            self._artists.append(artist)
-        except TypeError as err:
-            print(err)
-
-    ########################################
     # PLOTTING ROUTINES                    #
     ########################################
 
@@ -402,8 +420,14 @@ class RamsayPlot(FabricPlot):
             Default 0.5
         background_color (color): Background fill color (Vollmer triangle).
             Default "w"
+        figsize (tuple): Size of the figure without legend and title, in inches.
+            The figure grows to fit them. Default (5, 5)
+        legend_position (str): Side of the plot where the legend is placed, "right",
+            "left", "top" or "bottom". The number of legend columns is chosen so
+            the legend is not longer than the plot. Default "right"
         legend_kws (dict): Extra keyword arguments passed to matplotlib's
-            ``legend``, overriding apsg's defaults. Default {}
+            ``legend``, overriding apsg's defaults. With ``loc`` or
+            ``bbox_to_anchor`` the legend is placed as given instead. Default {}
 
     Examples:
         >>> l = linset.random_fisher(position=lin(120, 40))
@@ -430,8 +454,7 @@ class RamsayPlot(FabricPlot):
         if self._kwargs["grid"]:
             self.ax.grid(True)
 
-    def _render(self):
-        super()._render()
+    def _finish_layout(self):
         if self.mx == "auto":
             mx = max(self.ax.get_xlim()[1], self.ax.get_ylim()[1])
         else:
@@ -444,32 +467,6 @@ class RamsayPlot(FabricPlot):
             color=self._kwargs["refline_color"],
             lw=self._kwargs["refline_lw"],
         )
-        box = self.ax.get_position()
-        self.ax.set_position(
-            [box.x0, box.y0, box.width * 0.8, box.height]  # ty: ignore
-        )
-
-    ########################################
-    # PLOTTING METHODS                     #
-    ########################################
-
-    def point(self, *args, **kwargs):
-        """Plot ellipsoid as point."""
-
-        try:
-            artist = FabricPlotArtistFactory.create_point(*args, **kwargs)
-            self._artists.append(artist)
-        except TypeError as err:
-            print(err)
-
-    def path(self, *args, **kwargs):
-        """Plot EllipsoidSet as path."""
-
-        try:
-            artist = FabricPlotArtistFactory.create_path(*args, **kwargs)
-            self._artists.append(artist)
-        except TypeError as err:
-            print(err)
 
     ########################################
     # PLOTTING ROUTINES                    #
@@ -517,8 +514,14 @@ class FlinnPlot(FabricPlot):
             Default 0.5
         background_color (color): Background fill color (Vollmer triangle).
             Default "w"
+        figsize (tuple): Size of the figure without legend and title, in inches.
+            The figure grows to fit them. Default (5, 5)
+        legend_position (str): Side of the plot where the legend is placed, "right",
+            "left", "top" or "bottom". The number of legend columns is chosen so
+            the legend is not longer than the plot. Default "right"
         legend_kws (dict): Extra keyword arguments passed to matplotlib's
-            ``legend``, overriding apsg's defaults. Default {}
+            ``legend``, overriding apsg's defaults. With ``loc`` or
+            ``bbox_to_anchor`` the legend is placed as given instead. Default {}
 
     Examples:
         >>> l = linset.random_fisher(position=lin(120, 40))
@@ -545,8 +548,7 @@ class FlinnPlot(FabricPlot):
         if self._kwargs["grid"]:
             self.ax.grid(True)
 
-    def _render(self):
-        super()._render()
+    def _finish_layout(self):
         if self.mx == "auto":
             mx = max(self.ax.get_xlim()[1], self.ax.get_ylim()[1])
         else:
@@ -559,32 +561,6 @@ class FlinnPlot(FabricPlot):
             color=self._kwargs["refline_color"],
             lw=self._kwargs["refline_lw"],
         )
-        box = self.ax.get_position()
-        self.ax.set_position(
-            [box.x0, box.y0, box.width * 0.8, box.height]  # ty: ignore
-        )
-
-    ########################################
-    # PLOTTING METHODS                     #
-    ########################################
-
-    def point(self, *args, **kwargs):
-        """Plot Ellipsoid as point."""
-
-        try:
-            artist = FabricPlotArtistFactory.create_point(*args, **kwargs)
-            self._artists.append(artist)
-        except TypeError as err:
-            print(err)
-
-    def path(self, *args, **kwargs):
-        """Plot EllipsoidSet as path."""
-
-        try:
-            artist = FabricPlotArtistFactory.create_path(*args, **kwargs)
-            self._artists.append(artist)
-        except TypeError as err:
-            print(err)
 
     ########################################
     # PLOTTING ROUTINES                    #
@@ -632,8 +608,14 @@ class HsuPlot(FabricPlot):
             Default 0.5
         background_color (color): Background fill color (Vollmer triangle).
             Default "w"
+        figsize (tuple): Size of the figure without legend and title, in inches.
+            The figure grows to fit them. Default (5, 5)
+        legend_position (str): Side of the plot where the legend is placed, "right",
+            "left", "top" or "bottom". The number of legend columns is chosen so
+            the legend is not longer than the plot. Default "right"
         legend_kws (dict): Extra keyword arguments passed to matplotlib's
-            ``legend``, overriding apsg's defaults. Default {}
+            ``legend``, overriding apsg's defaults. With ``loc`` or
+            ``bbox_to_anchor`` the legend is placed as given instead. Default {}
 
     Examples:
         >>> l = linset.random_fisher(position=lin(120, 40))
@@ -661,28 +643,6 @@ class HsuPlot(FabricPlot):
         self.ax.set_ylabel(r"$\bar{\varepsilon}_s$")
         if self._kwargs["grid"]:
             self.ax.grid(True)
-
-    ########################################
-    # PLOTTING METHODS                     #
-    ########################################
-
-    def point(self, *args, **kwargs):
-        """Plot Ellipsoid as point."""
-
-        try:
-            artist = FabricPlotArtistFactory.create_point(*args, **kwargs)
-            self._artists.append(artist)
-        except TypeError as err:
-            print(err)
-
-    def path(self, *args, **kwargs):
-        """Plot EllipsoidSet as path."""
-
-        try:
-            artist = FabricPlotArtistFactory.create_path(*args, **kwargs)
-            self._artists.append(artist)
-        except TypeError as err:
-            print(err)
 
     ########################################
     # PLOTTING ROUTINES                    #

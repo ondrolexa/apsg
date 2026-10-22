@@ -25,8 +25,6 @@ __all__ = (
     "geo2vec_linear",
     "geo2vec_planar",
     "is_jsonable",
-    "is_like_matrix3",
-    "is_like_vec3",
     "parse_quadrant_linear",
     "parse_quadrant_planar",
     "sind",

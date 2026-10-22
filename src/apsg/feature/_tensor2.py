@@ -5,7 +5,7 @@ from scipy import linalg as spla
 
 from apsg.config import apsg_conf, stress_sign
 from apsg.helpers._math import atan2d, cosd, sind
-from apsg.math._matrix import Matrix2
+from apsg.math._matrix import Matrix2, rounded
 from apsg.math._vector import Vector2
 
 
@@ -66,7 +66,8 @@ class DeformationGradient2(Matrix2):
 
         """
 
-        assert R >= 1, "R must be greater than or equal to 1."
+        if R < 1:
+            raise ValueError("R must be greater than or equal to 1.")
 
         return cls.from_comp(xx=R ** (1 / 2), yy=R ** (-1 / 2))
 
@@ -151,17 +152,20 @@ class Rotation2(DeformationGradient2):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not np.allclose(np.dot(np.transpose(self), self), np.eye(2)):
-            raise TypeError("Not valid arguments for Rotation2")
-        # fix improper rotations
-        if np.allclose(-1, np.linalg.det(self)):
-            U, _S, Vt = np.linalg.svd(self)
-            # Ensure a proper rotation (det=1)
-            coefs = U @ np.diag([1, np.linalg.det(U @ Vt)]) @ Vt
-            self._coefs = tuple(coefs[0]), tuple(coefs[1])
+            raise ValueError("Rotation2 must be orthogonal (R.T @ R == I)")
+        det = np.linalg.det(self)
+        if det < 0:  # +-1 for an orthogonal matrix
+            raise ValueError(
+                f"Rotation2 must be a proper rotation (det == 1), got det {det:.3g}: "
+                "a reflection is not a rotation"
+            )
 
     def _derive(self, coefs):
         # products such as R @ F or R + R are rotations only when orthogonal
-        if np.allclose(np.dot(np.transpose(coefs), coefs), np.eye(2)):
+        if (
+            np.allclose(np.dot(np.transpose(coefs), coefs), np.eye(2))
+            and np.linalg.det(coefs) > 0
+        ):
             return type(self)._from_canonical(coefs)
         return DeformationGradient2._from_canonical(coefs)
 
@@ -207,13 +211,13 @@ class Rotation2(DeformationGradient2):
         """
         try:
             v1 = Vector2(v1)
-        except Exception as err:
+        except (TypeError, ValueError) as err:
             raise TypeError(
                 "Unsupported first argument for from_two_vectors. Expecting Vector2"
             ) from err
         try:
             v2 = Vector2(v2)
-        except Exception as err:
+        except (TypeError, ValueError) as err:
             raise TypeError(
                 "Unsupported second argument for from_two_vectors. Expecting Vector2"
             ) from err
@@ -358,7 +362,7 @@ class Stress2(Tensor2):
 
     def __repr__(self):
         n = apsg_conf.ndigits
-        return f"{self.label()}\n{(stress_sign() * np.asarray(self)).round(n)!s}"
+        return f"{self.label()}\n{rounded(stress_sign() * np.asarray(self), n)!s}"
 
     def to_json(self):
         obj = super().to_json()
@@ -646,7 +650,8 @@ class Ellipse(Tensor2):
         """
         Return diagonal tensor defined by axial ratio.
         """
-        assert R >= 1, "R must be greater than or equal to 1."
+        if R < 1:
+            raise ValueError("R must be greater than or equal to 1.")
         return cls.from_stretch(R**0.5, R**-0.5, **kwargs)
 
     @property
@@ -682,7 +687,7 @@ class Ellipse(Tensor2):
         """
         Return the ellipse axial ratio.
         """
-        return self.S1 / self.S2
+        return self.S1 / self.S2 if self.S2 != 0 else float("inf")
 
     @property
     def orientation(self):
