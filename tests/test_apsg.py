@@ -983,7 +983,7 @@ class TestCone:
         a = Lineation(140, 30)
         c = Cone(a, 20)
         assert isinstance(c, Cone)
-        assert math.isclose(c.apical_angle(), 20)
+        assert math.isclose(c.apical_angle, 20)
 
     def test_from_cone(self):
         c1 = Cone(140, 30, 110, 26, 360)
@@ -998,7 +998,7 @@ class TestCone:
         a = Lineation(0, 90)
         s = Lineation(0, 0)
         c = Cone(a, s, 360)
-        assert math.isclose(c.apical_angle(), 90)
+        assert math.isclose(c.apical_angle, 90)
 
     def test_rotated_secant(self):
         c = Cone(0, 90, 0, 0, 180)

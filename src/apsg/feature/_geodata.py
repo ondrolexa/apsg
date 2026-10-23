@@ -764,7 +764,7 @@ class Cone:
 
     def __repr__(self):
         azi, inc = vec2geo_linear(self.axis)
-        return f"C:{format_linear(azi, inc)} [{self.apical_angle():g}]"
+        return f"C:{format_linear(azi, inc)} [{self.apical_angle:g}]"
 
     def __eq__(self, other):
         cls = type(self)
@@ -831,6 +831,7 @@ class Cone:
             self.axis.rotate(axis, phi), self.secant.rotate(axis, phi), self.revangle
         )
 
+    @property
     def apical_angle(self):
         """Return apical angle."""
 

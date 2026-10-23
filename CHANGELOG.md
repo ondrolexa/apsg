@@ -31,6 +31,7 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - **BREAKING:** `random_kent()` uses `beta = kappa / 4` by default.
 - **BREAKING:** `PairSet.from_csv()` no longer accepts `sense_str` and `scol`.
 - **BREAKING:** `SDBSession.getfaults()` is removed: the SDB format stores no sense of movement, so it only assigned one given sense to every pair. Use `getpairs()` and build the faults, e.g. `FaultSet([Fault(p, 1) for p in pairs])`.
+- **BREAKING:** `Cone.apical_angle` is a property, like `ConeSet.apical_angle` (use `c.apical_angle` instead of `c.apical_angle()`).
 - `SDBSession.getpairs()` raises `ValueError` when `ptype` is not a planar or `ltype` not a linear structure, instead of returning an empty set.
 
 ### Deprecated

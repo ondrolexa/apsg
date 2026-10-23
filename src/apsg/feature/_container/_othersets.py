@@ -34,7 +34,7 @@ class ConeSet(FeatureSet):
     def apical_angle(self):
         """Return array of apical angles."""
 
-        return np.array([c.apical_angle() for c in self])
+        return np.array([c.apical_angle for c in self])
 
 
 class ArcSet(FeatureSet):
