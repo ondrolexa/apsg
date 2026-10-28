@@ -378,6 +378,24 @@ class OrientationDistribution(ABC):
             f"{type(self).__name__} has no confidence region of the mean"
         )
 
+    def kappa_confidence(self, level=0.95):
+        """Confidence interval of the concentration of the fitted distribution.
+
+        Args:
+            level: confidence level. Default 0.95.
+
+        Returns:
+            tuple: lower and upper limit.
+        """
+        if self.fit_info is None:
+            raise ValueError("Confidence interval needs a distribution fitted to data")
+        return self._kappa_confidence(level)
+
+    def _kappa_confidence(self, level):
+        raise NotImplementedError(
+            f"{type(self).__name__} has no confidence interval of the concentration"
+        )
+
     # serialization
 
     def to_json(self):

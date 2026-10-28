@@ -107,6 +107,16 @@ of its principal axes, following the linear perturbation method of Jelínek (197
 >>> res["ellipses"][0]["mu"]                   # principal axis of the mean tensor
 >>> res["ellipses"][0]["gamma"]                # semi-angles of its confidence ellipse (deg)
 >>> es.mean_tensor(anisoft=True)               # extra (n-1)/n factor as in jelinekstat/TomoFab
+>>> res["intervals"], res["anisotropy_test"]   # eigenvalue intervals, Jelinek's T² test
+>>> res["shape"]                               # Jelinek (1981) P, L, F, Pj, T, U
+```
+
+Hypothesis tests return a `TestResult` (see [Orientation distributions](../distributions.md#hypothesis-tests)):
+
+```pycon
+>>> fols.uniformity_test().reject()           # Bingham test for axes
+>>> vecs.uniformity_test().p_value            # Rayleigh test for vectors
+>>> lins.common_mean_test(other_lins)         # common principal axis
 ```
 
 Build a strain ellipse/ellipsoid directly from axial ratios, and recover the deformation
@@ -191,6 +201,8 @@ Single geological features. Vector and axial base classes are in [`apsg.math`](m
 
 ::: apsg.feature.Stress3Set
 
+::: apsg.feature.RotationSet
+
 ::: apsg.feature.ClusterSet
 
 ::: apsg.feature.G
@@ -255,7 +267,51 @@ See [Orientation distributions](../distributions.md) for an overview.
 
 ::: apsg.feature.ACG
 
+::: apsg.feature.WrappedCauchy
+
+::: apsg.feature.Cardioid
+
+::: apsg.feature.JonesPewsey
+
 ::: apsg.feature.Lisle
+
+::: apsg.feature.MatrixFisher
+
+### Hypothesis tests
+
+::: apsg.feature.TestResult
+
+::: apsg.feature.rayleigh_test
+
+::: apsg.feature.bingham_test
+
+::: apsg.feature.kuiper_test
+
+::: apsg.feature.watson_u2_test
+
+::: apsg.feature.hodges_ajne_test
+
+::: apsg.feature.rao_spacing_test
+
+::: apsg.feature.frame_uniformity_test
+
+::: apsg.feature.fisher_goodness_of_fit
+
+::: apsg.feature.fisher_kent_test
+
+::: apsg.feature.watson_symmetry_test
+
+::: apsg.feature.likelihood_ratio_test
+
+::: apsg.feature.common_mean_test
+
+::: apsg.feature.axial_common_mean_test
+
+::: apsg.feature.equal_kappa_test
+
+::: apsg.feature.anisotropy_test
+
+::: apsg.feature.jelinek_shape
 
 ### Paleomagnetism
 

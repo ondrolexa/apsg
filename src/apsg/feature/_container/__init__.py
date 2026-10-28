@@ -13,6 +13,7 @@ from apsg.feature._container._tensorsets import (
     EllipsoidSet,
     OrientationTensor2Set,
     OrientationTensor3Set,
+    RotationSet,
     Stress2Set,
     Stress3Set,
 )
@@ -39,6 +40,7 @@ __all__ = (
     "OrientationTensor2Set",
     "OrientationTensor3Set",
     "PairSet",
+    "RotationSet",
     "Stress2Set",
     "Stress3Set",
     "Vector2Set",

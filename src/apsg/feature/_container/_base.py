@@ -16,6 +16,7 @@ from apsg.feature._tensor2 import Ellipse, OrientationTensor2, Stress2
 from apsg.feature._tensor3 import (
     Ellipsoid,
     OrientationTensor3,
+    Rotation3,
     Stress3,
 )
 from apsg.math._vector import Vector2, Vector3
@@ -301,6 +302,7 @@ def _build_registry():
         EllipsoidSet,
         OrientationTensor2Set,
         OrientationTensor3Set,
+        RotationSet,
         Stress2Set,
         Stress3Set,
     )
@@ -328,6 +330,7 @@ def _build_registry():
             OrientationTensor2: OrientationTensor2Set,
             Stress3: Stress3Set,
             Stress2: Stress2Set,
+            Rotation3: RotationSet,
         }
     )
 

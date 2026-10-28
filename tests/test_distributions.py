@@ -35,6 +35,8 @@ from apsg.feature._distributions import (
     AxialUniform3,
     AxialVonMises,
     Bingham,
+    Cardioid,
+    JonesPewsey,
     Kent,
     OrientationDistribution,
     Uniform2,
@@ -42,6 +44,7 @@ from apsg.feature._distributions import (
     VonMises,
     VonMisesFisher,
     Watson,
+    WrappedCauchy,
     WrappedNormal,
     as_rng,
     get_distribution,
@@ -161,20 +164,24 @@ def test_snapshot_statistics(fisher_sample):
         lin_stats = L.fisher_statistics()
     for s in (d.fisher_statistics(), lin_stats):
         assert np.allclose(s["mu"], mu, atol=1e-7)
-        assert np.isclose(s["k"], 13.36992117)
+        # Fisher's precision since 2.1.0, the maximum-likelihood kappa before
+        assert np.isclose(s["k"], 13.03567314)
+        assert np.isclose(s["kappa"], 13.36992117)
         assert np.isclose(s["alpha"], 6.513292)
     axis = [-0.82648815, -0.28251089, 0.48693422]
     s = L.watson_statistics()
     assert np.allclose(s["mu"], axis, atol=1e-7)
     assert np.isclose(s["k"], 7.92720421)
-    assert np.isclose(s["alpha"], 6.2745945)
+    # cone of Fisher, Lewis & Embleton (1987) eq. 6.13 since 2.1.0
+    assert np.isclose(s["alpha"], 6.48739747)
     s = L.bingham_statistics()
     assert np.allclose(s["mu"], axis, atol=1e-7)
     # large-sample eigenvector ellipse since 2.1.0 (was 20.06, 20.91)
     assert np.allclose(s["gamma"], [7.36256505, 5.47678308])
-    assert np.isclose(d.uniformity_test()["statistic"], 102.72056908)
-    assert np.isclose(L.uniformity_test()["statistic"], 2.08388817)
-    assert np.isclose(d.csd(), 22.15239035)
+    assert np.isclose(d.uniformity_test().statistic, 102.72056908)
+    # Bingham test since 2.1.0
+    assert np.isclose(L.uniformity_test().statistic, 125.33462399)
+    assert np.isclose(d.csd(), 22.43459779)
     assert np.isclose(d.var(), 0.07479476)
     assert np.isclose(d.delta(), 22.30067569)
 
@@ -183,7 +190,7 @@ def test_snapshot_statistics(fisher_sample):
     "method, total",
     [
         ("fisher", [-294.33999386, -103.35819459, 174.96706708]),
-        ("watson", [-295.70299116, -101.07745255, 174.34167215]),
+        ("watson", [-295.57847256, -101.03488949, 174.27253664]),
         ("bingham", [-148.74020817, -50.72509423, 87.53757821]),
     ],
 )
@@ -361,6 +368,23 @@ def _wrapped_normal_gof(dist, X):
     return theta, cdf
 
 
+def _numeric_cdf_gof(dist, X):
+    # CDF of the angle from the mean by quadrature of the density
+    mean = np.asarray(dist.mean, dtype=float)
+    theta = np.arctan2(X[:, 1], X[:, 0]) - np.arctan2(mean[1], mean[0])
+    theta = (theta + np.pi) % (2 * np.pi) - np.pi
+    grid = np.linspace(-np.pi, np.pi, 20001)
+    pts = np.column_stack([np.cos(grid), np.sin(grid)]) @ _rotation_to(mean).T
+    pdf = dist.pdf(pts)
+    cdf = np.concatenate([[0], np.cumsum((pdf[1:] + pdf[:-1]) / 2 * np.diff(grid))])
+    return theta, lambda t: np.interp(t, grid, cdf / cdf[-1])
+
+
+def _rotation_to(mean):
+    c, s = mean / np.linalg.norm(mean)
+    return np.array([[c, -s], [s, c]])
+
+
 _SPHERE_GRID = np.array(Vector3Set.sfs(200000))
 
 
@@ -388,6 +412,15 @@ EXAMPLES = {
         _wrapped_normal_gof,
     ),
     AxialVonMises: ([AxialVonMises(120, 3), AxialVonMises(10, 1.5)], _vonmises_gof),
+    WrappedCauchy: (
+        [WrappedCauchy(30, 0.8), WrappedCauchy(250, 0.4)],
+        _numeric_cdf_gof,
+    ),
+    Cardioid: ([Cardioid(30, 0.4), Cardioid(250, 0.3)], _numeric_cdf_gof),
+    JonesPewsey: (
+        [JonesPewsey(30, 2, 0.5), JonesPewsey(250, 4, -0.8)],
+        _numeric_cdf_gof,
+    ),
     VonMisesFisher: (
         [VonMisesFisher((1, 2, 3), 15), VonMisesFisher((0, 0, -1), 2.5)],
         _mean_marginal_gof,
@@ -732,7 +765,8 @@ def test_fisher_statistics_wraps_fisher_fit(fisher_sample):
     s = fisher_sample.fisher_statistics(level=0.9)
     d = VonMisesFisher.fit(fisher_sample)
     assert s["mu"] == d.mean
-    assert s["k"] == d.kappa
+    assert s["kappa"] == d.kappa
+    assert s["k"] == VonMisesFisher.fit(fisher_sample, method="precision").kappa
     assert s["alpha"] == d.mean_confidence(0.9).alpha
 
 
@@ -1321,3 +1355,26 @@ def test_degenerate_orientation_tensor_properties():
     assert tensors[1].lode == 1 and np.allclose(
         tensors[1].eigenvalues(), [2 / 3, 1 / 3, 0]
     )
+
+
+def test_jones_pewsey_special_cases():
+    X = np.array(Uniform2().rvs(50, rng=1))
+    k = 1.3
+    # psi = 1: cardioid with rho = tanh(kappa) / 2, psi = -1: wrapped Cauchy
+    # with rho = tanh(kappa / 2) (Ley & Verdebout, 2017, sec. 2.2.4)
+    assert np.allclose(
+        JonesPewsey(40, k, 1).logpdf(X), Cardioid(40, np.tanh(k) / 2).logpdf(X)
+    )
+    assert np.allclose(
+        JonesPewsey(40, k, -1).logpdf(X), WrappedCauchy(40, np.tanh(k / 2)).logpdf(X)
+    )
+    assert np.allclose(JonesPewsey(40, k, 0).logpdf(X), VonMises(40, k).logpdf(X))
+
+
+def test_circular_models_moment_fits():
+    data = WrappedCauchy(70, 0.6).rvs(3000, rng=2)
+    assert np.isclose(WrappedCauchy.fit(data, method="moments").rho, 0.6, atol=0.03)
+    data = Cardioid(70, 0.3).rvs(3000, rng=2)
+    assert np.isclose(Cardioid.fit(data, method="moments").rho, 0.3, atol=0.03)
+    region = WrappedCauchy.fit(data).mean_confidence()
+    assert 0 < region.alpha < 20

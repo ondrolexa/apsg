@@ -1,5 +1,9 @@
 """
 Distributions of directions (vectorial data) on the sphere.
+
+References are abbreviated MJ (Mardia & Jupp, 2000, Directional Statistics),
+FLE (Fisher, Lewis & Embleton, 1987, Statistical Analysis of Spherical Data)
+and F93 (Fisher, 1993, Statistical Analysis of Circular Data).
 """
 
 import numpy as np
@@ -45,16 +49,28 @@ class Uniform3(OrientationDistribution):
 class VonMisesFisher(OrientationDistribution):
     """von Mises-Fisher (Fisher) distribution of directions on the sphere.
 
-    The density is ``kappa / (4 pi sinh(kappa)) exp(kappa mu.x)``
-    (López-Custodio, 2025, eq. 11).
+    The density with respect to area on the sphere is ``kappa / (4 pi
+    sinh(kappa)) exp(kappa mu.x)`` (Fisher, 1953; MJ eq. 9.3.4 gives it with
+    respect to the uniform distribution, without the ``4 pi``).
 
     Args:
         mean: mean direction as ``Vector3`` or array. Default (0, 0, 1).
         kappa: concentration parameter. Default 1.
 
-    The fit is the maximum-likelihood estimate (``coth(kappa) - 1/kappa =
-    Rbar``). The confidence region of the mean direction is the cone of
-    Fisher (1953).
+    Fitting methods are "mle" (maximum likelihood, ``coth(kappa) - 1/kappa =
+    Rbar``, MJ eq. 10.3.4; FLE eq. 5.22), "precision" (Fisher's ``(N - 1) /
+    (N - R)``, see ``fisher_precision``) and "corrected" (the maximum-likelihood
+    estimate times ``(1 - 1/N)^2`` for ``N < 16``, Best & Fisher, 1981, FLE eq.
+    5.26). The confidence region of the mean direction is the cone of Fisher
+    (1953), see ``fisher_cone``; ``kappa_confidence`` gives the interval of the
+    concentration. Sampling uses scipy's ``vonmises_fisher`` (Wood, 1994).
+
+    References:
+        Fisher, R.A. (1953). Dispersion on a sphere. Proceedings of the Royal
+            Society of London A 217, 295-305.
+        Fisher, N.I., Lewis, T. & Embleton, B.J.J. (1987). Statistical Analysis
+            of Spherical Data. Cambridge University Press.
+        Mardia, K.V. & Jupp, P.E. (2000). Directional Statistics. Wiley.
     """
 
     dim = 3
@@ -93,26 +109,66 @@ class VonMisesFisher(OrientationDistribution):
 
     @classmethod
     def _fit(cls, X, method="mle", **options):
-        if method != "mle":
-            raise ValueError(f"Unknown fitting method {method!r}")
+        n = len(X)
         resultant = X.sum(axis=0)
         R = np.linalg.norm(resultant)
-        Rbar = R / len(X)
+        Rbar = R / n
         mean = Vector3(resultant) if R > 0 else Vector3(0, 0, 1)
-        return {"mean": mean, "kappa": _fisher_kappa_mle(Rbar)}, True, {"Rbar": Rbar}
+        match method:
+            case "mle":
+                kappa = _fisher_kappa_mle(Rbar)
+            case "precision":
+                kappa = fisher_precision(n, R)
+            case "corrected":
+                # Best & Fisher (1981) small-sample correction, FLE eq. 5.26
+                kappa = _fisher_kappa_mle(Rbar)
+                if n < 16:
+                    kappa *= (1 - 1 / n) ** 2
+            case _:
+                raise ValueError(f"Unknown fitting method {method!r}")
+        return {"mean": mean, "kappa": kappa}, True, {"Rbar": Rbar}
 
     def _mean_confidence(self, level):
         alpha = fisher_cone(self.fit_info.n, self.fit_info.stats["Rbar"], level)
         return ConfidenceRegion(mu=self._mean, level=level, alpha=alpha)
+
+    def _kappa_confidence(self, level):
+        # FLE eq. 5.37: 2 kappa (n - R) ~ chi2(2n - 2)
+        n = self.fit_info.n
+        dev = n * (1 - self.fit_info.stats["Rbar"])
+        if dev <= 0:
+            return (np.inf, np.inf)
+        q = ((1 - level) / 2, (1 + level) / 2)
+        return tuple(float(stats.chi2.ppf(p, 2 * n - 2) / (2 * dev)) for p in q)
+
+    @staticmethod
+    def goodness_of_fit(data, level=0.95):
+        """Colatitude and longitude goodness-of-fit tests of the Fisher model.
+
+        See ``fisher_goodness_of_fit`` (FLE eq. 5.15-5.16).
+
+        Args:
+            data: feature set or ``(N, 3)`` array of directions.
+            level: 0.90, 0.95 or 0.99. Default 0.95.
+
+        Returns:
+            dict: ``colatitude`` (M_E) and ``longitude`` (M_U) ``TestResult``.
+        """
+        from apsg.feature._hypothesis import fisher_goodness_of_fit
+
+        return fisher_goodness_of_fit(VonMisesFisher.as_array(data), level)
 
 
 class Kent(OrientationDistribution):
     """Kent (5-parameter Fisher-Bingham, FB5) distribution on the sphere.
 
     The density is ``exp(kappa g1.x + beta ((g2.x)^2 - (g3.x)^2)) / c(kappa,
-    beta)`` (Kent, 1982; López-Custodio, 2025, eq. 16), with ``g1`` the mean
-    direction, ``g2`` the major axis (direction of the largest spread) and
-    ``g3 = g1 x g2``. It is unimodal for ``2 beta < kappa``.
+    beta)`` (Kent, 1982, eq. 1.1), with ``g1`` the mean direction, ``g2`` the
+    major axis (direction of the largest spread) and ``g3 = g1 x g2`` the
+    minor axis, as in Kent (1982) and FLE p. 93 (López-Custodio, 2025, swaps
+    the major and minor axis). ``kappa`` is the concentration and ``beta`` the
+    ovalness; the distribution is unimodal for ``2 beta < kappa`` (FLE eq.
+    4.45).
 
     Args:
         mean: mean direction as ``Vector3`` or array. Default (0, 0, 1).
@@ -120,14 +176,23 @@ class Kent(OrientationDistribution):
         kappa: concentration parameter. Default 10.
         beta: ellipticity, ``beta >= 0``. Default 0.
 
-    Fitting methods are "moments" (the moment estimates of Kent, 1982,
-    López-Custodio, 2025, eq. 18-20) and "mle" (axes from the moments, kappa
-    and beta by maximum likelihood with ``2 beta < kappa``).
+    Fitting methods are "moments" (the axes of Kent, 1982, sec. 4, with the
+    large-concentration estimates of kappa and beta, his eq. 4.9) and "mle"
+    (axes from the moments, kappa and beta by maximum likelihood with ``2 beta
+    < kappa``). The confidence region of the mean direction is the ellipse of
+    Kent (1982, eq. 6.4), see ``mean_direction_ellipse``.
 
-    The normalizer is evaluated as a one-dimensional integral. Sampling draws
+    The normalizer is evaluated as a one-dimensional integral (equal to the
+    series of Kent, 1982, eq. 3.4). Sampling draws
     ``u = g1.x`` from its marginal density ``exp(kappa u) I0(beta (1 - u^2))``
     by rejection and the azimuth about ``g1`` from its conditional, an axial
     von Mises distribution.
+
+    References:
+        Kent, J.T. (1982). The Fisher-Bingham distribution on the sphere.
+            Journal of the Royal Statistical Society B 44, 71-80.
+        Fisher, N.I., Lewis, T. & Embleton, B.J.J. (1987). Statistical Analysis
+            of Spherical Data, sec. 4.4.5, 5.4.6. Cambridge University Press.
     """
 
     dim = 3
@@ -229,6 +294,23 @@ class Kent(OrientationDistribution):
                 return params, bool(res.success), stats_
         raise ValueError(f"Unknown fitting method {method!r}")
 
+    @staticmethod
+    def score_test(data, level=0.95):
+        """Score test of the Fisher against the Kent distribution.
+
+        See ``fisher_kent_test`` (Kent, 1982, eq. 5.5).
+
+        Args:
+            data: feature set or ``(N, 3)`` array of directions.
+            level: confidence level. Default 0.95.
+
+        Returns:
+            TestResult: rejecting means the contours are elliptical.
+        """
+        from apsg.feature._hypothesis import fisher_kent_test
+
+        return fisher_kent_test(Kent.as_array(data), level)
+
     def _mean_confidence(self, level):
         stats_ = self.fit_info.stats
         return mean_direction_ellipse(
@@ -245,7 +327,7 @@ class ESAG(OrientationDistribution):
     """Elliptically symmetric angular Gaussian distribution on the sphere.
 
     The distribution of ``y / |y|`` for ``y ~ N(mu, V)`` with ``V mu = mu`` and
-    ``|V| = 1`` (Paine et al., 2018; López-Custodio, 2025, eq. 22-23). ``V`` has
+    ``|V| = 1`` (Paine et al., 2018, eq. 7). ``V`` has
     eigenvalue 1 along `mu`, ``1 / rho`` along the major axis and ``rho``
     along the minor axis.
 
@@ -256,7 +338,15 @@ class ESAG(OrientationDistribution):
         rho: shape parameter, ``0 < rho <= 1``, 1 for the isotropic case.
             Default 1.
 
-    The fit is the maximum-likelihood estimate (López-Custodio, 2025, eq. 27).
+    The fit is the maximum-likelihood estimate, with ``V`` parametrized as in
+    Paine et al. (2018, eq. 14-18). Sampling normalizes normal vectors, without
+    rejection. The confidence region of the mean direction is the
+    moment-based ellipse of ``mean_direction_ellipse``.
+
+    References:
+        Paine, P.J., Preston, S.P., Tsagris, M. & Wood, A.T.A. (2018). An
+            elliptically symmetric angular Gaussian distribution. Statistics and
+            Computing 28, 689-697.
     """
 
     dim = 3
@@ -317,7 +407,7 @@ class ESAG(OrientationDistribution):
         Rbar = np.linalg.norm(resultant) / len(X)
         g1 = resultant / np.linalg.norm(resultant)
         # work in a frame with the sample mean on z, away from the singular
-        # direction of the parametrization of V (López-Custodio, 2025, eq. 24)
+        # direction of the parametrization of V (Paine et al., 2018, eq. 14-18)
         e1, e2 = _tangent_basis(g1)
         F = np.array([e1, e2, g1])
         Y = X @ F.T
@@ -443,11 +533,25 @@ def _kent_sample_u(kappa, beta, n, rng):
     return np.clip(out[:n], -1, 1)
 
 
+def fisher_precision(N, R):
+    """Fisher's precision ``k = (N - 1) / (N - R)``, the estimate of the
+    concentration of the Fisher distribution used in palaeomagnetism and
+    structural geology (Fisher, 1953, p. 303; FLE eq. 5.25). ``1 / k`` is an
+    unbiased estimate of ``1 / kappa``, which makes ``k`` the natural estimate
+    for the tests of Watson (1956) and McFadden & Lowes (1981). Returns inf for
+    identical data."""
+    if N - R <= 0:
+        return np.inf
+    return (N - 1) / (N - R)
+
+
 def fisher_cone(N, Rbar, level=0.95):
     """Half-angle (degrees) of the confidence cone of the Fisher mean direction.
 
     ``cos(alpha) = 1 - (N - R) / R * ((1 - level)^(-1 / (N - 1)) - 1)``
-    (Fisher, 1953).
+    (Fisher, 1953, p. 303; FLE eq. 5.34), alpha95 for ``level=0.95``. It is
+    adequate for ``kappa >= 5`` (simulated coverage 0.95). The approximation
+    ``140 / sqrt(k N)`` degrees is about 1 degree too small at ``N = 10``.
     """
     if Rbar >= 1.0 or N <= 1:
         return 0.0
@@ -463,7 +567,9 @@ def mean_direction_ellipse(mu, axes, moments, N, Rbar, level=0.95):
     mean direction are approximately normal with covariance ``S / (N Rbar^2)``,
     where ``S`` holds the second moments of the data in the tangent plane
     (eigenvalues `moments` along `axes`). The semi-angles of the region are
-    ``arcsin(sqrt(chi2_2(level) * l / (N Rbar^2)))``.
+    ``arcsin(sqrt(chi2_2(level) * l / (N Rbar^2)))``, the region of Kent
+    (1982, eq. 6.4; FLE eq. 5.52-5.54) with ``chi2_2(level) = -2 ln(1 -
+    level)``.
 
     Returns:
         ConfidenceRegion: ellipse around `mu`.

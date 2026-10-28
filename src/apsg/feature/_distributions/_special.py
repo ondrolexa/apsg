@@ -39,7 +39,7 @@ def log_fisher_norm(kappa):
 
 
 def log_m2(alpha):
-    """Log of ``M2(a) = (1 + a^2) Phi(a) + a phi(a)`` (López-Custodio, 2025, eq. 23).
+    """Log of ``M2(a) = (1 + a^2) Phi(a) + a phi(a)`` (Paine et al., 2018, eq. 4).
 
     For negative ``a`` it is evaluated through the scaled complementary error
     function to avoid cancellation.

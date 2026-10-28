@@ -1225,12 +1225,21 @@ class Ellipsoid(Tensor3):
 
     @property
     def strength(self) -> float:
-        """Return the Woodcock strength."""
+        """Return the strength ``ln(S1 / S3)`` of the principal stretches.
+
+        It is the Woodcock (1977) strength of an ellipsoid with semi-axes
+        ``S1 >= S2 >= S3``; ``OrientationTensor3.strength`` takes the
+        eigenvalues instead, as Woodcock does.
+        """
         return self.e13
 
     @property
     def shape(self) -> float:
-        """Return the Woodcock shape."""
+        """Return the Woodcock (1977) shape ``K = ln(S1/S2) / ln(S2/S3)``.
+
+        ``K > 1`` for clusters (prolate), ``K < 1`` for girdles (oblate). It
+        is the same for the principal stretches and for the eigenvalues.
+        """
         return self.K
 
     @property
@@ -1330,7 +1339,13 @@ class Ellipsoid(Tensor3):
 
     @property
     def P_j(self) -> float:
-        """Return the corrected anisotropy degree (Jelínek, 1981)."""
+        """Return the corrected anisotropy degree (Jelínek, 1981) of the
+        principal stretches.
+
+        For a susceptibility tensor, whose principal values are not squared
+        stretches, use ``jelinek_shape`` (``P_j`` is the square root of its
+        ``Pj``).
+        """
         if math.isinf(self.e3):
             return math.inf
         eta = (self.e1 + self.e2 + self.e3) / 3
@@ -1371,7 +1386,12 @@ class Ellipsoid(Tensor3):
 
     @property
     def Intensity(self) -> float:
-        """Intensity index (Lisle, 1985)."""
+        """Intensity index ``I = 15/2 sum((S_i - 1/3)^2)`` (Lisle, 1985).
+
+        For eigenvalues ``S_i`` of an orientation tensor it ranges from 0
+        (uniform) to 5 for clusters and to 1.25 for girdles; ``n I`` is the
+        statistic of the Bingham test of uniformity (see ``bingham_test``).
+        """
 
         return 7.5 * float(np.sum((np.array(self.eigenvalues()) - 1 / 3) ** 2))
 
@@ -1452,6 +1472,22 @@ class OrientationTensor3(Ellipsoid):
         (S1:2.83, S2:1.41, S3:1)
 
     """
+
+    @property
+    def strength(self) -> float:
+        """Return the Woodcock strength ``C = ln(S1 / S3)``.
+
+        ``S1 >= S3`` are the largest and smallest eigenvalue (Woodcock, 1977,
+        eq. 6). Unlike the ``Ellipsoid`` measures, which take the square roots
+        of the eigenvalues as the semi-axes, it uses the eigenvalues directly.
+        The Woodcock shape ``K = ln(S1/S2) / ln(S2/S3)`` (``shape``) is the
+        same either way.
+
+        Woodcock, N.H. (1977). Specification of fabric shapes using an
+            eigenvalue method. Geological Society of America Bulletin 88,
+            1231-1236.
+        """
+        return 2 * self.e13
 
     @classmethod
     def from_features(cls, g) -> "OrientationTensor3":

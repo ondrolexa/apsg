@@ -15,6 +15,7 @@ CONFIDENCE_METHODS = (
     "fisher",
     "watson",
     "bootstrap",
+    "bootstrap_ellipse",
     "bingham",
     "kent",
     "esag",
@@ -93,7 +94,7 @@ def confidence_curve(
 
     Args:
         fset: ``Vector3Set`` (methods "fisher", "watson", "bootstrap",
-            "bingham", "kent", "esag"), ``EllipsoidSet``/``Stress3Set`` (method
+            "bootstrap_ellipse", "bingham", "kent", "esag"), ``EllipsoidSet``/``Stress3Set`` (method
             "jelinek") or ``PairSet``/``FaultSet`` (method "lisle").
         method (str): one of ``CONFIDENCE_METHODS``.
 
@@ -101,7 +102,8 @@ def confidence_curve(
         level (float): confidence level. Default 0.95.
         which (int): principal axis for "bingham" (default 0) and "jelinek"
             (default ``None``, all three).
-        n_resamples (int): number of resamples for "bootstrap".
+        n_resamples (int): number of resamples for "bootstrap" and
+            "bootstrap_ellipse".
         normalize (bool): normalize tensors for "jelinek".
         anisoft (bool): AniSoft scaling of the region for "jelinek".
     """
@@ -115,6 +117,11 @@ def confidence_curve(
         case "bootstrap":
             stats = fset.bootstrap_statistics(level=level, n=n_resamples)
             return cone_curve(stats["mu"], stats["alpha"])
+        case "bootstrap_ellipse":
+            stats = fset.bootstrap_statistics(
+                level=level, n=n_resamples, method="ellipse"
+            )
+            return bingham_curve(stats)
         case "bingham":
             stats = fset.bingham_statistics(
                 level=level, which=0 if which is None else which

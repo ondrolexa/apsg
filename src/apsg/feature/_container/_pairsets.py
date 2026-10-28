@@ -28,6 +28,7 @@ from apsg.feature._geodata import (
     Fault,
     Pair,
 )
+from apsg.feature._hypothesis import frame_uniformity_test
 from apsg.feature._tensor3 import (
     OrientationTensor3,
     Rotation3,
@@ -113,6 +114,21 @@ class PairSet(FeatureSet):
         """Return Lisle (1989) orientation tensor ``OrientationTensor3`` of orientations."""
         self._require(1, "ortensor")
         return OrientationTensor3.from_pairs(self)
+
+    def uniformity_test(self, level=0.95):
+        """Test of uniformity of the pairs as orthogonal axial frames.
+
+        The test of Arnold & Jupp (2013, eq. 5) of the frames ``(l, n)``, see
+        ``frame_uniformity_test``; the sense of faults is not used.
+
+        Args:
+            level: confidence level. Default 0.95.
+
+        Returns:
+            TestResult: ``reject()`` is True when the pairs are not uniform.
+        """
+        self._require(1, "uniformity_test")
+        return frame_uniformity_test(pair_arrays(self), level)
 
     def lisle_statistics(self, level=0.95):
         """Mean pair and confidence ellipses of its lineation and foliation normal.

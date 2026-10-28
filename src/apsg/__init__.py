@@ -18,6 +18,9 @@ from apsg.feature import (
     Bingham as dist_bingham,
 )
 from apsg.feature import (
+    Cardioid as dist_cardioid,
+)
+from apsg.feature import (
     ClusterSet as cluster,
 )
 from apsg.feature import (
@@ -64,6 +67,9 @@ from apsg.feature import (
 )
 from apsg.feature import G
 from apsg.feature import (
+    JonesPewsey as dist_jones_pewsey,
+)
+from apsg.feature import (
     Kent as dist_kent,
 )
 from apsg.feature import (
@@ -74,6 +80,9 @@ from apsg.feature import (
 )
 from apsg.feature import (
     Lisle as dist_lisle,
+)
+from apsg.feature import (
+    MatrixFisher as dist_matrix_fisher,
 )
 from apsg.feature import (
     OrientationTensor2 as ortensor2,
@@ -98,6 +107,9 @@ from apsg.feature import (
 )
 from apsg.feature import (
     Rotation3 as rotation,
+)
+from apsg.feature import (
+    RotationSet as rotationset,
 )
 from apsg.feature import (
     Stress2 as stress2,
@@ -131,6 +143,9 @@ from apsg.feature import (
 )
 from apsg.feature import (
     Watson as dist_watson,
+)
+from apsg.feature import (
+    WrappedCauchy as dist_wrapped_cauchy,
 )
 from apsg.feature import (
     WrappedNormal as dist_wrapped_normal,
@@ -191,12 +206,16 @@ __all__ = (
     "dist_acg",
     "dist_axial_vonmises",
     "dist_bingham",
+    "dist_cardioid",
     "dist_esag",
     "dist_fisher",
+    "dist_jones_pewsey",
     "dist_kent",
     "dist_lisle",
+    "dist_matrix_fisher",
     "dist_vonmises",
     "dist_watson",
+    "dist_wrapped_cauchy",
     "dist_wrapped_normal",
     "ellipse",
     "ellipseset",
@@ -222,6 +241,7 @@ __all__ = (
     "rotation",
     "rotation2",
     "rotation_from_axis_angle",
+    "rotationset",
     "stereonet_styles",
     "stress",
     "stress2",

@@ -18,11 +18,32 @@ and a foliation is represented by its pole, which has no sense either.
 
 |  | vectorial | axial |
 |----|----|----|
-| circle (`Vector2`, `Direction`) | `Uniform2`, `VonMises` (`vonmises`), `WrappedNormal` (`wrapped_normal`) | `AxialUniform2`, `AxialVonMises` (`axial_vonmises`) |
+| circle (`Vector2`, `Direction`) | `Uniform2`, `VonMises` (`vonmises`), `WrappedNormal` (`wrapped_normal`), `WrappedCauchy` (`wrapped_cauchy`), `Cardioid` (`cardioid`), `JonesPewsey` (`jones_pewsey`) | `AxialUniform2`, `AxialVonMises` (`axial_vonmises`) |
 | sphere (`Vector3`, `Lineation`, `Foliation`) | `Uniform3`, `VonMisesFisher` (`fisher`), `Kent` (`kent`), `ESAG` (`esag`) | `AxialUniform3`, `Watson` (`watson`), `Bingham` (`bingham`), `ACG` (`acg`) |
+| pairs (`Pair`, `Fault`) | | `Lisle` (`lisle`) |
+| rotations (`Rotation3`) | `MatrixFisher` (`matrix_fisher`) | |
 
 In parentheses are the short names accepted by `FeatureSet.fit()`, e.g.
 `lineations.fit("kent")`; the `apsg` aliases add the prefix `dist_`.
+
+The sources of the models (abbreviations as in the [references](#references)):
+
+| model | density | estimation | sampling |
+|----|----|----|----|
+| `VonMises` | MJ (3.5.17) | MLE MJ (5.3.2); Best & Fisher approximation F93 (4.40); small-sample correction F93 (4.41) | Best & Fisher (1979), via scipy |
+| `WrappedNormal` | MJ (3.5.63)-(3.5.66) | moments, numerical MLE | wrapped normal deviates |
+| `WrappedCauchy` | MJ (3.5.68) | MLE by Kent & Tyler (1988), MJ (5.4.1)-(5.4.6) | wrapped Cauchy deviates |
+| `Cardioid` | MJ (3.5.47) | moments, numerical MLE | rejection |
+| `JonesPewsey` | Jones & Pewsey (2005); L&V (2.5) | numerical MLE | rejection |
+| `AxialVonMises` | MJ (3.6.4) | as `VonMises`, doubled angles (F93 (2.36)) | as `VonMises` |
+| `VonMisesFisher` | Fisher (1953); MJ (9.3.4) | MLE MJ (10.3.4); precision FLE (5.25); corrected FLE (5.26) | Wood (1994), via scipy |
+| `Kent` | Kent (1982) (1.1) | moments Kent (1982) sec. 4, (4.9); numerical MLE | rejection |
+| `ESAG` | Paine et al. (2018) (7) | numerical MLE | normal deviates |
+| `Watson` | MJ (9.4.1) | MLE MJ (10.3.31)-(10.3.33) | as `Bingham` |
+| `Bingham` | Bingham (1974); MJ (9.4.3) | MLE Bingham (1974) (6.3) | ACG envelope, Kent et al. (2013) (3.4)-(3.6) |
+| `ACG` | Tyler (1987) (1) | fixed point Tyler (1987) (3) | normal deviates |
+| `Lisle` | frame Bingham, Arnold & Jupp (2013) (7), with Lisle's (1989) tensor | numerical MLE | rejection |
+| `MatrixFisher` | Kent et al. (2013) (4.2) | MLE, MJ (13.2.16) for the mode | Bingham on quaternions, Kent et al. (2013) |
 
 ## Choosing a model
 
@@ -93,6 +114,9 @@ Create a distribution from its parameters, sample it, and fit it back:
 - `mean_confidence(level=0.95)` of a fitted distribution returns the
   confidence region of the mean, a cone (`alpha`) or an ellipse (`axes` and
   `gamma`); `as_dict()` gives the layout of the `*_statistics` methods.
+  `kappa_confidence(level=0.95)` gives the interval of the concentration
+  (`VonMisesFisher`, FLE (5.37); `VonMises`, F93 (4.48)-(4.55); bipolar
+  `Watson`, FLE (6.26)).
 - `aic(data)` and `bic(data)` for model selection, and `to_json()` for
   serialization through `feature_from_json()`.
 
@@ -161,20 +185,76 @@ saved. `RosePlot.density()` plots circular distributions in the same units as
 
 ## Statistics methods of feature sets
 
-The statistics methods of the feature sets are built on the distributions and
-return the same dict as before:
+The statistics methods of the feature sets are built on the distributions:
 
 - `Vector2Set.fisher_statistics()`: `VonMises` (`AxialVonMises` for a
   `Direction2Set`) fitted with `method="approx"`, with the confidence
-  interval of Upton (1986), as given by Zar.
-- `Vector3Set.fisher_statistics()`: `VonMisesFisher`, with the confidence
-  cone of Fisher (1953); deprecated for axial data, see below.
-- `watson_statistics()`: `Watson`.
+  interval of Upton (1986), as given by Zar. `VonMises.mean_confidence()`
+  also offers the intervals of F93: `method="vonmises"` (4.42)-(4.43) for
+  small samples and `method="dispersion"` (4.21)-(4.22), without a model, for
+  `N >= 25`.
+- `Vector3Set.fisher_statistics()`: Fisher's precision `k = (N - 1) / (N -
+  R)` (Fisher, 1953; FLE (5.25)), the maximum-likelihood `kappa` and the
+  confidence cone `alpha` of Fisher (1953) (alpha95); deprecated for axial
+  data, see below. Before apsg 2.1 `k` was the maximum-likelihood estimate.
+- `watson_statistics()`: `Watson`, with the confidence cone of FLE
+  (6.11)-(6.13).
 - `bingham_statistics()`: the large-sample confidence ellipse of an
-  eigenvector of the orientation tensor and the concentrations `k` of the
-  fitted `Bingham` distribution.
+  eigenvector of the orientation tensor (the moment version of Bingham's
+  (1974) (7.24) ellipse) and the concentrations `k` of the fitted `Bingham`
+  distribution.
+- `bootstrap_statistics()`: a bootstrap cone or, with `method="ellipse"`,
+  the elliptical region of Constable & Tauxe (1990) (13)-(15)
+  (`StereoNet.confidence(method="bootstrap_ellipse")`).
 - `random_vonmises()`, `random_fisher()` and `random_kent()` sample
   `VonMises`, `VonMisesFisher` and `Kent`.
+
+## Circular descriptive statistics
+
+`Vector2Set` has the descriptive statistics of MJ and F93; for a `Direction2Set`
+they are computed from the doubled angles, with angles halved:
+
+| method | statistic | source |
+|----|----|----|
+| `R(mean=True)`, `var()` | mean resultant, circular variance `1 - Rbar` | MJ (2.2.4), (2.3.3) |
+| `csd()` | circular standard deviation `sqrt(-2 ln Rbar)` | MJ (2.3.11) |
+| `angular_deviation()` | `sqrt(2 (1 - Rbar))` | MJ (2.3.12) |
+| `circular_dispersion()` | `(1 - rho2) / (2 Rbar^2)` | MJ sec. 2.3.4 |
+| `moment(p)`, `skewness()`, `kurtosis()` | trigonometric moments | MJ (2.4.2)-(2.4.13) |
+| `median()` | circular median | F93 sec. 2.3.2 |
+
+## Hypothesis tests
+
+The tests return a `TestResult` with `statistic`, `p_value`, `df`,
+`critical`, `reject(level)` and `extra`. They are functions of `apsg.feature`
+working on arrays, and methods of the feature sets and distributions:
+
+| question | method | test |
+|----|----|----|
+| uniform directions? | `Vector2Set`/`Vector3Set.uniformity_test()` | Rayleigh, MJ (10.4.4)-(10.4.6) |
+| uniform on the circle, any alternative? | `uniformity_test(method=...)` | `"kuiper"` (F93 Table A5), `"watson"` (U², MJ sec. 6.3.5), `"hodges_ajne"` (MJ sec. 6.3.4), `"rao"` (MJ (6.3.45)) |
+| uniform axes? | `LineationSet`/`FoliationSet.uniformity_test()` | Bingham, MJ (10.7.1)-(10.7.3) = Lisle (1985) `n I` |
+| uniform pairs? | `PairSet.uniformity_test()` | Arnold & Jupp (2013) (5) |
+| Fisher model adequate? | `VonMisesFisher.goodness_of_fit(data)` | colatitude `M_E`, longitude `M_U`, FLE (5.15)-(5.16) |
+| circular or elliptical contours? | `Kent.score_test(data)` | Kent (1982) (5.5) |
+| Watson or Bingham? | `Watson.symmetry_test(data)` | MJ (10.7.8)-(10.7.18) |
+| nested models? | `likelihood_ratio_test(d0, d1, data)` | Wilks' theorem |
+| common mean direction? | `common_mean_test(*others)` | sphere: Watson (1956) F, McFadden & Lowes (1981), Watson & Debiche (1992); circle: Watson-Williams, uniform scores, two-sample U² (MJ ch. 7-8) |
+| common principal axis? | `LineationSet.common_mean_test(*others)` | FLE (7.72)-(7.76), corrected |
+| common concentration? | `equal_kappa_test(*others)` | F, MJ (10.5.3); Bartlett, MJ (10.6.21) |
+| isotropic mean tensor? | `EllipsoidSet.mean_tensor()["anisotropy_test"]` | Jelínek (1978) (44)-(46) |
+
+```pycon
+>>> lins.uniformity_test().reject()
+>>> fols.common_mean_test(other_fols).p_value
+>>> vecs.equal_kappa_test(other_vecs)
+```
+
+Some printed formulas the tests follow deviate from a source, where the
+source is in error: FLE's `M_E`, `M_U` constants are the original ones
+(MJ misquotes them), the Watson & Debiche statistic has its factor 2, and the
+axial common-mean test drops the spurious factor 2 Watson (1983) introduced
+into FLE's `g`.
 
 ## Resultant statistics of axial data
 
@@ -235,25 +315,71 @@ that of the foliation about the lineation, e.g. folding about it:
 ```
 
 The sense of faults is not used by either; `OrientationTensor3.from_pairs()` is
-Lisle's tensor (shifted by default, see its documentation).
+Lisle's tensor (shifted by default, see its documentation). `Lisle` is apsg's own
+model: the frame Bingham distribution of Arnold & Jupp (2013) whose sufficient
+statistic is Lisle's tensor. `PairSet.uniformity_test()` is the test of
+Arnold & Jupp (2013).
+
+## Rotations
+
+A rotation, e.g. a directed frame of a lineation with sense and a foliation normal
+with a defined side, is a `Rotation3`; a `RotationSet` holds several of them,
+with `mean()` the rotation closest to their mean matrix (MJ (13.2.16)). The
+`MatrixFisher` distribution has the density `exp(tr(F' R))` with respect to the
+uniform distribution of rotations; the proper singular value decomposition `F =
+U diag(psi) V'` gives its mode `U V'` and concentrations `psi`:
+
+```pycon
+>>> d = dist_matrix_fisher.from_mode(rotation.from_axisangle(lin(120, 30), 40), 20)
+>>> r = d.rvs(50, rng=1)                      # RotationSet
+>>> dist_matrix_fisher.fit(r).mean, r.mean()
+```
+
+A `Pair` is an axial frame, four rotations at once, so pairs are described by
+Lisle's tensor and the `Lisle` distribution, not by the matrix Fisher one.
+
+## Abbreviations
+
+MJ: Mardia & Jupp (2000); FLE: Fisher, Lewis & Embleton (1987); F93: Fisher (1993);
+L&V: Ley & Verdebout (2017).
 
 ## References
 
+- Arnold, R., Jupp, P.E. (2013). Statistics of orthogonal axial frames.
+  Biometrika 100, 571-586.
+- Bingham, C. (1974). An antipodally symmetric distribution on the sphere. The
+  Annals of Statistics 2, 1201-1225.
+- Constable, C., Tauxe, L. (1990). The bootstrap for magnetic susceptibility
+  tensors. Journal of Geophysical Research 95, 8383-8395.
 - Fisher, R.A. (1953). Dispersion on a sphere. Proceedings of the Royal Society
   of London A 217, 295-305.
 - Fisher, N.I. (1993). Statistical Analysis of Circular Data. Cambridge
   University Press.
 - Fisher, N.I., Lewis, T., Embleton, B.J.J. (1987). Statistical Analysis of
   Spherical Data. Cambridge University Press.
+- Jelínek, V. (1978). Statistical processing of anisotropy of magnetic
+  susceptibility measured on groups of specimens. Studia Geophysica et
+  Geodaetica 22, 50-62.
+- Jelínek, V. (1981). Characterization of the magnetic fabric of rocks.
+  Tectonophysics 79, T63-T67.
+- Jones, M.C., Pewsey, A. (2005). A family of symmetric distributions on the
+  circle. Journal of the American Statistical Association 100, 1422-1428.
 - Kent, J.T. (1982). The Fisher-Bingham distribution on the sphere. Journal of
   the Royal Statistical Society B 44, 71-80.
 - Kent, J.T., Ganeiber, A.M., Mardia, K.V. (2013). A new method to simulate
   the Bingham and related distributions in directional data analysis with
   applications. Preprint, arXiv:1310.8110.
+- Ley, C., Verdebout, T. (2017). Modern Directional Statistics. CRC Press.
+- Lisle, R.J. (1985). The use of the orientation tensor for the description and
+  statistical testing of fabrics. Journal of Structural Geology 7, 115-117.
 - Lisle, R.J. (1989). The statistical analysis of orthogonal orientation data.
   Journal of Geology 97, 360-364.
 - López-Custodio, P.C. (2025). A cheat sheet for probability distributions of
   orientational data. Mechanism and Machine Theory 210, 105995.
+- Mardia, K.V., Jupp, P.E. (2000). Directional Statistics. Wiley.
+- McFadden, P.L., Lowes, F.J. (1981). The discrimination of mean directions
+  drawn from Fisher distributions. Geophysical Journal of the Royal
+  Astronomical Society 67, 19-33.
 - Paine, P.J., Preston, S.P., Tsagris, M., Wood, A.T.A. (2018). An elliptically
   symmetric angular Gaussian distribution. Statistics and Computing 28,
   689-697.

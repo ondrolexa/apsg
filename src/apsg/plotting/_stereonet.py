@@ -798,7 +798,9 @@ class StereoNet:
         ``Kent`` or ``ESAG`` distribution (``mean_confidence``); axial data are flipped
         into one hemisphere first, as for ``"fisher"``. The bootstrap
         cone resamples the data with replacement and takes the ``level``-percentile of
-        the angular deviation of the resampled principal eigenvectors from the sample's.
+        the angular deviation of the resampled principal eigenvectors from the sample's;
+        ``"bootstrap_ellipse"`` draws the elliptical region of Constable & Tauxe (1990)
+        of the same resamples, see ``Vector3Set.bootstrap_statistics``.
 
         For pairs (``PairSet`` or ``FaultSet``) ``method="lisle"`` (the default for
         them) plots the confidence ellipses of the mean lineation and the mean foliation
@@ -817,9 +819,9 @@ class StereoNet:
                 sets and tensor sets cannot be combined in one call.
 
         Keyword Args:
-            method (str): "fisher", "bingham", "watson", "bootstrap", "kent",
-                "esag", "jelinek" or "lisle". Default "fisher" for vector sets,
-                "watson" for lineation and foliation sets (``fisher_statistics`` of
+            method (str): "fisher", "bingham", "watson", "bootstrap",
+                "bootstrap_ellipse", "kent", "esag", "jelinek" or "lisle". Default
+                "fisher" for vector sets, "watson" for lineation and foliation sets (``fisher_statistics`` of
                 axial data is deprecated), "jelinek" for tensor sets and "lisle"
                 for pair and fault sets
             which (int): index (0, 1 or 2) of the eigenvector the ellipse is
@@ -829,7 +831,7 @@ class StereoNet:
                 of all three principal axes of the mean tensor are plotted.
             level (float): confidence level. Default 0.95
             n_resamples (int): number of bootstrap resamples (``method="bootstrap"``
-                only). Default 1000
+                and ``"bootstrap_ellipse"`` only). Default 1000
             normalize (bool): normalize tensors by their mean value before averaging
                 (``method="jelinek"`` only). Default False
             anisoft (bool): multiply the tilts of the principal axes by an extra

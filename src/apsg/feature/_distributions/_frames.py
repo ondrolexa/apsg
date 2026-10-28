@@ -54,6 +54,11 @@ def pair_arrays(data):
 def lisle_moments(X):
     """Lisle's (1989) tensor of pairs and the moments of its eigenvectors.
 
+    The first and last eigenvectors of ``T_o = mean(l l' - n n')`` are the
+    mean lineation and the mean foliation normal, which minimize ``sum(sin^2
+    theta_l - sin^2 theta_n)`` (Lisle, 1989, eq. 2). Eigenvalues are in
+    descending order.
+
     Args:
         X: ``(N, 2, 3)`` array of unit lineations and normals.
 
@@ -99,7 +104,11 @@ class Lisle(OrientationDistribution):
     It is the exponential family whose sufficient statistic is Lisle's (1989)
     tensor ``sum(l l' - n n')``, so its maximum-likelihood mean pair is Lisle's
     mean (eigenvectors of the tensor). Reversing `l` or `n` does not change the
-    density.
+    density. The model is apsg's own: it is the frame Bingham distribution of
+    Arnold & Jupp (2013, eq. 7) for the axial frame ``(l, n)`` with ``A_l =
+    L`` and ``A_n = -L`` (shifted to zero trace), named after its sufficient
+    statistic, not a published model. The mean pair of Arnold & Jupp (2013,
+    eq. 4) is a different estimator (1-7 degrees apart on Lisle's data).
 
     Args:
         mean: mean ``Pair``. Default ``Pair()``.
@@ -109,6 +118,12 @@ class Lisle(OrientationDistribution):
     The normalizer is evaluated by quadrature (``lisle_log_norm``). Sampling
     draws the lineation from its marginal by rejection from a ``Bingham``
     envelope and the normal from its axial von Mises conditional.
+
+    References:
+        Lisle, R.J. (1989). The statistical analysis of orthogonal orientation
+            data. The Journal of Geology 97, 360-364.
+        Arnold, R. & Jupp, P.E. (2013). Statistics of orthogonal axial frames.
+            Biometrika 100, 571-586.
     """
 
     dim = "pair"

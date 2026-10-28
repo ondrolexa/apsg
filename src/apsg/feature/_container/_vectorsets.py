@@ -28,11 +28,24 @@ from apsg.feature._distributions import (
     legacy_rng,
 )
 from apsg.feature._distributions._base import _APSG_DIR
+from apsg.feature._distributions._circular import double_angles
+from apsg.feature._distributions._spherical import _tangent_basis, fisher_precision
 from apsg.feature._geodata import (
     Direction,
     Foliation,
     Lineation,
     Pair,
+)
+from apsg.feature._hypothesis import (
+    axial_common_mean_test,
+    bingham_test,
+    common_mean_test,
+    equal_kappa_test,
+    hodges_ajne_test,
+    kuiper_test,
+    rao_spacing_test,
+    rayleigh_test,
+    watson_u2_test,
 )
 from apsg.feature._tensor2 import OrientationTensor2
 from apsg.feature._tensor3 import (
@@ -42,11 +55,6 @@ from apsg.feature._tensor3 import (
 from apsg.helpers._helper import check_count
 from apsg.helpers._math import acosd
 from apsg.math._vector import Axial2, Axial3, Vector2, Vector3
-
-_WATSON_U2_ALPHA = np.array([0.005, 0.01, 0.025, 0.05, 0.10])
-
-
-_WATSON_U2_CRITICAL = np.array([0.302, 0.267, 0.221, 0.187, 0.152])
 
 
 def _pairwise_angles(fset, dim, axial):
@@ -78,29 +86,20 @@ def _warn_axial(fset, name):
         )
 
 
-def _watson_u2_test(w, level=0.95):
-    """Watson's U² one-sample EDF test of uniformity on [0, 1].
-
-    Uses the small-sample-corrected statistic and asymptotic critical values of
-    Stephens (1970), "Use of the Kolmogorov-Smirnov, Cramér-von Mises and Related
-    Statistics Without Extensive Tables," J. R. Statist. Soc. B.
-    """
-    w = np.sort(np.asarray(w, dtype=float))
-    n = len(w)
-    i = np.arange(1, n + 1)
-    u2 = (
-        np.sum((w - (2 * i - 1) / (2 * n)) ** 2)
-        - n * (w.mean() - 0.5) ** 2
-        + 1 / (12 * n)
-    )
-    u2_star = (u2 - 0.1 / n + 0.1 / n**2) * (1.0 + 0.8 / n)
-    alpha = 1.0 - level
-    critical_value = float(np.interp(alpha, _WATSON_U2_ALPHA, _WATSON_U2_CRITICAL))
-    return {
-        "statistic": float(u2_star),
-        "critical_value": critical_value,
-        "uniform": bool(u2_star <= critical_value),
-    }
+def _samples(fset, others):
+    """Unit vector arrays of `fset` and `others` (sets of the same kind) for
+    the sample comparison tests; doubled angles for axes on the circle."""
+    sets = (fset, *others)
+    kind = type(fset)
+    for other in others:
+        if type(other) is not kind:
+            raise TypeError(
+                f"Cannot compare {kind.__name__} with {type(other).__name__}"
+            )
+    samples = [np.asarray(s.normalized(), dtype=float) for s in sets]
+    if issubclass(fset.__feature_class__, Axial2):
+        samples = [double_angles(x) for x in samples]
+    return samples
 
 
 def _hotelling_test(X, Y, mean_diff):
@@ -329,7 +328,8 @@ class Vector2Set(FeatureSet):
         return {"mu": dist.mean, "k": dist.kappa, "alpha": alpha}
 
     def csd(self):
-        """Circular standard deviation ``sqrt(-2 ln(Rbar))`` (Mardia, 1972).
+        """Circular standard deviation ``sqrt(-2 ln(Rbar))`` (Mardia & Jupp,
+        2000, eq. 2.3.11; Fisher, 1993, eq. 2.12).
 
         For axial data (``Direction2Set``) it is computed from the doubled
         angles and halved.
@@ -344,34 +344,169 @@ class Vector2Set(FeatureSet):
         csd = float(np.degrees(np.sqrt(-2 * np.log(min(Rbar, 1.0)))))
         return csd / 2 if self._axial else csd
 
-    def uniformity_test(self, level=0.95):
-        """Rayleigh test of uniformity against a preferred direction.
+    def uniformity_test(self, level=0.95, method="rayleigh"):
+        """Test of uniformity on the circle.
 
-        Uses the large-sample chi-square approximation ``2 * N * Rbar**2 ~ chi2(df=2)``
-        (Mardia & Jupp, 2000, Directional Statistics, sec. 10.4.1) for planar data.
+        Axes (``Direction2Set``) are tested by their doubled angles (Fisher,
+        1993, eq. 2.36); the Rayleigh test of the doubled angles is the Bingham
+        test on the circle (Mardia & Jupp, 2000, p. 233).
 
         Args:
-            level: confidence level for the uniformity decision. Default 0.95 for 95 %.
+            level: confidence level. Default 0.95 for 95 %.
+            method: "rayleigh" (default; against a unimodal alternative,
+                ``rayleigh_test``), "kuiper" (``kuiper_test``), "watson"
+                (Watson's U², ``watson_u2_test``), "hodges_ajne"
+                (``hodges_ajne_test``) or "rao" (Rao's spacing test,
+                ``rao_spacing_test``). Kuiper, Watson and Rao tests detect any
+                departure from uniformity, multimodal included.
 
         Returns:
-            dict: with keys ``R`` (resultant length), ``statistic`` (chi-square
-                statistic), ``p_value``, and ``uniform`` (True if data is consistent
-                with a uniform/random distribution at the given confidence level).
+            TestResult: ``reject()`` is True when the data are not uniform at
+            the given confidence level.
         """
         self._require(1, "uniformity_test")
-        N = len(self)
-        R = abs(self.normalized().R())
-        statistic = 2 * R**2 / N
-        p_value = float(stats.chi2.sf(statistic, df=2))
-        return {
-            "R": R,
-            "statistic": statistic,
-            "p_value": p_value,
-            "uniform": bool(p_value >= 1.0 - level),
+        theta = self._angles()
+        if method == "rayleigh":
+            return rayleigh_test(np.column_stack([np.cos(theta), np.sin(theta)]), level)
+        tests = {
+            "kuiper": kuiper_test,
+            "watson": watson_u2_test,
+            "hodges_ajne": hodges_ajne_test,
+            "rao": rao_spacing_test,
         }
+        if method not in tests:
+            raise ValueError(
+                f"Unknown method {method!r}, expected rayleigh, " + ", ".join(tests)
+            )
+        return tests[method](theta, level)
+
+    def _angles(self):
+        """Direction angles in radians, doubled for axial data."""
+        X = np.asarray(self.normalized(), dtype=float)
+        if self._axial:
+            X = double_angles(X)
+        return np.arctan2(X[:, 1], X[:, 0])
+
+    def moment(self, p=1, centered=False):
+        """Sample trigonometric moment of order `p`.
+
+        ``m_p = mean(exp(i p theta))`` (Mardia & Jupp, 2000, eq. 2.4.2-2.4.4),
+        about the zero direction or, if `centered`, about the mean direction.
+        For axial data the doubled angles are used.
+
+        Returns:
+            tuple: length ``Rbar_p`` and direction ``theta_p`` in degrees.
+        """
+        self._require(1, "moment")
+        theta = self._angles()
+        if centered:
+            theta = theta - np.angle(np.mean(np.exp(1j * theta)))
+        m = np.mean(np.exp(1j * p * theta))
+        return float(abs(m)), float(np.degrees(np.angle(m)) % 360)
+
+    def circular_dispersion(self):
+        """Circular dispersion ``delta = (1 - rho2) / (2 Rbar^2)``.
+
+        ``rho2`` is the mean of ``cos 2(theta - mean)`` (Mardia & Jupp, 2000,
+        sec. 2.3.4; Fisher, 1993, sec. 2.3). ``delta / n`` is the squared
+        circular standard error of the mean direction, see
+        ``dispersion_interval``. For axial data the doubled angles are used.
+        """
+        Rbar, _ = self.moment(1)
+        if Rbar <= 0:
+            return np.inf
+        R2, t2 = self.moment(2, centered=True)
+        return float((1 - R2 * np.cos(np.radians(t2))) / (2 * Rbar**2))
+
+    def angular_deviation(self):
+        """Angular deviation ``sqrt(2 (1 - Rbar))`` in degrees.
+
+        An approximation of the circular standard deviation ``csd`` (Mardia &
+        Jupp, 2000, eq. 2.3.12). For axial data it is halved.
+        """
+        Rbar, _ = self.moment(1)
+        s = float(np.degrees(np.sqrt(2 * (1 - Rbar))))
+        return s / 2 if self._axial else s
+
+    def skewness(self):
+        """Circular skewness ``Rbar_2 sin(theta_2 - 2 theta_1) / (1 - Rbar)^(3/2)``
+        (Mardia & Jupp, 2000, eq. 2.4.12), from the moments about the zero
+        direction; for axial data of the doubled angles."""
+        Rbar, t1 = self.moment(1)
+        R2, t2 = self.moment(2)
+        if Rbar >= 1:
+            return 0.0
+        return float(R2 * np.sin(np.radians(t2 - 2 * t1)) / (1 - Rbar) ** 1.5)
+
+    def kurtosis(self):
+        """Circular kurtosis ``(Rbar_2 cos(theta_2 - 2 theta_1) - Rbar^4) / (1 -
+        Rbar)^2`` (Mardia & Jupp, 2000, eq. 2.4.13); for axial data of the
+        doubled angles."""
+        Rbar, t1 = self.moment(1)
+        R2, t2 = self.moment(2)
+        if Rbar >= 1:
+            return 0.0
+        return float((R2 * np.cos(np.radians(t2 - 2 * t1)) - Rbar**4) / (1 - Rbar) ** 2)
+
+    def median(self):
+        """Circular median direction.
+
+        The direction minimizing the mean arc distance to the data (Fisher,
+        1993, sec. 2.3.2); it lies at a datum or at the antipode of one. Ties
+        are resolved by taking the first candidate in the order of the data.
+        For axial data the doubled angles are used and the result is halved.
+
+        Returns:
+            Vector2: the median, of the feature class of the set.
+        """
+        self._require(1, "median")
+        theta = self._angles()
+        cand = np.concatenate([theta, theta + np.pi])
+        diff = np.abs(cand[:, None] - theta[None, :]) % (2 * np.pi)
+        dist = np.minimum(diff, 2 * np.pi - diff).mean(axis=1)
+        best = np.degrees(cand[np.argmin(np.round(dist, 12))])
+        if self._axial:
+            best = best / 2
+        return self.__feature_class__(best % 360)
+
+    def common_mean_test(self, *others, method=None, level=0.95):
+        """Test whether this and other sets share the mean direction.
+
+        Axes (``Direction2Set``) are compared by their doubled angles.
+
+        Args:
+            *others: one or more ``Vector2Set`` of the same kind.
+            method: "watson_williams" (default), "uniform_scores" or
+                "watson_u2" (two samples), see ``common_mean_test``.
+            level: confidence level. Default 0.95.
+
+        Returns:
+            TestResult: ``reject()`` is True when the mean directions differ.
+        """
+        return common_mean_test(_samples(self, others), method=method, level=level)
+
+    def equal_kappa_test(self, *others, method=None, level=0.95):
+        """Test whether this and other sets share the concentration.
+
+        Axes (``Direction2Set``) are compared by their doubled angles.
+
+        Args:
+            *others: one or more ``Vector2Set`` of the same kind.
+            method: "f" (default for two sets) or "bartlett", see
+                ``equal_kappa_test``.
+            level: confidence level. Default 0.95.
+
+        Returns:
+            TestResult: ``reject()`` is True when the concentrations differ.
+        """
+        return equal_kappa_test(_samples(self, others), method=method, level=level)
 
     def var(self):
-        """Circular variance based on resultant length (Mardia 1972)."""
+        """Circular variance ``V = 1 - Rbar`` (Mardia & Jupp, 2000, eq. 2.3.3).
+
+        For axial data (``Direction2Set``) ``Rbar`` is that of the doubled
+        angles. Some authors use ``2 (1 - Rbar)``.
+        """
         self._require(1, "var")
         return 1 - abs(self.normalized().R(mean=True))
 
@@ -386,7 +521,7 @@ class Vector2Set(FeatureSet):
         return delta / 2 if self._axial else delta
 
     def rdegree(self):
-        """Degree of preffered orientation of vectors in ``Vector2Set``."""
+        """Degree of preferred orientation ``100 (2 R - N) / N`` in percent."""
         self._require(1, "rdegree")
         N = len(self)
         return 100 * (2 * abs(self.normalized().R()) - N) / N
@@ -509,23 +644,6 @@ class Direction2Set(Vector2Set):
 
     def __repr__(self):
         return f"D2({len(self)}) {self.name}"
-
-    def uniformity_test(self, level=0.95):
-        """Rayleigh's uniformity test for axial data, via angle doubling.
-
-        Doubles each direction angle (mod 360°) to map the 180°-periodic axial data
-        onto a full circle before applying the standard circular Rayleigh test - see
-        ``Vector2Set.uniformity_test``.
-
-        Args:
-            level: confidence level for the uniformity decision. Default 0.95.
-
-        Returns:
-            dict: with keys ``R``, ``statistic``, ``p_value`` and ``uniform``.
-        """
-        self._require(1, "uniformity_test")
-        doubled = Vector2Set([Vector2(2 * e.direction) for e in self])
-        return doubled.uniformity_test(level=level)
 
 
 class Vector3Set(FeatureSet):
@@ -685,18 +803,27 @@ class Vector3Set(FeatureSet):
         return R
 
     def fisher_statistics(self, level=0.95):
-        """Fit Fisher distribution and return statistics.
+        """Fisher statistics: mean direction, precision and confidence cone.
+
+        The precision is Fisher's ``k = (N - 1) / (N - R)`` (Fisher, 1953, p.
+        303; Fisher, Lewis & Embleton, 1987, eq. 5.25), the confidence cone
+        ``alpha`` (alpha95 for ``level=0.95``) is the cone of Fisher (1953),
+        ``cos(alpha) = 1 - (N - R) / R ((1 - level)^(-1 / (N - 1)) - 1)``.
 
         Args:
             level: confidence level. Default 0.95 for 95 %.
         Returns:
-            dict: with keys ``mu`` (mean axis), ``k`` (precision parameter), and
-                ``alpha`` (confidence cone half-angle).
+            dict: with keys ``mu`` (mean direction), ``k`` (Fisher's
+                precision), ``kappa`` (maximum-likelihood estimate of the
+                concentration, ``coth(kappa) - 1/kappa = Rbar``) and ``alpha``
+                (confidence cone half-angle in degrees).
 
         Note:
             Calculated alpha for level 0.95 means, you can be 95% confident that
-            the true population mean axis lies within alpha degrees of the mu.
-            ``VonMisesFisher.fit(data)`` gives the fitted distribution.
+            the true population mean direction lies within alpha degrees of mu.
+            ``VonMisesFisher.fit(data)`` gives the fitted distribution
+            (``method="precision"`` for ``k``). Before apsg 2.1 ``k`` was the
+            maximum-likelihood estimate, now ``kappa``.
 
             Deprecated for axial data (``LineationSet``, ``FoliationSet``),
             which are flipped to the side of their principal axis
@@ -704,6 +831,10 @@ class Vector3Set(FeatureSet):
             ``TypeError`` in apsg 2.2; use ``watson_statistics``,
             ``bingham_statistics`` or convert the axes to vectors,
             ``.halfspace().to_vec()``.
+
+        References:
+            Fisher, R.A. (1953). Dispersion on a sphere. Proceedings of the
+                Royal Society of London A 217, 295-305.
         """
         _warn_axial(self, "fisher_statistics")
         return self._fisher_statistics(level)
@@ -712,12 +843,24 @@ class Vector3Set(FeatureSet):
         data = self.normalized()
         if issubclass(self.__feature_class__, Axial3):
             data = data.halfspace()
-        dist = VonMisesFisher.fit(np.asarray(data))
+        X = np.asarray(data, dtype=float)
+        dist = VonMisesFisher.fit(X)
+        R = float(np.linalg.norm(X.sum(axis=0)))
         alpha = dist.mean_confidence(level).alpha
-        return {"mu": dist.mean, "k": dist.kappa, "alpha": alpha}
+        return {
+            "mu": dist.mean,
+            "k": fisher_precision(len(X), R),
+            "kappa": dist.kappa,
+            "alpha": alpha,
+        }
 
     def csd(self):
-        """Angular standard deviation based on Fisher's statistics (Fisher, 1953).
+        """Angular standard deviation ``81 / sqrt(k)`` in degrees.
+
+        The approximate radius of the cone about the mean containing 63 % of
+        the directions of a Fisher distribution with precision ``k``
+        (``fisher_statistics``), theta63 (Borradaile, 2003, Statistics of
+        Earth Science Data, p. 271).
 
         Deprecated for axial data, see ``fisher_statistics``.
 
@@ -730,30 +873,26 @@ class Vector3Set(FeatureSet):
         return 81 / np.sqrt(k) if k > 0 else np.inf
 
     def uniformity_test(self, level=0.95):
-        """Rayleigh test of uniformity against a preferred direction.
+        """Test of uniformity.
 
-        Uses the large-sample chi-square approximation ``3 * N * Rbar**2 ~ chi2(df=3)``
-        (Mardia & Jupp, 2000, Directional Statistics, sec. 10.4.1) for spherical data.
+        Vectors are tested by the Rayleigh test against a preferred direction
+        (``rayleigh_test``, Mardia & Jupp, 2000, eq. 10.4.4-10.4.6), axes
+        (``LineationSet``, ``FoliationSet``) by the Bingham test against a
+        preferred orientation, a cluster or a girdle (``bingham_test``, Mardia &
+        Jupp, 2000, eq. 10.7.1-10.7.3). The Rayleigh test can't detect axial
+        alternatives, as the resultant of antipodal data vanishes.
 
         Args:
-            level: confidence level for the uniformity decision. Default 0.95 for 95 %.
+            level: confidence level. Default 0.95 for 95 %.
 
         Returns:
-            dict: with keys ``R`` (resultant length), ``statistic`` (chi-square
-                statistic), ``p_value``, and ``uniform`` (True if data is consistent
-                with a uniform/random distribution at the given confidence level).
+            TestResult: ``reject()`` is True when the data are not uniform at
+            the given confidence level.
         """
         self._require(1, "uniformity_test")
-        N = len(self)
-        R = abs(self.normalized().R())
-        statistic = 3 * R**2 / N
-        p_value = float(stats.chi2.sf(statistic, df=3))
-        return {
-            "R": R,
-            "statistic": statistic,
-            "p_value": p_value,
-            "uniform": bool(p_value >= 1.0 - level),
-        }
+        if issubclass(self.__feature_class__, Axial3):
+            return bingham_test(self.ortensor(), len(self), level)
+        return rayleigh_test(np.asarray(self.normalized(), dtype=float), level)
 
     def watson_statistics(self, level=0.95):
         """Fit Watson distribution and return statistics.
@@ -766,10 +905,11 @@ class Vector3Set(FeatureSet):
         in closed form through Dawson's integral (``k > 0``) and the error
         function (``k < 0``).
 
-        The confidence cone is the large-sample approximation
-        ``sin^2(alpha) = -ln(1 - level) / (N * |k| * |tau - tau_m|)``, where
-        ``tau`` is the eigenvalue of the mean axis and ``tau_m`` the mean of the
-        other two eigenvalues.
+        The confidence cone is the large-sample cone of Fisher, Lewis &
+        Embleton (1987, eq. 6.11-6.13), ``sin^2(alpha) = -ln(1 - level)
+        sigma^2``, with the variance ``sigma^2`` of the sample axis from the
+        moments of the data (see ``Watson``); it does not assume the Watson
+        model.
 
         Args:
             level: confidence level. Default 0.95 for 95 %.
@@ -795,7 +935,8 @@ class Vector3Set(FeatureSet):
         The ellipse is the large-sample (central limit theorem) approximation
         of the sampling distribution of the eigenvector, see
         ``apsg.feature._distributions.bingham_ellipse``; its long axis lies
-        along the direction of the larger spread of the data.
+        along the direction of the larger spread of the data. Under the
+        Bingham model it tends to the ellipse of Bingham (1974, eq. 7.24).
 
         Args:
             level: confidence level. Default 0.95 for 95 %.
@@ -826,35 +967,115 @@ class Vector3Set(FeatureSet):
             "k": (dist.kappa_major, dist.kappa_minor),
         }
 
-    def bootstrap_statistics(self, level=0.95, n=1000):
-        """Bootstrap confidence cone of the principal orientation.
+    def bootstrap_statistics(self, level=0.95, n=1000, method="cone"):
+        """Bootstrap confidence region of the principal orientation.
 
-        The mean is the principal eigenvector of the orientation tensor and
-        `alpha` is the `level` percentile of the angles between it and the
-        principal eigenvectors of `n` bootstrap resamples. Like the
-        orientation tensor itself, it applies to axial as well as directional
-        data.
+        The mean is the principal eigenvector of the orientation tensor, which
+        applies to axial as well as directional data. The data are resampled
+        `n` times with replacement and the principal eigenvectors of the
+        resamples, flipped to the side of the mean, give the region.
 
         Args:
             level (float): confidence level. Default 0.95.
             n (int): number of bootstrap resamples. Default 1000.
+            method (str): "cone" (default), the `level` percentile of the
+                angles between the mean and the resampled eigenvectors, or
+                "ellipse", the region of Constable & Tauxe (1990, eq. 13-15):
+                semi-angles ``arcsin(sigma_i sqrt(g))`` along the principal
+                axes of the tangent-plane covariance of the resampled
+                eigenvectors, ``g = -2 ln(1 - level) / mu^2`` with ``mu`` the
+                length of their mean.
 
         Returns:
             dict: ``mu`` (mean orientation) and ``alpha`` (radius of the
-            confidence cone in degrees).
+            confidence cone in degrees) for "cone"; ``mu``, ``axes`` and
+            ``gamma`` (as ``bingham_statistics``) for "ellipse".
+
+        Note:
+            With the moments of the bootstrap means the constant has no factor
+            ``1 / n``; Tauxe (2003, eq. 4.16) prints ``g = -2 ln(0.05) / (n
+            mu^2)``, which applies to moments of the data and covers about 10 %
+            when used with bootstrap means.
+
+        References:
+            Constable, C. & Tauxe, L. (1990). The bootstrap for magnetic
+                susceptibility tensors. Journal of Geophysical Research 95,
+                8383-8395.
         """
         mu = self.ortensor().eigenvectors(0)
-        deviations = []
-        for sample in self.bootstrap(n=n):
-            v = sample.ortensor().eigenvectors(0)
-            # eigenvectors have an arbitrary sign
-            if v.dot(mu) < 0:
-                v = -v
-            deviations.append(mu.angle(v))
-        return {"mu": mu, "alpha": float(np.percentile(deviations, 100 * level))}
+        m = np.asarray(mu, dtype=float)
+        V = np.array(
+            [np.asarray(s.ortensor().eigenvectors(0)) for s in self.bootstrap(n=n)]
+        )
+        # eigenvectors have an arbitrary sign
+        V[V @ m < 0] *= -1
+        match method:
+            case "cone":
+                angles = np.degrees(np.arccos(np.clip(V @ m, -1, 1)))
+                return {"mu": mu, "alpha": float(np.percentile(angles, 100 * level))}
+            case "ellipse":
+                mean = V.mean(axis=0)
+                length = np.linalg.norm(mean)
+                center = mean / length
+                e1, e2 = _tangent_basis(center)
+                P = V @ np.column_stack([e1, e2])
+                lam, vec = np.linalg.eigh(np.cov(P, rowvar=False))
+                g = -2 * np.log(1 - level) / length**2
+                axes, gamma = [], []
+                for i in (1, 0):
+                    axes.append(Vector3(vec[0, i] * e1 + vec[1, i] * e2))
+                    arg = np.sqrt(max(lam[i], 0) * g)
+                    gamma.append(
+                        90.0 if arg >= 1 else float(np.degrees(np.arcsin(arg)))
+                    )
+                return {
+                    "mu": Vector3(center),
+                    "axes": tuple(axes),
+                    "gamma": tuple(gamma),
+                }
+        raise ValueError(f"Unknown method {method!r}, expected cone or ellipse")
+
+    def common_mean_test(self, *others, method=None, level=0.95):
+        """Test whether this and other sets share the mean direction or axis.
+
+        Vectors are compared by ``common_mean_test``, axes (``LineationSet``,
+        ``FoliationSet``) by their principal axes, ``axial_common_mean_test``.
+        ``similarity`` tests whether the whole distributions differ.
+
+        Args:
+            *others: one or more sets of the same kind.
+            method: for vectors "watson" (default), "mcfadden_lowes" or
+                "watson_debiche" (unequal concentrations); not used for axes.
+            level: confidence level. Default 0.95.
+
+        Returns:
+            TestResult: ``reject()`` is True when the mean directions differ.
+        """
+        samples = _samples(self, others)
+        if issubclass(self.__feature_class__, Axial3):
+            if method is not None:
+                raise ValueError("Axes are compared by the axial test only")
+            return axial_common_mean_test(samples, level=level)
+        return common_mean_test(samples, method=method, level=level)
+
+    def equal_kappa_test(self, *others, method=None, level=0.95):
+        """Test whether this and other sets of vectors share the concentration.
+
+        Args:
+            *others: one or more sets of the same kind.
+            method: "f" (default for two sets) or "bartlett", see
+                ``equal_kappa_test``.
+            level: confidence level. Default 0.95.
+
+        Returns:
+            TestResult: ``reject()`` is True when the concentrations differ.
+        """
+        if issubclass(self.__feature_class__, Axial3):
+            raise TypeError("equal_kappa_test compares sets of vectors, not axes")
+        return equal_kappa_test(_samples(self, others), method=method, level=level)
 
     def var(self):
-        """Spherical variance based on resultant length (Mardia 1972).
+        """Spherical variance ``1 - Rbar``.
 
         Deprecated for axial data, see ``fisher_statistics``; the orientation
         tensor (e.g. ``1 - ortensor().eigenvalues(0)``) describes their spread.
@@ -864,7 +1085,10 @@ class Vector3Set(FeatureSet):
         return 1 - abs(self.normalized().R(mean=True))
 
     def delta(self):
-        """Cone angle containing ~63% of the data in degrees.
+        """Angle ``arccos(Rbar)`` in degrees, from the mean resultant length.
+
+        It decreases from 90 to 0 degrees as the directions cluster; for the
+        radius of the cone containing 63 % of the data see ``csd``.
 
         Deprecated for axial data, see ``fisher_statistics``.
         """
@@ -873,7 +1097,7 @@ class Vector3Set(FeatureSet):
         return acosd(abs(self.R(mean=True)))
 
     def rdegree(self):
-        """Degree of preffered orientation of vectors in ``FeatureSet``.
+        """Degree of preferred orientation ``100 (2 R - N) / N`` in percent.
 
         Deprecated for axial data, see ``fisher_statistics``; the orientation
         tensor measures (``ortensor().strength``, ``.Intensity``, ...) describe
@@ -952,7 +1176,9 @@ class Vector3Set(FeatureSet):
         bandwidth=None,
     ):
         """Tests whether two sets of 3D vectors are sampled from the same distribution.
-        H0 hypothesis is that two samples are from same distribution.
+        H0 hypothesis is that two samples are from same distribution. For the
+        parametric tests of a common mean direction or concentration see
+        ``common_mean_test`` and ``equal_kappa_test``.
 
         Note on methods:
 
@@ -1333,27 +1559,6 @@ class LineationSet(Vector3Set):
     def __repr__(self):
         return f"L({len(self)}) {self.name}"
 
-    def uniformity_test(self, level=0.95):
-        """Watson's U² test of uniformity for axial (spherical) data.
-
-        Rayleigh's test (used by plain ``Vector3Set``) is insensitive to axial/bipolar
-        concentration since the resultant vector cancels for antipodal data. Instead,
-        tests whether ``|xᵢ · v|`` (v = major eigenvector of the orientation tensor) is
-        uniformly distributed on [0, 1] - true for the (folded) z-coordinate of points
-        uniformly distributed on the sphere.
-
-        Args:
-            level: confidence level for the uniformity decision. Default 0.95.
-
-        Returns:
-            dict: with keys ``statistic`` (Watson's U²), ``critical_value`` and
-                ``uniform``.
-        """
-        self._require(1, "uniformity_test")
-        v = self.ortensor().eigenvectors(0)
-        w = [e.dot(v) for e in self]
-        return _watson_u2_test(w, level=level)
-
 
 class FoliationSet(Vector3Set):
     """
@@ -1369,27 +1574,6 @@ class FoliationSet(Vector3Set):
 
     def __repr__(self):
         return f"S({len(self)}) {self.name}"
-
-    def uniformity_test(self, level=0.95):
-        """Watson's U² test of uniformity for axial (spherical) data.
-
-        Rayleigh's test (used by plain ``Vector3Set``) is insensitive to axial/bipolar
-        concentration since the resultant vector cancels for antipodal data. Instead,
-        tests whether ``|xᵢ · v|`` (v = major eigenvector of the orientation tensor) is
-        uniformly distributed on [0, 1] - true for the (folded) z-coordinate of points
-        uniformly distributed on the sphere.
-
-        Args:
-            level: confidence level for the uniformity decision. Default 0.95.
-
-        Returns:
-            dict: with keys ``statistic`` (Watson's U²), ``critical_value`` and
-                ``uniform``.
-        """
-        self._require(1, "uniformity_test")
-        v = self.ortensor().eigenvectors(0)
-        w = [e.dot(v) for e in self]
-        return _watson_u2_test(w, level=level)
 
     def dipvec(self):
         """Return ``FeatureSet`` object with plane dip vector."""

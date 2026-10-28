@@ -19,6 +19,7 @@ from apsg import (
     vecset,
 )
 from apsg.config import apsg_conf_context
+from apsg.feature import TestResult
 from apsg.feature._container import (
     ArcSet,
     ConeSet,
@@ -248,19 +249,18 @@ class TestVector2Set:
         np.random.seed(42)
         v = Vector2Set.random(200)
         s = v.uniformity_test()
-        assert isinstance(s, dict)
-        assert "R" in s
-        assert "statistic" in s
-        assert "p_value" in s
-        assert s["p_value"] > 0.05
-        assert s["uniform"] is True
+        assert isinstance(s, TestResult)
+        assert s.name == "Rayleigh"
+        assert "R" in s.extra
+        assert s.p_value > 0.05
+        assert not s.reject()
 
     def test_uniformity_test_clustered(self):
         np.random.seed(42)
         v = Vector2Set.random_vonmises(100, position=0, kappa=20)
         s = v.uniformity_test()
-        assert s["p_value"] < 0.05
-        assert s["uniform"] is False
+        assert s.p_value < 0.05
+        assert s.reject()
 
     def test_var(self):
         v = Vector2Set([Vector2(1, 0), Vector2(0, 1)])
@@ -384,9 +384,9 @@ class TestDirection2Set:
         np.random.seed(42)
         d = Direction2Set([Direction(a) for a in np.random.uniform(0, 180, 200)])
         s = d.uniformity_test()
-        assert isinstance(s, dict)
-        assert s["p_value"] > 0.05
-        assert s["uniform"] is True
+        assert isinstance(s, TestResult)
+        assert s.p_value > 0.05
+        assert not s.reject()
 
     def test_uniformity_test_clustered_antipodal_mix(self):
         # A single tight axial cluster around the 10/190 axis, but recorded with
@@ -400,8 +400,8 @@ class TestDirection2Set:
         )
         d = Direction2Set([Direction(a) for a in angles])
         s = d.uniformity_test()
-        assert s["p_value"] < 0.05
-        assert s["uniform"] is False
+        assert s.p_value < 0.05
+        assert s.reject()
 
 
 # ---------------------------------------------------------------------------
@@ -580,19 +580,18 @@ class TestVector3Set:
         np.random.seed(42)
         v = Vector3Set.gss(200)
         s = v.uniformity_test()
-        assert isinstance(s, dict)
-        assert "R" in s
-        assert "statistic" in s
-        assert "p_value" in s
-        assert s["p_value"] > 0.05
-        assert s["uniform"] is True
+        assert isinstance(s, TestResult)
+        assert s.name == "Rayleigh"
+        assert "R" in s.extra
+        assert s.p_value > 0.05
+        assert not s.reject()
 
     def test_uniformity_test_clustered(self):
         np.random.seed(42)
         v = Vector3Set.random_fisher(100, position=Vector3(0, 0, 1), kappa=20)
         s = v.uniformity_test()
-        assert s["p_value"] < 0.05
-        assert s["uniform"] is False
+        assert s.p_value < 0.05
+        assert s.reject()
 
     def test_watson_statistics(self):
         np.random.seed(42)
@@ -903,10 +902,10 @@ class TestLineationSet:
         np.random.seed(42)
         v = LineationSet.gss(200)
         s = v.uniformity_test()
-        assert isinstance(s, dict)
-        assert "statistic" in s
-        assert "critical_value" in s
-        assert s["uniform"] is True
+        assert isinstance(s, TestResult)
+        assert s.name == "Bingham"
+        assert s.df == 5
+        assert not s.reject()
 
     def test_uniformity_test_clustered_antipodal_mix(self):
         # A tight axial cluster around lin(120, 40), with half the vectors
@@ -917,7 +916,7 @@ class TestLineationSet:
         v = LineationSet.random_fisher(100, position=Lineation(120, 40), kappa=50)
         flipped = LineationSet([-e if i % 2 else e for i, e in enumerate(v)])
         s = flipped.uniformity_test()
-        assert s["uniform"] is False
+        assert s.reject()
 
 
 # ---------------------------------------------------------------------------
@@ -970,17 +969,17 @@ class TestFoliationSet:
         np.random.seed(42)
         f = FoliationSet.gss(200)
         s = f.uniformity_test()
-        assert isinstance(s, dict)
-        assert "statistic" in s
-        assert "critical_value" in s
-        assert s["uniform"] is True
+        assert isinstance(s, TestResult)
+        assert s.name == "Bingham"
+        assert s.df == 5
+        assert not s.reject()
 
     def test_uniformity_test_clustered_antipodal_mix(self):
         np.random.seed(42)
         f = FoliationSet.random_fisher(100, position=Foliation(250, 30), kappa=50)
         flipped = FoliationSet([-e if i % 2 else e for i, e in enumerate(f)])
         s = flipped.uniformity_test()
-        assert s["uniform"] is False
+        assert s.reject()
 
 
 # ---------------------------------------------------------------------------
@@ -1688,6 +1687,9 @@ class TestMeanTensor:
             "mean",
             "eigenvalues",
             "ellipses",
+            "intervals",
+            "anisotropy_test",
+            "shape",
             "n",
             "level",
             "normalize",

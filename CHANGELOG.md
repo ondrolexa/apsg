@@ -15,6 +15,13 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - `StereoNet.confidence()` methods `"kent"`, `"esag"` and `"lisle"`.
 - `PairSet.lisle_statistics()` for the mean pair after Lisle (1989).
 - Documentation page and tutorial on orientation distributions.
+- Circular distributions `WrappedCauchy`, `Cardioid` and `JonesPewsey`; the `MatrixFisher` distribution of rotations and `RotationSet` (`rotationset`) with the mean rotation.
+- Hypothesis tests returning a `TestResult` (statistic, p-value, `reject()`): Kuiper, Watson U², Hodges-Ajne and Rao spacing tests of uniformity on the circle (`uniformity_test(method=...)`), Arnold & Jupp test of uniformity of pairs (`PairSet.uniformity_test()`), goodness of fit of the Fisher distribution (`VonMisesFisher.goodness_of_fit()`), Fisher against Kent (`Kent.score_test()`), Watson against Bingham (`Watson.symmetry_test()`), likelihood ratio test of nested distributions, tests of a common mean direction or axis (`common_mean_test()`) and of a common concentration (`equal_kappa_test()`).
+- `kappa_confidence()` of fitted Fisher, von Mises and Watson distributions; fitting methods `"precision"` and `"corrected"` (Fisher) and `"corrected"` (von Mises); `VonMises.mean_confidence(method=...)` with the intervals of Fisher (1993).
+- `Vector2Set.median()`, `moment()`, `skewness()`, `kurtosis()`, `circular_dispersion()` and `angular_deviation()`.
+- `mean_tensor()` returns confidence intervals of the eigenvalues, Jelínek's (1978) anisotropy test and the Jelínek (1981) shape parameters (`jelinek_shape()`).
+- Bootstrap confidence ellipse of Constable & Tauxe (1990), `bootstrap_statistics(method="ellipse")` and `StereoNet.confidence(method="bootstrap_ellipse")`.
+- Docstrings of the statistics cite the primary sources with equation numbers.
 
 ### Changed
 - Documentation moved to MkDocs with the Material theme.
@@ -32,6 +39,8 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - **BREAKING:** `PairSet.from_csv()` no longer accepts `sense_str` and `scol`.
 - **BREAKING:** `SDBSession.getfaults()` is removed: the SDB format stores no sense of movement, so it only assigned one given sense to every pair. Use `getpairs()` and build the faults, e.g. `FaultSet([Fault(p, 1) for p in pairs])`.
 - **BREAKING:** `Cone.apical_angle` is a property, like `ConeSet.apical_angle` (use `c.apical_angle` instead of `c.apical_angle()`).
+- **BREAKING:** `fisher_statistics()["k"]` of 3D sets is Fisher's precision `(N - 1) / (N - R)`, the estimate alpha95 and palaeomagnetic practice use; the maximum-likelihood estimate it returned before is now `fisher_statistics()["kappa"]`. `csd()` uses the precision.
+- **BREAKING:** `uniformity_test()` returns a `TestResult`; its dict access with the old keys (`R`, `statistic`, `p_value`, `uniform`, `critical_value`) still works with a `FutureWarning`.
 - `SDBSession.getpairs()` raises `ValueError` when `ptype` is not a planar or `ltype` not a linear structure, instead of returning an empty set.
 
 ### Deprecated
@@ -58,6 +67,9 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - **BREAKING:** Bingham confidence ellipse was too large and could be wrongly oriented.
 - **BREAKING:** `FaultSet.stress_inversion()` returned wrong stress tensors.
 - **BREAKING:** Circular statistics of `Vector2Set` and `Direction2Set` (confidence interval, axial directions).
+- **BREAKING:** `uniformity_test()` of lineation and foliation sets is the Bingham test; the former test of the cosines to the principal axis of the same data was not valid.
+- **BREAKING:** The confidence cone of `watson_statistics()` (and of the fitted `Watson` distribution) is the cone of Fisher, Lewis & Embleton (1987, eq. 6.11-6.13), with the nominal coverage; the former formula had no source.
+- **BREAKING:** `OrientationTensor3.strength` is Woodcock's `ln(S1/S3)` of the eigenvalues; it was half of it, computed from their square roots.
 - **BREAKING:** `watson_statistics()` now recognizes girdle distributions.
 - `RosePlot.muci()` confidence level for axial data.
 - Saving rose diagrams and fabric plots.

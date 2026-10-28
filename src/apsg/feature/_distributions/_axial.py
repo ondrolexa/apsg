@@ -1,5 +1,9 @@
 """
 Distributions of axes (axial data) on the sphere.
+
+References are abbreviated MJ (Mardia & Jupp, 2000, Directional Statistics),
+FLE (Fisher, Lewis & Embleton, 1987, Statistical Analysis of Spherical Data)
+and F93 (Fisher, 1993, Statistical Analysis of Circular Data).
 """
 
 import numpy as np
@@ -42,12 +46,32 @@ class Watson(OrientationDistribution):
             ``Lineation``, ``Vector3`` or array. Default (0, 0, 1).
         kappa: concentration parameter. Default 1.
 
-    The fit is the maximum-likelihood estimate of both forms, with the mean
-    axis the major (bipolar) or minor (girdle) eigenvector of the orientation
-    tensor, keeping the form with the higher likelihood. The confidence cone
-    is the large-sample approximation ``sin^2(alpha) = -ln(1 - level) / (N
-    |kappa| |tau - tau_m|)`` with ``tau`` the eigenvalue of the mean axis and
-    ``tau_m`` the mean of the other two.
+    The fit is the maximum-likelihood estimate of both forms (MJ eq.
+    10.3.31-10.3.33), with the mean axis the major (bipolar) or minor (girdle)
+    eigenvector of the orientation tensor, keeping the form with the higher
+    likelihood.
+
+    The confidence cone of the mean axis is the large-sample cone of FLE eq.
+    6.11-6.13, ``sin^2(q) = -ln(1 - level) sigma^2``. The variance of the
+    sample axis is the sum of its variances toward the two other eigenvectors,
+    ``sigma^2 = sum_j m_ij / (n (tau_i - tau_j)^2)`` with ``m_ij =
+    mean((x.v_i)^2 (x.v_j)^2)`` (see ``bingham_ellipse``); for rotationally
+    symmetric data it is FLE's ``(tau_1 - G) / (n (tau_1 - tau_2)^2)``, ``G =
+    mean((v_1.x)^4)``. It does not assume the Watson model and applies to the
+    pole of a girdle (minor eigenvector) as well.
+
+    Note:
+        FLE's Examples 6.12 and 6.25 use ``-2 ln(1 - level)``; the printed
+        formula with ``-ln(1 - level)`` is the one with the nominal coverage
+        (simulated coverage 0.95 for ``kappa = 10``, ``n = 50``).
+
+    References:
+        Fisher, N.I., Lewis, T. & Embleton, B.J.J. (1987). Statistical Analysis
+            of Spherical Data, eq. 6.11-6.13. Cambridge University Press.
+        Mardia, K.V. & Jupp, P.E. (2000). Directional Statistics, eq.
+            9.4.1-9.4.2, 10.3.31-10.3.33. Wiley.
+        Watson, G.S. (1965). Equatorial distributions on a sphere. Biometrika
+            52, 193-201.
     """
 
     dim = 3
@@ -92,32 +116,70 @@ class Watson(OrientationDistribution):
             which, kappa = 0, bipolar
         else:
             which, kappa = 2, girdle
-        stats_ = {"eigenvalues": tuple(taus), "which": which}
+        stats_ = {
+            "eigenvalues": tuple(taus),
+            "which": which,
+            "cross_moments": axial_cross_moments(X, vecs),
+        }
         return {"mean": vecs[which], "kappa": kappa}, True, stats_
 
     def _mean_confidence(self, level):
-        taus = self.fit_info.stats["eigenvalues"]
-        tau = taus[self.fit_info.stats["which"]]
-        tau_minor = (sum(taus) - tau) / 2.0
-        if np.isinf(self.kappa):
-            alpha = 0.0
-        elif abs(self.kappa) < 1e-5 or abs(tau - tau_minor) < 1e-5:
-            alpha = 90.0
-        else:
-            val = -np.log(1.0 - level)
-            val /= self.fit_info.n * abs(self.kappa) * abs(tau - tau_minor)
-            alpha = float(np.degrees(np.arcsin(np.sqrt(min(val, 1.0)))))
+        s = self.fit_info.stats
+        taus, i, m = s["eigenvalues"], s["which"], s["cross_moments"]
+        var = 0.0
+        for j in range(3):
+            if j != i:
+                diff = taus[i] - taus[j]
+                var = np.inf if diff == 0 else var + m[i][j] / diff**2
+        val = -np.log(1.0 - level) * var / self.fit_info.n
+        alpha = float(np.degrees(np.arcsin(np.sqrt(min(val, 1.0)))))
         return ConfidenceRegion(mu=self._mean, level=level, alpha=alpha)
+
+    def _kappa_confidence(self, level):
+        # FLE eq. 6.26: 2 kappa (n - n tau_1) ~ chi2(2n - 2), bipolar form
+        if self.kappa < 0:
+            raise ValueError("The interval of kappa is available for bipolar data only")
+        n = self.fit_info.n
+        dev = n * (1 - self.fit_info.stats["eigenvalues"][0])
+        if dev <= 0:
+            return (np.inf, np.inf)
+        q = ((1 - level) / 2, (1 + level) / 2)
+        return tuple(float(stats.chi2.ppf(p, 2 * n - 2) / (2 * dev)) for p in q)
+
+    @staticmethod
+    def symmetry_test(data, level=0.95):
+        """Tests whether axes follow a Watson rather than a Bingham distribution.
+
+        Fits the Bingham distribution and applies ``watson_symmetry_test`` (MJ
+        eq. 10.7.8-10.7.18).
+
+        Args:
+            data: feature set or ``(N, 3)`` array of axes.
+            level: confidence level. Default 0.95.
+
+        Returns:
+            dict: ``bipolar`` and ``girdle`` ``TestResult``; not rejecting one
+            of them means the corresponding Watson form is adequate.
+        """
+        from apsg.feature._hypothesis import watson_symmetry_test
+
+        X = Bingham.as_array(data)
+        dist = Bingham.fit(X)
+        kappas = (0.0, dist.kappa_major, dist.kappa_minor)
+        return watson_symmetry_test(
+            dist.fit_info.stats["eigenvalues"], kappas, len(X), level
+        )
 
 
 class Bingham(OrientationDistribution):
     """Bingham distribution of axes on the sphere.
 
     The density is ``exp(kappa_major (major.x)^2 + kappa_minor (minor.x)^2) /
-    F`` with ``kappa_minor <= kappa_major <= 0`` (López-Custodio, 2025, eq.
-    28), so that `mean` is the mode, `major` the axis of the larger spread and
-    ``minor = mean x major``. A girdle has ``kappa_major`` near 0 and `minor`
-    as its pole.
+    F`` with ``kappa_minor <= kappa_major <= 0``, so that `mean` is the mode,
+    `major` the axis of the larger spread and ``minor = mean x major``. A
+    girdle has ``kappa_major`` near 0 and `minor` as its pole. In the notation
+    of Bingham (1974, eq. 1.2) the concentrations are ``Z = diag(0,
+    kappa_major, kappa_minor)`` (MJ eq. 9.4.3).
 
     Args:
         mean: mean axis as ``Lineation``, ``Vector3`` or array. Default (0, 0, 1).
@@ -126,11 +188,22 @@ class Bingham(OrientationDistribution):
         kappa_minor: concentration along the minor axis. Default -2.
 
     The axes of the fit are the eigenvectors of the orientation tensor and the
-    concentrations the maximum-likelihood estimates (López-Custodio, 2025, eq.
-    30). The normalizer is evaluated as a one-dimensional integral. Sampling
-    is by rejection from an angular central Gaussian envelope (Kent, Ganeiber
-    & Mardia, 2013; López-Custodio, 2025, eq. 31-32). The confidence region is
-    the large-sample ellipse of the mean axis, see ``bingham_ellipse``.
+    concentrations the maximum-likelihood estimates, ``E[(v_i.x)^2] = tau_i``
+    (Bingham, 1974, Theorem 6.1, eq. 6.3; MJ eq. 10.3.36-10.3.37). The
+    normalizer ``1F1(1/2; 3/2; Z)`` is evaluated as a one-dimensional
+    integral. Sampling is by rejection from an angular central Gaussian
+    envelope with ``Omega = I + 2A / b`` (Kent, Ganeiber & Mardia, 2013, eq.
+    3.4-3.6; efficiency at least about 52 % on the sphere). The confidence
+    region is the large-sample ellipse of the mean axis, see
+    ``bingham_ellipse``.
+
+    References:
+        Bingham, C. (1974). An antipodally symmetric distribution on the sphere.
+            The Annals of Statistics 2, 1201-1225.
+        Kent, J.T., Ganeiber, A.M. & Mardia, K.V. (2013). A new method to
+            simulate the Bingham and related distributions in directional data
+            analysis with applications. arXiv:1310.8110.
+        Mardia, K.V. & Jupp, P.E. (2000). Directional Statistics. Wiley.
     """
 
     dim = 3
@@ -244,8 +317,7 @@ class ACG(OrientationDistribution):
     """Angular central Gaussian distribution of axes on the sphere.
 
     The distribution of ``y / |y|`` for ``y ~ N(0, Lambda)``, with density
-    ``(x' Lambda^-1 x)^(-3/2) / (4 pi sqrt(|Lambda|))`` (Tyler, 1987;
-    López-Custodio, 2025, eq. 33). ``Lambda`` has eigenvalues ``a1 >= a2 >=
+    ``(x' Lambda^-1 x)^(-3/2) / (4 pi sqrt(|Lambda|))`` (Tyler, 1987, eq. 1). ``Lambda`` has eigenvalues ``a1 >= a2 >=
     a3`` along `mean`, `major` and ``minor = mean x major``, scaled to sum 3.
 
     Args:
@@ -254,7 +326,11 @@ class ACG(OrientationDistribution):
         shape: eigenvalues ``(a1, a2, a3)``. Default (2, 0.6, 0.4).
 
     The fit is the maximum-likelihood estimate by the fixed-point iteration of
-    Tyler (1987) (López-Custodio, 2025, eq. 35).
+    Tyler (1987, eq. 3), which exists and is unique for more than 6 axes.
+
+    References:
+        Tyler, D.E. (1987). Statistical analysis for the angular central
+            Gaussian distribution on the sphere. Biometrika 74, 579-589.
     """
 
     dim = 3
@@ -379,6 +455,11 @@ def bingham_ellipse(taus, vecs, cross_moments, n, level=0.95, which=0):
     variance ``m_ij / (n (tau_i - tau_j)^2)``, with ``m_ij = mean((x.v_i)^2
     (x.v_j)^2)``. The semi-angles of the region are ``arcsin(sqrt(chi2_2(level)
     * m_ij / (n (tau_i - tau_j)^2)))``, 90 degrees for equal eigenvalues.
+    The moments make it valid for any distribution of axes; for rotationally
+    symmetric data it is the cone of FLE eq. 6.11-6.13. Under the Bingham
+    model ``m_ij / (tau_i - tau_j)^2`` tends to ``1 / (2 Delta_ij)``, the
+    semi-axes ``{chi2_2(level) / (2 n Delta_ij)}^(1/2)`` of Bingham (1974,
+    eq. 7.24).
 
     Args:
         taus: eigenvalues of the orientation tensor, descending.

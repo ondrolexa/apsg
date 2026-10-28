@@ -1,4 +1,5 @@
-"""Sets of ellipses, ellipsoids, orientation tensors and stress tensors."""
+"""Sets of ellipses, ellipsoids, orientation tensors, stress tensors and
+rotations."""
 
 import numpy as np
 from scipy import linalg as spla
@@ -13,8 +14,10 @@ from apsg.feature._tensor2 import Ellipse, OrientationTensor2, Stress2
 from apsg.feature._tensor3 import (
     Ellipsoid,
     OrientationTensor3,
+    Rotation3,
     Stress3,
 )
+from apsg.helpers._helper import check_count
 from apsg.helpers._math import atan2d, cosd, sind
 from apsg.math._vector import Vector3
 
@@ -45,15 +48,25 @@ def _mean_tensor(tensor_set, level, normalize, anisoft):
         }
         for which, e in enumerate(result["ellipses"])
     )
-    return {
+    stress = issubclass(tensor_cls, (Stress2, Stress3))
+    intervals = result["intervals"]
+    if stress and stress_sign() < 0:
+        intervals = -intervals[:, ::-1]
+    out = {
         "mean": tensor_cls._from_canonical(result["mean"]),
         "eigenvalues": eigenvalues,
         "ellipses": ellipses,
+        "intervals": intervals,
         "n": result["n"],
         "level": result["level"],
         "normalize": result["normalize"],
         "anisoft": result["anisoft"],
     }
+    if "anisotropy_test" in result:
+        out["anisotropy_test"] = result["anisotropy_test"]
+    if "shape" in result and not stress:
+        out["shape"] = result["shape"]
+    return out
 
 
 class EllipseSet(FeatureSet):
@@ -252,8 +265,13 @@ class EllipsoidSet(FeatureSet):
             for each principal axis of the mean tensor, 0 is the largest
             eigenvalue, with keys ``mu`` (principal axis), ``axes`` (tuple of
             the two ellipse axes, perpendicular to ``mu``), ``gamma`` (tuple
-            of the corresponding semi-angles in degrees) and ``which``), ``n``
-            (sample size), ``level``, ``normalize`` and ``anisoft``.
+            of the corresponding semi-angles in degrees) and ``which``),
+            ``intervals`` (``(3, 2)`` confidence intervals of the eigenvalues,
+            Jelínek, 1978, eq. 35), ``anisotropy_test`` (``TestResult`` of
+            Jelínek's T² test of isotropy, for more than 5 tensors), ``shape``
+            (``jelinek_shape`` parameters of the mean, for positive definite
+            ellipsoids), ``n`` (sample size), ``level``, ``normalize`` and
+            ``anisoft``.
 
         Raises:
             ValueError: for less than 3 tensors, or when ``normalize`` is used
@@ -436,8 +454,13 @@ class Stress3Set(FeatureSet):
             for each principal axis of the mean tensor, 0 is the largest
             eigenvalue, with keys ``mu`` (principal axis), ``axes`` (tuple of
             the two ellipse axes, perpendicular to ``mu``), ``gamma`` (tuple
-            of the corresponding semi-angles in degrees) and ``which``), ``n``
-            (sample size), ``level``, ``normalize`` and ``anisoft``.
+            of the corresponding semi-angles in degrees) and ``which``),
+            ``intervals`` (``(3, 2)`` confidence intervals of the eigenvalues,
+            Jelínek, 1978, eq. 35), ``anisotropy_test`` (``TestResult`` of
+            Jelínek's T² test of isotropy, for more than 5 tensors), ``shape``
+            (``jelinek_shape`` parameters of the mean, for positive definite
+            ellipsoids), ``n`` (sample size), ``level``, ``normalize`` and
+            ``anisoft``.
 
         Raises:
             ValueError: for less than 3 tensors, or when ``normalize`` is used
@@ -445,3 +468,70 @@ class Stress3Set(FeatureSet):
         """
         self._require(3, "mean_tensor")
         return _mean_tensor(self, level, normalize, anisoft)
+
+
+class RotationSet(FeatureSet):
+    """
+    Class to store set of ``Rotation3`` features, e.g. directed orthogonal
+    frames.
+    """
+
+    __feature_class__ = Rotation3
+
+    def __init__(self, data, name="Default"):
+        super().__init__(data, name=name)
+        if not all(isinstance(obj, Rotation3) for obj in data):
+            raise TypeError("Data must be instances of Rotation3")
+
+    def __repr__(self):
+        return f"R({len(self)}) {self.name}"
+
+    def __array__(self, dtype=None, copy=None):
+        return np.array([np.asarray(r) for r in self], dtype=dtype)
+
+    def mean(self):
+        """Mean rotation, the rotation closest to the mean rotation matrix.
+
+        The polar (orthogonal) part of the mean matrix ``U diag(d) V'``, ``U
+        V'`` with the proper singular value decomposition (Mardia & Jupp, 2000,
+        eq. 13.2.16); the maximum-likelihood mode of the ``MatrixFisher``
+        distribution.
+
+        Returns:
+            Rotation3: the mean rotation.
+        """
+        from apsg.feature._distributions._rotations import proper_svd
+
+        self._require(1, "mean")
+        U, _, V = proper_svd(np.asarray(self).mean(axis=0))
+        return Rotation3(U @ V.T)
+
+    def angle(self, other=None):
+        """Rotation angles in degrees between the rotations and `other`.
+
+        Args:
+            other: ``Rotation3`` or ``RotationSet`` of the same length. Default
+                None gives the angles of the rotations themselves.
+
+        Returns:
+            ndarray: angles in degrees.
+        """
+        X = np.asarray(self)
+        if isinstance(other, RotationSet):
+            self._check_same_length(other, "angle")
+            X = np.einsum("nji,njk->nik", np.asarray(other), X)
+        elif other is not None:
+            X = np.einsum("ji,njk->nik", np.asarray(other, dtype=float), X)
+        cos = (np.trace(X, axis1=1, axis2=2) - 1) / 2
+        return np.degrees(np.arccos(np.clip(cos, -1, 1)))
+
+    @classmethod
+    def random(cls, n=100, name="Default"):
+        """Return ``RotationSet`` of uniformly distributed random rotations."""
+        from scipy.spatial.transform import Rotation
+
+        from apsg.feature._distributions._base import legacy_rng
+
+        n = check_count(n)
+        R = Rotation.random(n, random_state=legacy_rng()).as_matrix()
+        return cls([Rotation3(r) for r in R], name=name)
