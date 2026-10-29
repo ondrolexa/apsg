@@ -1,11 +1,12 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/ondrolexa/apsg/master/docs/images/apsg_banner_dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/ondrolexa/apsg/master/docs/images/apsg_banner_light.svg">
   <img alt="APSG logo" src="https://raw.githubusercontent.com/ondrolexa/apsg/master/docs/images/apsg_banner_light.svg">
 </picture>
 
 [![PyPI - Version](https://img.shields.io/pypi/v/apsg)](https://pypi.org/project/apsg)
 [![Conda](https://img.shields.io/conda/v/conda-forge/apsg)](https://anaconda.org/conda-forge/apsg)
-[![Documentation Status](https://readthedocs.org/projects/apsg/badge/?version=stable)](https://apsg.readthedocs.io/en/stable/?badge=stable)
+[![Documentation Status](https://app.readthedocs.org/projects/apsg/badge/?version=stable)](https://apsg.readthedocs.io/en/stable/?badge=stable)
 [![codecov](https://codecov.io/gh/ondrolexa/apsg/graph/badge.svg?token=YKXWmJJHw3)](https://codecov.io/gh/ondrolexa/apsg)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.593586-blue)](https://doi.org/10.5281/zenodo.593586)
 
