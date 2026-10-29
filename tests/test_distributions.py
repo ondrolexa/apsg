@@ -269,21 +269,17 @@ def test_axial_csd_and_delta_are_halved():
     assert np.isclose(d.delta(), doubled.delta() / 2)
 
 
-def test_muci_axial_interval_percentiles(monkeypatch):
-    calls = []
-    percentile = np.percentile
-
-    def spy(a, q, *args, **kwargs):
-        calls.append(q)
-        return percentile(a, q, *args, **kwargs)
-
-    monkeypatch.setattr(np, "percentile", spy)
+def test_muci_axial_bootstrap_interval():
+    np.random.seed(5)
     d = Direction2Set.from_directions([10, 20, 30, 15, 25, 190])
+    stats = d.bootstrap_statistics(level=0.95, n=200)
+    # 190 is the axis 10, so the mean axis lies between 10 and 30
+    assert 10 < stats["mu"].direction < 30
+    assert stats["low"] < stats["mu"].direction < stats["high"]
     r = RosePlot()
-    r.muci(d, confidence_level=95, n_resamples=50)
+    r.muci(d, method="bootstrap", level=0.95, n_resamples=50)
     r.init_figure()
     r._render()
-    assert sorted(calls) == [2.5, 97.5]
 
 
 # Watson -----------------------------------------------------------------------

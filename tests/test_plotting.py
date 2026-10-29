@@ -23,6 +23,7 @@ from apsg import (
     cone,
     coneset,
     defgrad,
+    dir2,
     dir2set,
     ellipsoid,
     ellipsoidset,
@@ -42,6 +43,7 @@ from apsg import (
     stress,
     stressset,
     vec,
+    vec2,
     vec2set,
     vecset,
 )
@@ -2802,6 +2804,128 @@ def test_roseplot_density():
     with pytest.warns(UserWarning):
         r.density(dist_fisher())
     assert len(r._artists) == 1
+
+
+def _muci_arcs(r):
+    r.init_figure()
+    r._render()
+    lines = [ln for ln in r.ax.get_lines() if len(ln.get_xdata()) > 2]
+    return [np.degrees(ln.get_xdata()) for ln in lines]
+
+
+def test_roseplot_muci_fisher_interval():
+    np.random.seed(7)
+    v = vec2set.random_vonmises(40, position=60, kappa=5)
+    stats = v.fisher_statistics()
+    r = RosePlot()
+    r.muci(v)
+    assert r._artists[0].kwargs["method"] == "fisher"
+    (arc,) = _muci_arcs(r)
+    mu = stats["mu"].direction
+    assert np.isclose(arc.min(), mu - stats["alpha"])
+    assert np.isclose(arc.max(), mu + stats["alpha"])
+
+
+def test_roseplot_muci_axial_draws_two_arcs():
+    np.random.seed(7)
+    d = vec2set.random_vonmises(40, position=60, kappa=5).to_dir2()
+    r = RosePlot()
+    r.muci(d, method="bootstrap", n_resamples=100)
+    arcs = _muci_arcs(r)
+    assert len(arcs) == 2
+    assert np.allclose(arcs[1] - arcs[0], 180)
+
+
+def test_roseplot_muci_dispersed_data_draws_no_arc():
+    v = vec2set([vec2(0), vec2(90), vec2(180), vec2(270)])
+    assert v.fisher_statistics()["alpha"] == 180
+    r = RosePlot()
+    r.muci(v)
+    assert _muci_arcs(r) == []
+
+
+def test_roseplot_muci_confidence_level_deprecated():
+    v = vec2set.random_vonmises(20, position=60, kappa=5)
+    r = RosePlot()
+    with pytest.warns(FutureWarning, match="confidence_level"):
+        r.muci(v, confidence_level=90)
+    assert r._artists[0].kwargs["level"] == pytest.approx(0.9)
+
+
+def test_roseplot_muci_invalid_method_raises():
+    with pytest.raises(ValueError, match="method"):
+        RosePlot().muci(vec2set.random_vonmises(10), method="kent")
+
+
+def test_roseplot_muci_serialize():
+    r = RosePlot()
+    r.muci(vec2set.random_vonmises(10), method="bootstrap", n_resamples=20)
+    restored = RosePlot.from_json(r.to_json())
+    assert restored._artists[0].kwargs["method"] == "bootstrap"
+    restored.init_figure()
+    restored._render()
+
+
+def _rose_fill_at(r, deg):
+    v = r.ax.collections[0].get_paths()[0].vertices
+    near = np.abs((np.degrees(v[:, 0]) - deg + 180) % 360 - 180) < 0.3
+    return v[near, 1].max()
+
+
+@pytest.mark.parametrize("axial", [False, True])
+def test_roseplot_bar_pdf_muci_weighted_by_magnitude(axial):
+    v = vec2set([10 * vec2(0), vec2(90), vec2(90)])
+    if axial:
+        v = v.to_dir2()
+    r = RosePlot()
+    r.pdf(v)
+    r.muci(v)
+    r.init_figure()
+    r._render()
+    assert _rose_fill_at(r, 0) > _rose_fill_at(r, 90)
+    if axial:
+        assert np.isclose(_rose_fill_at(r, 0), _rose_fill_at(r, 180))
+    # muci mean line ends at the weighted mean direction
+    mean_line = r.ax.get_lines()[0]
+    assert np.isclose(
+        np.degrees(mean_line.get_xdata()[-1 if not axial else 0]) % 360,
+        v.R().direction % 360,
+    )
+
+
+def test_roseplot_accepts_single_features(recwarn):
+    r = RosePlot()
+    r.bar(vec2(30))
+    r.pdf(dir2(30))
+    assert len(r._artists) == 2
+    assert type(r._artists[1].args[0]).__name__ == "Direction2Set"
+    assert not [w for w in recwarn if issubclass(w.category, UserWarning)]
+    restored = RosePlot.from_json(r.to_json())
+    restored.init_figure()
+    restored._render()
+
+
+def test_roseplot_style_accepts_single_features():
+    from apsg import roseplot_styles
+
+    r = RosePlot()
+    r.plot(roseplot_styles.bar(), vec2(30), lin(10, 20))
+    r.plot(roseplot_styles.pdf(), lin(10, 20))
+    assert len(r._artists) == 1
+
+
+def test_roseplot_rejects_empty_and_too_small_input():
+    r = RosePlot()
+    for call in (
+        lambda: r.bar(),
+        lambda: r.bar(vec2set([])),
+        lambda: r.pdf(dir2set([])),
+        lambda: r.muci(vec2(30)),
+        lambda: r.muci(dir2set([dir2(10)])),
+    ):
+        with pytest.warns(UserWarning):
+            call()
+    assert r._artists == []
 
 
 def test_roseplot_and_fabricplot_serialize(tmp_path):

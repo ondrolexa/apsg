@@ -240,6 +240,56 @@ class TestVector2Set:
         assert "k" in s
         assert "alpha" in s
 
+    @pytest.mark.parametrize("axial", [False, True])
+    def test_bootstrap_statistics_brackets_mean(self, axial):
+        np.random.seed(3)
+        # mean near 0 deg, so the interval crosses the origin
+        v = Vector2Set.random_vonmises(50, position=2, kappa=10)
+        if axial:
+            v = v.to_dir2()
+        s = v.bootstrap_statistics(n=200)
+        mu = s["mu"].direction
+        assert math.isclose(mu, v.fisher_statistics()["mu"].direction)
+        assert s["low"] < mu < s["high"]
+        assert s["high"] - s["low"] < 2 * v.fisher_statistics(level=0.999)["alpha"]
+
+    @pytest.mark.parametrize("axial", [False, True])
+    def test_weighted_statistics_equal_unweighted_for_unit_data(self, axial):
+        v = Vector2Set.random_vonmises(30, position=40, kappa=4)
+        if axial:
+            v = v.to_dir2()
+        a, b = v.fisher_statistics(), v.fisher_statistics(weighted=True)
+        assert math.isclose(a["mu"].direction, b["mu"].direction)
+        assert math.isclose(a["k"], b["k"])
+        assert math.isclose(a["alpha"], b["alpha"])
+        np.random.seed(1)
+        a = v.bootstrap_statistics(n=100)
+        np.random.seed(1)
+        b = v.bootstrap_statistics(n=100, weighted=True)
+        assert a["mu"] == b["mu"]
+        assert (a["low"], a["high"]) == pytest.approx((b["low"], b["high"]))
+
+    @pytest.mark.parametrize("axial", [False, True])
+    def test_weighted_statistics_follow_magnitudes(self, axial):
+        v = Vector2Set([10 * Vector2(0), Vector2(90), Vector2(90)])
+        if axial:
+            v = v.to_dir2()
+        mu = v.R().direction
+        assert not math.isclose(mu, v.fisher_statistics()["mu"].direction)
+        assert math.isclose(v.fisher_statistics(weighted=True)["mu"].direction, mu)
+        assert math.isclose(
+            v.bootstrap_statistics(n=50, weighted=True)["mu"].direction, mu
+        )
+
+    def test_weighted_fisher_statistics_scale_invariant(self):
+        v = Vector2Set(
+            [Vector2(10) * m for m in (1, 2, 3)] + [Vector2(30), Vector2(-5)]
+        )
+        a = v.fisher_statistics(weighted=True)
+        b = Vector2Set([5 * e for e in v]).fisher_statistics(weighted=True)
+        assert math.isclose(a["alpha"], b["alpha"])
+        assert math.isclose(a["k"], b["k"])
+
     def test_csd(self):
         np.random.seed(42)
         v = Vector2Set.random_vonmises(100, position=0, kappa=20)

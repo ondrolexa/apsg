@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 from apsg.config import apsg_conf
@@ -8,15 +10,17 @@ from apsg.feature._container import (
     FaultSet,
     FeatureSet,
     FoliationSet,
+    G,
     PairSet,
     Stress3Set,
     Vector2Set,
     Vector3Set,
 )
 from apsg.feature._distributions import OrientationDistribution
+from apsg.feature._distributions._base import _APSG_DIR
 from apsg.feature._geodata import Arc, Cone, Fault, Foliation, Pair
 from apsg.feature._tensor3 import Ellipsoid, Stress3, Tensor3
-from apsg.math._vector import Axial3, Vector3
+from apsg.math._vector import Axial3, Vector2, Vector3
 from apsg.plotting._confidence import CONFIDENCE_METHODS
 from apsg.plotting._stereogrid import StereoGrid
 
@@ -538,6 +542,15 @@ class StereoNetArtistFactory:
 # RosePlot
 
 
+def _rose_sets(args, method):
+    """Return `args` as ``Vector2Set``s, wrapping single ``Vector2`` (or
+    ``Direction``) features; raise ``TypeError`` for anything else or empty sets."""
+    sets = tuple(G([arg]) if isinstance(arg, Vector2) else arg for arg in args)
+    if not sets or not all(isinstance(arg, Vector2Set) and len(arg) for arg in sets):
+        raise TypeError(f"Not valid arguments for Roseplot {method}")
+    return sets
+
+
 class RosePlotArtist:
     def __init__(self, factory, *args, **kwargs):
         """Initialize rose plot artist with factory reference."""
@@ -606,7 +619,17 @@ class RosePlotMuciArtist(RosePlotArtist):
     def parse_kwargs(self, kwargs):
         """Parse muci style kwargs."""
         super().update_kwargs("roseplot_muci")
+        if "confidence_level" in kwargs:
+            kwargs = dict(kwargs)
+            warnings.warn(
+                "confidence_level is deprecated, use level (a fraction, e.g. 0.95)",
+                FutureWarning,
+                skip_file_prefixes=(_APSG_DIR,),
+            )
+            kwargs["level"] = kwargs.pop("confidence_level") / 100
         getattr(apsg_conf, self._style).override(self.kwargs, kwargs)
+        if self.kwargs["method"] is None:
+            self.kwargs["method"] = "fisher"
 
 
 class RosePlotDensityArtist(RosePlotArtist):
@@ -627,19 +650,13 @@ class RosePlotDensityArtist(RosePlotArtist):
 class RosePlotArtistFactory:
     @staticmethod
     def create_bar(*args, **kwargs):
-        """Create rose plot bar artist from Vector2Set data."""
-        if all(isinstance(arg, Vector2Set) for arg in args):
-            return RosePlotBarArtist("create_bar", *args, **kwargs)
-        else:
-            raise TypeError("Not valid arguments for Roseplot bar")
+        """Create rose plot bar artist from Vector2Set or Vector2 data."""
+        return RosePlotBarArtist("create_bar", *_rose_sets(args, "bar"), **kwargs)
 
     @staticmethod
     def create_pdf(*args, **kwargs):
-        """Create rose plot PDF artist from Vector2Set data."""
-        if all(isinstance(arg, Vector2Set) for arg in args):
-            return RosePlotPdfArtist("create_pdf", *args, **kwargs)
-        else:
-            raise TypeError("Not valid arguments for Roseplot pdf")
+        """Create rose plot PDF artist from Vector2Set or Vector2 data."""
+        return RosePlotPdfArtist("create_pdf", *_rose_sets(args, "pdf"), **kwargs)
 
     @staticmethod
     def create_density(*args, **kwargs):
@@ -654,10 +671,10 @@ class RosePlotArtistFactory:
     @staticmethod
     def create_muci(*args, **kwargs):
         """Create rose plot muci artist from Vector2Set data."""
-        if all(isinstance(arg, Vector2Set) for arg in args):
-            return RosePlotMuciArtist("create_muci", *args, **kwargs)
-        else:
-            raise TypeError("Not valid arguments for Roseplot muci")
+        sets = _rose_sets(args, "muci")
+        if any(len(arg) < 2 for arg in sets):
+            raise TypeError("Roseplot muci needs sets of at least 2 items")
+        return RosePlotMuciArtist("create_muci", *sets, **kwargs)
 
 
 # FabricPlots

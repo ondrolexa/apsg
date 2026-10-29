@@ -240,14 +240,15 @@ These classes control the appearance of lines on stereonet plots.
 
 ### RoseplotMuciConfig
 
-| Field              | Default | Description                |
-|--------------------|---------|----------------------------|
-| `confidence_level` | `95`    | Confidence level (percent) |
-| `alpha`            | `None`  | Transparency               |
-| `color`            | `"r"`   | Color (red)                |
-| `ls`               | `"-"`   | Line style                 |
-| `lw`               | `1.5`   | Line width                 |
-| `n_resamples`      | `9999`  | Number of resamples        |
+| Field         | Default | Description                                               |
+|---------------|---------|-----------------------------------------------------------|
+| `method`      | `None`  | `"fisher"` (von Mises interval, default) or `"bootstrap"` |
+| `level`       | `0.95`  | Confidence level                                          |
+| `n_resamples` | `1000`  | Number of bootstrap resamples                             |
+| `alpha`       | `None`  | Transparency                                              |
+| `color`       | `"r"`   | Color (red)                                               |
+| `ls`          | `"-"`   | Line style                                                |
+| `lw`          | `1.5`   | Line width                                                |
 
 ### FabricplotConfig
 

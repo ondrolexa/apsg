@@ -3,7 +3,6 @@ import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import circmean
 
 from apsg.config import apsg_conf
 from apsg.feature import feature_from_json
@@ -43,7 +42,9 @@ class RosePlot:
             ``bbox_to_anchor`` the legend is placed as given instead. Default {}
         **kwargs: Other keyword arguments are passed to matplotlib plot.
 
-    Note: Roseplot is weighted by magnitude of Direction or Vector2 features
+    Note: Roseplot is weighted by magnitude of Direction or Vector2 features:
+        the bars, the pdf and the mean and confidence interval of ``muci``. For
+        unit vectors this makes no difference.
 
     Examples:
         >>> v = vec2set.random_vonmises(position=120)
@@ -204,9 +205,14 @@ class RosePlot:
         if not isinstance(style, RosePlotStyle):
             raise TypeError("Style must be RosePlotStyle object")
 
-        artist = style.create_artist(*args)
-        if len(artist.args) > 0:
-            self._artists.append(artist)
+        if not any(isinstance(arg, style._valid) for arg in args):
+            return
+        try:
+            artist = style.create_artist(*args)
+        except TypeError as err:
+            warnings.warn(str(err), stacklevel=2)
+            return
+        self._artists.append(artist)
 
     def _add_artist(self, factory_method, *args, **kwargs):
         try:
@@ -223,7 +229,7 @@ class RosePlot:
         Plot rose histogram of angles
 
         Args:
-            *args: Vector2Set feature(s)
+            *args: Vector2Set feature(s) or single Vector2/Direction
 
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
@@ -243,7 +249,7 @@ class RosePlot:
         Plot Von Mises probability density function from angles
 
         Args:
-            *args: Vector2Set feature(s)
+            *args: Vector2Set feature(s) or single Vector2/Direction
 
         Keyword Args:
             alpha (scalar): Set the alpha value. Default None
@@ -280,20 +286,29 @@ class RosePlot:
 
     def muci(self, *args, **kwargs):
         """
-        Plot circular mean with bootstrapped confidence interval
+        Plot circular mean with its confidence interval
+
+        The rose counterpart of ``StereoNet.confidence``: the interval is the
+        von Mises interval of ``Vector2Set.fisher_statistics`` or the bootstrap
+        interval of ``Vector2Set.bootstrap_statistics``, both with
+        ``weighted=True``, so the mean is weighted by magnitude like the bars.
+        No arc is drawn when the data are too dispersed to give an interval.
 
         Args:
-            *args: Vector2Set feature(s)
+            *args: Vector2Set feature(s) with at least 2 items
 
         Keyword Args:
+            method (str): "fisher" (von Mises interval) or "bootstrap".
+                Default None, meaning "fisher"
+            level (float): Confidence level. Default 0.95
+            n_resamples (int): Number of bootstrap resamples. Default 1000
             alpha (scalar): Set the alpha value. Default None
             color (color): Set the color of the point. Default None
             ls (str): Line style string (only for multiple features).
                 Default "-"
             lw (float): Set line width. Default 1.5
-            confidence_level (float): Confidence interval. Default 95
-            n_resamples (int): Number of bootstrapped samples.
-                Default 9999
+            confidence_level (float): Deprecated, the confidence level in
+                percent; use ``level``.
 
         """
         self._add_artist(RosePlotArtistFactory.create_muci, *args, **kwargs)
@@ -346,7 +361,7 @@ class RosePlot:
                 np.radians(ang),
                 self._kwargs["kappa"],
                 axial=axial,
-                weights=weights if axial else None,
+                weights=weights,
             )
             if self._kwargs["scaled"]:
                 radii = np.sqrt(radii)
@@ -372,47 +387,48 @@ class RosePlot:
             bottom = bottom + radii
 
     def _muci(self, *args, **kwargs):
-        conflevel = kwargs.pop("confidence_level")
+        method = kwargs.pop("method")
+        level = kwargs.pop("level")
         n_resamples = kwargs.pop("n_resamples")
         for arg in args:
-            radii = []
-            ang = np.radians(arg.direction)
             axial = issubclass(arg.__feature_class__, Axial2)
-            if axial:
-                mu = circmean(2 * ang) / 2
-                ang_shift = ang + np.pi / 2 - mu
-                bsmu = [
-                    circmean(np.random.choice(2 * ang_shift, size=len(ang_shift)))
-                    for i in range(n_resamples)
-                ]
-                low = np.percentile(bsmu, (100 - conflevel) / 2) / 2 + mu - np.pi / 2
-                high = (
-                    np.percentile(bsmu, 100 - (100 - conflevel) / 2) / 2
-                    + mu
-                    - np.pi / 2
+            period = 180 if axial else 360
+            if method == "bootstrap":
+                stats = arg.bootstrap_statistics(
+                    level=level, n=n_resamples, weighted=True
                 )
+                low, high = stats["low"], stats["high"]
             else:
-                mu = circmean(ang)
-                ang_shift = ang + np.pi - mu
-                bsmu = [
-                    circmean(np.random.choice(ang_shift, size=len(ang_shift)))
-                    for i in range(n_resamples)
-                ]
-                low = np.percentile(bsmu, (100 - conflevel) / 2) + mu - np.pi
-                high = np.percentile(bsmu, 100 - (100 - conflevel) / 2) + mu - np.pi
-            p = vonmises_kde(mu, ang, self._kwargs["kappa"], axial=axial)[0]
-            radii.append(p)
+                stats = arg.fisher_statistics(level=level, weighted=True)
+                alpha = stats["alpha"]
+                low = stats["mu"].direction - alpha
+                high = stats["mu"].direction + alpha
+            mu = np.radians(stats["mu"].direction)
+            weights = abs(arg)
+            weights = len(weights) * weights / sum(weights)
+            mur = vonmises_kde(
+                mu,
+                np.radians(arg.direction),
+                self._kwargs["kappa"],
+                axial=axial,
+                weights=weights,
+            )[0]
             if self._kwargs["scaled"]:
-                radii = np.sqrt(radii)
-            mur = 1.1 * sum(radii)
-            ci_angles = np.linspace(low, high, int(5 * np.degrees(high - low)))
-            if issubclass(arg.__feature_class__, Axial2):
+                mur = np.sqrt(mur)
+            mur = 1.1 * mur
+            if axial:
                 self.ax.plot([mu, mu + np.pi], [mur, mur], **kwargs)
-                self.ax.plot(ci_angles, mur * np.ones_like(ci_angles), **kwargs)
-                self.ax.plot(ci_angles + np.pi, mur * np.ones_like(ci_angles), **kwargs)
             else:
                 self.ax.plot([0, mu], [0, mur], **kwargs)
-                self.ax.plot(ci_angles, mur * np.ones_like(ci_angles), **kwargs)
+            # too dispersed data give an interval of the whole circle
+            if high - low < period:
+                ci_angles = np.radians(
+                    np.linspace(low, high, max(2, int(5 * (high - low))))
+                )
+                for shift in (0, np.pi) if axial else (0,):
+                    self.ax.plot(
+                        ci_angles + shift, mur * np.ones_like(ci_angles), **kwargs
+                    )
 
 
 def roseartist_from_json(obj_json):

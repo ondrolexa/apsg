@@ -12,7 +12,7 @@ from apsg.feature._container import (
 )
 from apsg.feature._geodata import Arc, Cone, Fault, Foliation, Pair
 from apsg.feature._tensor3 import Ellipsoid, Stress3, Tensor3
-from apsg.math._vector import Vector3
+from apsg.math._vector import Vector2, Vector3
 from apsg.plotting._plot_artists import (
     FabricPlotArtistFactory,
     RosePlotArtistFactory,
@@ -341,7 +341,7 @@ class RosePlotStyle:
 class RosePlotBarStyle(RosePlotStyle):
     def __init__(self, **kwargs):
         """Initialize rose plot bar style."""
-        self._valid = Vector2Set
+        self._valid = (Vector2, Vector2Set)
         self.kwargs = apsg_conf.roseplot_bar.copy()
         super().__init__(**kwargs)
 
@@ -354,7 +354,7 @@ class RosePlotBarStyle(RosePlotStyle):
 class RosePlotPdfStyle(RosePlotStyle):
     def __init__(self, **kwargs):
         """Initialize rose plot PDF style."""
-        self._valid = Vector2Set
+        self._valid = (Vector2, Vector2Set)
         self.kwargs = apsg_conf.roseplot_pdf.copy()
         super().__init__(**kwargs)
 
@@ -367,7 +367,7 @@ class RosePlotPdfStyle(RosePlotStyle):
 class RosePlotMuciStyle(RosePlotStyle):
     def __init__(self, **kwargs):
         """Initialize rose plot muci style."""
-        self._valid = Vector2Set
+        self._valid = (Vector2, Vector2Set)
         self.kwargs = apsg_conf.roseplot_muci.copy()
         super().__init__(**kwargs)
 

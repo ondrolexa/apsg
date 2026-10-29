@@ -28,7 +28,11 @@ from apsg.feature._distributions import (
     legacy_rng,
 )
 from apsg.feature._distributions._base import _APSG_DIR
-from apsg.feature._distributions._circular import double_angles
+from apsg.feature._distributions._circular import (
+    _vonmises_kappa_approx,
+    double_angles,
+    upton_interval,
+)
 from apsg.feature._distributions._spherical import _tangent_basis, fisher_precision
 from apsg.feature._geodata import (
     Direction,
@@ -296,7 +300,7 @@ class Vector2Set(FeatureSet):
             R = R / len(self)
         return R
 
-    def fisher_statistics(self, level=0.95):
+    def fisher_statistics(self, level=0.95, *, weighted=False):
         """Fit von Mises distribution and return statistics.
 
         The concentration is the piecewise approximation of the
@@ -309,6 +313,8 @@ class Vector2Set(FeatureSet):
 
         Args:
             level: confidence level. Default 0.95 for 95 %.
+            weighted: weight the data by their magnitudes. Default False (unit
+                vectors).
         Returns:
             dict: with keys ``mu`` (mean direction), ``k`` (concentration
                 parameter; of the doubled angles for axial data), and ``alpha``
@@ -321,11 +327,68 @@ class Vector2Set(FeatureSet):
             the true population mean direction lies within alpha degrees of mu.
             ``VonMises.fit(data, method="approx")`` (``AxialVonMises`` for axial
             data) gives the fitted distribution itself.
+
+            With ``weighted=True`` the mean is the direction of ``R()``, the
+            concentration is estimated from the weighted mean resultant length
+            ``|sum(w u)| / sum(w)`` and the interval uses Kish's effective sample
+            size ``sum(w)^2 / sum(w^2)``. This is an approximation without a
+            published source; for unit vectors it equals the unweighted result.
         """
+        if weighted:
+            self._require(2, "fisher_statistics")
+            w = abs(self)
+            Rbar = float(abs(self.R()) / w.sum())
+            n_eff = float(w.sum() ** 2 / (w**2).sum())
+            alpha = upton_interval(n_eff, Rbar, level)
+            return {
+                "mu": self.R().normalized(),
+                "k": _vonmises_kappa_approx(Rbar),
+                "alpha": alpha / 2 if self._axial else alpha,
+            }
         model = AxialVonMises if self._axial else VonMises
         dist = model.fit(self, method="approx")
         alpha = dist.mean_confidence(level).alpha
         return {"mu": dist.mean, "k": dist.kappa, "alpha": alpha}
+
+    def bootstrap_statistics(self, level=0.95, n=1000, *, weighted=False):
+        """Bootstrap confidence interval of the mean direction.
+
+        The data are resampled `n` times with replacement and the interval is
+        the equal-tailed `level` percentile interval of the resampled mean
+        directions, measured from the mean of the data. For axial data
+        (``Direction2Set``) the mean axes are compared by their doubled angles.
+
+        Args:
+            level (float): confidence level. Default 0.95.
+            n (int): number of bootstrap resamples. Default 1000.
+            weighted (bool): weight the data by their magnitudes, i.e. the mean
+                is the direction of ``R()``. Default False (unit vectors).
+
+        Returns:
+            dict: ``mu`` (mean direction), ``low`` and ``high`` (bounds of the
+            interval in degrees, ``low <= mu.direction <= high`` up to a
+            multiple of 360, or of 180 for axial data).
+
+        Note:
+            This is the basic percentile interval, not the pivotal (studentized)
+            interval of Fisher (1993, sec. 4.4.4 and 8.3.2), which has a smaller
+            coverage error for small samples. ``fisher_statistics`` gives the
+            von Mises interval.
+        """
+        self._require(1, "bootstrap_statistics")
+        scale = 2 if self._axial else 1
+        data = self if weighted else self.normalized()
+        mu = data.R()
+        m = np.radians(scale * mu.direction)
+        dev = np.array([scale * s.R().direction for s in data.bootstrap(n=n)])
+        dev = (np.radians(dev) - m + np.pi) % (2 * np.pi) - np.pi
+        tail = 100 * (1 - level) / 2
+        low, high = np.degrees(np.percentile(dev, [tail, 100 - tail])) / scale
+        return {
+            "mu": mu.normalized(),
+            "low": float(mu.direction + low),
+            "high": float(mu.direction + high),
+        }
 
     def csd(self):
         """Circular standard deviation ``sqrt(-2 ln(Rbar))`` (Mardia & Jupp,

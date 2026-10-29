@@ -11,6 +11,7 @@ HEMISPHERES = ("lower", "upper")
 LEGEND_POSITIONS = ("right", "left", "top", "bottom")
 GRID_TYPES = ("gss", "sfs")
 CONTOUR_METHODS = ("kamb", "sph")
+MUCI_METHODS = (None, "fisher", "bootstrap")
 
 
 # validated configuration fields: the check, and what it expects for the message
@@ -423,14 +424,14 @@ class RoseplotPdfConfig(BaseConfig):
 class RoseplotMuciConfig(BaseConfig):
     """Rose plot confidence interval line style configuration."""
 
-    confidence_level: int = _checked(
-        95, lambda v: _number(v) and 0 < v < 100, "a percentage in (0, 100)"
-    )
+    # None: "fisher" (von Mises interval); "bootstrap" resamples the data
+    method: str | None = _choice(None, MUCI_METHODS)
+    level: float = _checked(0.95, lambda v: _number(v) and 0 < v < 1, "in (0, 1)")
+    n_resamples: int = _positive(1000, integer=True)
     alpha: Any = None
     color: str = "r"
     ls: str = "-"
     lw: float = 1.5
-    n_resamples: int = _positive(9999, integer=True)
 
 
 @dataclass

@@ -22,6 +22,9 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - `mean_tensor()` returns confidence intervals of the eigenvalues, Jelínek's (1978) anisotropy test and the Jelínek (1981) shape parameters (`jelinek_shape()`).
 - Bootstrap confidence ellipse of Constable & Tauxe (1990), `bootstrap_statistics(method="ellipse")` and `StereoNet.confidence(method="bootstrap_ellipse")`.
 - Docstrings of the statistics cite the primary sources with equation numbers.
+- `Vector2Set.bootstrap_statistics()`, the bootstrap confidence interval of the mean direction, and the `method` keyword of `RosePlot.muci()` (`"fisher"` or `"bootstrap"`), like `StereoNet.confidence()`.
+- `weighted` keyword of `Vector2Set.fisher_statistics()` and `bootstrap_statistics()` (statistics of the magnitude-weighted mean direction).
+- `RosePlot` `bar()`, `pdf()` and `muci()` accept single `Vector2`/`Direction` features.
 
 ### Changed
 - Documentation moved to MkDocs with the Material theme.
@@ -30,6 +33,7 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - Statistics of lineation and foliation sets no longer depend on the stored signs of the axes.
 - `StereoNet.confidence()` draws the Watson cone by default for lineations and foliations.
 - `random_kent()` is faster on concentrated data.
+- `RosePlot.muci()` draws the von Mises interval of `fisher_statistics()` by default (the bootstrap with `method="bootstrap"`, 1000 resamples by default), takes the confidence level as a fraction (`level=0.95`) and draws no interval when the data are too dispersed to give one. Its mean and interval are weighted by magnitude, like the bars; sets with fewer than two items, empty sets and calls without data warn instead of failing at render or drawing nothing.
 - Pairwise `angle()` of a set and clustering are vectorized: 2000 items take 0.1 s instead of about 50 s. Pairwise `cross()` is vectorized too.
 - `StereoNet`, `RosePlot` and the fabric plots size their figure to the content and use constrained layout: the figure keeps the plot at the size given by the new `figsize` keyword and grows by the legend and title.
 - The legend can be placed on any side of the plot with the new `legend_position` keyword (`"right"`, `"left"`, `"top"` or `"bottom"`); its number of columns is chosen so it is not longer than the plot, and is re-fitted when the window is resized.
@@ -46,8 +50,10 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 ### Deprecated
 - `fisher_statistics()`, `var()`, `delta()`, `rdegree()` and `csd()` of lineation and foliation sets; use `watson_statistics()`, `bingham_statistics()` or the distributions.
 - `random_normal()`; use `random_fisher()` or `random_kent()`.
+- The `confidence_level` keyword of `RosePlot.muci()` (a percentage); use `level` (a fraction).
 
 ### Fixed
+- `RosePlot.pdf()` of `Vector2Set` is weighted by magnitude, as the bars and the pdf of `Direction2Set` were.
 - Sampling no longer hangs with an infinite concentration (`random_vonmises(kappa=inf)`, Watson and Bingham `rvs()`): distribution parameters must be finite numbers and mean/axis vectors finite and non-zero, else `ValueError`/`TypeError`.
 - `rvs(0)` returns an empty set instead of failing; the sample size must be a non-negative integer (`random_fisher(n=None)` no longer returns one item). `G()` takes a `feature` argument to create an empty set.
 - **BREAKING:** Features validate their input instead of storing it: components and angles must be finite real numbers (`TypeError` for strings, `None`, booleans or complex numbers, `ValueError` for NaN or infinity, also when produced by arithmetic such as `lin / 0`), plunge must be in [-90, 90], dip in [0, 180] and a cone apical angle in [0, 180]. Azimuths stay periodic.
