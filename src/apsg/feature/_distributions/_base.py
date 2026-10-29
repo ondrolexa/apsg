@@ -75,7 +75,7 @@ def get_distribution(name, dim=None):
         raise ValueError(f"Unknown distribution {name!r}")
     found = [cls for cls in named if dim is None or cls.dim == dim]
     if not found:
-        kind = "pair" if dim == "pair" else f"{dim}D"
+        kind = dim if isinstance(dim, str) else f"{dim}D"
         raise ValueError(f"Distribution {name!r} is not {kind}")
     if len(found) > 1:
         names = ", ".join(cls.__name__ for cls in found)
@@ -89,9 +89,11 @@ def as_rng(rng=None):
     Args:
         rng: None, an integer seed or a ``Generator``. With None the seed is
             drawn from numpy's global random state, so ``np.random.seed()``
-            makes the result reproducible.
+            makes the result reproducible. A legacy ``RandomState`` (see
+            `legacy_rng`) is returned unchanged, as the samplers use only
+            methods both classes have.
     """
-    if isinstance(rng, np.random.Generator):
+    if isinstance(rng, (np.random.Generator, np.random.RandomState)):
         return rng
     if rng is None:
         rng = np.random.randint(0, 2**31 - 1)

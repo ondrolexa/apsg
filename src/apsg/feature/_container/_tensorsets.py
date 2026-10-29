@@ -7,6 +7,7 @@ from scipy import linalg as spla
 from apsg.config import stress_sign
 from apsg.feature._container._base import FeatureSet, _per_item
 from apsg.feature._container._vectorsets import Vector2Set, Vector3Set
+from apsg.feature._distributions._rotations import MatrixFisher
 from apsg.feature._statistics import (
     jelinek_statistics,
 )
@@ -17,7 +18,6 @@ from apsg.feature._tensor3 import (
     Rotation3,
     Stress3,
 )
-from apsg.helpers._helper import check_count
 from apsg.helpers._math import atan2d, cosd, sind
 from apsg.math._vector import Vector3
 
@@ -526,12 +526,25 @@ class RotationSet(FeatureSet):
         return np.degrees(np.arccos(np.clip(cos, -1, 1)))
 
     @classmethod
-    def random(cls, n=100, name="Default"):
-        """Return ``RotationSet`` of uniformly distributed random rotations."""
-        from scipy.spatial.transform import Rotation
+    def _uniform_model(cls):
+        return MatrixFisher(np.zeros((3, 3)))
 
-        from apsg.feature._distributions._base import legacy_rng
+    @classmethod
+    def random_matrix_fisher(cls, n=100, F=None, name="Default", *, rng=None):
+        """Return a set of random rotations sampled from the matrix Fisher
+        distribution ([`MatrixFisher`][apsg.feature.MatrixFisher]).
 
-        n = check_count(n)
-        R = Rotation.random(n, random_state=legacy_rng()).as_matrix()
-        return cls([Rotation3(r) for r in R], name=name)
+        Args:
+            n: number of rotations. Default 100.
+            F: 3x3 parameter matrix; ``MatrixFisher.from_mode`` builds the
+                isotropic case. Default the identity.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+
+        Returns:
+            RotationSet: the sample.
+        """
+        return cls._sample(MatrixFisher(F), n, rng, name)

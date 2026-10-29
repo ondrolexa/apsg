@@ -179,16 +179,16 @@ class Lisle(OrientationDistribution):
         L = L[:n]
         # normal in the plane perpendicular to l, along the eigenvectors (a, b)
         # of L restricted to it: n' L n = const + (mu1 - mu2) / 2 cos(2 phi)
-        P = np.eye(3) - L[:, :, None] * L[:, None, :]
-        w, V = np.linalg.eigh(P @ np.diag(lam) @ P)
-        along = np.abs(np.einsum("nij,ni->nj", V, L))
-        order = np.argsort(along, axis=1)[:, :2]
-        idx = np.arange(n)[:, None]
-        mu, vecs = w[idx, order], np.transpose(V, (0, 2, 1))[idx, order]
-        swap = mu[:, 0] < mu[:, 1]
-        a = np.where(swap[:, None], vecs[:, 1], vecs[:, 0])
-        b = np.where(swap[:, None], vecs[:, 0], vecs[:, 1])
-        conc = np.maximum(np.abs(mu[:, 0] - mu[:, 1]) / 2, 1e-12)
+        # (diagonalized in a basis of that plane: the 3x3 P L P has a repeated
+        # zero eigenvalue for kappa2 = 0, whose eigenvectors may leave the plane)
+        ref = np.eye(3)[np.argmin(np.abs(L), axis=1)]
+        e1 = np.cross(ref, L)
+        e1 = e1 / np.linalg.norm(e1, axis=1)[:, None]
+        E = np.stack([e1, np.cross(L, e1)], axis=1)
+        mu, V = np.linalg.eigh(E @ np.diag(lam) @ np.transpose(E, (0, 2, 1)))
+        vecs = np.einsum("nkj,nki->nji", V, E)
+        a, b = vecs[:, 1], vecs[:, 0]
+        conc = np.maximum((mu[:, 1] - mu[:, 0]) / 2, 1e-12)
         phi = stats.vonmises.rvs(conc, loc=np.pi, random_state=rng) / 2
         N = np.cos(phi)[:, None] * a + np.sin(phi)[:, None] * b
         return np.stack([L @ self._frame, N @ self._frame], axis=1)

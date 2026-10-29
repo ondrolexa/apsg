@@ -170,8 +170,8 @@ def test_tensor_marker_edge_color_and_width_are_applied():
 @pytest.mark.parametrize("kind", ["equal-area", "equal-angle"])
 @pytest.mark.parametrize("hemisphere", ["lower", "upper"])
 def test_full_render_smoke(tmp_path, kind, hemisphere):
-    l = linset.random_fisher(position=lin(120, 40), n=20)
-    f = folset.random_fisher(position=lin(300, 40), n=20)
+    l = linset.random_fisher(mean=lin(120, 40), n=20)
+    f = folset.random_fisher(mean=lin(300, 40), n=20)
     p = pair(120, 40, 120, 40)
     flt = fault(120, 40, 120, 40, 1)
 
@@ -226,7 +226,7 @@ def _make_stereonet_for_savefig():
 
 def _make_roseplot_for_savefig():
     r = RosePlot()
-    r.bar(vec2set.random_vonmises(position=0, n=10))
+    r.bar(vec2set.random_vonmises(mean=0, n=10))
     return r
 
 
@@ -1032,8 +1032,8 @@ def test_contour_with_stereogrid_skips_calculation():
 
 
 def test_multiple_contour_calls_own_independent_grids(tmp_path):
-    l1 = linset.random_fisher(position=lin(60, 40), n=40)
-    l2 = linset.random_fisher(position=lin(250, 30), n=40)
+    l1 = linset.random_fisher(mean=lin(60, 40), n=40)
+    l2 = linset.random_fisher(mean=lin(250, 30), n=40)
     s = StereoNet()
     s.contour(l1, sigma=2)
     s.contour(l2, sigma=4, clip=True)
@@ -1071,7 +1071,7 @@ def test_contour_clip_defaults_true():
 
 
 def test_contour_default_cmap_is_greys_when_clipped_else_rdbu_r():
-    l = linset.random_fisher(position=lin(60, 40), n=40)
+    l = linset.random_fisher(mean=lin(60, 40), n=40)
     s = StereoNet()
     s.contour(l)  # clip defaults to True
     s.init_figure()
@@ -1121,7 +1121,7 @@ def test_contour_density_not_clipped_to_zero(method):
     # a concentrated cluster leaves the rest of the sphere emptier than
     # uniform would predict -- negative values must survive (breaking
     # change vs. the old apsg engine, which clipped negatives to 0)
-    concentrated = linset.random_fisher(position=lin(0, 90), kappa=200, n=200)
+    concentrated = linset.random_fisher(mean=lin(0, 90), kappa=200, n=200)
     g = StereoGrid(n=1000)
     g.calculate_density(concentrated, method=method, sigma=3, trimzero=False)
     assert (g.values < 0).any()
@@ -1183,7 +1183,7 @@ def test_contour_removed_kwargs_are_silently_ignored_not_errors():
 
 
 def test_contour_filled_false_and_clip_render(tmp_path):
-    l = linset.random_fisher(position=lin(120, 40), n=50)
+    l = linset.random_fisher(mean=lin(120, 40), n=50)
     s = StereoNet()
     s.contour(l, filled=False, clip=True, lw=2)
     out = tmp_path / "lines_clip.png"
@@ -1197,7 +1197,7 @@ def test_contour_filled_false_and_clip_render(tmp_path):
 
 
 def test_min_max_at_return_lineation():
-    l = linset.random_fisher(position=lin(120, 40), n=30)
+    l = linset.random_fisher(mean=lin(120, 40), n=30)
     g = StereoGrid(n=300)
     g.calculate_density(l, method="kamb")
     assert isinstance(g.min_at(), Lineation)
@@ -1234,7 +1234,7 @@ def test_stereonet_save_load_roundtrip(tmp_path):
 
 
 def test_stereogrid_to_json_from_json_roundtrip():
-    l = linset.random_fisher(position=lin(120, 40), n=20)
+    l = linset.random_fisher(mean=lin(120, 40), n=20)
     g = StereoGrid(n=200)
     g.calculate_density(l, method="kamb")
     g2 = StereoGrid.from_json(g.to_json())
@@ -1387,7 +1387,7 @@ def test_stereogrid_default_n_and_type_from_config():
 
 
 def test_grid_zorder_below_points_and_contours():
-    l = linset.random_fisher(position=lin(120, 40), n=30)
+    l = linset.random_fisher(mean=lin(120, 40), n=30)
     s = StereoNet()
     s.point(l)
     s.contour(l, method="kamb")
@@ -1537,7 +1537,7 @@ def test_rotated_gridlines_no_large_jumps(tmp_path):
 
 
 def test_contour_filled_true_adds_black_line_overlay():
-    l = linset.random_fisher(position=lin(120, 40), n=40)
+    l = linset.random_fisher(mean=lin(120, 40), n=40)
     s = StereoNet()
     s.contour(l, method="kamb")
     s.init_figure()
@@ -1549,7 +1549,7 @@ def test_contour_filled_true_adds_black_line_overlay():
 
 
 def test_contour_filled_false_has_no_black_overlay():
-    l = linset.random_fisher(position=lin(120, 40), n=40)
+    l = linset.random_fisher(mean=lin(120, 40), n=40)
     s = StereoNet()
     s.contour(l, method="kamb", filled=False)
     s.init_figure()
@@ -1808,8 +1808,8 @@ def test_fault_arrow_points_toward_or_away_from_vertical(
 
 
 def test_great_circle_set_is_one_artist_with_one_color_per_call():
-    f1 = folset.random_fisher(position=fol(130, 60), n=5)
-    f2 = folset.random_fisher(position=fol(210, 40), n=5)
+    f1 = folset.random_fisher(mean=fol(130, 60), n=5)
+    f2 = folset.random_fisher(mean=fol(210, 40), n=5)
     s = StereoNet()
     s.great_circle(f1, label="Set 1")
     s.great_circle(f2, label="Set 2")
@@ -1831,7 +1831,7 @@ def test_great_circle_set_is_one_artist_with_one_color_per_call():
 
 
 def test_great_circle_explicit_color_overrides_cycle():
-    f = folset.random_fisher(position=fol(130, 60), n=4)
+    f = folset.random_fisher(mean=fol(130, 60), n=4)
     s = StereoNet()
     s.great_circle(f, color="red")
     s.init_figure()
@@ -2002,7 +2002,7 @@ def test_vector_marker_positions_fixed_only_filled_open_swap():
 
 
 def test_contour_density_mirrors_between_hemispheres():
-    l = linset.random_fisher(position=lin(50, 20), kappa=50, n=200)
+    l = linset.random_fisher(mean=lin(50, 20), kappa=50, n=200)
     s_lower = StereoNet(hemisphere="lower")
     s_lower.contour(l, clip=False)
     s_lower.init_figure()
@@ -2062,7 +2062,7 @@ def test_great_circle_trace_mirrors_between_hemispheres():
 
 
 def test_point_on_rotated_net_matches_pre_rotated_data():
-    l = linset.random_fisher(position=lin(0, 30), kappa=50, n=50)
+    l = linset.random_fisher(mean=lin(0, 30), kappa=50, n=50)
     R = rotation_from_axis_angle(lin(90, 0), 50)
 
     s_manual = StereoNet()
@@ -2086,7 +2086,7 @@ def test_point_on_rotated_net_matches_pre_rotated_data():
 
 
 def test_point_on_rotated_net_without_rotate_data_uses_raw_frame():
-    l = linset.random_fisher(position=lin(0, 30), kappa=50, n=50)
+    l = linset.random_fisher(mean=lin(0, 30), kappa=50, n=50)
     R = rotation_from_axis_angle(lin(90, 0), 50)
 
     s_unrotated = StereoNet()
@@ -2166,7 +2166,7 @@ def test_stereonet_legend_kws_overrides_defaults(tmp_path):
 
 
 def test_roseplot_legend_kws_overrides_defaults():
-    v = vec2set.random_vonmises(position=120, n=10)
+    v = vec2set.random_vonmises(mean=120, n=10)
     r = RosePlot(legend_kws={"prop": {"size": 20}})
     r.bar(v, legend=True, label="bar")
     r.init_figure()
@@ -2175,7 +2175,7 @@ def test_roseplot_legend_kws_overrides_defaults():
 
 
 def test_fabricplot_legend_kws_overrides_defaults():
-    ot = linset.random_fisher(position=lin(120, 40), n=10).ortensor()
+    ot = linset.random_fisher(mean=lin(120, 40), n=10).ortensor()
     vp = VollmerPlot(legend_kws={"prop": {"size": 20}})
     vp.point(ot, label="pt")
     vp.init_figure()
@@ -2184,7 +2184,7 @@ def test_fabricplot_legend_kws_overrides_defaults():
 
 
 def test_contour_line_color_is_configurable():
-    l = linset.random_fisher(position=lin(120, 40), n=30)
+    l = linset.random_fisher(mean=lin(120, 40), n=30)
     s = StereoNet()
     s.contour(l, line_color="blue")
     s.init_figure()
@@ -2201,7 +2201,7 @@ def test_contour_line_color_is_configurable():
 
 
 def test_contour_colorbar_kws_reach_figure_colorbar(tmp_path):
-    l = linset.random_fisher(position=lin(120, 40), n=30)
+    l = linset.random_fisher(mean=lin(120, 40), n=30)
     s = StereoNet()
     s.contour(l, colorbar=True, colorbar_kws={"shrink": 0.8, "anchor": (0.0, 0.5)})
     out = tmp_path / "colorbar.png"
@@ -2223,7 +2223,7 @@ def test_contour_colorbar_kws_reach_figure_colorbar(tmp_path):
 def test_fabricplot_styling_keys_render_without_error(
     tmp_path, plot_cls, kwargs, expected_attr, expected_value
 ):
-    ot = linset.random_fisher(position=lin(120, 40), n=10).ortensor()
+    ot = linset.random_fisher(mean=lin(120, 40), n=10).ortensor()
     p = plot_cls(**kwargs)
     p.point(ot)
     out = tmp_path / f"{plot_cls.__name__}.png"
@@ -2232,7 +2232,7 @@ def test_fabricplot_styling_keys_render_without_error(
 
 
 def test_vollmer_border_color_reaches_border_line():
-    ot = linset.random_fisher(position=lin(120, 40), n=10).ortensor()
+    ot = linset.random_fisher(mean=lin(120, 40), n=10).ortensor()
     vp = VollmerPlot(border_color="red", border_lw=4)
     vp.point(ot)
     vp.init_figure()
@@ -2243,7 +2243,7 @@ def test_vollmer_border_color_reaches_border_line():
 
 
 def test_vollmer_tick_color_reaches_tick_lines():
-    ot = linset.random_fisher(position=lin(120, 40), n=10).ortensor()
+    ot = linset.random_fisher(mean=lin(120, 40), n=10).ortensor()
     vp = VollmerPlot(tick_color="green", tick_lw=3)
     vp.point(ot)
     vp.init_figure()
@@ -2254,7 +2254,7 @@ def test_vollmer_tick_color_reaches_tick_lines():
 
 
 def test_ramsay_refline_color_and_width_configurable():
-    ot = linset.random_fisher(position=lin(120, 40), n=10).ortensor()
+    ot = linset.random_fisher(mean=lin(120, 40), n=10).ortensor()
     rp = RamsayPlot(refline_color="purple", refline_lw=3)
     rp.point(ot)
     rp.init_figure()
@@ -2815,7 +2815,7 @@ def _muci_arcs(r):
 
 def test_roseplot_muci_fisher_interval():
     np.random.seed(7)
-    v = vec2set.random_vonmises(40, position=60, kappa=5)
+    v = vec2set.random_vonmises(40, mean=60, kappa=5)
     stats = v.fisher_statistics()
     r = RosePlot()
     r.muci(v)
@@ -2828,7 +2828,7 @@ def test_roseplot_muci_fisher_interval():
 
 def test_roseplot_muci_axial_draws_two_arcs():
     np.random.seed(7)
-    d = vec2set.random_vonmises(40, position=60, kappa=5).to_dir2()
+    d = vec2set.random_vonmises(40, mean=60, kappa=5).to_dir2()
     r = RosePlot()
     r.muci(d, method="bootstrap", n_resamples=100)
     arcs = _muci_arcs(r)
@@ -2845,7 +2845,7 @@ def test_roseplot_muci_dispersed_data_draws_no_arc():
 
 
 def test_roseplot_muci_confidence_level_deprecated():
-    v = vec2set.random_vonmises(20, position=60, kappa=5)
+    v = vec2set.random_vonmises(20, mean=60, kappa=5)
     r = RosePlot()
     with pytest.warns(FutureWarning, match="confidence_level"):
         r.muci(v, confidence_level=90)
@@ -2941,7 +2941,7 @@ def test_roseplot_and_fabricplot_serialize(tmp_path):
 
 
 def test_roseplot_colors_are_used():
-    data = vec2set.random_vonmises(30, position=60, kappa=3)
+    data = vec2set.random_vonmises(30, mean=60, kappa=3)
     r = RosePlot()
     r.bar(data, color="green")
     r.pdf(data, color="red")
@@ -3005,7 +3005,7 @@ def _labelled_plot(cls, position, n=4, title=None):
             p.point(lin(360 * i / n, 30), label=f"item {i}")
     elif cls is RosePlot:
         for i in range(n):
-            p.bar(vec2set.random_vonmises(position=90 * i, n=10), label=f"item {i}")
+            p.bar(vec2set.random_vonmises(mean=90 * i, n=10), label=f"item {i}")
     else:
         for i in range(n):
             e = ellipsoid.from_defgrad(defgrad.from_comp(xx=1 + i / 3, zz=1 / (1 + i)))
@@ -3160,7 +3160,7 @@ def test_scatter_legend_joins_the_layout_legend():
 )
 def test_contour_colorbar_is_corner_inset_outside_layout(position, kappa, levels):
     np.random.seed(0)
-    l = linset.random_fisher(position=position, kappa=kappa)
+    l = linset.random_fisher(mean=position, kappa=kappa)
     plain = StereoNet()
     plain.contour(l, levels=levels)
     _owned(plain)
@@ -3183,7 +3183,7 @@ def test_contour_colorbar_is_corner_inset_outside_layout(position, kappa, levels
 
 
 def test_second_contour_colorbar_warns():
-    l = linset.random_fisher(position=lin(120, 40), n=30)
+    l = linset.random_fisher(mean=lin(120, 40), n=30)
     s = StereoNet()
     s.contour(l, colorbar=True)
     s.contour(l, colorbar=True, filled=False)

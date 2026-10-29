@@ -8,6 +8,13 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 
 ## [2.1.0] - Unreleased
 
+apsg 2.1 is a big step for orientation statistics. Fit, sample and compare more than a dozen
+distributions, from Fisher and Kent to Bingham and Lisle, in one consistent way. Ask your data
+real questions with a full set of hypothesis tests, each traced to its original source. Statistics of lineations
+and foliations no longer depend on how the axes were stored. Plots lay themselves out, legends
+go wherever you want, and bad input is caught at once instead of crashing later. Large data sets
+are much faster, and the documentation has a fresh new home.
+
 ### Added
 - Orientation distributions with a common interface for fitting, sampling, density and model selection: uniform, von Mises, wrapped normal, Fisher, Kent, ESAG, Watson, Bingham, ACG and Lisle (for pairs).
 - `fit()` method on feature sets, e.g. `linset.fit("kent")`; distributions are available as `dist_fisher`, `dist_kent`, ...
@@ -25,6 +32,8 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - `Vector2Set.bootstrap_statistics()`, the bootstrap confidence interval of the mean direction, and the `method` keyword of `RosePlot.muci()` (`"fisher"` or `"bootstrap"`), like `StereoNet.confidence()`.
 - `weighted` keyword of `Vector2Set.fisher_statistics()` and `bootstrap_statistics()` (statistics of the magnitude-weighted mean direction).
 - `RosePlot` `bar()`, `pdf()` and `muci()` accept single `Vector2`/`Direction` features.
+- Feature sets generate samples of every distribution: `random(model=...)` and `random_<name>()` methods (e.g. `linset.random_watson()`, `folset.random_bingham()`, `pairset.random_lisle()`), all with an `rng` keyword.
+- `uniform_random()`, `uniform_sfs()` and `uniform_gss()` for uniformly distributed sets.
 
 ### Changed
 - Documentation moved to MkDocs with the Material theme.
@@ -40,6 +49,7 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 - The `StereoNet.contour()` colorbar is a small inset in the bottom right corner of the net and no longer changes the layout (new `colorbar_bounds` and `colorbar_fontsize` keywords).
 - **BREAKING:** The `tight_layout` keyword of `StereoNet`, `RosePlot` and the fabric plots is removed, and these plots no longer use `apsg_conf.figsize`.
 - **BREAKING:** `random_kent()` uses `beta = kappa / 4` by default.
+- **BREAKING:** `random()` of feature sets samples the uniform distribution models, so a given seed gives other samples than before; `PairSet.random()` and `FaultSet.random()` create 100 items by default.
 - **BREAKING:** `PairSet.from_csv()` no longer accepts `sense_str` and `scol`.
 - **BREAKING:** `SDBSession.getfaults()` is removed: the SDB format stores no sense of movement, so it only assigned one given sense to every pair. Use `getpairs()` and build the faults, e.g. `FaultSet([Fault(p, 1) for p in pairs])`.
 - **BREAKING:** `Cone.apical_angle` is a property, like `ConeSet.apical_angle` (use `c.apical_angle` instead of `c.apical_angle()`).
@@ -50,9 +60,12 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 ### Deprecated
 - `fisher_statistics()`, `var()`, `delta()`, `rdegree()` and `csd()` of lineation and foliation sets; use `watson_statistics()`, `bingham_statistics()` or the distributions.
 - `random_normal()`; use `random_fisher()` or `random_kent()`.
+- `sfs()` and `gss()`; use `uniform_sfs()` and `uniform_gss()`.
+- The `position` keyword of `random_fisher()` and `random_vonmises()` and `p` of `random_kent()`; use `mean`.
 - The `confidence_level` keyword of `RosePlot.muci()` (a percentage); use `level` (a fraction).
 
 ### Fixed
+- Pairs sampled from the Lisle distribution with `kappa2=0` were not perpendicular.
 - `RosePlot.pdf()` of `Vector2Set` is weighted by magnitude, as the bars and the pdf of `Direction2Set` were.
 - Sampling no longer hangs with an infinite concentration (`random_vonmises(kappa=inf)`, Watson and Bingham `rvs()`): distribution parameters must be finite numbers and mean/axis vectors finite and non-zero, else `ValueError`/`TypeError`.
 - `rvs(0)` returns an empty set instead of failing; the sample size must be a non-negative integer (`random_fisher(n=None)` no longer returns one item). `G()` takes a `feature` argument to create an empty set.

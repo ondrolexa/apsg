@@ -749,7 +749,7 @@ class OrientationTensor2(Ellipse):
             g (Vector2Set): Set of features
 
         Examples:
-            >>> v = vec2set.random_vonmises(position=120)
+            >>> v = vec2set.random_vonmises(mean=120)
             >>> ot = v.ortensor()
             >>> ot
             OrientationTensor2

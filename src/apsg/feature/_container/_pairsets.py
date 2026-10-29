@@ -20,6 +20,7 @@ from apsg.feature._container._vectorsets import (
     Vector3Set,
 )
 from apsg.feature._distributions._frames import (
+    Lisle,
     lisle_ellipses,
     lisle_moments,
     pair_arrays,
@@ -34,7 +35,6 @@ from apsg.feature._tensor3 import (
     Rotation3,
     Stress3,
 )
-from apsg.helpers._helper import check_count
 from apsg.math._vector import Vector3
 
 
@@ -171,10 +171,36 @@ class PairSet(FeatureSet):
         return str(self)
 
     @classmethod
-    def random(cls, n=25):
-        """Create PairSet of random pairs."""
+    def _uniform_model(cls):
+        return Lisle(kappa1=0, kappa2=0)
 
-        return PairSet([Pair.random() for i in range(check_count(n))])
+    @classmethod
+    def random_lisle(
+        cls, n=100, mean=None, kappa1=1, kappa2=1, name="Default", *, rng=None
+    ):
+        """Return a set of random pairs sampled from the Lisle distribution
+        ([`Lisle`][apsg.feature.Lisle]).
+
+        Args:
+            n: number of features. Default 100.
+            mean: mean pair. Default ``Pair()``.
+            kappa1: concentration of the lineations about the mean lineation.
+                Default 1.
+            kappa2: concentration of the frames about the mean pair.
+                Default 1.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+
+        Examples:
+            >>> p = pairset.random_lisle(30, mean=pair(120, 40, 160, 34), kappa1=4, kappa2=8)
+
+        Returns:
+            PairSet: the sample.
+        """
+        return cls._sample(Lisle(mean, kappa1, kappa2), n, rng, name)
 
     @classmethod
     def from_csv(
@@ -349,10 +375,11 @@ class FaultSet(PairSet):
         return np.asarray(res)
 
     @classmethod
-    def random(cls, n=25):
-        """Create FaultSet of random faults."""
-
-        return FaultSet([Fault.random() for i in range(check_count(n))])
+    def _sample(cls, dist, n, rng, name):
+        # the sense of a fault follows the sign of its lineation, which is
+        # random in a sample of pairs
+        pairs = PairSet._sample(dist, n, rng, name)
+        return cls([Fault(p) for p in pairs], name=name)
 
     @classmethod
     def from_csv(

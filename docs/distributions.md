@@ -125,6 +125,35 @@ Fitting a model of vectorial data to axial data, e.g. `fisher` or `kent` to a
 (`halfspace()`), as `fisher_statistics()` does. This is only adequate for
 clustered data; `watson`, `bingham` and `acg` are the models of axial data.
 
+## Generating samples
+
+Feature sets sample any model directly. `random(n, model=..., **params)` takes
+the model as an instance, a class or a name, and each set also has a
+`random_<name>()` method with the model's parameters:
+
+```pycon
+>>> linset.random(50)                                  # uniform axes
+>>> linset.random(50, model="watson", mean=lin(120, 30), kappa=10)
+>>> linset.random_watson(50, mean=lin(120, 30), kappa=10)   # the same
+>>> folset.random_bingham(50, mean=lin(120, 30), major=lin(30, 0),
+...                       kappa_major=-2, kappa_minor=-20)
+```
+
+| set | `random_<name>()` |
+|---|---|
+| `vec2set` | `vonmises`, `wrapped_normal`, `wrapped_cauchy`, `cardioid`, `jones_pewsey` |
+| `dir2set` | the above and `axial_vonmises` |
+| `vecset` | `fisher`, `kent`, `esag` |
+| `linset`, `folset` | the above and `watson`, `bingham`, `acg` |
+| `pairset`, `faultset` | `lisle` (faults get a random sense) |
+| `rotationset` | `matrix_fisher` |
+
+Without a model, `random()` (or `uniform_random()`) samples the uniform
+distribution of the set's features. `uniform_sfs(n)` and `uniform_gss(n)` give
+evenly spread, not random, vectors on the sphere (Fibonacci and golden section
+spirals). All generators take `rng` like `rvs()`, but without it they draw from
+numpy's global random state, so `np.random.seed()` reproduces their samples.
+
 ## Model selection
 
 Compare the fits by an information criterion, lower is better:

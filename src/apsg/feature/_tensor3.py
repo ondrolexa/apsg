@@ -1498,7 +1498,7 @@ class OrientationTensor3(Ellipsoid):
             g (Vector3Set): Set of features
 
         Examples:
-            >>> g = linset.random_fisher(position=lin(120,50))
+            >>> g = linset.random_fisher(mean=lin(120,50))
             >>> ot = ortensor.from_features(g)
             >>> ot
             OrientationTensor3

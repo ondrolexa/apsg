@@ -47,7 +47,7 @@ class RosePlot:
         unit vectors this makes no difference.
 
     Examples:
-        >>> v = vec2set.random_vonmises(position=120)
+        >>> v = vec2set.random_vonmises(mean=120)
         >>> p = RosePlot(grid=False)
         >>> p.pdf(v)
         >>> p.bar(v, fc='none', ec='k', lw=1)

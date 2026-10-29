@@ -150,7 +150,7 @@ class StereoNet:
         directly. Multiple `contour()` calls add independent layers.
 
     Examples:
-        >>> l = linset.random_fisher(position=lin(120, 40))
+        >>> l = linset.random_fisher(mean=lin(120, 40))
         >>> s = StereoNet(title="Random linear features")
         >>> s.contour(l)
         >>> s.point(l)
@@ -1336,8 +1336,8 @@ def quicknet(*args, **kwargs):
         **kwargs: Additional kwargs are passed to StereoNet method
 
     Examples:
-        >>> l = linset.random_fisher(position=lin(120, 50))
-        >>> f = folset.random_fisher(position=lin(300, 40))
+        >>> l = linset.random_fisher(mean=lin(120, 50))
+        >>> f = folset.random_fisher(mean=lin(300, 40))
         >>> quicknet(f, l)
     Returns:
         None: Quickly shows or saves a ``StereoNet`` figure from the provided arguments.

@@ -175,7 +175,7 @@ Rose diagrams:
 ```pycon
 >>> from apsg import vec2set
 >>> from apsg.plotting import RosePlot
->>> v = vec2set.random_vonmises(position=120, kappa=100, n=50)
+>>> v = vec2set.random_vonmises(mean=120, kappa=100, n=50)
 >>> p = RosePlot(grid=False)
 >>> p.bar(v, fc="none", ec="k")
 >>> p.pdf(v)

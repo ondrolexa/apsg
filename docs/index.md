@@ -84,7 +84,7 @@ A quick stereonet of random Fisher-distributed foliations:
 ```python
 from apsg import *
 
-f = folset.random_fisher(position=fol(130, 60))
+f = folset.random_fisher(mean=fol(130, 60))
 s = StereoNet()
 s.great_circle(f)
 s.point(f)

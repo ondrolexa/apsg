@@ -28,9 +28,9 @@ Create sets of features for batch analysis:
 
 ```pycon
 >>> from apsg import folset, linset, vecset
->>> fols = folset.random_fisher(position=f, kappa=50, n=30)
->>> lins = linset.random_fisher(position=l, kappa=100, n=30)
->>> vecs = vecset.gss(n=50)
+>>> fols = folset.random_fisher(mean=f, kappa=50, n=30)
+>>> lins = linset.random_fisher(mean=l, kappa=100, n=30)
+>>> vecs = vecset.uniform_gss(n=50)
 ```
 
 Analyze orientation data:

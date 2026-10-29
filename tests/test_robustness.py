@@ -393,10 +393,10 @@ def test_pairwise_cross_of_one_item_is_empty():
 def test_spiral_sizes(n, error):
     # gss(0) used to divide by zero and gss(-1) returned an empty set
     with pytest.raises(error, match="n must be"):
-        linset.gss(n)
+        linset.uniform_gss(n)
     with pytest.raises(error, match="n must be"):
-        vecset.sfs(n)
-    assert len(linset.gss(1)) == 1
+        vecset.uniform_sfs(n)
+    assert len(linset.uniform_gss(1)) == 1
 
 
 def test_mean_tensor_needs_three_tensors():

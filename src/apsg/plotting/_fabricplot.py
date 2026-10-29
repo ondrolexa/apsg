@@ -242,7 +242,7 @@ class VollmerPlot(FabricPlot):
             ``bbox_to_anchor`` the legend is placed as given instead. Default {}
 
     Examples:
-        >>> l = linset.random_fisher(position=lin(120, 40))
+        >>> l = linset.random_fisher(mean=lin(120, 40))
         >>> ot = l.ortensor()
         >>> s = VollmerPlot(title="Point distribution")
         >>> s.point(ot)
@@ -430,7 +430,7 @@ class RamsayPlot(FabricPlot):
             ``bbox_to_anchor`` the legend is placed as given instead. Default {}
 
     Examples:
-        >>> l = linset.random_fisher(position=lin(120, 40))
+        >>> l = linset.random_fisher(mean=lin(120, 40))
         >>> ot = l.ortensor()
         >>> s = RamsayPlot(title="Point distribution")
         >>> s.point(ot)
@@ -524,7 +524,7 @@ class FlinnPlot(FabricPlot):
             ``bbox_to_anchor`` the legend is placed as given instead. Default {}
 
     Examples:
-        >>> l = linset.random_fisher(position=lin(120, 40))
+        >>> l = linset.random_fisher(mean=lin(120, 40))
         >>> ot = l.ortensor()
         >>> s = FlinnPlot(title="Point distribution")
         >>> s.point(ot)
@@ -618,7 +618,7 @@ class HsuPlot(FabricPlot):
             ``bbox_to_anchor`` the legend is placed as given instead. Default {}
 
     Examples:
-        >>> l = linset.random_fisher(position=lin(120, 40))
+        >>> l = linset.random_fisher(mean=lin(120, 40))
         >>> ot = l.ortensor()
         >>> s = HsuPlot(title="Point distribution")
         >>> s.point(ot)

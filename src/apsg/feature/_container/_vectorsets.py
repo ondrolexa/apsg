@@ -13,19 +13,29 @@ from apsg.config import apsg_conf
 from apsg.feature._container._base import (
     FeatureSet,
     G,
+    _deprecated_alias,
     _per_item,
     _read_csv_columns,
 )
 from apsg.feature._distributions import (
+    ACG,
+    ESAG,
+    AxialUniform2,
+    AxialUniform3,
     AxialVonMises,
     Bingham,
+    Cardioid,
+    JonesPewsey,
     Kent,
+    Uniform2,
+    Uniform3,
     VonMises,
     VonMisesFisher,
     Watson,
+    WrappedCauchy,
+    WrappedNormal,
     axial_cross_moments,
     bingham_ellipse,
-    legacy_rng,
 )
 from apsg.feature._distributions._base import _APSG_DIR
 from apsg.feature._distributions._circular import (
@@ -655,42 +665,120 @@ class Vector2Set(FeatureSet):
         return cls([cls.__feature_class__(xx, yy) for xx, yy in zip(x, y)], name=name)
 
     @classmethod
-    def random(cls, n=100, name="Default"):
-        """Method to create ``Vector2Set`` of features with uniformly distributed
-        random orientation.
-
-        Keyword Args:
-            n: number of objects to be generated.
-            name: name of dataset. Default is 'Default'.
-
-        Examples:
-            >>> np.random.seed(58463123)
-            >>> l = vec2set.random(100)
-
-        Returns:
-            Vector2Set: The created feature set.
-        """
-        n = check_count(n)
-        return cls([cls.__feature_class__.random() for i in range(n)], name=name)
+    def _uniform_model(cls):
+        return Uniform2()
 
     @classmethod
-    def random_vonmises(cls, n=100, position=0, kappa=5, name="Default"):
-        """Return ``Vector2Set`` of random vectors sampled from von Mises distribution
-        around center position with concentration kappa.
+    def random_vonmises(
+        cls, n=100, mean=None, kappa=5, name="Default", *, rng=None, position=None
+    ):
+        """Return a set of random vectors sampled from the von Mises
+        distribution ([`VonMises`][apsg.feature.VonMises]).
 
         Args:
-            n: number of objects to be generated.
-            position: mean orientation given as angle. Default 0.
-            kappa: concentration parameter of the distribution. Default 5.
-            name: name of dataset. Default is 'Default'.
+            n: number of features. Default 100.
+            mean: mean direction given as azimuth. Default 0.
+            kappa: concentration. Default 5.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+            position: deprecated alias of `mean`.
 
         Examples:
-            >>> v = vec2set.random_vonmises(position=120, kappa=10)
+            >>> v = vec2set.random_vonmises(mean=120, kappa=10)
+
         Returns:
-            Vector2Set: The created feature set.
+            Vector2Set: the sample.
         """
-        X = VonMises(position, kappa).rvs_array(check_count(n), legacy_rng())
-        return cls([cls.__feature_class__(x) for x in X], name=name)
+        mean = _deprecated_alias(mean, position, "position", "mean", "random_vonmises")
+        mean = 0 if mean is None else mean
+        return cls._sample(VonMises(mean, kappa), n, rng, name)
+
+    @classmethod
+    def random_wrapped_normal(cls, n=100, mean=0, rho=0.5, name="Default", *, rng=None):
+        """Return a set of random vectors sampled from the wrapped normal
+        distribution ([`WrappedNormal`][apsg.feature.WrappedNormal]).
+
+        Args:
+            n: number of features. Default 100.
+            mean: mean direction given as azimuth. Default 0.
+            rho: mean resultant length, ``0 < rho < 1``. Default 0.5.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+
+        Returns:
+            Vector2Set: the sample.
+        """
+        return cls._sample(WrappedNormal(mean, rho), n, rng, name)
+
+    @classmethod
+    def random_wrapped_cauchy(cls, n=100, mean=0, rho=0.5, name="Default", *, rng=None):
+        """Return a set of random vectors sampled from the wrapped Cauchy
+        distribution ([`WrappedCauchy`][apsg.feature.WrappedCauchy]).
+
+        Args:
+            n: number of features. Default 100.
+            mean: mean direction given as azimuth. Default 0.
+            rho: mean resultant length, ``0 <= rho < 1``. Default 0.5.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+
+        Returns:
+            Vector2Set: the sample.
+        """
+        return cls._sample(WrappedCauchy(mean, rho), n, rng, name)
+
+    @classmethod
+    def random_cardioid(cls, n=100, mean=0, rho=0.25, name="Default", *, rng=None):
+        """Return a set of random vectors sampled from the cardioid
+        distribution ([`Cardioid`][apsg.feature.Cardioid]).
+
+        Args:
+            n: number of features. Default 100.
+            mean: mean direction given as azimuth. Default 0.
+            rho: mean resultant length, ``0 <= rho <= 0.5``. Default 0.25.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+
+        Returns:
+            Vector2Set: the sample.
+        """
+        return cls._sample(Cardioid(mean, rho), n, rng, name)
+
+    @classmethod
+    def random_jones_pewsey(
+        cls, n=100, mean=0, kappa=1, psi=0, name="Default", *, rng=None
+    ):
+        """Return a set of random vectors sampled from the Jones-Pewsey
+        distribution ([`JonesPewsey`][apsg.feature.JonesPewsey]).
+
+        Args:
+            n: number of features. Default 100.
+            mean: mean direction given as azimuth. Default 0.
+            kappa: concentration. Default 1.
+            psi: shape (0 von Mises, 1 cardioid, -1 wrapped Cauchy).
+                Default 0.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+
+        Returns:
+            Vector2Set: the sample.
+        """
+        return cls._sample(JonesPewsey(mean, kappa, psi), n, rng, name)
 
 
 class Direction2Set(Vector2Set):
@@ -707,6 +795,30 @@ class Direction2Set(Vector2Set):
 
     def __repr__(self):
         return f"D2({len(self)}) {self.name}"
+
+    @classmethod
+    def _uniform_model(cls):
+        return AxialUniform2()
+
+    @classmethod
+    def random_axial_vonmises(cls, n=100, mean=0, kappa=1, name="Default", *, rng=None):
+        """Return a set of random directions sampled from the axial von Mises
+        distribution ([`AxialVonMises`][apsg.feature.AxialVonMises]).
+
+        Args:
+            n: number of features. Default 100.
+            mean: mean axis given as azimuth. Default 0.
+            kappa: concentration. Default 1.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+
+        Returns:
+            Direction2Set: the sample.
+        """
+        return cls._sample(AxialVonMises(mean, kappa), n, rng, name)
 
 
 class Vector3Set(FeatureSet):
@@ -1422,31 +1534,8 @@ class Vector3Set(FeatureSet):
         )
 
     @classmethod
-    def random(cls, n=100, name="Default"):
-        """Method to create ``Vector3Set`` of features with uniformly distributed
-        random orientation.
-
-        Keyword Args:
-            n: number of objects to be generated.
-            name: name of dataset. Default is 'Default'.
-
-        Examples:
-            >>> np.random.seed(58463123)
-            >>> v = vecset.random(100)
-
-        Returns:
-            Vector3Set: The created feature set.
-        """
-        n = check_count(n)
-        u1 = np.random.random(n)
-        u2 = np.random.random(n)
-        z = 2 * u2 - 1
-        theta = 2 * np.pi * u1
-        r = np.sqrt(1 - z**2)
-        x = r * np.cos(theta)
-        y = r * np.sin(theta)
-        data = [cls.__feature_class__(v) for v in np.array([x, y, z]).T]
-        return cls(data, name=name)
+    def _uniform_model(cls):
+        return Uniform3()
 
     @classmethod
     def random_normal(cls, n=100, position=None, sigma=20, name="Default"):
@@ -1494,48 +1583,83 @@ class Vector3Set(FeatureSet):
         return cls(data, name=name)
 
     @classmethod
-    def random_fisher(cls, n=100, position=None, kappa=20, name="Default"):
-        """Return ``FeatureSet`` of random vectors sampled from von Mises Fisher
-        distribution around center position with concentration kappa.
+    def random_fisher(
+        cls, n=100, mean=None, kappa=20, name="Default", *, rng=None, position=None
+    ):
+        """Return a set of random vectors sampled from the von Mises-Fisher
+        distribution ([`VonMisesFisher`][apsg.feature.VonMisesFisher]).
 
         Args:
-            n: number of objects to be generated.
-            position: mean orientation given as ``Vector3``. Default Vector3(0, 0, 1).
-            kappa: precision parameter of the distribution. Default 20.
-            name: name of dataset. Default is 'Default'.
+            n: number of features. Default 100.
+            mean: mean direction given as ``Vector3``. Default Vector3(0, 0, 1).
+            kappa: concentration. Default 20.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+            position: deprecated alias of `mean`.
 
         Examples:
-            >>> l = linset.random_fisher(position=lin(120,50))
+            >>> l = linset.random_fisher(mean=lin(120, 50))
+
         Returns:
-            FeatureSet: The created feature set.
+            FeatureSet: the sample.
         """
-        n = check_count(n)
-        if position is None:
-            position = Vector3(0, 0, 1)
-        X = VonMisesFisher(position, kappa).rvs_array(n, legacy_rng())
-        return cls([cls.__feature_class__(x) for x in X], name=name)
+        mean = _deprecated_alias(mean, position, "position", "mean", "random_fisher")
+        mean = Vector3(0, 0, 1) if mean is None else mean
+        return cls._sample(VonMisesFisher(mean, kappa), n, rng, name)
 
     @classmethod
-    def random_kent(cls, p, n=100, kappa=20, beta=None, name="Default"):
-        """Return ``FeatureSet`` of random vectors sampled from Kent distribution
-        (Kent, 1982) - The 5-parameter Fisher–Bingham distribution.
+    def random_kent(
+        cls,
+        mean=None,
+        n=100,
+        kappa=20,
+        beta=None,
+        name="Default",
+        *,
+        major=None,
+        rng=None,
+        p=None,
+    ):
+        """Return a set of random vectors sampled from the Kent distribution
+        ([`Kent`][apsg.feature.Kent]), the 5-parameter Fisher-Bingham
+        distribution (Kent, 1982).
 
         Args:
-            p: Pair object defining orientation of data.
-            n: number of objects to be generated.
-            kappa: concentration parameter. Default 20.
+            mean: mean direction given as ``Vector3`` (then `major` is needed),
+                or a ``Pair`` whose lineation is the mean and whose in-plane
+                direction perpendicular to it is the major axis.
+            n: number of features. Default 100.
+            kappa: concentration. Default 20.
             beta: ellipticity, ``0 <= beta < kappa / 2`` (the distribution is
                 bimodal for larger ``beta``). Default ``kappa / 4``.
-            name: name of dataset. Default is 'Default'.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            major: major axis of the elliptical contours, perpendicular to
+                `mean`. Only with a vector `mean`.
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+            p: deprecated alias of `mean`.
 
         Examples:
-            >>> p = pair(150, 40, 150, 40)
-            >>> l = linset.random_kent(p, n=300, kappa=30)
+            >>> l = linset.random_kent(pair(150, 40, 150, 40), n=300, kappa=30)
+            >>> v = vecset.random_kent(vec(120, 40), major=vec(30, 0), kappa=30)
+
         Returns:
-            FeatureSet: The created feature set.
+            FeatureSet: the sample.
         """
-        if not isinstance(p, Pair):
-            raise TypeError("Argument must be Pair object.")
+        mean = _deprecated_alias(mean, p, "p", "mean", "random_kent")
+        if mean is None:
+            raise TypeError("random_kent() needs the mean direction or a Pair")
+        if isinstance(mean, Pair):
+            if major is not None:
+                raise TypeError("major can't be given with a Pair")
+            mean, major = mean.lvec, mean.fvec.cross(mean.lvec)
+        elif major is None:
+            raise TypeError("random_kent() needs major with a vector mean")
         if beta is None:
             beta = kappa / 4
         if beta < 0:
@@ -1546,24 +1670,69 @@ class Vector3Set(FeatureSet):
                 UserWarning,
                 stacklevel=2,
             )
-        kd = Kent(p.lvec, p.fvec.cross(p.lvec), kappa, beta)
-        X = kd.rvs_array(check_count(n), legacy_rng())
-        return cls([cls.__feature_class__(x) for x in X], name=name)
+        return cls._sample(Kent(mean, major, kappa, beta), n, rng, name)
+
+    @classmethod
+    def random_esag(
+        cls, n=100, mu=(0, 0, 3), major=(1, 0, 0), rho=1, name="Default", *, rng=None
+    ):
+        """Return a set of random vectors sampled from the elliptically
+        symmetric angular Gaussian distribution ([`ESAG`][apsg.feature.ESAG]).
+
+        Args:
+            n: number of features. Default 100.
+            mu: mean vector of the underlying Gaussian; its direction is the
+                mean direction and its length the concentration.
+                Default (0, 0, 3).
+            major: major axis of the elliptical contours. Default (1, 0, 0).
+            rho: ellipticity, ``0 < rho <= 1`` (1 is rotationally symmetric).
+                Default 1.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+
+        Returns:
+            FeatureSet: the sample.
+        """
+        return cls._sample(ESAG(mu, major, rho), n, rng, name)
 
     @classmethod
     def sfs(cls, n=100, name="Default"):
-        """Method to create ``FeatureSet`` of uniformly distributed vectors.
-        Spherical Fibonacci Spiral points on a sphere algorithm adopted from
-        John Burkardt.
+        """Deprecated alias of `uniform_sfs`."""
+        warnings.warn(
+            "sfs() is deprecated and will be removed in apsg 2.2, use uniform_sfs() "
+            "instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        return cls.uniform_sfs(n, name)
+
+    @classmethod
+    def gss(cls, n=100, name="Default"):
+        """Deprecated alias of `uniform_gss`."""
+        warnings.warn(
+            "gss() is deprecated and will be removed in apsg 2.2, use uniform_gss() "
+            "instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        return cls.uniform_gss(n, name)
+
+    @classmethod
+    def uniform_sfs(cls, n=100, name="Default"):
+        """Return a set of `n` evenly spread (not random) vectors, the
+        Spherical Fibonacci Spiral points on a sphere, after John Burkardt.
 
         http://people.sc.fsu.edu/~jburkardt/
 
-        Keyword Args:
-            n: number of objects to be generated. Default 1000.
-            name: name of dataset. Default is 'Default'.
+        Args:
+            n: number of features. Default 100.
+            name: name of the set. Default 'Default'.
 
         Examples:
-            >>> v = vecset.sfs(300)
+            >>> v = vecset.uniform_sfs(300)
             >>> v.ortensor().eigenvalues()
             (0.3334645347163635, 0.33333474915201167, 0.33320071613162483)
         Returns:
@@ -1579,18 +1748,18 @@ class Vector3Set(FeatureSet):
         return cls([cls.__feature_class__(d) for d in dc], name=name)
 
     @classmethod
-    def gss(cls, n=100, name="Default"):
-        """Method to create ``FeatureSet`` of uniformly distributed vectors.
-        Golden Section Spiral points on a sphere algorithm.
+    def uniform_gss(cls, n=100, name="Default"):
+        """Return a set of `n` evenly spread (not random) vectors, the Golden
+        Section Spiral points on a sphere.
 
         http://www.softimageblog.com/archives/115
 
         Args:
-            n: number of objects to be generated. Default 1000.
-            name: name of dataset. Default is 'Default'.
+            n: number of features. Default 100.
+            name: name of the set. Default 'Default'.
 
         Examples:
-            >>> v = vecset.gss(300)
+            >>> v = vecset.uniform_gss(300)
             >>> v.ortensor().eigenvalues()
             (0.33335688569571587, 0.33332315115436933, 0.33331996314991513)
         Returns:
@@ -1607,7 +1776,107 @@ class Vector3Set(FeatureSet):
         return cls([cls.__feature_class__(d) for d in dc], name=name)
 
 
-class LineationSet(Vector3Set):
+class _Axial3Samplers:
+    """Generators of the axial models, shared by ``LineationSet`` and
+    ``FoliationSet``."""
+
+    __slots__ = ()
+
+    @classmethod
+    def _uniform_model(cls):
+        return AxialUniform3()
+
+    @classmethod
+    def random_watson(cls, n=100, mean=(0, 0, 1), kappa=1, name="Default", *, rng=None):
+        """Return a set of random axes sampled from the Watson distribution
+        ([`Watson`][apsg.feature.Watson]).
+
+        Args:
+            n: number of features. Default 100.
+            mean: mean axis (pole of the girdle for negative `kappa`).
+                Default (0, 0, 1).
+            kappa: concentration, positive for bipolar and negative for
+                girdle distributions. Default 1.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+
+        Examples:
+            >>> l = linset.random_watson(mean=lin(120, 30), kappa=10)
+            >>> f = folset.random_watson(mean=lin(120, 30), kappa=-20)  # girdle
+
+        Returns:
+            FeatureSet: the sample.
+        """
+        return cls._sample(Watson(mean, kappa), n, rng, name)
+
+    @classmethod
+    def random_bingham(
+        cls,
+        n=100,
+        mean=(0, 0, 1),
+        major=(1, 0, 0),
+        kappa_major=-1,
+        kappa_minor=-2,
+        name="Default",
+        *,
+        rng=None,
+    ):
+        """Return a set of random axes sampled from the Bingham distribution
+        ([`Bingham`][apsg.feature.Bingham]).
+
+        Args:
+            n: number of features. Default 100.
+            mean: mean axis. Default (0, 0, 1).
+            major: major axis, made perpendicular to `mean`. Default (1, 0, 0).
+            kappa_major: concentration along the major axis. Default -1.
+            kappa_minor: concentration along the minor axis. Default -2.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+
+        Returns:
+            FeatureSet: the sample.
+        """
+        dist = Bingham(mean, major, kappa_major, kappa_minor)
+        return cls._sample(dist, n, rng, name)
+
+    @classmethod
+    def random_acg(
+        cls,
+        n=100,
+        mean=(0, 0, 1),
+        major=(1, 0, 0),
+        shape=(2, 0.6, 0.4),
+        name="Default",
+        *,
+        rng=None,
+    ):
+        """Return a set of random axes sampled from the angular central
+        Gaussian distribution ([`ACG`][apsg.feature.ACG]).
+
+        Args:
+            n: number of features. Default 100.
+            mean: mean axis. Default (0, 0, 1).
+            major: major axis, made perpendicular to `mean`. Default (1, 0, 0).
+            shape: eigenvalues ``(a1, a2, a3)``. Default (2, 0.6, 0.4).
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+
+        Returns:
+            FeatureSet: the sample.
+        """
+        return cls._sample(ACG(mean, major, shape), n, rng, name)
+
+
+class LineationSet(_Axial3Samplers, Vector3Set):
     """
     Class to store set of ``Lineation`` features.
     """
@@ -1623,7 +1892,7 @@ class LineationSet(Vector3Set):
         return f"L({len(self)}) {self.name}"
 
 
-class FoliationSet(Vector3Set):
+class FoliationSet(_Axial3Samplers, Vector3Set):
     """
     Class to store set of ``Foliation`` features.
     """

@@ -38,6 +38,7 @@ from apsg.feature._distributions import (
     Cardioid,
     JonesPewsey,
     Kent,
+    Lisle,
     OrientationDistribution,
     Uniform2,
     Uniform3,
@@ -59,7 +60,7 @@ from apsg.plotting._confidence import confidence_curve
 
 def test_snapshot_random_fisher():
     np.random.seed(7)
-    d = linset.random_fisher(5, position=lin(120, 40), kappa=30)
+    d = linset.random_fisher(5, mean=lin(120, 40), kappa=30)
     # scipy's sampler since 2.1.0
     expected = [
         [-0.08201306, 0.48967249, 0.86804073],
@@ -87,7 +88,7 @@ def test_snapshot_random_normal():
 
 def test_snapshot_random_vonmises():
     np.random.seed(7)
-    d = Vector2Set.random_vonmises(5, position=30, kappa=8)
+    d = Vector2Set.random_vonmises(5, mean=30, kappa=8)
     expected = [27.5617465, 7.43919488, 39.06333172, 32.10435331, 37.04380619]
     assert np.allclose(d.direction, expected, atol=1e-6)
 
@@ -106,7 +107,7 @@ def test_snapshot_random_kent():
     assert np.allclose(np.array(d), expected, atol=1e-7)
 
 
-# random_fisher(40, position=vec(200, 30), kappa=15) with seed 11, from apsg 2.0
+# random_fisher(40, mean=vec(200, 30), kappa=15) with seed 11, from apsg 2.0
 FISHER_SAMPLE = [
     [-0.9694825325, 0.0928113336, 0.2269133657],
     [-0.8704452191, -0.3020331830, 0.3887172199],
@@ -234,7 +235,7 @@ def test_vonmises_interval_coverage():
 
 def test_circular_standard_deviation():
     np.random.seed(3)
-    v = Vector2Set.random_vonmises(200, position=40, kappa=4)
+    v = Vector2Set.random_vonmises(200, mean=40, kappa=4)
     rbar = abs(v.normalized().R(mean=True))
     assert np.isclose(v.csd(), np.degrees(np.sqrt(-2 * np.log(rbar))))
 
@@ -381,7 +382,7 @@ def _rotation_to(mean):
     return np.array([[c, -s], [s, c]])
 
 
-_SPHERE_GRID = np.array(Vector3Set.sfs(200000))
+_SPHERE_GRID = np.array(Vector3Set.uniform_sfs(200000))
 
 
 def _mean_marginal_gof(dist, X):
@@ -461,7 +462,7 @@ def _grid(dim, n=20000):
     if dim == 2:
         theta = 2 * np.pi * (np.arange(n) + 0.5) / n
         return np.column_stack([np.cos(theta), np.sin(theta)]), 2 * np.pi / n
-    return np.array(Vector3Set.sfs(n)), 4 * np.pi / n
+    return np.array(Vector3Set.uniform_sfs(n)), 4 * np.pi / n
 
 
 def test_every_registered_distribution_has_examples():
@@ -669,10 +670,10 @@ def test_fisher_statistics_2d_identical_data():
 
 def test_random_vonmises_direction2set():
     np.random.seed(16)
-    d = Direction2Set.random_vonmises(5, position=30, kappa=8)
+    d = Direction2Set.random_vonmises(5, mean=30, kappa=8)
     assert isinstance(d, Direction2Set)
     np.random.seed(16)
-    v = Vector2Set.random_vonmises(5, position=30, kappa=8)
+    v = Vector2Set.random_vonmises(5, mean=30, kappa=8)
     assert np.allclose(np.array(d), np.array(v))
 
 
@@ -908,7 +909,7 @@ def test_bingham_envelope_bounds_density():
     from scipy.optimize import brentq
 
     # exp(-x'Ax) <= M (x'Omega x)^(-3/2) on the whole sphere
-    X = np.array(Vector3Set.sfs(20000))
+    X = np.array(Vector3Set.uniform_sfs(20000))
     for lam in ([0, 2, 30], [0, 0.1, 0.2], [0, 50, 400]):
         lam = np.array(lam, dtype=float)
         b = brentq(lambda b, lam=lam: np.sum(1 / (b + 2 * lam)) - 1, 1e-12, 3)
@@ -920,7 +921,7 @@ def test_bingham_envelope_bounds_density():
 
 def test_bingham_statistics_wraps_bingham():
     np.random.seed(34)
-    L = linset.random_fisher(60, position=lin(120, 40), kappa=10)
+    L = linset.random_fisher(60, mean=lin(120, 40), kappa=10)
     s = L.bingham_statistics(level=0.9)
     d = Bingham.fit(L)
     region = d.mean_confidence(0.9)
@@ -1000,7 +1001,7 @@ def test_featureset_fit_checks_dimension():
 
 def test_vectorial_model_of_axial_data_warns():
     np.random.seed(42)
-    L = linset.random_fisher(100, position=lin(120, 40), kappa=20)
+    L = linset.random_fisher(100, mean=lin(120, 40), kappa=20)
     with pytest.warns(UserWarning, match="halfspace") as record:
         d = L.fit("fisher")
     assert record[0].filename == __file__
@@ -1374,3 +1375,169 @@ def test_circular_models_moment_fits():
     assert np.isclose(Cardioid.fit(data, method="moments").rho, 0.3, atol=0.03)
     region = WrappedCauchy.fit(data).mean_confidence()
     assert 0 < region.alpha < 20
+
+
+# Generators of the feature sets ----------------------------------------------
+
+
+def _sampling_set(model):
+    from apsg.feature._container import PairSet, RotationSet
+
+    if model.dim == "pair":
+        return PairSet
+    if model.dim == "rotation":
+        return RotationSet
+    return {
+        (2, False): Vector2Set,
+        (2, True): Direction2Set,
+        (3, False): Vector3Set,
+        (3, True): LineationSet,
+    }[model.dim, model.axial]
+
+
+# keyword arguments of the generators that are not parameters of the model
+_GENERATOR_ARGS = {"n", "name", "rng", "position", "p"}
+
+
+@pytest.mark.parametrize(
+    "model", sorted(_DISTRIBUTION_REGISTRY.values(), key=lambda c: c.__name__)
+)
+def test_every_distribution_has_a_generator(model):
+    import inspect
+
+    cls = _sampling_set(model)
+    if model.name in ("uniform", "axial_uniform"):
+        assert type(cls._uniform_model()) is model
+        return
+    method = getattr(cls, f"random_{model.name}", None)
+    assert method is not None, f"{cls.__name__} has no random_{model.name}"
+    args = set(inspect.signature(method).parameters) - _GENERATOR_ARGS
+    params = set(inspect.signature(model.__init__).parameters) - {"self"}
+    assert args == params
+
+
+@pytest.mark.parametrize(
+    "cls, kind",
+    [
+        (Vector2Set, Uniform2),
+        (Direction2Set, AxialUniform2),
+        (Vector3Set, Uniform3),
+        (LineationSet, AxialUniform3),
+        (FoliationSet, AxialUniform3),
+    ],
+)
+def test_random_is_uniform_model(cls, kind):
+    s = cls.random(30, "u", rng=5)
+    assert type(s) is cls and len(s) == 30 and s.name == "u"
+    expected = kind().rvs(30, rng=5, feature=cls.__feature_class__)
+    assert np.allclose(np.array(s), np.array(expected))
+    assert np.allclose(np.array(cls.uniform_random(30, rng=5)), np.array(s))
+
+
+def test_random_uses_global_seed_by_default():
+    np.random.seed(3)
+    a = linset.random(10)
+    np.random.seed(3)
+    b = linset.random(10)
+    assert np.allclose(np.array(a), np.array(b))
+
+
+def test_random_model_by_name_class_or_instance():
+    d = Watson(lin(120, 30), 10)
+    by_name = FoliationSet.random(
+        20, model="watson", mean=lin(120, 30), kappa=10, rng=1
+    )
+    by_class = FoliationSet.random(20, model=Watson, mean=lin(120, 30), kappa=10, rng=1)
+    by_instance = FoliationSet.random(20, model=d, rng=1)
+    wrapper = FoliationSet.random_watson(20, mean=lin(120, 30), kappa=10, rng=1)
+    assert type(by_name) is FoliationSet
+    for s in (by_class, by_instance, wrapper):
+        assert np.allclose(np.array(s), np.array(by_name))
+
+
+def test_random_model_errors():
+    with pytest.raises(TypeError, match="instance"):
+        linset.random(5, model=Watson(), kappa=2)
+    with pytest.raises(TypeError, match="need a model"):
+        linset.random(5, kappa=2)
+    with pytest.raises(TypeError, match="axial"):
+        vecset.random(5, model="watson")
+    with pytest.raises(ValueError, match="not 2D"):
+        Vector2Set.random(5, model="fisher")
+    with pytest.raises(ValueError, match="not a 2D"):
+        Vector2Set.random(5, model=VonMisesFisher)
+
+
+def test_random_wrappers_keep_set_type():
+    from apsg.feature._container import FaultSet, PairSet, RotationSet
+
+    samples = [
+        (Direction2Set.random_vonmises(5, mean=30), Direction2Set),
+        (Direction2Set.random_axial_vonmises(5, mean=30, kappa=3), Direction2Set),
+        (FoliationSet.random_bingham(5), FoliationSet),
+        (LineationSet.random_acg(5), LineationSet),
+        (FoliationSet.random_kent(pair(150, 40, 150, 40), n=5), FoliationSet),
+        (Vector3Set.random_esag(5), Vector3Set),
+        (PairSet.random_lisle(5), PairSet),
+        (FaultSet.random_lisle(5), FaultSet),
+        (RotationSet.random_matrix_fisher(5, F=3 * np.eye(3)), RotationSet),
+    ]
+    for s, cls in samples:
+        assert type(s) is cls and len(s) == 5
+
+
+def test_faultset_random_has_both_senses():
+    from apsg.feature._container import FaultSet
+
+    f = FaultSet.random(200, rng=2)
+    assert type(f) is FaultSet
+    assert set(np.unique(f.sense)) == {-1, 1}
+
+
+@pytest.mark.parametrize("kappas", [(0, 0), (4, 0), (0, 4), (4, 8)])
+def test_lisle_samples_orthogonal_frames(kappas):
+    # kappa2 = 0 made the restricted eigenproblem degenerate (non-orthogonal pairs)
+    X = Lisle(pair(120, 40, 120, 40), *kappas).rvs_array(500, np.random.default_rng(1))
+    assert np.allclose(np.einsum("ni,ni->n", X[:, 0], X[:, 1]), 0, atol=1e-10)
+
+
+def test_uniform_pairs_and_rotations():
+    from apsg.feature._container import PairSet, RotationSet
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # no misfit warnings
+        p = PairSet.random(300, rng=1)
+    assert not p.uniformity_test().reject()
+    r = RotationSet.random(300, rng=1)
+    assert type(r) is RotationSet
+    assert np.allclose(np.mean(np.array(r), axis=0), 0, atol=0.1)
+
+
+def test_generator_deprecated_aliases():
+    with pytest.warns(FutureWarning, match="position is deprecated"):
+        a = linset.random_fisher(5, position=lin(120, 40), rng=1)
+    assert np.allclose(
+        np.array(a), np.array(linset.random_fisher(5, lin(120, 40), rng=1))
+    )
+    with pytest.warns(FutureWarning, match="position is deprecated"):
+        Vector2Set.random_vonmises(5, position=30)
+    with pytest.warns(FutureWarning, match="p is deprecated"):
+        b = linset.random_kent(p=pair(150, 40, 150, 40), n=5, rng=1)
+    assert np.allclose(
+        np.array(b), np.array(linset.random_kent(pair(150, 40, 150, 40), n=5, rng=1))
+    )
+    with pytest.raises(TypeError, match="both"):
+        linset.random_fisher(5, mean=lin(1, 1), position=lin(1, 1))
+
+
+def test_random_kent_vector_mean():
+    v = vecset.random_kent(vec(120, 40), major=vec(30, 0), kappa=30, beta=10, rng=1)
+    assert np.allclose(
+        np.array(v), np.array(Kent(vec(120, 40), vec(30, 0), 30, 10).rvs(100, rng=1))
+    )
+    with pytest.raises(TypeError, match="needs major"):
+        vecset.random_kent(vec(120, 40))
+    with pytest.raises(TypeError, match="Pair"):
+        vecset.random_kent(pair(150, 40, 150, 40), major=vec(30, 0))
+    with pytest.raises(TypeError, match="needs the mean"):
+        vecset.random_kent()

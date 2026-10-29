@@ -244,7 +244,7 @@ class TestVector2Set:
     def test_bootstrap_statistics_brackets_mean(self, axial):
         np.random.seed(3)
         # mean near 0 deg, so the interval crosses the origin
-        v = Vector2Set.random_vonmises(50, position=2, kappa=10)
+        v = Vector2Set.random_vonmises(50, mean=2, kappa=10)
         if axial:
             v = v.to_dir2()
         s = v.bootstrap_statistics(n=200)
@@ -255,7 +255,7 @@ class TestVector2Set:
 
     @pytest.mark.parametrize("axial", [False, True])
     def test_weighted_statistics_equal_unweighted_for_unit_data(self, axial):
-        v = Vector2Set.random_vonmises(30, position=40, kappa=4)
+        v = Vector2Set.random_vonmises(30, mean=40, kappa=4)
         if axial:
             v = v.to_dir2()
         a, b = v.fisher_statistics(), v.fisher_statistics(weighted=True)
@@ -292,7 +292,7 @@ class TestVector2Set:
 
     def test_csd(self):
         np.random.seed(42)
-        v = Vector2Set.random_vonmises(100, position=0, kappa=20)
+        v = Vector2Set.random_vonmises(100, mean=0, kappa=20)
         assert isinstance(v.csd(), float)
 
     def test_uniformity_test_uniform(self):
@@ -307,7 +307,7 @@ class TestVector2Set:
 
     def test_uniformity_test_clustered(self):
         np.random.seed(42)
-        v = Vector2Set.random_vonmises(100, position=0, kappa=20)
+        v = Vector2Set.random_vonmises(100, mean=0, kappa=20)
         s = v.uniformity_test()
         assert s.p_value < 0.05
         assert s.reject()
@@ -353,7 +353,7 @@ class TestVector2Set:
 
     def test_random_vonmises(self):
         np.random.seed(42)
-        v = Vector2Set.random_vonmises(10, position=45, kappa=10)
+        v = Vector2Set.random_vonmises(10, mean=45, kappa=10)
         assert len(v) == 10
 
     def test_copy(self):
@@ -614,7 +614,7 @@ class TestVector3Set:
 
     def test_fisher_statistics(self):
         np.random.seed(42)
-        v = Vector3Set.random_fisher(100, position=Vector3(0, 0, 1), kappa=20)
+        v = Vector3Set.random_fisher(100, mean=Vector3(0, 0, 1), kappa=20)
         s = v.fisher_statistics()
         assert isinstance(s, dict)
         assert "mu" in s
@@ -623,12 +623,12 @@ class TestVector3Set:
 
     def test_csd(self):
         np.random.seed(42)
-        v = Vector3Set.random_fisher(100, position=Vector3(0, 0, 1), kappa=20)
+        v = Vector3Set.random_fisher(100, mean=Vector3(0, 0, 1), kappa=20)
         assert isinstance(v.csd(), float)
 
     def test_uniformity_test_uniform(self):
         np.random.seed(42)
-        v = Vector3Set.gss(200)
+        v = Vector3Set.uniform_gss(200)
         s = v.uniformity_test()
         assert isinstance(s, TestResult)
         assert s.name == "Rayleigh"
@@ -638,14 +638,14 @@ class TestVector3Set:
 
     def test_uniformity_test_clustered(self):
         np.random.seed(42)
-        v = Vector3Set.random_fisher(100, position=Vector3(0, 0, 1), kappa=20)
+        v = Vector3Set.random_fisher(100, mean=Vector3(0, 0, 1), kappa=20)
         s = v.uniformity_test()
         assert s.p_value < 0.05
         assert s.reject()
 
     def test_watson_statistics(self):
         np.random.seed(42)
-        v = Vector3Set.random_fisher(100, position=Vector3(0, 0, 1), kappa=20)
+        v = Vector3Set.random_fisher(100, mean=Vector3(0, 0, 1), kappa=20)
         s = v.watson_statistics()
         assert isinstance(s, dict)
         assert "mu" in s
@@ -654,7 +654,7 @@ class TestVector3Set:
 
     def test_bingham_statistics(self):
         np.random.seed(42)
-        v = Vector3Set.random_fisher(100, position=Vector3(0, 0, 1), kappa=20)
+        v = Vector3Set.random_fisher(100, mean=Vector3(0, 0, 1), kappa=20)
         s = v.bingham_statistics()
         assert isinstance(s, dict)
         assert "mu" in s
@@ -667,21 +667,21 @@ class TestVector3Set:
 
     def test_bingham_statistics_shrinks_with_n(self):
         np.random.seed(42)
-        small = Vector3Set.random_fisher(20, position=Vector3(0, 0, 1), kappa=20)
-        large = Vector3Set.random_fisher(400, position=Vector3(0, 0, 1), kappa=20)
+        small = Vector3Set.random_fisher(20, mean=Vector3(0, 0, 1), kappa=20)
+        large = Vector3Set.random_fisher(400, mean=Vector3(0, 0, 1), kappa=20)
         assert max(large.bingham_statistics()["gamma"]) < max(
             small.bingham_statistics()["gamma"]
         )
 
     def test_bingham_statistics_which(self):
         np.random.seed(42)
-        v = Vector3Set.random_fisher(100, position=Vector3(0, 0, 1), kappa=20)
+        v = Vector3Set.random_fisher(100, mean=Vector3(0, 0, 1), kappa=20)
         ot = v.ortensor()
         s = v.bingham_statistics(which=2)
         assert s["mu"] == ot.eigenvectors(2)
 
     def test_bingham_statistics_invalid_which(self):
-        v = Vector3Set.random_fisher(50, position=Vector3(0, 0, 1), kappa=20)
+        v = Vector3Set.random_fisher(50, mean=Vector3(0, 0, 1), kappa=20)
         with pytest.raises(ValueError):
             v.bingham_statistics(which=3)
 
@@ -762,7 +762,7 @@ class TestVector3Set:
 
     def test_bootstrap_statistics(self):
         np.random.seed(42)
-        v = LineationSet.random_fisher(n=50, position=Lineation(120, 40), kappa=50)
+        v = LineationSet.random_fisher(n=50, mean=Lineation(120, 40), kappa=50)
         stats = v.bootstrap_statistics(n=50)
         assert stats["mu"].angle(Lineation(120, 40)) < 5
         assert 0 < stats["alpha"] < 10
@@ -772,8 +772,8 @@ class TestVector3Set:
     @pytest.mark.parametrize("method", ["energy_distance", "hotelling", "mmd"])
     def test_similarity_different_distributions(self, method):
         np.random.seed(42)
-        v1 = LineationSet.random_fisher(position=Lineation(120, 50))
-        v2 = LineationSet.random_fisher(position=Lineation(300, 10))
+        v1 = LineationSet.random_fisher(mean=Lineation(120, 50))
+        v2 = LineationSet.random_fisher(mean=Lineation(300, 10))
         _stat, pval, same = v1.similarity(v2, method=method, n_permutations=99)
         assert pval < 0.05
         assert not same
@@ -808,7 +808,7 @@ class TestVector3Set:
 
     def test_random_fisher(self):
         np.random.seed(42)
-        v = Vector3Set.random_fisher(10, position=Vector3(0, 0, 1), kappa=20)
+        v = Vector3Set.random_fisher(10, mean=Vector3(0, 0, 1), kappa=20)
         assert len(v) == 10
 
     def test_random_kent(self):
@@ -818,12 +818,21 @@ class TestVector3Set:
         assert len(v) == 10
 
     def test_sfs(self):
-        v = Vector3Set.sfs(100)
+        v = Vector3Set.uniform_sfs(100)
         assert len(v) == 100
 
     def test_gss(self):
-        v = Vector3Set.gss(100)
+        v = Vector3Set.uniform_gss(100)
         assert len(v) == 100
+
+    @pytest.mark.parametrize(
+        "old, new", [("sfs", "uniform_sfs"), ("gss", "uniform_gss")]
+    )
+    def test_spirals_deprecated_names(self, old, new):
+        with pytest.warns(FutureWarning, match=f"use {new}"):
+            v = getattr(LineationSet, old)(20, name="spiral")
+        assert isinstance(v, LineationSet) and v.name == "spiral"
+        assert list(v) == list(getattr(LineationSet, new)(20))
 
     def test_copy(self):
         v = Vector3Set([Vector3(1, 0, 0)])
@@ -894,7 +903,7 @@ class TestLineationSet:
 
     def test_R_order_independent(self):
         np.random.seed(42)
-        v = LineationSet.random_fisher(20, position=Lineation(120, 40))
+        v = LineationSet.random_fisher(20, mean=Lineation(120, 40))
         shuffled = LineationSet(list(reversed(v)))
         assert np.allclose(np.array(v.R()), np.array(shuffled.R()))
 
@@ -945,12 +954,12 @@ class TestLineationSet:
 
     def test_random_fisher(self):
         np.random.seed(42)
-        v = LineationSet.random_fisher(10, position=Lineation(120, 40))
+        v = LineationSet.random_fisher(10, mean=Lineation(120, 40))
         assert len(v) == 10
 
     def test_uniformity_test_uniform(self):
         np.random.seed(42)
-        v = LineationSet.gss(200)
+        v = LineationSet.uniform_gss(200)
         s = v.uniformity_test()
         assert isinstance(s, TestResult)
         assert s.name == "Bingham"
@@ -963,7 +972,7 @@ class TestLineationSet:
         # that mixing both antipodal representations doesn't cancel the signal
         # the way it would for a plain Rayleigh test on the raw resultant).
         np.random.seed(42)
-        v = LineationSet.random_fisher(100, position=Lineation(120, 40), kappa=50)
+        v = LineationSet.random_fisher(100, mean=Lineation(120, 40), kappa=50)
         flipped = LineationSet([-e if i % 2 else e for i, e in enumerate(v)])
         s = flipped.uniformity_test()
         assert s.reject()
@@ -1017,7 +1026,7 @@ class TestFoliationSet:
 
     def test_uniformity_test_uniform(self):
         np.random.seed(42)
-        f = FoliationSet.gss(200)
+        f = FoliationSet.uniform_gss(200)
         s = f.uniformity_test()
         assert isinstance(s, TestResult)
         assert s.name == "Bingham"
@@ -1026,7 +1035,7 @@ class TestFoliationSet:
 
     def test_uniformity_test_clustered_antipodal_mix(self):
         np.random.seed(42)
-        f = FoliationSet.random_fisher(100, position=Foliation(250, 30), kappa=50)
+        f = FoliationSet.random_fisher(100, mean=Foliation(250, 30), kappa=50)
         flipped = FoliationSet([-e if i % 2 else e for i, e in enumerate(f)])
         s = flipped.uniformity_test()
         assert s.reject()

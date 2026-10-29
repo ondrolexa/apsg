@@ -1,6 +1,7 @@
 """Base class of all feature sets, shared helpers and the ``G()`` factory."""
 
 import csv
+import warnings
 
 import numpy as np
 
@@ -239,7 +240,7 @@ class FeatureSet:
 
         Examples:
             >>> np.random.seed(6034782)
-            >>> l = Vector3Set.random_fisher(n=100, position=lin(120,40))
+            >>> l = Vector3Set.random_fisher(n=100, mean=lin(120,40))
             >>> sm = [lb.R() for lb in l.bootstrap()]
             >>> l.fisher_statistics()
             {'mu': V:120/40, 'k': 19.91236110604979, 'alpha': 3.249027370399397}
@@ -267,27 +268,140 @@ class FeatureSet:
                 ``method``.
 
         Examples:
-            >>> l = linset.random_fisher(position=lin(120, 40))
+            >>> l = linset.random_fisher(mean=lin(120, 40))
             >>> l.fit("watson")
             Watson(mean=L:120/40, kappa=...)
 
         Returns:
             OrientationDistribution: the fitted distribution.
         """
+        return self._dist_class(model, "fitted by").fit(self, **kwargs)
+
+    @classmethod
+    def _dist_class(cls, model, what):
+        """Return the distribution class of `model` (a class or a name) for the
+        set's features."""
         from apsg.feature._distributions import get_distribution
 
-        if issubclass(self.__feature_class__, Vector3):
-            dim = 3
-        elif issubclass(self.__feature_class__, Vector2):
-            dim = 2
-        elif issubclass(self.__feature_class__, Pair):
-            dim = "pair"
-        else:
-            raise TypeError(f"{type(self).__name__} can't be fitted by a distribution")
+        dim = cls._dist_dim(what)
         dist_cls = get_distribution(model, dim=dim)
         if dist_cls.dim != dim:
-            raise ValueError(f"{dist_cls.__name__} is not a {dim}D distribution")
-        return dist_cls.fit(self, **kwargs)
+            kind = dim if isinstance(dim, str) else f"{dim}D"
+            raise ValueError(f"{dist_cls.__name__} is not a {kind} distribution")
+        return dist_cls
+
+    @classmethod
+    def _dist_dim(cls, what):
+        """Return the ``dim`` of the distributions of the set's features."""
+        feature = cls.__feature_class__
+        if issubclass(feature, Vector3):
+            return 3
+        if issubclass(feature, Vector2):
+            return 2
+        if issubclass(feature, Pair):
+            return "pair"
+        if issubclass(feature, Rotation3):
+            return "rotation"
+        raise TypeError(f"{cls.__name__} can't be {what} a distribution")
+
+    @classmethod
+    def _uniform_model(cls):
+        """Return the uniform distribution of the set's features."""
+        raise TypeError(f"{cls.__name__} can't be sampled from a distribution")
+
+    @classmethod
+    def _sample(cls, dist, n, rng, name):
+        """Return a set of `n` features sampled from distribution `dist`.
+
+        `rng=None` uses numpy's global ``RandomState``, so ``np.random.seed()``
+        reproduces the sample, as it did for the ``random_*`` methods of
+        earlier versions.
+        """
+        from apsg.feature._distributions import as_rng, legacy_rng
+
+        rng = legacy_rng() if rng is None else as_rng(rng)
+        sample = dist.rvs(n, rng=rng, feature=cls.__feature_class__, name=name)
+        return cls(list(sample), name=name)
+
+    @classmethod
+    def random(cls, n=100, name="Default", *, model=None, rng=None, **params):
+        """Return a set of `n` random features sampled from a distribution.
+
+        Args:
+            n: number of features. Default 100.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            model: distribution of the sample, given as a distribution
+                instance, a class, or a class or short name (e.g. ``"watson"``)
+                matched to the kind of features of the set. Default None is
+                the uniform distribution.
+            rng: None, an integer seed or a ``numpy.random.Generator``. Default
+                None uses numpy's global random state, so ``np.random.seed()``
+                makes the sample reproducible.
+            params: parameters of the distribution, when `model` is a class or
+                a name.
+
+        Examples:
+            >>> linset.random(50)
+            >>> linset.random(50, model="watson", mean=lin(120, 30), kappa=10)
+            >>> linset.random(50, model=dist_watson(lin(120, 30), 10))
+
+        Returns:
+            FeatureSet: the sample.
+        """
+        from apsg.feature._distributions import OrientationDistribution
+
+        if isinstance(model, OrientationDistribution):
+            if params:
+                raise TypeError(
+                    "Distribution parameters can't be given with a distribution "
+                    f"instance, got {', '.join(params)}"
+                )
+            dist = model
+        elif model is None:
+            if params:
+                raise TypeError(
+                    f"Parameters {', '.join(params)} need a model of the distribution"
+                )
+            dist = cls._uniform_model()
+        else:
+            dist = cls._dist_class(model, "sampled from")(**params)
+        return cls._sample(dist, n, rng, name)
+
+    @classmethod
+    def uniform_random(cls, n=100, name="Default", *, rng=None):
+        """Return a set of `n` features with uniformly distributed random
+        orientations, the same as `random` with the default `model`.
+
+        Args:
+            n: number of features. Default 100.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+
+        Returns:
+            FeatureSet: the sample.
+        """
+        return cls.random(n, name, rng=rng)
+
+
+def _deprecated_alias(value, old_value, old, new, method):
+    """Return `value`, or `old_value` given under the deprecated keyword `old`
+    of `method`, with a ``FutureWarning``."""
+    if old_value is None:
+        return value
+    if value is not None:
+        raise TypeError(f"{method}() got both {new} and the deprecated {old}")
+    warnings.warn(
+        f"{method}(): {old} is deprecated and will be removed in apsg 2.2, use "
+        f"{new} instead.",
+        FutureWarning,
+        stacklevel=3,
+    )
+    return old_value
 
 
 _CONTAINER_REGISTRY: dict = {}
