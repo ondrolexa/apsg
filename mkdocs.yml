@@ -115,7 +115,7 @@ plugins:
             filters: ["!^_"]
             heading_level: 4
             show_root_heading: true
-            show_source: true
+            show_source: false
             show_bases: true
             show_signature_annotations: true
             separate_signature: true
