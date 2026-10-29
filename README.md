@@ -9,7 +9,11 @@
 [![codecov](https://codecov.io/gh/ondrolexa/apsg/graph/badge.svg?token=YKXWmJJHw3)](https://codecov.io/gh/ondrolexa/apsg)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.593586-blue)](https://doi.org/10.5281/zenodo.593586)
 
-APSG is the package for structural geologists. It defines several new Python classes to easily manage, analyze and visualize orientation structural geology data.
+APSG is the Python toolbox for structural geologists. Turn lineations, foliations, faults and
+stress tensors into beautiful stereonets, rose diagrams and fabric plots in a few lines of code.
+Back every interpretation with solid statistics: fit and simulate orientation distributions,
+draw confidence regions and test your hypotheses. From a field CSV, a pandas table or your
+structural database to publication-ready figures and answers, in minutes.
 
 Check [CHANGELOG.md](https://github.com/ondrolexa/apsg/blob/master/CHANGELOG.md) for recent updates.
 
