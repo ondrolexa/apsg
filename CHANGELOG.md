@@ -34,6 +34,7 @@ are much faster, and the documentation has a fresh new home.
 - `RosePlot` `bar()`, `pdf()` and `muci()` accept single `Vector2`/`Direction` features.
 - Feature sets generate samples of every distribution: `random(model=...)` and `random_<name>()` methods (e.g. `linset.random_watson()`, `folset.random_bingham()`, `pairset.random_lisle()`), all with an `rng` keyword.
 - `uniform_random()`, `uniform_sfs()` and `uniform_gss()` for uniformly distributed sets.
+- `apsg.paleomag` subpackage (not imported by `from apsg import *`; use `from apsg.paleomag import *`): `Specimen` holds the demagnetization steps (`DemagStep`) and orientation of one specimen, reads PMD (standard and Remasoft-exported dialects, detected from the file's direction columns), Remasoft RS3 and SQUID files and writes PMD and RS3; per-specimen principal component analysis of lines and planes with MAD and DANG (`pca()`, `interpret()`, `Component`), median destructive field and vector difference sum. `Sample` collects specimens: Fisher mean or combined lines and great circles mean (McFadden & McElhinny 1988, `lines_planes_mean()`), bootstrap fold test (Tauxe & Watson 1994), reversal test and virtual geomagnetic pole (`vgp()`). Plots `zijderveld_plot`, `demag_plot` and `stereo_plot`.
 
 ### Changed
 - Documentation moved to MkDocs with the Material theme.
@@ -54,6 +55,7 @@ are much faster, and the documentation has a fresh new home.
 - **BREAKING:** `SDBSession.getfaults()` is removed: the SDB format stores no sense of movement, so it only assigned one given sense to every pair. Use `getpairs()` and build the faults, e.g. `FaultSet([Fault(p, 1) for p in pairs])`.
 - **BREAKING:** `Cone.apical_angle` is a property, like `ConeSet.apical_angle` (use `c.apical_angle` instead of `c.apical_angle()`).
 - **BREAKING:** `fisher_statistics()["k"]` of 3D sets is Fisher's precision `(N - 1) / (N - R)`, the estimate alpha95 and palaeomagnetic practice use; the maximum-likelihood estimate it returned before is now `fisher_statistics()["kappa"]`. `csd()` uses the precision.
+- **BREAKING:** The paleomagnetic `Core` class is removed from `apsg.feature`, replaced by `Specimen` and `Sample` in `apsg.paleomag`. Its `pca()` normalized the centred vectors and so returned wrong directions and MAD; `from_pmd()` did not read the core orientation.
 - **BREAKING:** `uniformity_test()` returns a `TestResult`; its dict access with the old keys (`R`, `statistic`, `p_value`, `uniform`, `critical_value`) still works with a `FutureWarning`.
 - `SDBSession.getpairs()` raises `ValueError` when `ptype` is not a planar or `ltype` not a linear structure, instead of returning an empty set.
 

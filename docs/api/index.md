@@ -10,6 +10,7 @@ listed on the module pages below under their own names and under short aliases.
 | [`apsg.plotting`](plotting.md) | `StereoNet`, `StereoGrid`, `RosePlot` and fabric plots |
 | [`apsg.pandas`](pandas.md) | pandas extension types and accessors |
 | [`apsg.database`](database.md) | PySDB `.sdb` files and websdb projects |
+| [`apsg.paleomag`](paleomag.md) | paleomagnetic specimens and samples (not in `from apsg import *`) |
 | [`apsg.math`](math.md) | vector and matrix base classes |
 | [`apsg.config`](config.md) | global configuration `apsg_conf` |
 | [`apsg.helpers`](helpers.md) | degree-based trigonometry and notation conversion |

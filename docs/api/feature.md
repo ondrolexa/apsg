@@ -312,7 +312,3 @@ See [Orientation distributions](../distributions.md) for an overview.
 ::: apsg.feature.anisotropy_test
 
 ::: apsg.feature.jelinek_shape
-
-### Paleomagnetism
-
-::: apsg.feature.Core

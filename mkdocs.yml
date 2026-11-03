@@ -153,6 +153,7 @@ nav:
       - plotting: api/plotting.md
       - pandas: api/pandas.md
       - database: api/database.md
+      - paleomag: api/paleomag.md
       - math: api/math.md
       - config: api/config.md
       - helpers: api/helpers.md

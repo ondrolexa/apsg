@@ -70,7 +70,6 @@ from apsg.feature._hypothesis import (
     watson_symmetry_test,
     watson_u2_test,
 )
-from apsg.feature._paleomag import Core
 from apsg.feature._statistics import anisotropy_test, jelinek_shape
 from apsg.feature._tensor2 import (
     DeformationGradient2,
@@ -106,7 +105,6 @@ __all__ = (
     "ClusterSet",
     "Cone",
     "ConeSet",
-    "Core",
     "DeformationGradient2",
     "DeformationGradient3",
     "Direction",
