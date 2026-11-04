@@ -187,26 +187,56 @@ def test_rs3_excludes_fit_rows(tmp_path):
     assert len(Specimen.from_rs3(path, exclude=())) == len(LEVELS) + 1
 
 
-def _edit_rs3_header(path, sdec, sinc, p1):
+def _edit_rs3_header(path, sdec, sinc, pcodes=None, bdec=None):
+    """Rewrite SDec, SInc (and BDec, P1-P4) on the specimen line."""
     lines = path.read_text(encoding="latin-1").splitlines()
     h = lines[1]
-    lines[1] = h[:74] + f"{sdec:<6g}{sinc:<6g}" + h[86:110] + f"{p1:<3d}" + h[113:]
+    bed = h[86:92] if bdec is None else f"{bdec:<6g}"
+    pc = h[110:122] if pcodes is None else "".join(f"{c:<3d}" for c in pcodes)
+    lines[1] = h[:74] + f"{sdec:<6g}{sinc:<6g}" + bed + h[92:110] + pc + h[122:]
     path.write_text("\r\n".join(lines), encoding="latin-1")
     return path
 
 
-def test_rs3_orientation_parameter_6(tmp_path):
-    spec = _synthetic()  # written with P1 = 12: SDec 27, SInc 81
-    path = _write(spec, tmp_path / "s1.rs3")
-    # the mark at 6 o'clock: SDec turned by 180 degrees and SInc negated
-    back = Specimen.from_rs3(_edit_rs3_header(path, 207, -81, 6))
+# the synthetic specimen: azimuth 207, hade 81, bedding dip direction 200, dip 85
+@pytest.mark.parametrize(
+    "sdec, sinc, pcodes, bdec",
+    [
+        (27, 81, (12, 0, 6, 0), 200),  # as written by to_rs3
+        (207, -81, (6, 0, 6, 0), 200),  # arrow at 6 o'clock: 180 about the core axis
+        (207, 81, (12, 0, 12, 90), 110),  # azimuth of the arrow, bedding strike
+        (27, -81, (6, 0, 12, 90), 110),
+    ],
+)
+def test_rs3_orientation_parameters(tmp_path, sdec, sinc, pcodes, bdec):
+    spec = _synthetic()
+    path = _edit_rs3_header(_write(spec, tmp_path / "s1.rs3"), sdec, sinc, pcodes, bdec)
+    back = Specimen.from_rs3(path)
     assert np.allclose(back.rotation("geo"), spec.rotation("geo"), atol=1e-6)
+    assert np.allclose(back.rotation("tilt"), spec.rotation("tilt"), atol=1e-6)
 
 
-def test_rs3_unsupported_orientation_parameters(tmp_path):
-    path = _edit_rs3_header(_write(_synthetic(), tmp_path / "s1.rs3"), 27, 81, 3)
-    with pytest.raises(NotImplementedError, match="P1=3"):
+@pytest.mark.parametrize(
+    "pcodes, match",
+    [((3, 0, 6, 0), "P1=3"), ((12, 90, 6, 0), "P2=90"), ((12, 0, 6, 45), "P4=45")],
+)
+def test_rs3_unsupported_orientation_parameters(tmp_path, pcodes, match):
+    path = _edit_rs3_header(_write(_synthetic(), tmp_path / "s1.rs3"), 27, 81, pcodes)
+    with pytest.raises(NotImplementedError, match=match):
         Specimen.from_rs3(path)
+
+
+def test_pmd_greek_header(tmp_path):
+    # PaleoMac writes the core azimuth and hade as CP437 alpha and beta
+    spec = _synthetic()
+    path = _write(spec, tmp_path / "s1.pmd")
+    text = (
+        path.read_text(encoding="latin-1").replace(" a=", " α=").replace(" b=", " ß=")
+    )
+    path.write_bytes(text.encode("cp437"))
+    back = Specimen.from_pmd(path)
+    assert back.name == "S1"
+    assert np.allclose(back.rotation("tilt"), spec.rotation("tilt"), atol=1e-3)
 
 
 def test_from_file_rejects_unknown_extension(tmp_path):

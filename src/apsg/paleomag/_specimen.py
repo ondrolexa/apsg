@@ -51,7 +51,9 @@ _PMD_ROW = re.compile(
     rf"^(?P<label>.*?)\s*(?P<x>{_ENUM})\s*(?P<y>{_ENUM})\s*(?P<z>{_ENUM})"
     rf"\s*(?P<mag>{_ENUM})(?P<rest>.*)$"
 )
-_RS3_PCODES = {(12, 6): (180.0, 1.0), (6, 6): (0.0, -1.0)}
+# PMD headers written by PaleoMac label azimuth and hade with CP437 alpha and
+# beta (bytes 0xE0, 0xE1), which arrive as "à", "á" when decoded as latin-1
+_PMD_GREEK = str.maketrans({"à": "a", "á": "b", "α": "a", "β": "b", "ß": "b"})
 
 
 # ---------------------------------------------------------------------------
@@ -608,7 +610,7 @@ class Specimen:
         """Read a PMD file (Enkin's PaleoMac format).
 
         Line 2 holds the name and the orientation ``a``, ``b`` (core azimuth and
-        hade), ``s``, ``d`` (bedding) and ``v`` (volume, m3), the data rows the
+        hade, written as ``α``, ``β`` by PaleoMac), ``s``, ``d`` (bedding) and ``v`` (volume, m3), the data rows the
         step label, the moment components ``Xc Yc Zc`` (Am2), the intensity
         and the geographic and tilt-corrected directions. Rows are parsed by
         their number format, not by fixed columns, so labels such as
@@ -624,7 +626,7 @@ class Specimen:
             filename: path of the file.
             demag: ``"thermal"`` or ``"af"``; guessed from the labels if None.
         """
-        lines = _read_lines(filename)
+        lines = [ln.translate(_PMD_GREEK) for ln in _read_lines(filename)]
         ih = next((i for i, ln in enumerate(lines) if "a=" in ln and "b=" in ln), None)
         if ih is None:
             raise ValueError(f"{filename}: no orientation line (a=, b=, ...) found")
@@ -715,10 +717,20 @@ class Specimen:
         rock, age, formation, the sampling orientation ``SDec SInc``, bedding
         ``BDec BInc`` (dip direction, dip), fold axis ``FDec FInc`` and the
         orientation parameters ``P1-P4``. The data rows hold the step, the
-        intensity (A/m) and the direction in specimen coordinates. Supported
-        orientation parameters ``(P1, P3)`` are (12, 6) and (6, 6); P1 is the
-        clock position of the orientation mark, the two differ by 180 degrees
-        about the core axis.
+        intensity (A/m) and the direction in specimen coordinates.
+
+        The orientation parameters follow AGICO (2009), as described by
+        Sagnotti (2013): P1 is the clock position of the reference arrow
+        (specimen x axis) on the frontal base of the core, P2 is 0 when
+        ``SInc`` is the dip of the frontal base (the hade of the core axis)
+        and 90 when it is the plunge of the core axis, P3 is the clock
+        position of the azimuth ``SDec`` measured in the field and P4 is 0
+        when ``BDec`` is the dip direction of the bedding and 90 when it is
+        the strike (right-hand rule). Supported are P1 and P3 of 12 or 6,
+        P2 = 0 and P4 of 0 or 90: P3 = 6 turns ``SDec`` by 180 degrees and
+        P1 = 6 turns the specimen by 180 degrees about the core axis. The
+        codes 12 0 6 0, 6 0 6 0 and 12 0 12 90 were checked against the
+        ``Dge Ige Dtc Itc`` columns of Remasoft files.
 
         Args:
             filename: path of the file.
@@ -741,14 +753,15 @@ class Specimen:
         sdec, sinc = num(74, 80) or 0.0, num(80, 86) or 0.0
         bdec, binc = num(86, 92), num(92, 98)
         fdec, finc = num(98, 104), num(104, 110)
-        p1, p3 = num(110, 113), num(116, 119)
-        pcodes = (int(p1 or 0), int(p3 or 0))
-        if pcodes not in _RS3_PCODES:
+        p1, p2, p3, p4 = (int(num(a, a + 3) or 0) for a in (110, 113, 116, 119))
+        if p1 not in (12, 6) or p2 != 0 or p3 not in (12, 6) or p4 not in (0, 90):
             raise NotImplementedError(
-                f"{filename}: RS3 orientation parameters P1={pcodes[0]}, "
-                f"P3={pcodes[1]} are not supported (supported: {list(_RS3_PCODES)})"
+                f"{filename}: RS3 orientation parameters P1={p1}, P2={p2}, "
+                f"P3={p3}, P4={p4} are not supported (supported: P1 and P3 "
+                "12 or 6, P2 0, P4 0 or 90)"
             )
-        shift, sign = _RS3_PCODES[pcodes]
+        azimuth = sdec + (180.0 if p3 == 6 else 0.0) + (180.0 if p1 == 6 else 0.0)
+        hade = -sinc if p1 == 6 else sinc
         units = lines[2][3:14]
         if demag is None:
             if "mT" in units:
@@ -785,13 +798,13 @@ class Specimen:
             demag = _demag_from_labels([s.label for s in steps])
         bedding = Vector3(_UP)
         if bdec is not None and binc is not None:
-            bedding = bedding_vector(bdec, binc)
+            bedding = bedding_vector(bdec + p4, binc)
         return cls(
             name=txt(0, 10),
             steps=steps,
             demag=demag,
-            azimuth=(sdec + shift) % 360,
-            hade=sign * sinc,
+            azimuth=azimuth % 360,
+            hade=hade,
             bedding=bedding,
             foldaxis=Lineation(fdec, finc) if None not in (fdec, finc) else None,
             site=txt(10, 20),
