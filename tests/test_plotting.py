@@ -3190,3 +3190,17 @@ def test_second_contour_colorbar_warns():
     s.init_figure()
     with pytest.warns(UserWarning, match="one contour colorbar"):
         s._render()
+
+
+@pytest.mark.parametrize(
+    "angles, direction, zero",
+    [("geo", -1, np.pi / 2), ("math", 1, 0.0)],
+)
+def test_roseplot_angles(angles, direction, zero):
+    s = RosePlot(angles=angles)
+    s.bar(vec2set.random_vonmises(mean=0, n=10))
+    s.init_figure()
+    s._render()
+    assert s.ax.get_theta_direction() == direction
+    assert np.isclose(s.ax.get_theta_offset(), zero)
+    assert RosePlot.from_json(s.to_json())._kwargs["angles"] == angles

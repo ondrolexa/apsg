@@ -16,6 +16,7 @@ go wherever you want, and bad input is caught at once instead of crashing later.
 are much faster, and the documentation has a fresh new home.
 
 ### Added
+- `RosePlot(angles="math")` puts 0 on the right with angles counterclockwise (default `"geo"` keeps 0 on top, clockwise).
 - Orientation distributions with a common interface for fitting, sampling, density and model selection: uniform, von Mises, wrapped normal, Fisher, Kent, ESAG, Watson, Bingham, ACG and Lisle (for pairs).
 - `fit()` method on feature sets, e.g. `linset.fit("kent")`; distributions are available as `dist_fisher`, `dist_kent`, ...
 - `StereoNet.density()` and `RosePlot.density()` to plot the density of a fitted distribution.

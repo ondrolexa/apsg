@@ -213,6 +213,7 @@ These classes control the appearance of lines on stereonet plots.
 
 | Field          | Default | Description                       |
 |----------------|---------|-----------------------------------|
+| `angles`       | `"geo"` | `"geo"`: 0 on top, clockwise; `"math"`: 0 right, counterclockwise |
 | `bins`         | `36`    | Number of bins                    |
 | `density`      | `True`  | Use density instead of counts     |
 | `arrowness`    | `0.95`  | Arrow shape factor                |

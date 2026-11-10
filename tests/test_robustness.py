@@ -456,7 +456,14 @@ def test_stereonet_parameters_are_validated(kwargs):
 
 @pytest.mark.parametrize(
     "kwargs",
-    [{"bins": 0}, {"bins": 1.5}, {"pdf_res": 1}, {"kappa": 0}, {"figsize": (5,)}],
+    [
+        {"bins": 0},
+        {"bins": 1.5},
+        {"pdf_res": 1},
+        {"kappa": 0},
+        {"figsize": (5,)},
+        {"angles": "x"},
+    ],
 )
 def test_roseplot_parameters_are_validated(kwargs):
     with pytest.raises(ValueError, match=next(iter(kwargs))):

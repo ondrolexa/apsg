@@ -11,6 +11,7 @@ HEMISPHERES = ("lower", "upper")
 LEGEND_POSITIONS = ("right", "left", "top", "bottom")
 GRID_TYPES = ("gss", "sfs")
 CONTOUR_METHODS = ("kamb", "sph")
+ROSE_ANGLES = ("geo", "math")
 MUCI_METHODS = (None, "fisher", "bootstrap")
 
 
@@ -378,6 +379,7 @@ class StereogridConfig(BaseConfig):
 class RoseplotConfig(BaseConfig):
     """Rose plot global configuration."""
 
+    angles: str = _choice("geo", ROSE_ANGLES)
     bins: int = _positive(36, integer=True)
     density: bool = True
     arrowness: float = 0.95

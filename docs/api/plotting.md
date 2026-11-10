@@ -183,6 +183,15 @@ Rose diagrams:
 >>> p.show()
 ```
 
+By default (`angles="geo"`) 0 is on top and angles increase clockwise. Use
+`angles="math"` for 0 on the right and angles increasing counterclockwise:
+
+```pycon
+>>> p = RosePlot(angles="math")
+>>> p.bar(v)
+>>> p.show()
+```
+
 Fabric plots:
 
 ```pycon

@@ -23,6 +23,9 @@ class RosePlot:
         title (str): figure title. Default None
         title_kws (dict): dictionary of keyword arguments passed to matplotlib suptitle
             method.
+        angles (str): ``"geo"`` puts 0 on top with angles increasing clockwise,
+            ``"math"`` puts 0 on the right with angles increasing counterclockwise.
+            Default ``"geo"``
         bins (int): Number of bins. Default 36
         density (bool): Use density instead of counts. Default False
         pdf (bool): Plot Von Mises density function instead histogram. Default False
@@ -67,8 +70,12 @@ class RosePlot:
 
     def _draw_layout(self):
         # self.ax.format_coord = self.format_coord
-        self.ax.set_theta_direction(-1)  # type: ignore
-        self.ax.set_theta_zero_location("N")  # type: ignore
+        if self._kwargs["angles"] == "math":
+            self.ax.set_theta_direction(1)  # type: ignore
+            self.ax.set_theta_zero_location("E")  # type: ignore
+        else:
+            self.ax.set_theta_direction(-1)  # type: ignore
+            self.ax.set_theta_zero_location("N")  # type: ignore
         if self._kwargs["grid"]:
             self.ax.grid(True, **self._kwargs["grid_kws"])
         else:
