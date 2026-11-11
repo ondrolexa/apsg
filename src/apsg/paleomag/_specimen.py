@@ -169,7 +169,10 @@ class Component:
         kind: ``"line"`` or ``"plane"``.
         vector: line direction (pointing along the removed magnetization) or
             plane pole (``Vector3``, unit length).
-        mad: maximum angular deviation in degrees (Kirschvink, 1980).
+        mad: maximum angular deviation in degrees (Kirschvink, 1980). A
+            geometric precision index of the fit, not a confidence limit. A
+            free plane need not pass through the origin; an anchored plane of
+            unit vectors is the great circle used by `lines_planes_mean`.
         dang: deviation angle between the line and the centre of mass of the
             data (Tauxe & Staudigel, 2004), None for planes and anchored fits.
         n: number of steps used.
@@ -967,6 +970,16 @@ def lines_planes_mean(lines, poles, level=0.95, tol=1e-10, max_iter=1000):
     With planes only, the start is their common intersection (oriented
     downward).
 
+    Note:
+        The method assumes the circles are scattered about the sought
+        direction. Circles from two populations with similar precisions and
+        means not exactly antiparallel converge on a direction biased by
+        about half their angular separation (Schmidt, 1985); direct
+        observations of the sought component reduce the bias. McFadden &
+        McElhinny note that `k` tends to be too large and the cone slightly
+        too small (coverage a bit below `level`). No arc constraints are
+        applied, so their analyses A and C are reproduced, not B and D.
+
     Args:
         lines: ``(M, 3)`` unit vectors (directions).
         poles: ``(N, 3)`` unit poles of the great circles.
@@ -980,6 +993,8 @@ def lines_planes_mean(lines, poles, level=0.95, tol=1e-10, max_iter=1000):
         McFadden, P.L. & McElhinny, M.W. (1988). The combined analysis of
             remagnetization circles and direct observations in
             palaeomagnetism. Earth and Planetary Science Letters 87, 161-172.
+        Schmidt, P.W. (1985). Bias in converging great circle methods.
+            Earth and Planetary Science Letters 72, 427-432.
     """
     L = np.asarray(lines, dtype=float).reshape(-1, 3)
     P = np.asarray(poles, dtype=float).reshape(-1, 3)
@@ -993,6 +1008,13 @@ def lines_planes_mean(lines, poles, level=0.95, tol=1e-10, max_iter=1000):
     else:
         if N < 2:
             raise ValueError("At least two great circles are needed without lines")
+        warnings.warn(
+            "Great circles without direct observations give a biased mean when "
+            "the circles come from two populations of similar precision "
+            "(Schmidt, 1985); add direct observations of the sought component.",
+            UserWarning,
+            stacklevel=2,
+        )
         m = np.linalg.eigh(P.T @ P)[1][:, 0]
         m = m if m[2] >= 0 else -m
     m = m / np.linalg.norm(m)
@@ -1021,6 +1043,142 @@ def lines_planes_mean(lines, poles, level=0.95, tol=1e-10, max_iter=1000):
         "n_lines": M,
         "n_planes": N,
         "points": [Vector3(g) for g in G],
+    }
+
+
+def _orient(v, lines):
+    """Orient an axis along the mean of `lines`, or downward without lines."""
+    v = np.asarray(v, dtype=float)
+    ref = lines.sum(axis=0) if len(lines) else np.array([0.0, 0.0, 1.0])
+    return v if v @ ref >= 0 else -v
+
+
+def _unit_rows(a):
+    a = np.asarray(a, dtype=float).reshape(-1, 3)
+    return a / np.linalg.norm(a, axis=1, keepdims=True) if len(a) else a
+
+
+def kirschvink_mean(lines, poles, method=1):
+    """Mean direction of directions and great circles by Kirschvink's methods.
+
+    Kirschvink (1980, §6): with ``H_L`` and ``H_P`` the sums of ``u u^T`` over
+    the lines and the plane poles, the common direction is the eigenvector of
+    the smallest eigenvalue of ``H_P - H_L`` (method 1). Method 2 replaces each
+    line by two orthogonal directions of weight 1/2, which equals method 1 with
+    the line matrix weighted by 1/2. Neither method gives an error region; use
+    `lines_planes_mean` or `bailey_halls_mean` for that. The directions are
+    treated as axial and the result is oriented along the mean of the lines
+    (downward when there are none).
+
+    Args:
+        lines: ``(M, 3)`` directions.
+        poles: ``(N, 3)`` poles of the great circles.
+        method: 1 or 2. Default 1.
+
+    Returns:
+        dict: ``mu`` (``Vector3``), ``eigenvalues`` (ascending, of the matrix
+            whose smallest eigenvector is ``mu``), ``n_lines``, ``n_planes``.
+
+    References:
+        Kirschvink, J.L. (1980). The least-squares line and plane and the
+            analysis of palaeomagnetic data. Geophysical Journal of the
+            Royal Astronomical Society 62, 699-718.
+    """
+    if method not in (1, 2):
+        raise ValueError(f"method must be 1 or 2, got {method!r}")
+    L, P = _unit_rows(lines), _unit_rows(poles)
+    if len(L) + len(P) < 2:
+        raise ValueError("At least two directions or great circles are needed")
+    w = 1.0 if method == 1 else 0.5
+    H = P.T @ P - w * (L.T @ L)
+    val, vec = np.linalg.eigh(H)
+    return {
+        "mu": Vector3(_orient(vec[:, 0], L)),
+        "eigenvalues": val,
+        "n_lines": len(L),
+        "n_planes": len(P),
+    }
+
+
+def bailey_halls_mean(lines, poles, level=0.95):
+    """Maximum likelihood mean of directions and great circles with an ellipse.
+
+    Bailey & Halls (1984): directions are Fisher distributed about the true
+    direction ``t`` and the pole of each circle has density
+    ``k I0(k sin(phi)) / (4 pi sinh(k))`` about it. The estimate maximises
+    ``r.t - t.H.t / 2`` with ``r`` the resultant of the lines and
+    ``H = sum p p^T`` of the poles, i.e. ``(H - omega I) t = r`` with ``omega``
+    the smallest root of the secular equation (eq. 23). For circles only,
+    ``t`` is the smallest eigenvector of ``H`` and ``omega`` its eigenvalue.
+    The precision is ``k = S / (2M + N - 2)`` with ``S = 2M - r.t + omega``
+    (the printed (29) uses the length of ``r``, which is wrong for ``N > 0``).
+    The confidence region is the ellipse ``e'(H - omega I)e <= C^2``,
+    ``C^2 = S F / (M + N/2 - 1)`` with ``F`` the quantile of
+    ``F(2, 2M + N - 2)`` (eqs. 32, 37-39), computed in the tangent plane at
+    ``t``.
+
+    Args:
+        lines: ``(M, 3)`` directions.
+        poles: ``(N, 3)`` poles of the great circles (``N >= 1``).
+        level: confidence level. Default 0.95.
+
+    Returns:
+        dict: ``mu`` (``Vector3``), ``k``, ``omega``, ``semi_axes`` (degrees,
+            major first), ``axes`` (two ``Vector3`` along them), ``n_lines``
+            and ``n_planes``.
+
+    References:
+        Bailey, R.C. & Halls, H.C. (1984). Estimate of confidence in
+            palaeomagnetic directions derived from mixed remagnetization
+            circle and direct observational data. Journal of Geophysics 54,
+            174-182.
+    """
+    from scipy import optimize, stats
+
+    L, P = _unit_rows(lines), _unit_rows(poles)
+    M, N = len(L), len(P)
+    if N < 1:
+        raise ValueError("At least one great circle is needed")
+    if M + N < 2:
+        raise ValueError("At least two directions or great circles are needed")
+    H = P.T @ P
+    lam, E = np.linalg.eigh(H)
+    r = L.sum(axis=0)
+    b = E.T @ r
+    if M == 0 or abs(b[0]) < 1e-12 * max(np.linalg.norm(r), 1.0):
+        # circles only (or r orthogonal to the minimum eigenvector)
+        t, omega = E[:, 0], lam[0]
+        if M:
+            t = t if t @ r >= 0 else -t
+    else:
+        f = lambda w: np.sum(b**2 / (lam - w) ** 2) - 1.0
+        hi = lam[0] - 1e-12 * max(1.0, abs(lam[0]))
+        lo = lam[0] - np.linalg.norm(r) - 1.0
+        omega = optimize.brentq(f, lo, hi, xtol=1e-14)
+        t = E @ (b / (lam - omega))
+        t /= np.linalg.norm(t)
+    t = _orient(t, L)
+    S = 2 * M - r @ t + omega
+    df = 2 * M + N - 2
+    k = df / S if S > 0 else np.inf
+    # tangent plane at t
+    a = np.cross(t, E[:, 2] if abs(t @ E[:, 2]) < 0.9 else E[:, 1])
+    a /= np.linalg.norm(a)
+    B = np.column_stack([a, np.cross(t, a)])
+    A = B.T @ (H - omega * np.eye(3)) @ B
+    mu_, W = np.linalg.eigh(A)
+    Fq = stats.f.ppf(level, 2, df)
+    C2 = S * Fq / (M + N / 2 - 1)
+    semi = np.degrees(np.sqrt(C2 / np.maximum(mu_, 1e-300)))
+    order = np.argsort(semi)[::-1]
+    return {
+        "mu": Vector3(t),
+        "k": float(k),
+        "omega": float(omega),
+        "semi_axes": tuple(float(semi[i]) for i in order),
+        "axes": tuple(Vector3(B @ W[:, i]) for i in order),
+        "n_lines": M,
+        "n_planes": N,
     }
 
 
@@ -1164,7 +1322,8 @@ class Sample:
 
         Fisher statistics (``Vector3Set.fisher_statistics``) when all
         components are lines; with plane components the combined mean of
-        `lines_planes_mean` (McFadden & McElhinny, 1988).
+        `lines_planes_mean` (McFadden & McElhinny, 1988), which can be biased
+        when the planes are not anchored by direct observations (see there).
 
         Returns:
             dict: ``mu``, ``k``, ``alpha`` (and ``kappa`` for lines only),

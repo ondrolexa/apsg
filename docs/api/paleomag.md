@@ -28,6 +28,10 @@ specimens for mean directions, fold and reversal tests and virtual geomagnetic p
 
 ::: apsg.paleomag.lines_planes_mean
 
+::: apsg.paleomag.kirschvink_mean
+
+::: apsg.paleomag.bailey_halls_mean
+
 ::: apsg.paleomag.vgp
 
 ::: apsg.paleomag.core_rotation

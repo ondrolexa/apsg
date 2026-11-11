@@ -16,9 +16,11 @@ from apsg.paleomag import (
     DemagStep,
     Sample,
     Specimen,
+    bailey_halls_mean,
     bedding_vector,
     core_rotation,
     demag_plot,
+    kirschvink_mean,
     lines_planes_mean,
     stereo_plot,
     untilt_rotation,
@@ -502,6 +504,88 @@ def test_lines_planes_mean_tauxe_example():
     assert res["k"] == pytest.approx(76.3, abs=0.05)
     assert res["alpha"] == pytest.approx(16.7, abs=0.05)
     assert (res["n_lines"], res["n_planes"]) == (2, 1)
+
+
+_KB31_POLES = [  # McFadden & McElhinny (1988) Table 1, poles of the six circles
+    (0.263, 0.664, -0.700),
+    (0.794, 0.335, -0.507),
+    (0.692, 0.358, -0.627),
+    (0.593, 0.663, -0.457),
+    (0.637, 0.476, -0.606),
+    (0.628, 0.524, -0.576),
+]
+
+
+def test_lines_planes_mean_mcfadden_mcelhinny_table1():
+    # analyses A (circles only) and C (plus two set points), no arc constraints
+    poles = [Vector3(p) for p in _KB31_POLES]
+    with pytest.warns(UserWarning, match="Schmidt"):
+        a = lines_planes_mean([], poles)
+    assert a["R"] == pytest.approx(5.9735, abs=2e-4)
+    assert a["k"] == pytest.approx(75.592, abs=0.2)
+    assert a["alpha"] == pytest.approx(10.1, abs=0.05)
+    c = lines_planes_mean([_dir(146.6, -52.6), _dir(195.5, -57.9)], poles)
+    assert c["mu"].geo == pytest.approx((183.1, -51.2), abs=0.15)
+    assert c["R"] == pytest.approx(7.8336, abs=2e-4)
+    assert c["k"] == pytest.approx(24.032, abs=0.01)
+    assert c["alpha"] == pytest.approx(12.5, abs=0.05)
+
+
+def test_lines_planes_mean_circles_only_warns_about_bias():
+    with pytest.warns(UserWarning, match="Schmidt"):
+        lines_planes_mean([], [Vector3(p) for p in _KB31_POLES])
+
+
+_KB31_SETS = [_dir(146.6, -52.6), _dir(195.5, -57.9)]
+
+
+def test_kirschvink_methods():
+    poles = [Vector3(p) for p in _KB31_POLES]
+    m1 = kirschvink_mean(_KB31_SETS, poles)
+    m2 = kirschvink_mean(_KB31_SETS, poles, method=2)
+    # eigenvalues of H_P - H_L sum to N - M
+    assert m1["eigenvalues"].sum() == pytest.approx(len(poles) - 2)
+    # method 2 = method 1 with line weight 1/2: eigenvalues sum to N - M/2
+    assert m2["eigenvalues"].sum() == pytest.approx(len(poles) - 1)
+    ref = lines_planes_mean(_KB31_SETS, poles)["mu"]
+    for m in (m1, m2):
+        assert m["mu"].angle(ref) < 10
+        assert m["mu"].dot(Vector3(_KB31_SETS[0]) + Vector3(_KB31_SETS[1])) > 0
+    with pytest.raises(ValueError, match="method"):
+        kirschvink_mean(_KB31_SETS, poles, method=3)
+
+
+def test_kirschvink_recovers_common_direction():
+    mu = _dir(160.0, -30.0)
+    a = np.cross(mu, [0, 0, 1.0])
+    a /= np.linalg.norm(a)
+    b = np.cross(mu, a)
+    poles = [Vector3(np.cos(f) * a + np.sin(f) * b) for f in (0.3, 1.2, 2.4)]
+    res = kirschvink_mean([], poles)
+    assert abs(res["mu"].dot(mu)) == pytest.approx(1.0)
+
+
+def test_bailey_halls_mean():
+    poles = [Vector3(p) for p in _KB31_POLES]
+    res = bailey_halls_mean(_KB31_SETS, poles)
+    mm = lines_planes_mean(_KB31_SETS, poles)
+    # MM88 p. 165: the two estimates agree to a fraction of a degree
+    assert res["mu"].angle(mm["mu"]) < 0.5
+    assert res["k"] == pytest.approx(mm["k"], rel=0.1)
+    major, minor = res["semi_axes"]
+    assert major >= minor > 0
+    # ellipse of the order of the circular cone (vault: 24.5 x 12.7 vs 12.5)
+    assert 0.5 * mm["alpha"] < minor < major < 3 * mm["alpha"]
+    assert abs(res["axes"][0].dot(res["axes"][1])) < 1e-9
+    assert abs(res["axes"][0].dot(res["mu"])) < 1e-9
+    # circles only: smallest eigenvector of H, omega its eigenvalue
+    only = bailey_halls_mean([], poles)
+    H = np.array(_KB31_POLES)
+    H = H / np.linalg.norm(H, axis=1, keepdims=True)
+    lam = np.linalg.eigvalsh(H.T @ H)
+    assert only["omega"] == pytest.approx(lam[0])
+    with pytest.raises(ValueError, match="circle"):
+        bailey_halls_mean(_KB31_SETS, [])
 
 
 def test_sample_mean_lines_and_planes():
