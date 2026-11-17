@@ -3,8 +3,8 @@
 The `apsg.feature` module provides classes to store and analyze structural geology data. It includes
 representations of planar and linear features (`Foliation`, `Lineation`, `Fault`, `Cone`, `Arc`, `Pair`),
 their corresponding sets (`FoliationSet`, `LineationSet`, etc.), tensor classes (`Stress3`,
-`Ellipsoid`, `OrientationTensor3`), and higher-level analysis tools like `ClusterSet` for
-clustering of orientation data.
+`Ellipsoid`, `OrientationTensor3`), and higher-level analysis tools like `ClusterSet` and
+`BinghamClusters` for clustering of orientation data.
 
 The main APSG namespace provides lowercase aliases for commonly used classes (e.g. `fol` for
 `Foliation`, `lin` for `Lineation`, `vec` for `Vector3`).
@@ -54,12 +54,25 @@ ESAG, Watson, Bingham, ACG, von Mises, ...), see [Orientation distributions](../
 >>> fols.fit("watson")                 # bipolar (kappa > 0) or girdle (kappa < 0)
 ```
 
-Cluster analysis:
+Correct the orientation bias of boreholes, scanlines and outcrops with Terzaghi weights,
+accepted by the fits and statistics of axes (`weights=`):
+
+```pycon
+>>> w = fols.terzaghi_weights(lin(0, 90))   # vertical borehole
+>>> fols.fit("bingham", weights=w)
+>>> fols.bingham_statistics(weights=w)
+```
+
+Cluster analysis, hierarchical (`ClusterSet`) or by a mixture of Bingham distributions
+(`BinghamClusters`) with soft memberships and the parameters of every fracture set:
 
 ```pycon
 >>> from apsg import cluster
 >>> cs = cluster(fols)
->>> cs.cluster(k=3)
+>>> cs.cluster(maxclust=3)
+>>> bc = fols.cluster_bingham(3)            # k is selected by BIC when omitted
+>>> bc.groups, bc.responsibilities
+>>> bc.to_dataframe()                       # also to_csv() and to_json()
 ```
 
 Tensor analysis:
@@ -205,6 +218,8 @@ Single geological features. Vector and axial base classes are in [`apsg.math`](m
 
 ::: apsg.feature.ClusterSet
 
+::: apsg.feature.BinghamClusters
+
 ::: apsg.feature.G
 
 ### 2D tensors
@@ -265,6 +280,8 @@ See [Orientation distributions](../distributions.md) for an overview.
 
 ::: apsg.feature.Bingham
 
+::: apsg.feature.BinghamMixture
+
 ::: apsg.feature.ACG
 
 ::: apsg.feature.WrappedCauchy
@@ -276,6 +293,10 @@ See [Orientation distributions](../distributions.md) for an overview.
 ::: apsg.feature.Lisle
 
 ::: apsg.feature.MatrixFisher
+
+### Sampling bias
+
+::: apsg.feature.terzaghi_weights
 
 ### Hypothesis tests
 

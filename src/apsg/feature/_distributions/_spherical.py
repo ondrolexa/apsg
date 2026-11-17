@@ -77,6 +77,7 @@ class VonMisesFisher(OrientationDistribution):
     axial = False
     n_params = 3
     name = "fisher"
+    weighted = True
     feature = Vector3
 
     def __init__(self, mean=(0, 0, 1), kappa=1):
@@ -108,9 +109,14 @@ class VonMisesFisher(OrientationDistribution):
         return np.atleast_2d(X)
 
     @classmethod
-    def _fit(cls, X, method="mle", **options):
-        n = len(X)
-        resultant = X.sum(axis=0)
+    def _fit(cls, X, method="mle", w=None, **options):
+        if w is None:
+            n = len(X)
+            resultant = X.sum(axis=0)
+        else:
+            # weights sum to 1; the effective n replaces the count
+            n = 1.0 / np.sum(w**2)
+            resultant = n * (w @ X)
         R = np.linalg.norm(resultant)
         Rbar = R / n
         mean = Vector3(resultant) if R > 0 else Vector3(0, 0, 1)
@@ -129,12 +135,12 @@ class VonMisesFisher(OrientationDistribution):
         return {"mean": mean, "kappa": kappa}, True, {"Rbar": Rbar}
 
     def _mean_confidence(self, level):
-        alpha = fisher_cone(self.fit_info.n, self.fit_info.stats["Rbar"], level)
+        alpha = fisher_cone(self.fit_info.n_eff, self.fit_info.stats["Rbar"], level)
         return ConfidenceRegion(mu=self._mean, level=level, alpha=alpha)
 
     def _kappa_confidence(self, level):
         # FLE eq. 5.37: 2 kappa (n - R) ~ chi2(2n - 2)
-        n = self.fit_info.n
+        n = self.fit_info.n_eff
         dev = n * (1 - self.fit_info.stats["Rbar"])
         if dev <= 0:
             return (np.inf, np.inf)

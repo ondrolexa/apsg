@@ -18,6 +18,9 @@ from apsg.feature import (
     Bingham as dist_bingham,
 )
 from apsg.feature import (
+    BinghamMixture as dist_bingham_mixture,
+)
+from apsg.feature import (
     Cardioid as dist_cardioid,
 )
 from apsg.feature import (
@@ -206,6 +209,7 @@ __all__ = (
     "dist_acg",
     "dist_axial_vonmises",
     "dist_bingham",
+    "dist_bingham_mixture",
     "dist_cardioid",
     "dist_esag",
     "dist_fisher",

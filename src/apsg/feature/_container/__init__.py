@@ -5,7 +5,7 @@ Split into submodules by kind; everything is re-exported here, so
 """
 
 from apsg.feature._container._base import FeatureSet, G
-from apsg.feature._container._cluster import ClusterSet
+from apsg.feature._container._cluster import BinghamClusters, ClusterSet
 from apsg.feature._container._othersets import ArcSet, ConeSet
 from apsg.feature._container._pairsets import FaultSet, PairSet
 from apsg.feature._container._tensorsets import (
@@ -27,6 +27,7 @@ from apsg.feature._container._vectorsets import (
 
 __all__ = (
     "ArcSet",
+    "BinghamClusters",
     "ClusterSet",
     "ConeSet",
     "Direction2Set",

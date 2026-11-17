@@ -35,6 +35,7 @@ from apsg.feature._distributions import (
     AxialUniform3,
     AxialVonMises,
     Bingham,
+    BinghamMixture,
     Cardioid,
     JonesPewsey,
     Kent,
@@ -385,9 +386,15 @@ def _rotation_to(mean):
 _SPHERE_GRID = np.array(Vector3Set.uniform_sfs(200000))
 
 
-def _mean_marginal_gof(dist, X):
+def _mixture_gof(dist, X):
+    """Marginal along the mean axis of the first component, as for one model."""
+    axis = np.asarray(dist.components[0].mean, dtype=float)
+    return _mean_marginal_gof(dist, X, axis)
+
+
+def _mean_marginal_gof(dist, X, mean=None):
     """``u = mean.x`` with its CDF integrated numerically from the density."""
-    mean = np.asarray(dist.mean, dtype=float)
+    mean = np.asarray(dist.mean if mean is None else mean, dtype=float)
     u_grid = _SPHERE_GRID @ mean
     order = np.argsort(u_grid)
     mass = np.cumsum(dist.pdf(_SPHERE_GRID)[order]) * 4 * np.pi / len(_SPHERE_GRID)
@@ -445,6 +452,18 @@ EXAMPLES = {
         ],
         _mean_marginal_gof,
     ),
+    BinghamMixture: (
+        [
+            BinghamMixture(
+                [
+                    Bingham((0, 0, 1), (1, 0, 0), -6, -20),
+                    Bingham((1, 0, 0), (0, 1, 0), -8, -25),
+                ],
+                [0.65, 0.35],
+            )
+        ],
+        _mixture_gof,
+    ),
 }
 
 INSTANCES = [d for examples, _ in EXAMPLES.values() for d in examples]
@@ -489,7 +508,12 @@ def test_fit_recovers_parameters(dist):
     assert fitted.fit_info.n == 5000
     assert np.isclose(fitted.fit_info.loglik, fitted.loglik(dist.rvs(5000, rng=2)))
     for key, value in dist.params.items():
-        if isinstance(value, Vector2 | Vector3):
+        if key == "components":
+            for true, est in zip(value, fitted.params[key], strict=True):
+                assert true.mean.angle(est.mean) < 5
+                assert np.allclose(est.kappa_major, true.kappa_major, rtol=0.2)
+                assert np.allclose(est.kappa_minor, true.kappa_minor, rtol=0.2)
+        elif isinstance(value, Vector2 | Vector3):
             angle = value.angle(fitted.params[key])
             if key == "major":  # an axis, its sign is arbitrary
                 angle = min(angle, 180 - angle)
@@ -962,6 +986,7 @@ def test_short_aliases():
         "acg": ACG,
         "axial_vonmises": AxialVonMises,
         "bingham": Bingham,
+        "bingham_mixture": BinghamMixture,
         "esag": ESAG,
         "fisher": VonMisesFisher,
         "kent": Kent,
@@ -980,7 +1005,9 @@ def test_short_aliases():
 def test_featureset_fit(dist):
     data = dist.rvs(200, rng=40)
     for model in (dist.name, type(dist).__name__, type(dist)):
+        np.random.seed(0)  # the EM of a mixture draws its starts from this state
         fitted = data.fit(model)
+        np.random.seed(0)
         assert fitted == type(dist).fit(data)
 
 

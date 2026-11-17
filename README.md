@@ -13,7 +13,8 @@
 APSG is the Python toolbox for structural geologists. Turn lineations, foliations, faults and
 stress tensors into beautiful stereonets, rose diagrams and fabric plots in a few lines of code.
 Back every interpretation with solid statistics: fit and simulate orientation distributions,
-draw confidence regions and test your hypotheses. From a field CSV, a pandas table or your
+split data into fracture sets, correct sampling bias, draw confidence regions and test your
+hypotheses. From a field CSV, a pandas table or your
 structural database to publication-ready figures and answers, in minutes.
 
 Check [CHANGELOG.md](https://github.com/ondrolexa/apsg/blob/master/CHANGELOG.md) for recent updates.

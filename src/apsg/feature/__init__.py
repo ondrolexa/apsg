@@ -4,6 +4,7 @@ import numpy as np
 
 from apsg.feature._container import (
     ArcSet,
+    BinghamClusters,
     ClusterSet,
     ConeSet,
     Direction2Set,
@@ -30,6 +31,7 @@ from apsg.feature._distributions import (
     AxialUniform3,
     AxialVonMises,
     Bingham,
+    BinghamMixture,
     Cardioid,
     JonesPewsey,
     Kent,
@@ -70,6 +72,7 @@ from apsg.feature._hypothesis import (
     watson_symmetry_test,
     watson_u2_test,
 )
+from apsg.feature._sampling import terzaghi_weights
 from apsg.feature._statistics import anisotropy_test, jelinek_shape
 from apsg.feature._tensor2 import (
     DeformationGradient2,
@@ -101,6 +104,8 @@ __all__ = (
     "AxialUniform3",
     "AxialVonMises",
     "Bingham",
+    "BinghamClusters",
+    "BinghamMixture",
     "Cardioid",
     "ClusterSet",
     "Cone",
@@ -169,6 +174,7 @@ __all__ = (
     "likelihood_ratio_test",
     "rao_spacing_test",
     "rayleigh_test",
+    "terzaghi_weights",
     "watson_symmetry_test",
     "watson_u2_test",
 )

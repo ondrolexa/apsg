@@ -9,8 +9,8 @@ button to get the notebook and run it yourself.
 | [Basics](../notebooks/01_apsg_basics.ipynb) | vectors, lineations, foliations, pairs, faults, cones and feature sets |
 | [Tensors](../notebooks/02_apsg_tensors.ipynb) | deformation and velocity gradients, stress, ellipsoids, orientation tensors |
 | [Stereonet](../notebooks/03_apsg_stereonet.ipynb) | `StereoNet`, contouring, hemispheres, rotations and styling |
-| [Distributions](../notebooks/04_apsg_distributions.ipynb) | fitting, sampling and comparing Fisher, Kent, Watson, Bingham, von Mises and Lisle distributions |
+| [Distributions](../notebooks/04_apsg_distributions.ipynb) | fitting, sampling and comparing Fisher, Kent, Watson, Bingham, von Mises and Lisle distributions, Bingham mixtures and Terzaghi weights |
 | [Fabric plots](../notebooks/05_apsg_fabricplots.ipynb) | Vollmer, Ramsay, Flinn and Hsu plots |
 | [Pandas](../notebooks/06_apsg_pandas.ipynb) | APSG features in `DataFrame` columns |
-| [Various](../notebooks/07_apsg_various.ipynb) | configuration tricks with `apsg_conf`, stress inversion, `ClusterSet` |
+| [Various](../notebooks/07_apsg_various.ipynb) | configuration tricks with `apsg_conf`, stress inversion, `ClusterSet` and `cluster_bingham` |
 | [Database](../notebooks/08_apsg_database.ipynb) | reading and writing PySDB databases |

@@ -9,11 +9,13 @@ a patch-level release can include breaking changes, marked below as **BREAKING**
 ## [2.1.0] - Unreleased
 
 apsg 2.1 is a big step for orientation statistics. Fit, sample and compare more than a dozen
-distributions, from Fisher and Kent to Bingham and Lisle, in one consistent way. Ask your data
-real questions with a full set of hypothesis tests, each traced to its original source. Statistics of lineations
-and foliations no longer depend on how the axes were stored. Plots lay themselves out, legends
-go wherever you want, and bad input is caught at once instead of crashing later. Large data sets
-are much faster, and the documentation has a fresh new home.
+distributions, from Fisher and Kent to Bingham and Lisle, in one consistent way. Split axes into
+fracture sets with Bingham mixtures, correct the orientation bias of boreholes and outcrops, and
+export the parameters of every set for discrete fracture network models. Ask your data real
+questions with a full set of hypothesis tests, each traced to its original source. Statistics of
+lineations and foliations no longer depend on how the axes were stored. Plots lay themselves out,
+legends go wherever you want, and bad input is caught at once instead of crashing later. Large data
+sets are much faster, and the documentation has a fresh new home.
 
 ### Added
 - `RosePlot(angles="math")` puts 0 on the right with angles counterclockwise (default `"geo"` keeps 0 on top, clockwise).
@@ -22,7 +24,11 @@ are much faster, and the documentation has a fresh new home.
 - `StereoNet.density()` and `RosePlot.density()` to plot the density of a fitted distribution.
 - `StereoNet.confidence()` methods `"kent"`, `"esag"` and `"lisle"`.
 - `PairSet.lisle_statistics()` for the mean pair after Lisle (1989).
-- Documentation page and tutorial on orientation distributions.
+- Documentation page and tutorial on orientation distributions, including Bingham mixtures, Terzaghi weights and `cluster_bingham()` examples.
+- Weighted orientation statistics: `weights=` of `fit()` for `VonMisesFisher`, `Watson` and `Bingham` (`fit_info.n_eff` is the effective sample size), of `Vector3Set.ortensor()`, `fisher_statistics()`, `watson_statistics()`, `bingham_statistics()` and `bootstrap_statistics()`, and `OrientationTensor3.from_features(weights=)`.
+- `terzaghi_weights()` and `Vector3Set.terzaghi_weights()` correct the orientation bias of borehole, scanline and outcrop sampling.
+- `BinghamMixture` (`dist_bingham_mixture`), a mixture of Bingham distributions fitted by EM with the number of components chosen by BIC (`BinghamMixture.select()`), `Vector3Set.fit_mixture()`, soft memberships and `split()` for identifying fracture sets. It is registered as `"bingham_mixture"` (`linset.fit("bingham_mixture", k=3)`, `linset.random_bingham_mixture()`).
+- `Vector3Set.cluster_bingham()` clusters axes into overlapping fracture sets by a Bingham mixture and returns `BinghamClusters` (`groups`, `idx`, `responsibilities`, `summary()`, optional `threshold` for unassigned data), with `table()`, `to_dataframe()`, `to_csv()` and `to_json()` exporting the parameters of every fracture set (mean orientation, weight, effective size, Bingham and Fisher concentrations, confidence cone and ellipse).
 - Circular distributions `WrappedCauchy`, `Cardioid` and `JonesPewsey`; the `MatrixFisher` distribution of rotations and `RotationSet` (`rotationset`) with the mean rotation.
 - Hypothesis tests returning a `TestResult` (statistic, p-value, `reject()`): Kuiper, Watson U², Hodges-Ajne and Rao spacing tests of uniformity on the circle (`uniformity_test(method=...)`), Arnold & Jupp test of uniformity of pairs (`PairSet.uniformity_test()`), goodness of fit of the Fisher distribution (`VonMisesFisher.goodness_of_fit()`), Fisher against Kent (`Kent.score_test()`), Watson against Bingham (`Watson.symmetry_test()`), likelihood ratio test of nested distributions, tests of a common mean direction or axis (`common_mean_test()`) and of a common concentration (`equal_kappa_test()`).
 - `kappa_confidence()` of fitted Fisher, von Mises and Watson distributions; fitting methods `"precision"` and `"corrected"` (Fisher) and `"corrected"` (von Mises); `VonMises.mean_confidence(method=...)` with the intervals of Fisher (1993).
@@ -38,6 +44,7 @@ are much faster, and the documentation has a fresh new home.
 - `apsg.paleomag` subpackage (not imported by `from apsg import *`; use `from apsg.paleomag import *`): `Specimen` holds the demagnetization steps (`DemagStep`) and orientation of one specimen, reads PMD (standard and Remasoft-exported dialects, detected from the file's direction columns; also PaleoMac headers with `α=`/`β=`), Remasoft RS3 (AGICO orientation parameters P1-P4, e.g. `12 0 6 0` and `12 0 12 90`) and SQUID files and writes PMD and RS3; per-specimen principal component analysis of lines and planes with MAD and DANG (`pca()`, `interpret()`, `Component`), median destructive field and vector difference sum. `Sample` collects specimens: Fisher mean or combined lines and great circles mean (McFadden & McElhinny 1988, `lines_planes_mean()`), bootstrap fold test (Tauxe & Watson 1994), reversal test and virtual geomagnetic pole (`vgp()`). Also `kirschvink_mean()` (Kirschvink 1980 methods 1 and 2) and `bailey_halls_mean()` (maximum likelihood mean with a confidence ellipse, Bailey & Halls 1984) for lines and great circles. `lines_planes_mean()` warns when given great circles only, since that estimate can be biased (Schmidt 1985). Plots `zijderveld_plot`, `demag_plot` and `stereo_plot`.
 
 ### Changed
+- The `Bingham` and `Lisle` normalizers and maximum-likelihood fits are 10 to 100 times faster (Gauss-Legendre quadrature, analytic gradients and Newton's method with backtracking instead of adaptive quadrature and Nelder-Mead; `Lisle.fit` of 300 pairs takes 5 ms instead of 0.7 s).
 - Documentation moved to MkDocs with the Material theme.
 - `from_csv()`/`to_csv()` honour the `delimiter` argument.
 - Invalid arguments raise `TypeError`/`ValueError` or warn with `UserWarning` instead of failing with `AssertionError` or printing.
@@ -68,6 +75,7 @@ are much faster, and the documentation has a fresh new home.
 - The `confidence_level` keyword of `RosePlot.muci()` (a percentage); use `level` (a fraction).
 
 ### Fixed
+- The `Lisle` normalizer was inaccurate for strongly concentrated foliations with weakly concentrated lineations (`kappa1` near 0 with `kappa2` of 1000 or more, error up to 0.9 in the log normalizer), so fits and densities of such data change.
 - Pairs sampled from the Lisle distribution with `kappa2=0` were not perpendicular.
 - `RosePlot.pdf()` of `Vector2Set` is weighted by magnitude, as the bars and the pdf of `Direction2Set` were.
 - Sampling no longer hangs with an infinite concentration (`random_vonmises(kappa=inf)`, Watson and Bingham `rvs()`): distribution parameters must be finite numbers and mean/axis vectors finite and non-zero, else `ValueError`/`TypeError`.

@@ -39,6 +39,7 @@ from apsg.feature._distributions._frames import (
     lisle_moments,
     pair_arrays,
 )
+from apsg.feature._distributions._mixtures import BinghamMixture
 from apsg.feature._distributions._rotations import (
     MatrixFisher,
     matrix_fisher_log_norm,
@@ -61,6 +62,7 @@ __all__ = (
     "AxialUniform3",
     "AxialVonMises",
     "Bingham",
+    "BinghamMixture",
     "Cardioid",
     "ConfidenceRegion",
     "FitInfo",

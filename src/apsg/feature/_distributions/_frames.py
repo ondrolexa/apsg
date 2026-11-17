@@ -8,7 +8,6 @@ is a frame up to 180 degree rotations about its three axes.
 
 import numpy as np
 from scipy import special, stats
-from scipy.optimize import minimize
 
 from apsg.feature._distributions._axial import Bingham, bingham_ellipse
 from apsg.feature._distributions._base import (
@@ -16,7 +15,11 @@ from apsg.feature._distributions._base import (
     as_rng,
     finite_param,
 )
-from apsg.feature._distributions._special import lisle_log_norm, restricted_eigen
+from apsg.feature._distributions._special import (
+    lisle_fit_kappas,
+    lisle_log_norm,
+    restricted_eigen,
+)
 from apsg.feature._geodata import Lineation, Pair
 from apsg.helpers._helper import check_count
 from apsg.math._vector import Vector3
@@ -115,7 +118,8 @@ class Lisle(OrientationDistribution):
         kappa1: concentration of the lineation within the foliation. Default 1.
         kappa2: concentration of the foliation about the lineation. Default 1.
 
-    The normalizer is evaluated by quadrature (``lisle_log_norm``). Sampling
+    The normalizer is evaluated by Gauss-Legendre quadrature (``lisle_log_norm``)
+    and the concentrations are fitted by Newton's method (``lisle_fit_kappas``). Sampling
     draws the lineation from its marginal by rejection from a ``Bingham``
     envelope and the normal from its axial von Mises conditional.
 
@@ -223,25 +227,14 @@ class Lisle(OrientationDistribution):
         if method != "mle":
             raise ValueError(f"Unknown fitting method {method!r}")
         taus, vecs, moments = lisle_moments(X)
-
-        def nll(p):
-            k1, k2 = np.exp(p)
-            return -((k1 + k2) * taus[0] + k2 * taus[1] - lisle_log_norm(k1, k2))
-
-        # concentrated data: 1 - tau1 and 1 + tau3 are small
-        start = [
-            np.log(1 / max(1 - taus[0], 1e-3)),
-            np.log(1 / max(1 + taus[2], 1e-3)),
-        ]
-        res = minimize(nll, start, method="Nelder-Mead", options=_NM_OPTIONS)
-        k1, k2 = np.exp(res.x)
+        k1, k2, converged = lisle_fit_kappas(taus[0], taus[1])
         params = {
             "mean": Pair(Vector3(vecs[2]), Vector3(vecs[0])),
-            "kappa1": float(k1),
-            "kappa2": float(k2),
+            "kappa1": k1,
+            "kappa2": k2,
         }
         stats_ = {"eigenvalues": tuple(taus), "axes": tuple(vecs), "moments": moments}
-        return params, bool(res.success), stats_
+        return params, converged, stats_
 
     def mean_confidence(self, level=0.95, which="lin"):
         """Confidence region of the mean lineation or the mean foliation normal.
@@ -263,6 +256,3 @@ class Lisle(OrientationDistribution):
             s["eigenvalues"], s["axes"], s["moments"], self.fit_info.n, level
         )
         return lin if which == "lin" else fol
-
-
-_NM_OPTIONS = {"xatol": 1e-8, "fatol": 1e-10, "maxiter": 2000}

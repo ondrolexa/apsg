@@ -8,6 +8,7 @@ from scipy.spatial.transform import Rotation
 from apsg.config import apsg_conf, stress_sign
 from apsg.feature._geodata import Fault, Foliation, Lineation, Pair
 from apsg.feature._tensor2 import Ellipse
+from apsg.helpers._helper import check_weights
 from apsg.helpers._math import atand
 from apsg.math._matrix import Matrix3, rounded
 from apsg.math._vector import Vector3
@@ -1490,12 +1491,14 @@ class OrientationTensor3(Ellipsoid):
         return 2 * self.e13
 
     @classmethod
-    def from_features(cls, g) -> "OrientationTensor3":
+    def from_features(cls, g, weights=None) -> "OrientationTensor3":
         """
         Return ``Ortensor`` of data in Vector3Set of features.
 
         Args:
             g (Vector3Set): Set of features
+            weights: optional non-negative weight of each feature (normalized
+                to sum 1), e.g. Terzaghi weights. Default None, all equal.
 
         Examples:
             >>> g = linset.random_fisher(mean=lin(120,50))
@@ -1516,7 +1519,10 @@ class OrientationTensor3(Ellipsoid):
         norms = np.linalg.norm(axes, axis=1, keepdims=True)
         norms[norms == 0] = 1.0
         unit_axes = axes / norms
-        return cls(np.dot(unit_axes.T, unit_axes) / len(unit_axes))
+        if weights is None:
+            return cls(np.dot(unit_axes.T, unit_axes) / len(unit_axes))
+        w = check_weights(weights, len(unit_axes))
+        return cls(np.dot(unit_axes.T * w, unit_axes))
 
     @classmethod
     def from_pairs(cls, p, shift=True) -> "OrientationTensor3":

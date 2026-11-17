@@ -15,7 +15,7 @@ from typing import ClassVar
 import numpy as np
 
 from apsg.feature._container import FeatureSet, G
-from apsg.helpers._helper import check_count
+from apsg.helpers._helper import check_count, check_weights
 from apsg.math._vector import Axial2, Axial3, Vector2, Vector3
 
 _DISTRIBUTION_REGISTRY = {}
@@ -118,6 +118,8 @@ class FitInfo:
         method: fitting method.
         loglik: log-likelihood of the data under the fitted distribution.
         converged: False when a numerical solver did not converge.
+        n_eff: effective sample size, ``(sum w)^2 / sum w^2`` (Kish) for a
+            weighted fit, equal to `n` otherwise. Confidence regions use it.
         stats: sufficient statistics used by the fit, e.g. the mean resultant
             length or the eigenvalues of the orientation tensor.
     """
@@ -127,6 +129,11 @@ class FitInfo:
     loglik: float
     converged: bool = True
     stats: dict = field(default_factory=dict)
+    n_eff: float = float("nan")
+
+    def __post_init__(self):
+        if np.isnan(self.n_eff):
+            object.__setattr__(self, "n_eff", float(self.n))
 
 
 @dataclass(frozen=True)
@@ -173,6 +180,7 @@ class OrientationDistribution(ABC):
     n_params: ClassVar[int]
     name: ClassVar[str]
     feature: ClassVar[type]
+    weighted: ClassVar[bool] = False
 
     fit_info = None
 
@@ -280,7 +288,7 @@ class OrientationDistribution(ABC):
     # fitting
 
     @classmethod
-    def fit(cls, data, *, method="mle", **options):
+    def fit(cls, data, *, method="mle", weights=None, **options):
         """Fit the distribution to `data`.
 
         Args:
@@ -290,6 +298,13 @@ class OrientationDistribution(ABC):
 
         Keyword Args:
             method: fitting method. Default "mle".
+            weights: optional non-negative weight of each datum, e.g. the
+                Terzaghi weights correcting a sampling bias. Normalized to sum
+                1 internally; the confidence regions use the effective sample
+                size ``(sum w)^2 / sum w^2`` (``fit_info.n_eff``) and the
+                reported log-likelihood is the weighted one scaled to `n`.
+                Only models with ``weighted = True`` support it, the others
+                raise ``NotImplementedError``.
 
         Returns:
             OrientationDistribution: the fitted distribution, with fit
@@ -306,7 +321,17 @@ class OrientationDistribution(ABC):
             data = data.halfspace()
         X = cls.as_array(data)
         cls._check_dispersion(X)
-        params, converged, stats = cls._fit(X, method=method, **options)
+        n_eff = float(len(X))
+        if weights is not None:
+            if not cls.weighted:
+                raise NotImplementedError(
+                    f"{cls.__name__} does not support weighted fits"
+                )
+            w = check_weights(weights, len(X))
+            n_eff = float(1.0 / np.sum(w**2))
+            params, converged, stats = cls._fit(X, method=method, w=w, **options)
+        else:
+            params, converged, stats = cls._fit(X, method=method, **options)
         for key, value in params.items():
             if np.ndim(value) == 0 and not np.isfinite(value):
                 raise ValueError(
@@ -317,9 +342,12 @@ class OrientationDistribution(ABC):
         dist.fit_info = FitInfo(
             n=len(X),
             method=method,
-            loglik=float(np.sum(dist.logpdf_array(X))),
+            loglik=float(np.sum(dist.logpdf_array(X)))
+            if weights is None
+            else float(np.sum(w * dist.logpdf_array(X)) * len(X)),
             converged=converged,
             stats=stats,
+            n_eff=n_eff,
         )
         return dist
 

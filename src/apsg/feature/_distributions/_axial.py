@@ -8,7 +8,7 @@ and F93 (Fisher, 1993, Statistical Analysis of Circular Data).
 
 import numpy as np
 from scipy import stats
-from scipy.optimize import brentq, minimize
+from scipy.optimize import brentq
 
 from apsg.feature._distributions._base import (
     ConfidenceRegion,
@@ -17,6 +17,7 @@ from apsg.feature._distributions._base import (
     unit_vector,
 )
 from apsg.feature._distributions._special import (
+    bingham_fit_kappas,
     bingham_log_norm,
     watson_log_norm,
     watson_mean_u2,
@@ -78,6 +79,7 @@ class Watson(OrientationDistribution):
     axial = True
     n_params = 3
     name = "watson"
+    weighted = True
     feature = Lineation
 
     def __init__(self, mean=(0, 0, 1), kappa=1):
@@ -106,10 +108,10 @@ class Watson(OrientationDistribution):
         return bingham.rvs_array(n, rng)
 
     @classmethod
-    def _fit(cls, X, method="mle", **options):
+    def _fit(cls, X, method="mle", w=None, **options):
         if method != "mle":
             raise ValueError(f"Unknown fitting method {method!r}")
-        taus, vecs = _scatter_eigen(X)
+        taus, vecs = _scatter_eigen(X, w)
         bipolar = _watson_kappa(taus[0])
         girdle = _watson_kappa(taus[2])
         if _watson_loglik(bipolar, taus[0]) >= _watson_loglik(girdle, taus[2]):
@@ -119,7 +121,7 @@ class Watson(OrientationDistribution):
         stats_ = {
             "eigenvalues": tuple(taus),
             "which": which,
-            "cross_moments": axial_cross_moments(X, vecs),
+            "cross_moments": axial_cross_moments(X, vecs, w),
         }
         return {"mean": vecs[which], "kappa": kappa}, True, stats_
 
@@ -131,7 +133,7 @@ class Watson(OrientationDistribution):
             if j != i:
                 diff = taus[i] - taus[j]
                 var = np.inf if diff == 0 else var + m[i][j] / diff**2
-        val = -np.log(1.0 - level) * var / self.fit_info.n
+        val = -np.log(1.0 - level) * var / self.fit_info.n_eff
         alpha = float(np.degrees(np.arcsin(np.sqrt(min(val, 1.0)))))
         return ConfidenceRegion(mu=self._mean, level=level, alpha=alpha)
 
@@ -139,7 +141,7 @@ class Watson(OrientationDistribution):
         # FLE eq. 6.26: 2 kappa (n - n tau_1) ~ chi2(2n - 2), bipolar form
         if self.kappa < 0:
             raise ValueError("The interval of kappa is available for bipolar data only")
-        n = self.fit_info.n
+        n = self.fit_info.n_eff
         dev = n * (1 - self.fit_info.stats["eigenvalues"][0])
         if dev <= 0:
             return (np.inf, np.inf)
@@ -210,6 +212,7 @@ class Bingham(OrientationDistribution):
     axial = True
     n_params = 5
     name = "bingham"
+    weighted = True
     feature = Lineation
 
     def __init__(self, mean=(0, 0, 1), major=(1, 0, 0), kappa_major=-1, kappa_minor=-2):
@@ -274,32 +277,21 @@ class Bingham(OrientationDistribution):
         return out[:n] @ self._axes
 
     @classmethod
-    def _fit(cls, X, method="mle", **options):
+    def _fit(cls, X, method="mle", w=None, start=None, **options):
         if method != "mle":
             raise ValueError(f"Unknown fitting method {method!r}")
-        taus, vecs = _scatter_eigen(X)
+        taus, vecs = _scatter_eigen(X, w)
         params = {"mean": vecs[0], "major": vecs[1]}
         stats_ = {
             "eigenvalues": tuple(taus),
             "axes": tuple(vecs),
-            "cross_moments": axial_cross_moments(X, vecs),
+            "cross_moments": axial_cross_moments(X, vecs, w),
         }
 
-        def nll(p):
-            k_major = -np.exp(p[0])
-            k_minor = k_major - np.exp(p[1])
-            return -(k_major * taus[1] + k_minor * taus[2]) + bingham_log_norm(
-                k_major, k_minor
-            )
-
-        # start from the concentrated-data approximation E[u^2] = -1 / (2 k)
-        k_major = -1 / (2 * max(taus[1], 1e-6))
-        k_minor = min(-1 / (2 * max(taus[2], 1e-6)), k_major - 1e-3)
-        start = [np.log(-k_major), np.log(k_major - k_minor)]
-        res = minimize(nll, start, method="Nelder-Mead", options=_NM_OPTIONS)
-        params["kappa_major"] = float(-np.exp(res.x[0]))
-        params["kappa_minor"] = float(params["kappa_major"] - np.exp(res.x[1]))
-        return params, bool(res.success), stats_
+        k_major, k_minor, converged = bingham_fit_kappas(taus[1], taus[2], start)
+        params["kappa_major"] = k_major
+        params["kappa_minor"] = k_minor
+        return params, converged, stats_
 
     def _mean_confidence(self, level):
         stats_ = self.fit_info.stats
@@ -307,7 +299,7 @@ class Bingham(OrientationDistribution):
             stats_["eigenvalues"],
             stats_["axes"],
             stats_["cross_moments"],
-            self.fit_info.n,
+            self.fit_info.n_eff,
             level,
             which=0,
         )
@@ -409,12 +401,11 @@ class ACG(OrientationDistribution):
         return dist.params, converged, {}
 
 
-_NM_OPTIONS = {"xatol": 1e-9, "fatol": 1e-12, "maxiter": 2000}
-
-
-def _scatter_eigen(X):
-    """Eigenvalues (descending) and eigenvectors (``Lineation``) of ``X'X / N``."""
-    taus, vecs = np.linalg.eigh(X.T @ X / len(X))
+def _scatter_eigen(X, w=None):
+    """Eigenvalues (descending) and eigenvectors (``Lineation``) of ``X'X / N``,
+    or of ``X' diag(w) X`` for weights `w` summing to 1."""
+    S = X.T @ X / len(X) if w is None else (X.T * w) @ X
+    taus, vecs = np.linalg.eigh(S)
     return taus[::-1], [Lineation(v) for v in vecs.T[::-1]]
 
 
@@ -440,11 +431,14 @@ def _watson_loglik(kappa, tau):
     return kappa * tau - watson_log_norm(kappa)
 
 
-def axial_cross_moments(X, vecs):
-    """Matrix of ``mean((x.v_i)^2 (x.v_j)^2)`` of unit vectors `X` for axes `vecs`."""
+def axial_cross_moments(X, vecs, w=None):
+    """Matrix of ``mean((x.v_i)^2 (x.v_j)^2)`` of unit vectors `X` for axes `vecs`
+    (weighted mean for weights `w` summing to 1)."""
     P = np.asarray(X, dtype=float) @ np.asarray([np.asarray(v) for v in vecs]).T
     P2 = P**2
-    return P2.T @ P2 / len(P2)
+    if w is None:
+        return P2.T @ P2 / len(P2)
+    return (P2.T * w) @ P2
 
 
 def bingham_ellipse(taus, vecs, cross_moments, n, level=0.95, which=0):

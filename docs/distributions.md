@@ -238,6 +238,79 @@ The statistics methods of the feature sets are built on the distributions:
 - `random_vonmises()`, `random_fisher()` and `random_kent()` sample
   `VonMises`, `VonMisesFisher` and `Kent`.
 
+## Weighted data and mixtures
+
+Worked examples are in the [distributions tutorial](notebooks/04_apsg_distributions.ipynb)
+(mixtures and sampling bias) and the [various tutorial](notebooks/07_apsg_various.ipynb)
+(`cluster_bingham`).
+
+Measurements taken along a line (borehole, scanline) or on a plane (outcrop)
+under-sample fractures nearly parallel to the sampling geometry. The Terzaghi
+weights `1 / |cos(theta)|` (line) and `1 / |sin(theta)|` (plane), capped at
+`max_weight`, undo it (Terzaghi, 1965; Munier, 2004, eq. 1-2), `theta` being
+the angle between the fracture pole and the line direction or plane normal:
+
+```python
+>>> poles = FoliationSet.random_fisher(200, mean=fol(0, 20))
+>>> w = poles.terzaghi_weights(lin(0, 90))     # vertical borehole
+>>> w = poles.terzaghi_weights(fol(0, 0))      # horizontal outcrop
+```
+
+`weights=` is accepted by `fit()` of `VonMisesFisher`, `Watson` and `Bingham`
+(other models raise `NotImplementedError`), by `Vector3Set.ortensor()`,
+`fisher_statistics()`, `watson_statistics()`, `bingham_statistics()` and
+`bootstrap_statistics()`. The weights are normalized to sum 1 and the
+confidence regions use the effective sample size `(sum w)^2 / sum w^2`
+(`fit_info.n_eff`); unit weights reproduce the unweighted results.
+
+A `BinghamMixture` splits axes into fracture sets without hard boundaries
+(Yamaji & Sato, 2011): EM with weighted `Bingham` fits as the M-step, several
+starts, and the number of sets chosen by BIC. A fit with a few components takes a
+fraction of a second; choosing among 1 to 5 sets for a few hundred axes takes a few
+seconds (more components fit slower, as the likelihood becomes flat).
+
+```python
+>>> m = linset.fit_mixture()                  # k from 1 to 5 by BIC
+>>> m = linset.fit_mixture(3, weights=w, rng=0)
+>>> m.weights, m.components                   # mixing weights, Bingham sets
+>>> m.responsibilities(linset)                # soft memberships, (N, k)
+>>> groups = m.split(linset)                  # one set per component
+>>> best, table = BinghamMixture.select(linset, range(1, 6))
+```
+
+The mixture is registered as `"bingham_mixture"`, so
+`linset.fit("bingham_mixture", k=3)` and `linset.random(100, model="bingham_mixture",
+components=...)` work; its components are ordered by weight, an arbitrary labelling.
+`linset.cluster_bingham()` fits the mixture and assigns the data, a counterpart of the
+hierarchical `ClusterSet` whose clusters may overlap:
+
+```python
+>>> clusters = linset.cluster_bingham(3, weights=w, rng=0)
+>>> clusters.groups                           # one set per cluster
+>>> clusters.responsibilities                 # soft memberships, (N, k)
+>>> clusters = linset.cluster_bingham(threshold=0.8)   # ambiguous data unassigned
+>>> clusters.summary()                        # weight, n, mean, kappas, ellipse
+>>> clusters.to_dataframe()                   # one row per set, see below
+>>> clusters.to_csv("sets.csv"); clusters.to_json("sets.json")
+```
+
+`table()`, `to_dataframe()`, `to_csv()` and `to_json()` give one record per fracture
+set, ordered by mixing weight: the mixing `weight`, `n` assigned data, `n_eff` (effective
+size of the memberships, accounting for the observation weights), the mean as a feature of
+the data (`mean_azimuth`/`mean_inclination`, e.g. dip direction and dip of a foliation, or
+strike and dip with `notation="rhr"`), the mean axis as a lineation (`pole_trend`,
+`pole_plunge`), the Bingham concentrations (`kappa_major`, `kappa_minor`), the Fisher
+concentration of the assigned data (`fisher_kappa`, `fisher_k`), the confidence `cone` and
+the semi-angles of the Bingham ellipse (`gamma_major`, `gamma_minor`). Values that need
+more data than a set has (2 for the Fisher values, 5 for the ellipse) are NaN, `None` in
+JSON. The JSON also holds the fitted mixture, which `feature_from_json` reads back. The
+columns are generic, not the input format of a particular DFN generator.
+
+Clusters closer than about 40 degrees (half-widths of 20 degrees) are not
+separated, and the concentrations of overlapping components are unstable.
+Orientation bias is *not* corrected by the mixture itself, pass the Terzaghi
+weights.
+
 ## Circular descriptive statistics
 
 `Vector2Set` has the descriptive statistics of MJ and F93; for a `Direction2Set`
@@ -409,10 +482,17 @@ L&V: Ley & Verdebout (2017).
 - McFadden, P.L., Lowes, F.J. (1981). The discrimination of mean directions
   drawn from Fisher distributions. Geophysical Journal of the Royal
   Astronomical Society 67, 19-33.
+- Munier, R. (2004). Statistical analysis of fracture data, adapted for
+  modelling Discrete Fracture Networks, version 2. SKB R-04-66.
 - Paine, P.J., Preston, S.P., Tsagris, M., Wood, A.T.A. (2018). An elliptically
   symmetric angular Gaussian distribution. Statistics and Computing 28,
   689-697.
+- Terzaghi, R.D. (1965). Sources of error in joint surveys. Geotechnique 15,
+  287-304.
 - Tyler, D.E. (1987). Statistical analysis for the angular central Gaussian
   distribution on the sphere. Biometrika 74, 579-589.
+- Yamaji, A., Sato, K. (2011). Clustering of fracture orientations using a
+  mixed Bingham distribution and its application to paleostress analysis from
+  dike or vein orientations. Journal of Structural Geology 33, 1148-1157.
 - Zar, J.H. Biostatistical Analysis. Prentice Hall. Eq. 26.24-26.25, the
   approximation of Upton (1986).

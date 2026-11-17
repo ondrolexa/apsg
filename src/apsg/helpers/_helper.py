@@ -2,6 +2,8 @@
 import json
 import numbers
 
+import numpy as np
+
 
 def eformat(f, prec):
     """Format float in scientific notation with given precision."""
@@ -48,3 +50,16 @@ def axis_coords(name, dim=3):
     if coords is None or not any(coords[:dim]):
         return None
     return coords[:dim]
+
+
+def check_weights(weights, n):
+    """Return `weights` as a float array normalized to sum 1, or raise."""
+    w = np.asarray(weights, dtype=float)
+    if w.shape != (n,):
+        raise ValueError(f"weights must have shape ({n},), got {w.shape}")
+    if not np.all(np.isfinite(w)) or np.any(w < 0):
+        raise ValueError("weights must be finite and non-negative")
+    total = w.sum()
+    if total <= 0:
+        raise ValueError("weights must not be all zero")
+    return w / total

@@ -24,6 +24,7 @@ from apsg.feature._distributions import (
     AxialUniform3,
     AxialVonMises,
     Bingham,
+    BinghamMixture,
     Cardioid,
     JonesPewsey,
     Kent,
@@ -61,12 +62,13 @@ from apsg.feature._hypothesis import (
     rayleigh_test,
     watson_u2_test,
 )
+from apsg.feature._sampling import terzaghi_weights as _terzaghi_weights
 from apsg.feature._tensor2 import OrientationTensor2
 from apsg.feature._tensor3 import (
     OrientationTensor3,
     Rotation3,
 )
-from apsg.helpers._helper import check_count
+from apsg.helpers._helper import check_count, check_weights
 from apsg.helpers._math import acosd
 from apsg.math._vector import Axial2, Axial3, Vector2, Vector3
 
@@ -977,7 +979,7 @@ class Vector3Set(FeatureSet):
             R = R / len(self)
         return R
 
-    def fisher_statistics(self, level=0.95):
+    def fisher_statistics(self, level=0.95, *, weights=None):
         """Fisher statistics: mean direction, precision and confidence cone.
 
         The precision is Fisher's ``k = (N - 1) / (N - R)`` (Fisher, 1953, p.
@@ -987,6 +989,9 @@ class Vector3Set(FeatureSet):
 
         Args:
             level: confidence level. Default 0.95 for 95 %.
+            weights: optional non-negative weight of each datum (e.g. Terzaghi
+                weights). The sample size is replaced by the effective size
+                ``(sum w)^2 / sum w^2``. Default None, all equal.
         Returns:
             dict: with keys ``mu`` (mean direction), ``k`` (Fisher's
                 precision), ``kappa`` (maximum-likelihood estimate of the
@@ -1012,19 +1017,24 @@ class Vector3Set(FeatureSet):
                 Royal Society of London A 217, 295-305.
         """
         _warn_axial(self, "fisher_statistics")
-        return self._fisher_statistics(level)
+        return self._fisher_statistics(level, weights=weights)
 
-    def _fisher_statistics(self, level=0.95):
+    def _fisher_statistics(self, level=0.95, weights=None):
         data = self.normalized()
         if issubclass(self.__feature_class__, Axial3):
             data = data.halfspace()
         X = np.asarray(data, dtype=float)
-        dist = VonMisesFisher.fit(X)
-        R = float(np.linalg.norm(X.sum(axis=0)))
+        dist = VonMisesFisher.fit(X, weights=weights)
+        if weights is None:
+            n_eff = len(X)
+            R = float(np.linalg.norm(X.sum(axis=0)))
+        else:
+            n_eff = dist.fit_info.n_eff
+            R = float(n_eff * dist.fit_info.stats["Rbar"])
         alpha = dist.mean_confidence(level).alpha
         return {
             "mu": dist.mean,
-            "k": fisher_precision(len(X), R),
+            "k": fisher_precision(n_eff, R),
             "kappa": dist.kappa,
             "alpha": alpha,
         }
@@ -1069,7 +1079,110 @@ class Vector3Set(FeatureSet):
             return bingham_test(self.ortensor(), len(self), level)
         return rayleigh_test(np.asarray(self.normalized(), dtype=float), level)
 
-    def watson_statistics(self, level=0.95):
+    def fit_mixture(self, k=None, *, k_max=5, weights=None, **options):
+        """Fit a mixture of Bingham distributions to the axes (fracture sets).
+
+        See ``BinghamMixture``; ``mixture.labels(self)`` and
+        ``mixture.split(self)`` assign the data to the components, and
+        ``mixture.responsibilities(self)`` gives the soft memberships.
+
+        Args:
+            k: number of components. Default None selects it from 1 to `k_max`
+                by the Bayesian information criterion (``BinghamMixture.select``).
+
+        Keyword Args:
+            k_max: largest number of components tried when `k` is None.
+                Default 5.
+            weights: optional non-negative weight of each axis, e.g. from
+                ``terzaghi_weights``.
+            **options: ``n_init``, ``tol``, ``max_iter``, ``min_count`` and
+                ``rng``, see ``BinghamMixture.fit``.
+
+        Returns:
+            BinghamMixture: the fitted mixture.
+
+        Raises:
+            TypeError: for data that are not axes (``LineationSet``,
+                ``FoliationSet``).
+        """
+        if not issubclass(self.__feature_class__, Axial3):
+            raise TypeError(
+                "fit_mixture needs axial data (LineationSet, FoliationSet), got "
+                f"{type(self).__name__}"
+            )
+        self._require(2, "fit_mixture")
+        if k is None:
+            best, _ = BinghamMixture.select(
+                self, range(1, k_max + 1), weights=weights, **options
+            )
+            return best
+        return BinghamMixture.fit(self, k, weights=weights, **options)
+
+    def cluster_bingham(
+        self, k=None, *, k_max=5, weights=None, threshold=None, **options
+    ):
+        """Cluster axes into fracture sets by a mixture of Bingham distributions.
+
+        Fits a ``BinghamMixture`` (``fit_mixture``) and assigns every datum
+        to its most probable component, keeping the soft memberships. In
+        contrast to the hierarchical ``ClusterSet`` the clusters may overlap
+        and have different shapes (elliptical clusters, girdles).
+
+        Args:
+            k: number of clusters. Default None selects it from 1 to `k_max`
+                by the Bayesian information criterion.
+
+        Keyword Args:
+            k_max: largest number of clusters tried when `k` is None. Default 5.
+            weights: optional non-negative weight of each axis, e.g. from
+                ``terzaghi_weights``.
+            threshold: minimum membership of the most probable cluster below
+                which a datum is left unassigned. Default None.
+            **options: ``n_init``, ``tol``, ``max_iter``, ``min_count`` and
+                ``rng``, see ``BinghamMixture.fit``.
+
+        Returns:
+            BinghamClusters: ``groups``, ``idx``, ``responsibilities``,
+            ``mixture`` and ``summary()``.
+
+        Examples:
+            >>> clusters = fols.cluster_bingham(3, rng=0)
+            >>> clusters.groups
+            >>> clusters.summary()
+        """
+        from apsg.feature._container._cluster import BinghamClusters
+
+        if threshold is not None and not 0 < threshold <= 1:
+            raise ValueError(f"threshold must be in (0, 1], got {threshold!r}")
+        mixture = self.fit_mixture(k, k_max=k_max, weights=weights, **options)
+        return BinghamClusters(self, mixture, threshold=threshold, weights=weights)
+
+    def terzaghi_weights(self, sampling, *, kind=None, per="feature", max_weight=10.0):
+        """Terzaghi weights correcting the orientation bias of the sampling.
+
+        See ``apsg.feature.terzaghi_weights``. The items of the set are taken
+        as the poles of the fractures.
+
+        Args:
+            sampling: sampling line (``Lineation``) or plane (``Foliation``),
+                or a vector with `kind`.
+
+        Keyword Args:
+            kind: "line" or "plane". Default None, inferred from `sampling`.
+            per: "feature" (default) or "mean" (angle of the mean pole).
+            max_weight: upper bound of the weights. Default 10.
+
+        Returns:
+            numpy.ndarray: one weight per item, to be used as ``weights=`` of
+            ``ortensor``, ``fisher_statistics``, ``watson_statistics``,
+            ``bingham_statistics``, ``bootstrap_statistics`` and ``fit``.
+        """
+        self._require(1, "terzaghi_weights")
+        return _terzaghi_weights(
+            self, sampling, kind=kind, per=per, max_weight=max_weight
+        )
+
+    def watson_statistics(self, level=0.95, *, weights=None):
         """Fit Watson distribution and return statistics.
 
         Fits both the bipolar (``k > 0``, mean axis is the major eigenvector of
@@ -1088,6 +1201,8 @@ class Vector3Set(FeatureSet):
 
         Args:
             level: confidence level. Default 0.95 for 95 %.
+            weights: optional non-negative weight of each axis (e.g. Terzaghi
+                weights); the confidence cone uses the effective sample size.
         Returns:
             dict: with keys ``mu`` (mean axis; the girdle pole when ``k < 0``),
                 ``k`` (concentration parameter, negative for girdle
@@ -1098,12 +1213,12 @@ class Vector3Set(FeatureSet):
             the true population mean axis lies within alpha degrees of the mu.
             ``Watson.fit(data)`` gives the fitted distribution.
         """
-        dist = Watson.fit(self)
-        mu = self.ortensor().eigenvectors(dist.fit_info.stats["which"])
+        dist = Watson.fit(self, weights=weights)
+        mu = self.ortensor(weights).eigenvectors(dist.fit_info.stats["which"])
         alpha = dist.mean_confidence(level).alpha
         return {"mu": mu, "k": dist.kappa, "alpha": alpha}
 
-    def bingham_statistics(self, level=0.95, which=0):
+    def bingham_statistics(self, level=0.95, which=0, *, weights=None):
         """Confidence ellipse of an eigenvector of the orientation tensor and
         concentrations of the fitted Bingham distribution.
 
@@ -1118,6 +1233,10 @@ class Vector3Set(FeatureSet):
             which: index (0, 1 or 2) of the eigenvector the confidence ellipse
                 is centered on. 0 is the major eigenvector, 2 is the minor
                 (pole) eigenvector. Default 0.
+            weights: optional non-negative weight of each axis (e.g. Terzaghi
+                weights). The tensor, the moments and the fit are weighted and
+                the ellipse uses the effective sample size, which is added to
+                the result as ``n_eff``.
 
         Returns:
             dict: with keys ``mu`` (center eigenvector), ``axes`` (tuple of
@@ -1128,21 +1247,26 @@ class Vector3Set(FeatureSet):
                 distribution, along the second and third eigenvectors).
         """
 
-        ot = self.ortensor()
+        ot = self.ortensor(weights)
         vecs = ot.eigenvectors()
-        moments = axial_cross_moments(np.asarray(self.normalized()), vecs)
-        region = bingham_ellipse(
-            ot.eigenvalues(), vecs, moments, len(self), level, which
+        w = None if weights is None else check_weights(weights, len(self))
+        moments = axial_cross_moments(np.asarray(self.normalized()), vecs, w)
+        n_eff = len(self) if w is None else float(1.0 / np.sum(w**2))
+        region = bingham_ellipse(ot.eigenvalues(), vecs, moments, n_eff, level, which)
+        dist = Bingham.fit(self, weights=weights)
+        extra = {} if w is None else {"n_eff": n_eff}
+        return (
+            region.as_dict()
+            | {
+                "n": len(self),
+                "level": level,
+                "which": which,
+                "k": (dist.kappa_major, dist.kappa_minor),
+            }
+            | extra
         )
-        dist = Bingham.fit(self)
-        return region.as_dict() | {
-            "n": len(self),
-            "level": level,
-            "which": which,
-            "k": (dist.kappa_major, dist.kappa_minor),
-        }
 
-    def bootstrap_statistics(self, level=0.95, n=1000, method="cone"):
+    def bootstrap_statistics(self, level=0.95, n=1000, method="cone", *, weights=None):
         """Bootstrap confidence region of the principal orientation.
 
         The mean is the principal eigenvector of the orientation tensor, which
@@ -1160,6 +1284,9 @@ class Vector3Set(FeatureSet):
                 axes of the tangent-plane covariance of the resampled
                 eigenvectors, ``g = -2 ln(1 - level) / mu^2`` with ``mu`` the
                 length of their mean.
+            weights: optional non-negative weight of each datum; data and
+                weights are resampled together and every resample's tensor is
+                weighted. Default None, all equal.
 
         Returns:
             dict: ``mu`` (mean orientation) and ``alpha`` (radius of the
@@ -1177,11 +1304,19 @@ class Vector3Set(FeatureSet):
                 susceptibility tensors. Journal of Geophysical Research 95,
                 8383-8395.
         """
-        mu = self.ortensor().eigenvectors(0)
+        mu = self.ortensor(weights).eigenvectors(0)
         m = np.asarray(mu, dtype=float)
-        V = np.array(
-            [np.asarray(s.ortensor().eigenvectors(0)) for s in self.bootstrap(n=n)]
-        )
+        if weights is None:
+            V = np.array(
+                [np.asarray(s.ortensor().eigenvectors(0)) for s in self.bootstrap(n=n)]
+            )
+        else:
+            w = check_weights(weights, len(self))
+            V = []
+            for _ in range(n):
+                idx = np.random.choice(len(self), size=len(self), replace=True)
+                V.append(np.asarray(self[idx].ortensor(w[idx]).eigenvectors(0)))
+            V = np.array(V)
         # eigenvectors have an arbitrary sign
         V[V @ m < 0] *= -1
         match method:
@@ -1283,10 +1418,18 @@ class Vector3Set(FeatureSet):
         N = len(self)
         return 100 * (2 * abs(self.normalized().R()) - N) / N
 
-    def ortensor(self):
-        """Return orientation tensor ``Ortensor`` of ``Group``."""
+    def ortensor(self, weights=None):
+        """Return orientation tensor ``Ortensor`` of ``Group``.
+
+        Args:
+            weights: optional non-negative weight of each feature, e.g. from
+                ``terzaghi_weights``. Default None, all equal. Weighted
+                tensors are not cached.
+        """
         self._require(1, "ortensor")
 
+        if weights is not None:
+            return OrientationTensor3.from_features(self, weights=weights)
         return self._ortensor
 
     @property
@@ -1844,6 +1987,28 @@ class _Axial3Samplers:
         """
         dist = Bingham(mean, major, kappa_major, kappa_minor)
         return cls._sample(dist, n, rng, name)
+
+    @classmethod
+    def random_bingham_mixture(
+        cls, n=100, components=(), weights=None, name="Default", *, rng=None
+    ):
+        """Return a set of random axes sampled from a mixture of Bingham
+        distributions ([`BinghamMixture`][apsg.feature.BinghamMixture]).
+
+        Args:
+            n: number of features. Default 100.
+            components: sequence of ``Bingham`` distributions.
+            weights: mixing weights. Default None, all equal.
+            name: name of the set. Default 'Default'.
+
+        Keyword Args:
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+                Default None uses numpy's global random state.
+
+        Returns:
+            FeatureSet: the sample.
+        """
+        return cls._sample(BinghamMixture(components, weights), n, rng, name)
 
     @classmethod
     def random_acg(

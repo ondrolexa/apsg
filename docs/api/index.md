@@ -81,6 +81,7 @@ Short aliases available after `from apsg import *`:
 | `dist_esag` | [`ESAG`][apsg.feature.ESAG] |
 | `dist_axial_vonmises` | [`AxialVonMises`][apsg.feature.AxialVonMises] |
 | `dist_bingham` | [`Bingham`][apsg.feature.Bingham] |
+| `dist_bingham_mixture` | [`BinghamMixture`][apsg.feature.BinghamMixture] |
 | `dist_kent` | [`Kent`][apsg.feature.Kent] |
 | `dist_lisle` | [`Lisle`][apsg.feature.Lisle] |
 | `dist_vonmises` | [`VonMises`][apsg.feature.VonMises] |
