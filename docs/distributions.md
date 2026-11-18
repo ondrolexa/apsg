@@ -245,15 +245,34 @@ Worked examples are in the [distributions tutorial](notebooks/04_apsg_distributi
 (`cluster_bingham`).
 
 Measurements taken along a line (borehole, scanline) or on a plane (outcrop)
-under-sample fractures nearly parallel to the sampling geometry. The Terzaghi
-weights `1 / |cos(theta)|` (line) and `1 / |sin(theta)|` (plane), capped at
-`max_weight`, undo it (Terzaghi, 1965; Munier, 2004, eq. 1-2), `theta` being
-the angle between the fracture pole and the line direction or plane normal:
+under-sample fractures nearly parallel to the sampling geometry. A vertical
+borehole, for example, meets a fracture with probability proportional to
+`|cos(theta)|`, `theta` being the angle between the fracture pole and the borehole
+axis, so steeply dipping fractures (near-vertical poles) are over-represented and a
+fitted mixture gives their set too large a mixing weight. The Terzaghi weights
+`1 / |cos(theta)|` (line) and `1 / |sin(theta)|` (plane), capped at `max_weight`,
+are the inverse of that probability and undo the bias (Terzaghi, 1965; Munier,
+2004, eq. 1-2); `theta` is the angle between the fracture pole and the line
+direction or plane normal:
 
 ```python
 >>> poles = FoliationSet.random_fisher(200, mean=fol(0, 20))
 >>> w = poles.terzaghi_weights(lin(0, 90))     # vertical borehole
 >>> w = poles.terzaghi_weights(fol(0, 0))      # horizontal outcrop
+```
+
+The bias can be simulated by thinning a sample: keep each pole with probability
+`|cos(theta)|`, which for a vertical borehole is the absolute z component of its
+unit vector. Fitting the thinned sample with and without the weights shows the
+effect (the tutorial does this for a three-set mixture):
+
+```python
+>>> cos_theta = np.abs(np.asarray(big.normalized())[:, 2])   # |cos| of each pole
+>>> keep = np.random.default_rng(3).uniform(size=len(big)) < cos_theta
+>>> biased = big[np.flatnonzero(keep)]         # vertical poles survive more often
+>>> w = biased.terzaghi_weights(lin(0, 90))
+>>> biased.fit_mixture(3, rng=0).weights       # skewed toward the steep set
+>>> biased.fit_mixture(3, weights=w, rng=0).weights   # close to the true weights
 ```
 
 `weights=` is accepted by `fit()` of `VonMisesFisher`, `Watson` and `Bingham`
