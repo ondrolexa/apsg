@@ -114,3 +114,18 @@ def test_frame_uniformity_test():
     r = Lisle(Pair(120, 40, 100, 38), 5, 5).rvs(50, rng=1).uniformity_test()
     assert r.df == 10 and r.reject()
     assert pairset.random(5).uniformity_test().df == 10
+
+
+def test_fit_recovers_improper_mean():
+    # det(mean) < 0: the signed psi_3 must survive (the R package matrixfisher
+    # returns an improper U V' here, vault Directional 8.0 code checks)
+    d = MatrixFisher(_F((8, 4, -2)))
+    assert np.linalg.det(d.F) < 0
+    fitted = MatrixFisher.fit(d.rvs(4000, rng=5))
+    M = np.asarray(fitted.mean)
+    assert np.allclose(M @ M.T, np.eye(3), atol=1e-8) and np.isclose(
+        np.linalg.det(M), 1
+    )
+    assert np.allclose(M, np.asarray(d.mean), atol=0.05)
+    assert np.allclose(fitted.concentrations, d.concentrations, atol=0.5)
+    assert fitted.concentrations[2] < 0

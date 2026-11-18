@@ -6,11 +6,14 @@ FLE (Fisher, Lewis & Embleton, 1987, Statistical Analysis of Spherical Data)
 and F93 (Fisher, 1993, Statistical Analysis of Circular Data).
 """
 
+import warnings
+
 import numpy as np
 from scipy import stats
 from scipy.optimize import brentq
 
 from apsg.feature._distributions._base import (
+    _APSG_DIR,
     ConfidenceRegion,
     OrientationDistribution,
     finite_param,
@@ -387,6 +390,14 @@ class ACG(OrientationDistribution):
     def _fit(cls, X, method="mle", tol=1e-10, maxiter=1000, **options):
         if method != "mle":
             raise ValueError(f"Unknown fitting method {method!r}")
+        if len(X) <= 6:
+            warnings.warn(
+                "The maximum-likelihood estimate of the angular central Gaussian "
+                "distribution exists only for n > q (q - 1) = 6 axes (Tyler, 1987, "
+                f"Theorem 1); got n = {len(X)}, the iteration may not converge.",
+                UserWarning,
+                skip_file_prefixes=(_APSG_DIR,),
+            )
         L = np.eye(3)
         converged = False
         for _ in range(maxiter):

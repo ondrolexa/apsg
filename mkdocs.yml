@@ -132,6 +132,7 @@ validation:
 
 exclude_docs: |
   notebooks/rerender_notebooks.sh
+  notebooks/teel/README.md
 
 nav:
   - Home: index.md
@@ -146,6 +147,7 @@ nav:
       - Pandas: notebooks/06_apsg_pandas.ipynb
       - Various: notebooks/07_apsg_various.ipynb
       - Database: notebooks/08_apsg_database.ipynb
+      - Paleomagnetism: notebooks/09_apsg_paleomag.ipynb
   - Distributions: distributions.md
   - API reference:
       - api/index.md

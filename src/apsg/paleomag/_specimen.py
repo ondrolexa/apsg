@@ -18,6 +18,7 @@ import re
 import warnings
 from dataclasses import dataclass, field, replace
 from datetime import datetime
+from functools import cache
 from pathlib import Path
 
 import numpy as np
@@ -25,7 +26,7 @@ import numpy as np
 from apsg.feature._container import FoliationSet, Vector3Set
 from apsg.feature._distributions._base import as_rng
 from apsg.feature._geodata import Foliation, Lineation
-from apsg.feature._hypothesis import common_mean_test
+from apsg.feature._hypothesis import TestResult, common_mean_test
 from apsg.feature._tensor3 import OrientationTensor3, Rotation3
 from apsg.helpers._helper import eformat
 from apsg.helpers._math import acosd, asind, atan2d, atand, cosd, sind, tand
@@ -37,6 +38,7 @@ __all__ = (
     "Sample",
     "Specimen",
     "lines_planes_mean",
+    "mcfadden_fold_test",
     "vgp",
 )
 
@@ -896,7 +898,7 @@ class Specimen:
                 f"{self.name[:8]:<8}  a={self.azimuth % 360:5.1f}   b={self.hade:5.1f}"
                 f"   s={(dd - 90) % 360:5.1f}   d={dip:5.1f}   v={eformat(v, 2)}m3  {date}"
             ),
-            "STEP  Xc [Am2]  Yc [Am2]  Zc [Am2]  MAG[A/m]   Dg    Ig    Ds    Is   a95 ",
+            "STEP  Xc [Am2]  Yc [Am2]  Zc [Am2]  MAG[A/m]   Dg    Ig    Ds    Is   a95",
         ]
         geo, tilt = self.geo, self.tilt
         for step, g, t in zip(self.steps, geo, tilt):
@@ -904,10 +906,11 @@ class Specimen:
             rows.append(
                 f"{step.label:<4}{x:10.2E}{y:10.2E}{z:10.2E}{abs(step.M):10.2E}"
                 f"{g.geo[0]:6.1f}{g.geo[1]:6.1f}{t.geo[0]:6.1f}{t.geo[1]:6.1f}"
-                f"{step.a95:5.1f} {step.comment}"
+                f"{step.a95:5.1f} {step.comment}".rstrip()  # no trailing space
             )
         with open(filename, "w", encoding="latin-1", errors="replace", newline="") as f:
-            f.write("\r\n".join(rows) + "\r\n\x1a")
+            # DOS end-of-file marker on its own line, newline-terminated
+            f.write("\r\n".join(rows) + "\r\n\x1a\r\n")
 
     def to_rs3(self, filename):
         """Write the specimen as a Remasoft RS3 file (orientation parameters
@@ -1182,6 +1185,164 @@ def bailey_halls_mean(lines, poles, level=0.95):
     }
 
 
+@cache
+def _xi_null(N, h=0.002):
+    """Null distribution of the McFadden (1990) correlation statistic.
+
+    Under the null hypothesis ``xi`` is the sum of ``N`` independent terms
+    ``cos(theta_i)`` with ``theta_i`` uniform on the circle, whose
+    characteristic function is ``J0(t)^N``; this is the distribution of
+    Lord's integral (McFadden 1990, eq. 15). It is evaluated by convolving
+    the exact cell masses of the arcsine law of one term on a grid of width
+    `h` (FFT). Returns the cell centres and the cumulative probability there.
+    """
+    edges = np.arange(-1.0, 1.0 + h / 2, h)
+    cdf1 = 1 - np.arccos(np.clip(edges, -1, 1)) / np.pi
+    p = np.diff(cdf1)
+    size = N * (len(p) - 1) + 1
+    P = np.fft.irfft(np.fft.rfft(p, size) ** N, size)
+    P = np.maximum(P, 0)
+    P /= P.sum()
+    # the mass of cell k sits at its centre N * (-1 + h/2) + h * k
+    return N * (-1 + h / 2) + h * np.arange(size), np.cumsum(P) - P / 2
+
+
+def _xi_cdf(x, N):
+    """Distribution function of the null law of ``xi`` for `N` terms."""
+    if N > 100:  # N(0, N/2), McFadden (1990) for large N
+        from scipy.special import ndtr
+
+        return ndtr(np.asarray(x, dtype=float) / np.sqrt(N / 2))
+    edges, cum = _xi_null(int(N))
+    return np.interp(x, edges, cum, left=0.0, right=1.0)
+
+
+def _xi_critical(N, level):
+    """Critical value of ``xi`` (McFadden 1990, Table 2) at `level`."""
+    if N > 100:
+        from scipy.special import ndtri
+
+        return float(ndtri(level) * np.sqrt(N / 2))
+    edges, cum = _xi_null(int(N))
+    return float(np.interp(level, cum, edges))
+
+
+def _rodrigues(axes, angles):
+    """Rotation matrices about unit `axes` (n, 3) by `angles` in radians."""
+    K = np.zeros((len(axes), 3, 3))
+    K[:, 0, 1], K[:, 0, 2] = -axes[:, 2], axes[:, 1]
+    K[:, 1, 0], K[:, 1, 2] = axes[:, 2], -axes[:, 0]
+    K[:, 2, 0], K[:, 2, 1] = -axes[:, 1], axes[:, 0]
+    s = np.sin(angles)[:, None, None]
+    c = (1 - np.cos(angles))[:, None, None]
+    return np.eye(3) + s * K + c * (K @ K)
+
+
+def mcfadden_fold_test(directions, beddings, fracs=None, level=0.95, small=5.0):
+    """Correlation fold test of McFadden (1990) for complex folding.
+
+    Every direction comes from its own limb with its own bedding. The mean
+    ``mu`` of the directions in the tested position is moved by a small tilt
+    about the strike of each bed (the folding sense, `small` degrees; the
+    amount is immaterial for small tilts) and ``xi = sum(cos(theta_i))``,
+    where ``theta_i`` is the angle, in the plane perpendicular to ``mu``,
+    between the deviation of the i-th direction from ``mu`` and the
+    displacement of ``mu`` (definition 1). Directions that scatter because
+    they are tilted differently correlate with the tilt, so a large ``|xi|``
+    means the directions are not in their primary position. The
+    null distribution is that of Lord's integral (eq. 15), the critical values
+    are those of Table 2. The test is run for each percentage of untilting;
+    a pre-folding magnetization is significant in situ (0 %) but not when
+    unfolded (100 %), a syn-folding one has the minimum of ``|xi|`` between.
+
+    Note:
+        ``|xi|`` is compared with the critical value, as over- and
+        under-correction both produce a correlation. McFadden's definition 2
+        (the mean taken from the other position), recommended when the in
+        situ and unfolded means differ much, and his tests for sites on
+        common limbs are not implemented. The paper prints 2.362 for the
+        large-N 99 % constant, the exact value of its Table 2 is 2.326
+        (``sqrt(N/2)`` times the normal quantile), which is used here for
+        ``N > 100``; below that the exact null law is used. Beds with zero
+        dip have no strike and are dropped.
+
+    Args:
+        directions: ``(N, 3)`` directions (geographic coordinates, x north,
+            y east, z down), at least 5 are recommended.
+        beddings: ``(N, 3)`` bedding normals pointing to the stratigraphic
+            top, see `bedding_vector`.
+        fracs: percentages of untilting, default 0 to 100 in steps of 1.
+        level: confidence level of the critical value.
+        small: angle of the small tilt of the mean in degrees.
+
+    Returns:
+        dict: ``fracs``, ``xi`` (signed statistic at each percentage),
+            ``p_values`` (``1 - F(|xi|)`` of the null law), ``critical``,
+            ``geo`` and ``tilt`` (``xi`` at 0 and 100 %, 0 and 100 % need
+            to be in `fracs`), ``best`` (percentage with the smallest
+            ``|xi|``), ``n`` and ``level``.
+
+    References:
+        McFadden, P.L. (1990). A new fold test for palaeomagnetic studies.
+            Geophysical Journal International 103, 163-169.
+        Lord, R.D. (1948). The use of the Hankel transform in statistics I.
+            Biometrika 35, 44-55.
+    """
+    G = _unit_rows(directions)
+    B = _unit_rows(beddings)
+    if len(G) != len(B):
+        raise ValueError("directions and beddings need the same length")
+    up = np.asarray(_UP)
+    axes = np.cross(B, up)
+    norm = np.linalg.norm(axes, axis=1)
+    flat = norm < 1e-9
+    if flat.any():
+        warnings.warn(
+            f"{int(flat.sum())} beds with zero dip have no strike and are dropped",
+            UserWarning,
+            stacklevel=2,
+        )
+        G, B, axes, norm = G[~flat], B[~flat], axes[~flat], norm[~flat]
+    N = len(G)
+    if N < 3:
+        raise ValueError("The correlation fold test needs at least three sites")
+    if N < 5:
+        warnings.warn(
+            "McFadden (1990) recommends at least 5 sites", UserWarning, stacklevel=2
+        )
+    axes = axes / norm[:, None]
+    dip = np.arccos(np.clip(B @ up, -1, 1))
+    fracs = np.arange(0, 101.0) if fracs is None else np.asarray(fracs, dtype=float)
+    fold = _rodrigues(axes, -np.radians(small) * np.ones(N))
+    xi = np.empty(len(fracs))
+    for j, f in enumerate(fracs):
+        P = np.einsum("nij,nj->ni", _rodrigues(axes, f / 100 * dip), G)
+        mu = P.sum(axis=0)
+        mu /= np.linalg.norm(mu)
+        tau = np.einsum("nij,j->ni", fold, mu)
+        dev = P - (P @ mu)[:, None] * mu
+        shift = tau - (tau @ mu)[:, None] * mu
+        den = np.linalg.norm(dev, axis=1) * np.linalg.norm(shift, axis=1)
+        ok = den > 0
+        xi[j] = np.sum(np.einsum("ni,ni->n", dev, shift)[ok] / den[ok])
+
+    def at(f):
+        hit = np.flatnonzero(np.isclose(fracs, f))
+        return float(xi[hit[0]]) if len(hit) else None
+
+    return {
+        "fracs": fracs,
+        "xi": xi,
+        "p_values": 1 - _xi_cdf(np.abs(xi), N),
+        "critical": _xi_critical(N, level),
+        "geo": at(0.0),
+        "tilt": at(100.0),
+        "best": float(fracs[np.argmin(np.abs(xi))]),
+        "n": N,
+        "level": level,
+    }
+
+
 def vgp(dec, inc, lat, lon, a95=None):
     """Virtual geomagnetic pole of a mean direction at a site.
 
@@ -1395,7 +1556,26 @@ class Sample:
             "maxima": maxima,
         }
 
-    def reversal_test(self, name, coords="tilt", method=None, level=0.95):
+    def mcfadden_fold_test(self, name, fracs=None, level=0.95, small=5.0):
+        """Correlation fold test of McFadden (1990) on the line components.
+
+        Every specimen is taken as a site on its own limb with its own bedding;
+        see `mcfadden_fold_test`, which also describes the result.
+        """
+        comps = self._components(name, "geo", "line")
+        if len(comps) < 3:
+            raise ValueError("Fold test needs at least three line components")
+        return mcfadden_fold_test(
+            [np.asarray(c.vector.normalized()) for _, c in comps],
+            [np.asarray(s.bedding) for s, _ in comps],
+            fracs=fracs,
+            level=level,
+            small=small,
+        )
+
+    def reversal_test(
+        self, name, coords="tilt", method=None, level=0.95, n=1000, rng=None
+    ):
         """Reversal test: common mean of the normal and the flipped reversed
         line components.
 
@@ -1403,6 +1583,16 @@ class Sample:
         principal axis of the orientation tensor, the reversed mode is turned
         to its antipode and ``common_mean_test`` is applied (Watson's F test
         by default; Tauxe, 2003, §4.13-4.14).
+
+        With ``method="bootstrap"`` the confidence intervals of the three
+        Cartesian components of the Fisher mean are found by bootstrap (`n`
+        resamples, `rng`) for each mode, and the modes share a mean when the
+        intervals overlap in all components (Tauxe, 2003, §4.13-4.14; Tauxe et
+        al., 1991). The statistic is the number of components with disjoint
+        intervals and the test is rejected for any, so ``extra`` holds the
+        intervals ``lower`` and ``upper`` (2 x 3 arrays, normal mode first).
+        The two criteria can disagree: on Tauxe's Table 4.2 Watson's F rejects
+        while the intervals overlap.
 
         Returns:
             TestResult: ``reject()`` is True when the modes are not antipodal.
@@ -1414,7 +1604,28 @@ class Sample:
         side = D @ axis >= 0
         if side.all() or not side.any():
             raise ValueError("All directions have the same polarity")
-        return common_mean_test([D[side], -D[~side]], method=method, level=level)
+        modes = [D[side], -D[~side]]
+        if method != "bootstrap":
+            return common_mean_test(modes, method=method, level=level)
+        gen = as_rng(rng)
+        lo, hi = [], []
+        for X in modes:
+            idx = gen.integers(0, len(X), (n, len(X)))
+            m = X[idx].sum(axis=1)
+            m /= np.linalg.norm(m, axis=1, keepdims=True)
+            q = np.quantile(m, [(1 - level) / 2, (1 + level) / 2], axis=0)
+            lo.append(q[0])
+            hi.append(q[1])
+        lo, hi = np.array(lo), np.array(hi)
+        disjoint = (lo[0] > hi[1]) | (lo[1] > hi[0])
+        return TestResult(
+            name="Bootstrap reversal test",
+            statistic=float(disjoint.sum()),
+            critical=0.0,
+            level=level,
+            source="Tauxe (2003), sect. 4.13-4.14",
+            extra={"lower": lo, "upper": hi},
+        )
 
     def vgp(self, name, coords="tilt", latitude=None, longitude=None, level=0.95):
         """Virtual geomagnetic pole of the mean of the components `name`.

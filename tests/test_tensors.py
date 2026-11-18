@@ -1373,6 +1373,24 @@ class TestEllipsoid:
         E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
         assert isinstance(E.MAD, float)
 
+    def test_MAD_values(self):
+        # Kirschvink (1980): atan sqrt((l2 + l3) / l1) for a line, atan sqrt(l3/l2
+        # + l3/l1) for a plane; scale invariant
+        E = Ellipsoid(np.diag([1, 0.04, 0.01]))
+        assert E.MAD_l == pytest.approx(math.degrees(math.atan(math.sqrt(0.05))))
+        assert E.MAD_p == pytest.approx(
+            math.degrees(math.atan(math.sqrt(0.01 / 0.04 + 0.01)))
+        )
+        assert Ellipsoid(np.diag([50, 2, 0.5])).MAD_l == pytest.approx(E.MAD_l)
+        assert Ellipsoid(np.diag([50, 2, 0.5])).MAD_p == pytest.approx(E.MAD_p)
+        # perfect line and perfect plane
+        assert Ellipsoid(np.diag([1, 1e-12, 1e-12])).MAD_l == pytest.approx(0, abs=1e-5)
+        assert Ellipsoid(np.diag([1, 1, 0])).MAD_p == 0
+        # equal eigenvalues: a line fits as badly as 54.7 deg
+        assert Ellipsoid(np.eye(3)).MAD_l == pytest.approx(
+            math.degrees(math.atan(math.sqrt(2)))
+        )
+
     def test_eigenvalues(self):
         E = Ellipsoid([[8, 0, 0], [0, 2, 0], [0, 0, 1]])
         e = E.eigenvalues()

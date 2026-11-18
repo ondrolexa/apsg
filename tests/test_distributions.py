@@ -976,6 +976,25 @@ def test_acg_fit_is_tyler_fixed_point():
     assert ACG.from_matrix(2 * L) == d
 
 
+def test_acg_fit_warns_when_mle_does_not_exist():
+    # Tyler (1987) Theorem 1: the MLE exists for n > q (q - 1) = 6
+    X = np.array(ACG((1, 0, 1), (0, 1, 0), (2.5, 0.4, 0.1)).rvs(6, rng=37))
+    with pytest.warns(UserWarning, match="exists only for n > q"):
+        ACG.fit(X)
+
+
+@pytest.mark.parametrize("pole", [(0, 0, 1), (0, 0, -1)])
+def test_vonmisesfisher_sampling_at_the_pole(pole):
+    # the R package Directional returns NaN for a mean exactly at the pole
+    X = np.array(VonMisesFisher(pole, 5).rvs(4000, rng=38))
+    assert np.isfinite(X).all()
+    assert np.allclose(np.linalg.norm(X, axis=1), 1)
+    resultant = np.linalg.norm(X.mean(axis=0))
+    # E|R| = A3(5) = coth(5) - 1/5 = 0.8
+    assert resultant == pytest.approx(1 / np.tanh(5) - 1 / 5, abs=0.02)
+    assert X.mean(axis=0)[2] * pole[2] > 0
+
+
 # Feature set integration ------------------------------------------------------
 
 

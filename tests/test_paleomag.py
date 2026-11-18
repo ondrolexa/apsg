@@ -3,6 +3,7 @@
 import re
 import warnings
 from dataclasses import replace
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,8 +21,10 @@ from apsg.paleomag import (
     bedding_vector,
     core_rotation,
     demag_plot,
+    inclination_only_mean,
     kirschvink_mean,
     lines_planes_mean,
+    mcfadden_fold_test,
     stereo_plot,
     untilt_rotation,
     vgp,
@@ -588,6 +591,116 @@ def test_bailey_halls_mean():
         bailey_halls_mean(_KB31_SETS, [])
 
 
+def _bh_S(t, lines, poles):
+    """Sum of squares minimised by the Bailey & Halls estimate (eq. 10)."""
+    L, P = np.asarray(lines), np.asarray(poles)
+    return np.sum((L - t) ** 2) + np.sum((P @ t) ** 2)
+
+
+def test_bailey_halls_identities():
+    poles = np.array(_KB31_POLES)
+    poles = poles / np.linalg.norm(poles, axis=1, keepdims=True)
+    lines = np.array(_KB31_SETS)
+    res = bailey_halls_mean(lines, [Vector3(p) for p in poles])
+    t, omega = np.asarray(res["mu"]), res["omega"]
+    H, r = poles.T @ poles, lines.sum(axis=0)
+    M, N = len(lines), len(poles)
+    # (15): (H - omega I) t = r, and omega below the smallest eigenvalue of H
+    assert np.allclose((H - omega * np.eye(3)) @ t, r, atol=1e-9)
+    assert omega < np.linalg.eigvalsh(H)[0]
+    # S = 2M - r.t + omega (the printed (29) uses |r| and is wrong for N > 0)
+    S = _bh_S(t, lines, poles)
+    assert S == pytest.approx(2 * M - r @ t + omega, abs=1e-9)
+    assert res["k"] == pytest.approx((2 * M + N - 2) / S)
+    assert abs(np.linalg.norm(r) - r @ t) > 0.01
+    # the estimate minimises S on the sphere
+    rng = np.random.default_rng(0)
+    for _ in range(20):
+        u = t + 0.05 * rng.normal(size=3)
+        assert _bh_S(u / np.linalg.norm(u), lines, poles) > S
+    # (37): S1 - S0 = e'(H - omega I)e for a small tangent step e
+    a = np.cross(t, [0.3, 0.5, 0.8])
+    a /= np.linalg.norm(a)
+    for e in (1e-3 * a, 1e-3 * np.cross(t, a)):
+        t1 = (t + e) / np.linalg.norm(t + e)
+        assert _bh_S(t1, lines, poles) - S == pytest.approx(
+            e @ (H - omega * np.eye(3)) @ e, rel=1e-3
+        )
+    # (39): semi-axes from the quadratic form restricted to the tangent plane
+    from scipy import stats
+
+    B = np.column_stack([a, np.cross(t, a)])
+    q = np.linalg.eigvalsh(B.T @ (H - omega * np.eye(3)) @ B)
+    C2 = S * stats.f.ppf(0.95, 2, 2 * M + N - 2) / (M + N / 2 - 1)
+    semi = sorted(np.degrees(np.sqrt(C2 / q)), reverse=True)
+    assert res["semi_axes"] == pytest.approx(semi)
+    # the minor semi-axis agrees with the vault check (12.7 deg, k 24.36)
+    assert res["k"] == pytest.approx(24.36, abs=0.01)
+    assert res["semi_axes"][1] == pytest.approx(12.7, abs=0.1)
+
+
+def _circle_poles(mu, n, kappa, rng):
+    """Poles of `n` great circles through two Fisher populations (Schmidt)."""
+    u = np.asarray(
+        Vector3Set.random_fisher(n, mean=Vector3(mu[0]), kappa=kappa, rng=rng)
+    )
+    v = np.asarray(
+        Vector3Set.random_fisher(n, mean=Vector3(mu[1]), kappa=kappa, rng=rng)
+    )
+    P = np.cross(u, v)
+    return P / np.linalg.norm(P, axis=1, keepdims=True)
+
+
+def test_kirschvink_synthetic_common_direction():
+    # 21 lines and 7 great circles about a known direction (the vault check
+    # recovers it to 1.8 deg, the two methods differ by 1.0 deg)
+    rng = np.random.default_rng(1980)
+    mu = Vector3(160.0, -30.0)
+    lines = np.asarray(Vector3Set.random_fisher(21, mean=mu, kappa=60, rng=rng))
+    # circles: great circles through the direction, perturbed by a Fisher error
+    poles = []
+    for az in np.linspace(0, np.pi, 7, endpoint=False):
+        a = np.cross(mu, [0, 0, 1.0])
+        a /= np.linalg.norm(a)
+        b = np.cross(mu, a)
+        n = np.cos(az) * a + np.sin(az) * b
+        poles.append(
+            np.asarray(
+                Vector3Set.random_fisher(1, mean=Vector3(n), kappa=400, rng=rng)
+            )[0]
+        )
+    m1 = kirschvink_mean(lines, [Vector3(p) for p in poles])
+    m2 = kirschvink_mean(lines, [Vector3(p) for p in poles], method=2)
+    assert np.degrees(np.arccos(abs(np.asarray(m1["mu"]) @ np.asarray(mu)))) < 3
+    assert np.degrees(np.arccos(abs(np.asarray(m2["mu"]) @ np.asarray(mu)))) < 3
+    assert m1["mu"].angle(m2["mu"]) < 2
+    assert m1["eigenvalues"].sum() == pytest.approx(7 - 21)
+
+
+def test_schmidt_bias_of_circles_only_mean():
+    # Schmidt (1985): two populations 30 deg apart, equal kappa, 20 circles; the
+    # circles-only mean sits about alpha/2 = 15 deg from either, direct
+    # observations of one set reduce the bias (McFadden & McElhinny, 1988)
+    rng = np.random.default_rng(1985)
+    m1, m2 = Vector3(0, 0), Vector3(180, 30)
+    m1v = np.asarray(m1)
+    err_free, err_set = [], []
+    for _ in range(25):
+        P = [Vector3(p) for p in _circle_poles((m1, m2), 20, 100, rng)]
+        with pytest.warns(UserWarning, match="Schmidt"):
+            free = lines_planes_mean([], P)
+        D = np.asarray(Vector3Set.random_fisher(5, mean=m1, kappa=100, rng=rng))
+        with_set = lines_planes_mean(D, P)
+        err_free.append(
+            np.degrees(np.arccos(np.clip(abs(np.asarray(free["mu"]) @ m1v), 0, 1)))
+        )
+        err_set.append(
+            np.degrees(np.arccos(np.clip(np.asarray(with_set["mu"]) @ m1v, -1, 1)))
+        )
+    assert np.mean(err_free) == pytest.approx(15, abs=3)
+    assert np.mean(err_set) < 0.5 * np.mean(err_free)
+
+
 def test_sample_mean_lines_and_planes():
     smp = _sample(
         [_dir(152.6, -60.7), _dir(178.1, -54.6), _dir(341.1, -26.2)],
@@ -651,6 +764,210 @@ def test_reversal_test():
         _sample(list(normal)).reversal_test("ChRM")
 
 
+_MF3 = [  # McFadden (1990) Table 3: dec, inc in situ, dec, inc unfolded, dip dir, dip
+    [189.0, 56.4, 193.4, -11.8, 199.1, 68.7],
+    [173.3, -51.5, 180.3, -11.3, 12.2, 41.5],
+    [190.9, 43.4, 191.0, -6.1, 191.2, 49.5],
+    [186.9, 10.7, 187.7, -4.3, 229.5, 20.1],
+    [169.3, -15.0, 167.0, -13.9, 265.0, 9.0],
+    [181.6, -6.9, 180.3, -8.0, 264.9, 10.0],
+    [145.9, -32.9, 154.3, -8.1, 12.0, 32.8],
+    [168.1, -47.6, 177.5, -16.0, 17.9, 34.6],
+]
+_MF4 = [  # Table 4: dec, inc, (unfolded dec, inc not needed), dip dir, dip
+    [44.4, -56.2, 7.2, -47.5, 131.9, 29.2],
+    [5.5, -58.8, 15.2, -76.1, 357.3, 17.7],
+    [69.5, -41.3, 287.0, -79.8, 76.4, 57.3],
+    [9.7, -81.7, 149.3, -57.5, 337.5, 39.3],
+    [70.9, -58.0, 65.6, -69.3, 81.3, 11.6],
+    [101.8, -64.4, 226.2, -78.7, 85.2, 33.5],
+    [80.4, -79.9, 77.5, -76.3, 249.3, 3.7],
+    [50.2, -52.3, 111.7, -74.0, 23.5, 34.1],
+    [40.5, -84.0, 110.1, -75.8, 315.2, 13.4],
+    [73.8, -78.4, 85.0, -49.9, 270.0, 28.8],
+    [55.7, -56.0, 325.8, -63.9, 93.9, 44.7],
+    [339.3, -58.6, 22.9, -56.1, 266.2, 26.9],
+    [48.6, -61.5, 53.0, -53.5, 250.2, 8.5],
+]
+
+
+def _mcfadden(table, **kw):
+    T = np.array(table)
+    G = [_dir(r[0], r[1]) for r in T]
+    B = [np.asarray(bedding_vector(r[4], r[5])) for r in T]
+    return mcfadden_fold_test(G, B, **kw), T
+
+
+def test_mcfadden_fold_test_table3():
+    res, _ = _mcfadden(_MF3)
+    # xi_1 = 5.958 in situ and 2.376 unfolded; N = 8
+    assert res["geo"] == pytest.approx(5.958, abs=0.01)
+    assert res["tilt"] == pytest.approx(2.376, abs=0.01)
+    assert res["n"] == 8
+    # Table 2 critical values 95 % / 99 % are interpolated by N, here N = 8
+    assert res["critical"] == pytest.approx(3.30, abs=0.01)
+    assert res["p_values"][0] < 0.01 < res["p_values"][-1]
+    # in situ significant, unfolded not: pre-folding remanence
+    assert abs(res["geo"]) > res["critical"] > abs(res["tilt"])
+
+
+def test_mcfadden_fold_test_table4_minimum_at_44_percent():
+    res, _ = _mcfadden(_MF4)
+    assert abs(res["geo"]) == pytest.approx(5.924, abs=0.01)
+    assert abs(res["tilt"]) == pytest.approx(6.676, abs=0.01)
+    assert res["best"] == 44
+    assert abs(res["xi"][44]) == pytest.approx(0.029, abs=0.005)
+    # significant at 0 and 100 %, syn-folding in between
+    assert abs(res["geo"]) > res["critical"] and abs(res["tilt"]) > res["critical"]
+
+
+def test_mcfadden_xi_null_distribution():
+    from apsg.paleomag._specimen import _xi_cdf, _xi_critical
+
+    # McFadden (1990) Table 2, from Lord's integral (15)
+    table = {
+        2: (1.697, 1.937),
+        5: (2.609, 3.573),
+        10: (3.685, 5.120),
+        25: (5.820, 8.174),
+    }
+    for N, (c95, c99) in table.items():
+        assert _xi_critical(N, 0.95) == pytest.approx(c95, abs=0.005)
+        assert _xi_critical(N, 0.99) == pytest.approx(c99, abs=0.005)
+    # distribution function: symmetric, P(xi <= critical) = level
+    assert float(_xi_cdf(0.0, 10)) == pytest.approx(0.5, abs=1e-3)
+    assert float(_xi_cdf(_xi_critical(10, 0.95), 10)) == pytest.approx(0.95, abs=1e-3)
+    # large N: N(0, N/2) with the exact 99 % constant 2.3263 (the paper's text
+    # prints 2.362, which is a transposition)
+    assert _xi_critical(400, 0.99) == pytest.approx(2.3263 * np.sqrt(200), abs=1e-3)
+    assert _xi_critical(100, 0.99) == pytest.approx(2.3263 * np.sqrt(50), rel=0.01)
+
+
+def test_mcfadden_fold_test_checks_input():
+    with pytest.raises(ValueError, match="same length"):
+        mcfadden_fold_test([_dir(0, 10)] * 4, [Vector3(0, 0, -1)] * 3)
+    with (
+        pytest.warns(UserWarning, match="zero dip"),
+        pytest.raises(ValueError, match="three sites"),
+    ):
+        mcfadden_fold_test([_dir(0, 10)] * 4, [Vector3(0, 0, -1)] * 4)
+
+
+def test_sample_mcfadden_fold_test():
+    smp = _fold_data(True, n=20)
+    res = smp.mcfadden_fold_test("ChRM")
+    assert res["n"] == 20 and len(res["xi"]) == 101
+    # prefolding data: correlated in situ, uncorrelated unfolded
+    assert abs(res["geo"]) > res["critical"] > abs(res["tilt"])
+    post = _fold_data(False, n=20).mcfadden_fold_test("ChRM")
+    assert abs(post["tilt"]) > post["critical"] > abs(post["geo"])
+
+
+_T42_NORMAL = [
+    [330.9, -3.0], [333.7, -22.4], [21.5, 16.8], [39.6, 22.7], [42, 27.9],
+    [15, 29.8], [36.5, 32.7], [33.9, 34.2], [27.8, 34.9], [41.8, 36.1],
+    [343.3, 36.5], [29.2, 36.9], [72.3, 37.0], [41.1, 37.9], [31.5, 39.5],
+    [340.8, 41.1], [66.1, 42.1], [54.4, 43.8], [6.7, 44.9], [18.3, 45.1],
+    [73.8, 46.2], [16, 47.8], [51.1, 52.7], [24.5, 56.5], [28.9, 64.5],
+]  # fmt: skip
+_T42_REVERSED = [
+    [216.2, -22.8], [192.2, -23.8], [202.2, -24.5], [220.4, -25.7],
+    [216.8, -28.8], [193.7, -29.6], [211.9, -32.5], [196.6, -37.5],
+    [202.3, -38.5], [198.1, -39.7], [139.6, -40.2], [160, -40.2],
+    [186.3, -43.3], [141.1, -45], [173.3, -45.0], [195.8, -45.4],
+    [147.9, -50], [222.5, -51.3], [180.2, -53], [189.4, -53],
+    [168.1, -53.2], [190.5, -55.8], [131.2, -56.3], [205, -58.5],
+]  # fmt: skip
+
+
+def test_reversal_test_bootstrap_tauxe_table_4_2():
+    # Tauxe (2003) Table 4.2: Watson's F rejects (3.36 > 3.09) while the
+    # bootstrap intervals of the Cartesian components overlap (vault check)
+    vecs = [_dir(*d) for d in _T42_NORMAL + _T42_REVERSED]
+    smp = _sample(vecs)
+    watson = smp.reversal_test("ChRM")
+    assert watson.statistic == pytest.approx(3.36, abs=0.02)
+    assert watson.reject()
+    boot = smp.reversal_test("ChRM", method="bootstrap", n=1000, rng=1)
+    assert boot.extra["lower"].shape == boot.extra["upper"].shape == (2, 3)
+    assert (boot.extra["lower"] <= boot.extra["upper"]).all()
+    assert boot.statistic == 0 and not boot.reject()
+
+
+def test_reversal_test_bootstrap_detects_non_antipodal():
+    rng = np.random.default_rng(5)
+    normal = Vector3Set.random_fisher(20, mean=Vector3(0, 40), kappa=50, rng=rng)
+    rev = Vector3Set.random_fisher(20, mean=Vector3(180, -40), kappa=50, rng=rng)
+    ok = _sample(list(normal) + list(rev)).reversal_test(
+        "ChRM", method="bootstrap", rng=2
+    )
+    assert not ok.reject()
+    shifted = Vector3Set.random_fisher(20, mean=Vector3(240, -40), kappa=50, rng=rng)
+    bad = _sample(list(normal) + list(shifted)).reversal_test(
+        "ChRM", method="bootstrap", rng=2
+    )
+    assert bad.reject() and bad.statistic >= 1
+    # the same seed reproduces the intervals
+    again = _sample(list(normal) + list(shifted)).reversal_test(
+        "ChRM", method="bootstrap", rng=2
+    )
+    assert np.array_equal(bad.extra["lower"], again.extra["lower"])
+
+
+_MR82_THETA = [27.6, 28.4, 39.8, 24.8, 36.8, 28.6, 16.0, 29.4, 36.4, 18.2]
+
+
+def test_inclination_only_mcfadden_reid_appendix():
+    # McFadden & Reid (1982) appendix, theta_i = 90 - I_i as printed
+    res = inclination_only_mean(90 - np.array(_MR82_THETA))
+    assert np.degrees(res["theta0"]) == pytest.approx(27.7, abs=0.05)
+    assert res["C"] == pytest.approx(9.917, abs=1e-3)
+    assert res["S"] == pytest.approx(-0.1560, abs=1e-2)
+    assert res["inc_conditional"] == pytest.approx(61.4, abs=0.05)
+    assert res["inc"] == pytest.approx(90 - 27.7, abs=0.05)
+    assert res["k"] == pytest.approx(54.2, abs=0.3)
+    lo, hi = res["kappa_ci"]
+    assert (lo, hi) == pytest.approx((16.3, 114.4), abs=0.8)
+    assert res["alpha"] == pytest.approx(6.7, abs=0.05)
+    one_sided = inclination_only_mean(90 - np.array(_MR82_THETA), level=0.90)
+    assert one_sided["alpha"] == pytest.approx(5.7, abs=0.05)
+
+
+def test_inclination_only_is_nearly_unbiased_for_fisher_data():
+    # I0 = 60, kappa = 40, N = 10: the root of eq. 19 is nearly unbiased (vault
+    # simulation -0.2 deg), eq. 40 is biased by about -1.3 deg
+    rng = np.random.default_rng(24)
+    err, err40 = [], []
+    for _ in range(300):
+        X = np.asarray(
+            Vector3Set.random_fisher(10, mean=Vector3(0, 60), kappa=40, rng=rng)
+        )
+        res = inclination_only_mean(np.degrees(np.arcsin(X[:, 2])))
+        err.append(res["inc"] - 60)
+        err40.append(res["inc_conditional"] - 60)
+    assert abs(np.mean(err)) < 0.6
+    assert np.mean(err40) < np.mean(err) - 0.5
+
+
+def test_inclination_only_recovers_plain_mean_for_clustered_data():
+    inc = np.array([60.0, 61, 59, 60.5, 59.5])
+    res = inclination_only_mean(inc)
+    assert res["inc"] == pytest.approx(60, abs=0.2) and res["k"] > 1000
+
+
+def test_inclination_only_input_checks():
+    with pytest.raises(ValueError, match="three"):
+        inclination_only_mean([50, 60])
+    with pytest.raises(ValueError, match="within"):
+        inclination_only_mean([50, 60, 100])
+    # mixed polarities warn; such data usually have no admissible root either
+    with (
+        pytest.warns(UserWarning, match="polarities"),
+        pytest.raises(ValueError, match="fold back"),
+    ):
+        inclination_only_mean([50, 55, 52, -48, -52, 45])
+
+
 @pytest.mark.parametrize("lat", [-60, 0, 45])
 def test_vgp_axial_dipole(lat):
     inc = np.degrees(np.arctan(2 * np.tan(np.radians(lat))))
@@ -684,6 +1001,15 @@ def test_vgp_geometry(dec, inc, lat, lon):
     )
 
 
+def test_vgp_dp_dm_literal_values():
+    # inc 45: magnetic colatitude p = atan(2 / tan 45) = 63.435 deg, cos^2 p = 1/5
+    # exactly, so dp = a95 (1 + 3/5) / 2 = 0.8 a95 and dm = a95 sin p / cos 45
+    # = a95 sqrt(8/5) (Butler 1992, eqs. 7.3 and 7.4)
+    res = vgp(0, 45, 30, 0, a95=5)
+    assert res["dp"] == pytest.approx(4.0)
+    assert res["dm"] == pytest.approx(5 * np.sqrt(8 / 5))
+
+
 def test_sample_vgp_uses_site_location():
     lat = 45.0
     inc = np.degrees(np.arctan(2 * np.tan(np.radians(lat))))
@@ -712,3 +1038,57 @@ def test_plots():
     assert b.get_xlabel() == "Level [°C]"
     net = stereo_plot(spec, show=False)
     net.render2fig(plt.figure())
+
+
+# ---------------------------------------------------------------------------
+# tutorial data (Kilian et al. 2016, docs/notebooks/teel)
+# ---------------------------------------------------------------------------
+
+TEEL = Path(__file__).parent.parent / "docs" / "notebooks" / "teel"
+teel = pytest.mark.skipif(not TEEL.is_dir(), reason="tutorial data not available")
+
+
+@teel
+def test_teel_files_read_without_orientation_warning():
+    files = sorted(TEEL.glob("*.pmd"))
+    assert len(files) == 67
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # a misfit of the Dg/Ig columns warns
+        specs = [Specimen.from_pmd(f) for f in files]
+    assert {s.site for s in specs} == {
+        "Z31", "Z34", "Z36", "Z38", "Z40", "Z47", "Z49", "Z51",
+    }  # fmt: skip
+    assert all(s.demag == "thermal" and s.steps[0].label == "NRM" for s in specs)
+
+
+@teel
+def test_teel_pca_reproduces_the_published_fits():
+    import pandas as pd
+
+    comps = pd.read_csv(TEEL / "teel_components.csv")
+    mag = comps[comps.component == "MAG"]
+    angles = []
+    for r in mag.itertuples():
+        spec = Specimen.from_pmd(TEEL / f"{r.specimen}.pmd")
+        fit = spec.pca(spec.between(r.step_min, r.step_max).labels, coords="geo")
+        angles.append(fit.vector.angle(Vector3(r.dec_geo, r.inc_geo)))
+    assert np.median(angles) < 0.2 and np.max(angles) < 5
+
+
+@teel
+@pytest.mark.parametrize("site", ["Z31", "Z36", "Z47"])
+def test_teel_site_means_agree_with_the_authors(site):
+    import pandas as pd
+
+    comps = pd.read_csv(TEEL / "teel_components.csv")
+    sites = pd.read_csv(TEEL / "teel_sites.csv", index_col="site")
+    smp = Sample.from_files(sorted(TEEL.glob(f"{site}.*.pmd")), name=site)
+    for s in smp:
+        r = comps[(comps.specimen == s.name) & (comps.component == "MAG")].iloc[0]
+        s.interpret("MAG", s.between(r.step_min, r.step_max).labels)
+    a = sites.loc[site]
+    for coords in ("geo", "tilt"):
+        m = smp.mean("MAG", coords)
+        ref = Vector3(a[f"dec_{coords}"], a[f"inc_{coords}"])
+        assert m["mu"].angle(ref) < 0.3
+        assert m["alpha"] == pytest.approx(a[f"alpha95_{coords}"], abs=0.1)
