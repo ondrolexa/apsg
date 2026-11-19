@@ -16,7 +16,7 @@ from apsg.feature._container import (
     Vector2Set,
     Vector3Set,
 )
-from apsg.feature._distributions import OrientationDistribution
+from apsg.feature._distributions import ConfidenceRegion, OrientationDistribution
 from apsg.feature._distributions._base import _APSG_DIR
 from apsg.feature._geodata import Arc, Cone, Fault, Foliation, Pair
 from apsg.feature._tensor3 import Ellipsoid, Stress3, Tensor3
@@ -380,7 +380,12 @@ class StereoNetArtistFactory:
         tensor_sets = (EllipsoidSet, Stress3Set)
         is_tensor = [isinstance(arg, tensor_sets) for arg in args]
         is_pair = [isinstance(arg, PairSet) for arg in args]
-        for kind, flags in (("tensor", is_tensor), ("pair", is_pair)):
+        is_region = [isinstance(arg, ConfidenceRegion) for arg in args]
+        for kind, flags in (
+            ("tensor", is_tensor),
+            ("pair", is_pair),
+            ("region", is_region),
+        ):
             if any(flags) and not all(flags):
                 raise TypeError(
                     "Not valid arguments for Stereonet confidence: "
@@ -388,9 +393,10 @@ class StereoNetArtistFactory:
                 )
         tensors = bool(args) and all(is_tensor)
         pairs = bool(args) and all(is_pair)
+        regions = bool(args) and all(is_region)
         artist = StereoNetArtistFactory._create(
             "create_confidence",
-            (Vector3Set, EllipsoidSet, Stress3Set, PairSet),
+            (Vector3Set, EllipsoidSet, Stress3Set, PairSet, ConfidenceRegion),
             "_confidence",
             "stereonet_confidence",
             "Confidence",
@@ -403,7 +409,9 @@ class StereoNetArtistFactory:
                 issubclass(getattr(arg, "__feature_class__", object), Axial3)
                 for arg in args
             )
-            if tensors:
+            if regions:
+                method = "region"
+            elif tensors:
                 method = "jelinek"
             elif pairs:
                 method = "lisle"
@@ -414,6 +422,11 @@ class StereoNetArtistFactory:
             raise ValueError(
                 f"Unknown confidence method {method!r}, "
                 f"expected one of {CONFIDENCE_METHODS}"
+            )
+        if regions != (method == "region"):
+            raise TypeError(
+                "Not valid arguments for Stereonet confidence: "
+                "method 'region' is the method for ConfidenceRegion objects"
             )
         if artist.kwargs["which"] not in (None, 0, 1, 2):
             raise ValueError("which must be None, 0, 1 or 2")

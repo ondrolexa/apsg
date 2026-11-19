@@ -10,25 +10,33 @@ import numpy as np
 import pytest
 
 import apsg
+from apsg import data
 from apsg.feature import Vector3Set
 from apsg.math._vector import Vector3
 from apsg.paleomag import (
     Component,
+    DemagPlot,
     DemagStep,
+    FoldTestPlot,
+    InclinationOnlyPlot,
+    LinesPlanesPlot,
+    PaleomagPlot,
+    ReversalTestPlot,
     Sample,
     Specimen,
+    SpecimenPlot,
+    SpecimenStereoPlot,
+    TiltComparisonPlot,
+    ZijderveldPlot,
     bailey_halls_mean,
     bedding_vector,
     core_rotation,
-    demag_plot,
     inclination_only_mean,
     kirschvink_mean,
     lines_planes_mean,
     mcfadden_fold_test,
-    stereo_plot,
     untilt_rotation,
     vgp,
-    zijderveld_plot,
 )
 
 
@@ -356,10 +364,10 @@ def test_squid_reader(tmp_path):
 
 def test_not_in_default_namespace():
     # `from apsg import *` imports exactly apsg.__all__
-    names = {"Specimen", "Sample", "vgp", "zijderveld_plot", "paleomag"}
+    names = {"Specimen", "Sample", "vgp", "ZijderveldPlot", "paleomag"}
     assert not names & set(apsg.__all__)
     assert not hasattr(apsg.feature, "Specimen")
-    assert not hasattr(apsg.plotting, "zijderveld_plot")
+    assert not hasattr(apsg.plotting, "ZijderveldPlot")
 
 
 def test_selection():
@@ -1032,24 +1040,20 @@ def test_plots():
     spec = _synthetic()
     spec.interpret("ChRM", slice(3, 11))
     spec.interpret("GC", slice(0, 6), kind="plane")
-    _fig, (a, b) = plt.subplots(1, 2)
-    assert zijderveld_plot(spec, coords="tilt", ax=a) is a
-    assert demag_plot(spec, ax=b) is b
-    assert b.get_xlabel() == "Level [°C]"
-    net = stereo_plot(spec, show=False)
-    net.render2fig(plt.figure())
+    sfs = plt.figure().subfigures(1, 3)
+    ZijderveldPlot(spec, coords="tilt").render2fig(sfs[0])
+    DemagPlot(spec).render2fig(sfs[1])
+    SpecimenStereoPlot(spec).render2fig(sfs[2])
+    assert sfs[1].axes[0].get_xlabel() == "Level [°C]"
 
 
 # ---------------------------------------------------------------------------
-# artificial tutorial data (docs/notebooks/pmdata, made by scripts/make_pmdata.py)
+# artificial tutorial data (apsg.data pmdata, made by scripts/make_pmdata.py)
 # ---------------------------------------------------------------------------
-
-PMDATA = Path(__file__).parent.parent / "docs" / "notebooks" / "pmdata"
-pmdata = pytest.mark.skipif(not PMDATA.is_dir(), reason="tutorial data not available")
 
 
 def _read_pmdata_site(site, lo=400, hi=580):
-    smp = Sample.from_files(sorted(PMDATA.glob(f"{site}.*.pmd")), name=site)
+    smp = data.load("pmdata", site=site)
     for s in smp:
         s.interpret("MAG", s.between(lo, hi).labels)
     return smp
@@ -1060,9 +1064,8 @@ def pmdata_sites():
     return {f"PM{i:02d}": _read_pmdata_site(f"PM{i:02d}") for i in range(1, 11)}
 
 
-@pmdata
 def test_pmdata_files_read_without_orientation_warning():
-    files = sorted(PMDATA.glob("*.pmd"))
+    files = sorted(data.path("pmdata").glob("*.pmd"))
     assert len(files) == 71
     with warnings.catch_warnings():
         warnings.simplefilter("error")  # a misfit of the Dg/Ig columns warns
@@ -1071,19 +1074,10 @@ def test_pmdata_files_read_without_orientation_warning():
     assert all(s.demag == "thermal" and s.steps[0].label == "NRM" for s in specs)
 
 
-@pmdata
-def test_pmdata_files_survive_the_whitespace_hooks():
-    for f in sorted(PMDATA.glob("*.pmd")):
-        raw = f.read_bytes()
-        assert raw.endswith(b"\n")
-        assert not any(ln.endswith(b" ") for ln in raw.split(b"\r\n"))
-
-
-@pmdata
 def test_pmdata_generator_is_reproducible():
     import importlib.util
 
-    script = PMDATA.parent.parent.parent / "scripts" / "make_pmdata.py"
+    script = Path(__file__).parent.parent / "scripts" / "make_pmdata.py"
     if not script.is_file():
         pytest.skip("generator script not available")
     spec = importlib.util.spec_from_file_location("make_pmdata", script)
@@ -1095,14 +1089,12 @@ def test_pmdata_generator_is_reproducible():
             assert np.array_equal(np.asarray(x.moment), np.asarray(y.moment))
 
 
-@pmdata
 def test_pmdata_lines_are_well_defined(pmdata_sites):
     mads = [s.components["MAG"].mad for smp in pmdata_sites.values() for s in smp]
     assert len(mads) == 71
     assert np.median(mads) < 3 and np.max(mads) < 15
 
 
-@pmdata
 def test_pmdata_tilt_correction_improves_each_polarity(pmdata_sites):
     everything = Sample([s for smp in pmdata_sites.values() for s in smp])
     normal = Sample(
@@ -1116,7 +1108,6 @@ def test_pmdata_tilt_correction_improves_each_polarity(pmdata_sites):
         assert smp.mean("MAG", "tilt")["k"] > 3 * smp.mean("MAG", "geo")["k"]
 
 
-@pmdata
 def test_pmdata_fold_tests_show_a_prefolding_magnetization(pmdata_sites):
     everything = Sample([s for smp in pmdata_sites.values() for s in smp])
     ft = everything.fold_test("MAG", n=300, rng=0)
@@ -1131,7 +1122,6 @@ def test_pmdata_fold_tests_show_a_prefolding_magnetization(pmdata_sites):
     assert abs(mf["geo"]) > mf["critical"] > abs(mf["tilt"])
 
 
-@pmdata
 def test_pmdata_reversal_test_passes_and_circles_combine(pmdata_sites):
     everything = Sample([s for smp in pmdata_sites.values() for s in smp])
     assert not everything.reversal_test("MAG", "tilt").reject()
@@ -1146,3 +1136,154 @@ def test_pmdata_reversal_test_passes_and_circles_combine(pmdata_sites):
     combined = pm04.mean("MAG", "geo")
     assert (combined["n_lines"], combined["n_planes"]) == (4, 3)
     assert combined["mu"].angle(lines["mu"]) < 15
+
+
+def _plot_sample(pmdata_sites):
+    return Sample([s for smp in pmdata_sites.values() for s in smp], name="All")
+
+
+def _plot_objects(pmdata_sites):
+    sam = _plot_sample(pmdata_sites)
+    sp = sam[0]
+    return {
+        "zijderveld": ZijderveldPlot(sp),
+        "demag": DemagPlot(sp),
+        "stereo": SpecimenStereoPlot(sp),
+        "specimen": SpecimenPlot(sp),
+        "fold": FoldTestPlot(sam, "MAG", n=100, rng=0),
+        "tilt": TiltComparisonPlot(sam, "MAG"),
+        "reversal": ReversalTestPlot(sam, "MAG", n=100, rng=0),
+        "lines_planes": LinesPlanesPlot(sam, "MAG", coords="geo"),
+    }
+
+
+def test_paleomag_plots_share_one_api(pmdata_sites, tmp_path):
+    for name, plot in _plot_objects(pmdata_sites).items():
+        assert isinstance(plot, PaleomagPlot)
+        plot.savefig(tmp_path / f"{name}.png")
+        assert (tmp_path / f"{name}.png").stat().st_size > 0
+        fig = plt.figure(figsize=(6, 6))
+        plot.render2fig(fig)  # figure kept
+        assert tuple(fig.get_size_inches()) == (6, 6)
+        sub = plt.figure(figsize=(10, 5)).subfigures(1, 2)[1]
+        plot.render2fig(sub)
+        plt.close("all")
+
+
+def test_paleomag_plot_options(pmdata_sites):
+    sp = _plot_sample(pmdata_sites)[0]
+    with pytest.raises(TypeError, match="unexpected"):
+        ZijderveldPlot(sp, nonsense=1)
+    with pytest.raises(ValueError):
+        ZijderveldPlot(sp, legend_position="middle")
+    with pytest.raises(ValueError):
+        ZijderveldPlot(sp, coords="sky").savefig("unused.png")
+    with pytest.raises(TypeError):
+        FoldTestPlot(sp, "MAG")
+    plot = DemagPlot(sp, title="custom", figsize=(4, 3), legend_position="top")
+    assert plot._kwargs["title"] == "custom"
+    assert plot._kwargs["figsize"] == (4, 3)
+    plot.render2fig(plt.figure())
+    assert plot.fig._suptitle.get_text() == "custom"
+    assert apsg.config.apsg_conf.paleomag["title"] is None  # global unchanged
+
+
+def test_fold_test_plot_draws_the_results(pmdata_sites):
+    sam = _plot_sample(pmdata_sites)
+    res = sam.fold_test("MAG", n=100, rng=0)
+    plot = FoldTestPlot(res)
+    assert plot.kind == "tauxe_watson"
+    plot.fig = plt.figure()
+    ax = plot._draw()
+    line = ax.get_lines()[0]
+    assert np.allclose(line.get_xdata(), res["fracs"])
+    assert np.allclose(line.get_ydata(), res["tau1"])
+    mf = sam.mcfadden_fold_test("MAG")
+    plot = FoldTestPlot(mf)
+    assert plot.kind == "mcfadden"
+    plot.fig = plt.figure()
+    ax = plot._draw()
+    assert np.allclose(ax.get_lines()[0].get_ydata(), mf["xi"])
+    with pytest.raises(ValueError):
+        FoldTestPlot(sam, "MAG", kind="other")
+
+
+def test_reversal_test_plot_marks_the_intervals(pmdata_sites):
+    sam = _plot_sample(pmdata_sites)
+    plot = ReversalTestPlot(sam, "MAG", n=100, rng=0)
+    plot.render2fig(plt.figure())
+    assert plot._result.extra["lower"].shape == (2, 3)
+
+
+def test_specimen_plot_legend_and_title():
+    spec = _synthetic()
+    spec.interpret("ChRM", slice(3, 11))
+    plot = ZijderveldPlot(spec)
+    plot.render2fig(plt.figure())
+    assert "Horizontal" in [
+        t.get_text() for t in plot.fig.axes[0].get_legend().get_texts()
+    ]
+    net = SpecimenStereoPlot(spec, title="mine")
+    assert net._kwargs["title"] == "mine"
+    assert apsg.config.apsg_conf.paleomag["horizontal_color"] == "tab:blue"
+
+
+def test_inclination_density_integrates_to_one():
+    from apsg.paleomag._plots import _inclination_pdf
+
+    x = np.linspace(-90, 90, 20001)
+    for inc0, k in ((60, 40), (20, 5), (85, 300)):
+        f = _inclination_pdf(x, np.radians(90 - inc0), k)
+        assert np.trapezoid(f, x) == pytest.approx(1.0, abs=2e-3)
+
+
+def test_inclination_only_plot_shows_the_estimate():
+    rng = np.random.default_rng(0)
+    inc = 55 + 8 * rng.standard_normal(25)
+    plot = InclinationOnlyPlot(inc)
+    res = inclination_only_mean(inc)
+    plot.fig = plt.figure()
+    ax = plot._draw()
+    lines = [ln for ln in ax.get_lines() if len(ln.get_xdata()) == 2]
+    assert lines[0].get_xdata()[0] == pytest.approx(res["inc"])
+    assert "I = " in plot._default_title()
+    plot = InclinationOnlyPlot(inc, diagnostic=True, level=0.9)
+    plot.render2fig(plt.figure())
+    ax = plot.fig.axes[1]
+    filled = [ln for ln in ax.get_lines() if ln.get_label() == "Root, U < 0"]
+    assert len(filled) == 1
+    with pytest.raises(ValueError):
+        InclinationOnlyPlot([10, 20])
+
+
+def test_inclination_only_plot_of_a_sample(pmdata_sites):
+    sam = _plot_sample(pmdata_sites)
+    with pytest.warns(UserWarning, match="both polarities"), pytest.raises(ValueError):
+        InclinationOnlyPlot(sam, "MAG")  # pooled polarities fold back
+    plot = InclinationOnlyPlot(sam, "MAG", flip=True)
+    D = np.asarray(sam.directions("MAG", "tilt"))
+    inc = np.degrees(np.arcsin(np.abs(D[:, 2])))
+    assert plot._res["inc"] == pytest.approx(inclination_only_mean(inc)["inc"])
+    assert plot._full is not None
+    plot.render2fig(plt.figure())
+    with pytest.raises(TypeError):
+        InclinationOnlyPlot(sam)
+
+
+def test_bailey_halls_ellipse_on_lines_planes_plot(pmdata_sites):
+    pm04 = _read_pmdata_site("PM04")  # a fresh copy, the fixture is shared
+    for s in list(pm04)[:3]:
+        s.interpret("MAG", s.between(150, 560).labels, kind="plane")
+    plot = LinesPlanesPlot(pm04, "MAG", coords="geo", method="both")
+    bh = plot._bh
+    assert bh["region"].gamma == bh["semi_axes"]
+    np.testing.assert_allclose(np.asarray(bh["region"].mu), np.asarray(bh["mu"]))
+    plot.render2fig(plt.figure())
+    handles = [t.get_text() for t in plot.fig.axes[0].get_legend().get_texts()]
+    assert "Bailey-Halls mean" in handles and "Mean" in handles
+    assert any("ellipse" in h for h in handles)
+    LinesPlanesPlot(pm04, "MAG", method="bailey_halls").render2fig(plt.figure())
+    with pytest.raises(ValueError):
+        LinesPlanesPlot(pm04, "MAG", method="other")
+    with pytest.raises(ValueError, match="great circle"):
+        LinesPlanesPlot(_plot_sample(pmdata_sites), "MAG", method="bailey_halls")

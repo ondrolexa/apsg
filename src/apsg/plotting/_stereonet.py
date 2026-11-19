@@ -806,6 +806,10 @@ class StereoNet:
         them) plots the confidence ellipses of the mean lineation and the mean foliation
         normal of Lisle (1989), see ``PairSet.lisle_statistics``.
 
+        A ``ConfidenceRegion`` (e.g. of ``Kent.mean_confidence()`` or the ``region``
+        of ``bailey_halls_mean``) is drawn as given, a cone or an ellipse
+        (``method="region"``, the default for them).
+
         For groups of symmetric tensors (``EllipsoidSet`` or ``Stress3Set``) use
         ``method="jelinek"`` (the default when only tensor sets are passed): the
         confidence ellipses of the principal axes of the mean tensor are plotted (all

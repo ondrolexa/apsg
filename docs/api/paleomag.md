@@ -7,7 +7,7 @@ import it explicitly:
 >>> from apsg.paleomag import *
 >>> s = Specimen.from_file("specimen.rs3")
 >>> s.interpret("ChRM", slice(3, None))
->>> zijderveld_plot(s, coords="tilt")
+>>> ZijderveldPlot(s, coords="tilt").show()
 ```
 
 A [`Specimen`][apsg.paleomag.Specimen] reads PMD, Remasoft RS3 and SQUID files and fits
@@ -46,8 +46,25 @@ specimens for mean directions, fold and reversal tests and virtual geomagnetic p
 
 ### Plots
 
-::: apsg.paleomag.zijderveld_plot
+All plots are `PaleomagPlot` subclasses: keyword arguments override `apsg_conf.paleomag`,
+`show()`, `savefig()` and `render2fig()` work as for `RosePlot` and the fabric plots.
 
-::: apsg.paleomag.demag_plot
+::: apsg.paleomag.PaleomagPlot
 
-::: apsg.paleomag.stereo_plot
+::: apsg.paleomag.ZijderveldPlot
+
+::: apsg.paleomag.DemagPlot
+
+::: apsg.paleomag.SpecimenStereoPlot
+
+::: apsg.paleomag.SpecimenPlot
+
+::: apsg.paleomag.FoldTestPlot
+
+::: apsg.paleomag.TiltComparisonPlot
+
+::: apsg.paleomag.ReversalTestPlot
+
+::: apsg.paleomag.LinesPlanesPlot
+
+::: apsg.paleomag.InclinationOnlyPlot

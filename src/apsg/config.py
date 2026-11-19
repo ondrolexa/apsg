@@ -492,6 +492,43 @@ class FabricplotPathConfig(BaseConfig):
 
 
 @dataclass
+class PaleomagplotConfig(BaseConfig):
+    """Paleomagnetic plots global configuration."""
+
+    title: Any = None
+    figsize: tuple = _figsize((5, 5))
+    title_kws: dict = field(default_factory=dict)
+    legend_position: str = _choice("right", LEGEND_POSITIONS)
+    legend_kws: dict = field(default_factory=dict)
+    level: float = _checked(0.95, lambda v: _number(v) and 0 < v < 1, "in (0, 1)")
+    horizontal_color: str = "tab:blue"
+    vertical_color: str = "tab:green"
+    normal_color: str = "tab:blue"
+    reversed_color: str = "tab:red"
+    mean_color: str = "k"
+    ci_color: str = "tab:orange"
+    ci_alpha: float = _checked(0.25, lambda v: _number(v) and 0 <= v <= 1, "in [0, 1]")
+    grid: bool = True
+
+
+@dataclass
+class QQplotConfig(BaseConfig):
+    """Q-Q plots global configuration."""
+
+    title: Any = None
+    figsize: tuple = _figsize((9, 4.5))
+    title_kws: dict = field(default_factory=dict)
+    legend_position: str = _choice("right", LEGEND_POSITIONS)
+    legend_kws: dict = field(default_factory=dict)
+    level: float = _choice(0.95, (0.90, 0.95, 0.99))
+    color: str = "tab:blue"
+    line_color: str = "k"
+    marker: str = "o"
+    ms: float = _positive(4)
+    grid: bool = True
+
+
+@dataclass
 class AppConfig(BaseConfig):
     """Top-level application configuration."""
 
@@ -549,6 +586,8 @@ class AppConfig(BaseConfig):
         default_factory=FabricplotPointConfig
     )
     fabricplot_path: FabricplotPathConfig = field(default_factory=FabricplotPathConfig)
+    paleomag: PaleomagplotConfig = field(default_factory=PaleomagplotConfig)
+    qqplot: QQplotConfig = field(default_factory=QQplotConfig)
 
 
 apsg_conf = AppConfig()

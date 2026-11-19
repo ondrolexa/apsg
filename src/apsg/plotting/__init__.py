@@ -1,9 +1,11 @@
 from apsg.plotting._fabricplot import FlinnPlot, HsuPlot, RamsayPlot, VollmerPlot
+from apsg.plotting._figureplot import FigurePlot
 from apsg.plotting._plot_artists import (
     FabricPlotArtistFactory,
     RosePlotArtistFactory,
     StereoNetArtistFactory,
 )
+from apsg.plotting._qqplot import FisherQQPlot
 from apsg.plotting._roseplot import RosePlot
 from apsg.plotting._stereo_engine import rotation_from_axis_angle
 from apsg.plotting._stereogrid import StereoGrid
@@ -17,6 +19,8 @@ from apsg.plotting._styles import (
 __all__ = (
     "FabricPlotArtistFactory",
     "FabricPlotStyleFactory",
+    "FigurePlot",
+    "FisherQQPlot",
     "FlinnPlot",
     "HsuPlot",
     "RamsayPlot",

@@ -3204,3 +3204,41 @@ def test_roseplot_angles(angles, direction, zero):
     assert s.ax.get_theta_direction() == direction
     assert np.isclose(s.ax.get_theta_offset(), zero)
     assert RosePlot.from_json(s.to_json())._kwargs["angles"] == angles
+
+
+def test_confidence_region_cone_and_ellipse(monkeypatch):
+    from apsg.feature._distributions import ConfidenceRegion
+
+    mu = vec(120, 40)
+    ax = vec(120, 40).rotate(vec(210, 0), 90)  # perpendicular to mu
+    cone = ConfidenceRegion(mu=mu, level=0.95, alpha=10.0)
+    ell = ConfidenceRegion(
+        mu=mu,
+        level=0.95,
+        axes=(ax, vec(*np.cross(mu, ax))),
+        gamma=(12.0, 5.0),
+    )
+    for region, expected in ((cone, (10.0, 10.0)), (ell, (5.0, 12.0))):
+        s = StereoNet()
+        s.confidence(region)
+        v = _confidence_vectors(s, monkeypatch)
+        v = v[np.isfinite(v[:, 0])]
+        half = len(v) // 2
+        # boundary and its antipode
+        np.testing.assert_allclose(v[half:], -v[:half], atol=1e-12)
+        ang = np.degrees(np.arccos(np.clip(v[:half] @ np.asarray(mu), -1, 1)))
+        assert ang.min() == pytest.approx(expected[0], abs=0.2)
+        assert ang.max() == pytest.approx(expected[1], abs=0.2)
+
+
+def test_confidence_region_rejects_mixed_input():
+    from apsg.feature._distributions import ConfidenceRegion
+
+    region = ConfidenceRegion(mu=vec(120, 40), level=0.95, alpha=10.0)
+    l = linset.random_fisher(n=10)
+    s = StereoNet()
+    with pytest.warns(UserWarning, match="Not valid arguments"):
+        s.confidence(region, l)
+    with pytest.warns(UserWarning, match="Not valid arguments"):
+        s.confidence(l, method="region")
+    assert len(s._artists) == 0

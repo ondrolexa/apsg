@@ -8,8 +8,8 @@ from scipy import optimize, stats
 __all__ = ("inclination_only_mean",)
 
 
-def _theta0_roots(theta, grid=4000):
-    """Roots of McFadden & Reid (1982) eq. 19 on ``(0, pi)`` and their ``U``."""
+def _cubic(theta):
+    """Left side of McFadden & Reid (1982) eq. 19 as a function of ``theta0``."""
     n, sc, ss = len(theta), np.cos(theta).sum(), np.sin(theta).sum()
 
     def f(t):
@@ -19,6 +19,13 @@ def _theta0_roots(theta, grid=4000):
             - 2 * np.sin(t) * np.cos(t) * ss
         )
 
+    return f
+
+
+def _theta0_roots(theta, grid=4000):
+    """Roots of McFadden & Reid (1982) eq. 19 on ``(0, pi)`` and their ``U``."""
+    n = len(theta)
+    f = _cubic(theta)
     x = np.linspace(1e-6, np.pi - 1e-6, grid)
     v = f(x)
     roots = [

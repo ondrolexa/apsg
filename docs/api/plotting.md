@@ -249,6 +249,14 @@ Save and load plots:
 
 ::: apsg.plotting.HsuPlot
 
+### Q-Q plots
+
+::: apsg.plotting.FisherQQPlot
+
+### Base class
+
+::: apsg.plotting.FigurePlot
+
 ### Styles
 
 ::: apsg.plotting.StereoNetStyleFactory

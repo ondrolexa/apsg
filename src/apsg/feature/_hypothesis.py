@@ -370,6 +370,43 @@ _FISHER_GOF_POINTS = {
 }
 
 
+def fisher_qq_data(X):
+    """Ordered colatitude and longitude statistics of directions about their mean.
+
+    The ingredients of ``fisher_goodness_of_fit`` and of Q-Q plots of the Fisher
+    model. The data are rotated to their mean direction, ``x = 1 - cos(theta')``
+    of the colatitudes is approximately exponential with rate ``k = (n - 1) /
+    sum(x)`` and the longitudes are uniform (FLE sec. 5.3.4).
+
+    Args:
+        X: ``(n, 3)`` array of unit vectors.
+
+    Returns:
+        dict: ``n``, ``k``, ordered ``x`` (colatitude statistic), ordered
+        uniform scores ``u`` of the longitudes (in (0, 1)), the Kolmogorov
+        statistic ``D`` of ``x`` against the exponential and the Kuiper
+        statistic ``V`` of ``u``.
+    """
+    X = np.asarray(X, dtype=float)
+    n = len(X)
+    mean = X.sum(axis=0)
+    mean = mean / np.linalg.norm(mean)
+    ref = np.eye(3)[np.argmin(np.abs(mean))]
+    e1 = np.cross(ref, mean)
+    e1 = e1 / np.linalg.norm(e1)
+    e2 = np.cross(mean, e1)
+    c = np.clip(X @ mean, -1, 1)
+    x = np.sort(1 - c)
+    k = (n - 1) / np.sum(x)
+    i = np.arange(1, n + 1)
+    F = 1 - np.exp(-k * x)
+    D = max(np.max(i / n - F), np.max(F - (i - 1) / n))
+    phi = np.arctan2(X @ e2, X @ e1)
+    u = _uniform_scores(phi)
+    V = np.max(i / n - u) + np.max(u - (i - 1) / n)
+    return {"n": n, "k": float(k), "x": x, "u": u, "D": float(D), "V": float(V)}
+
+
 def fisher_goodness_of_fit(X, level=0.95):
     """Goodness-of-fit tests of the Fisher distribution.
 
@@ -398,24 +435,9 @@ def fisher_goodness_of_fit(X, level=0.95):
     """
     if level not in _FISHER_GOF_POINTS:
         raise ValueError("level must be 0.90, 0.95 or 0.99")
-    X = np.asarray(X, dtype=float)
-    n = len(X)
-    mean = X.sum(axis=0)
-    mean = mean / np.linalg.norm(mean)
-    ref = np.eye(3)[np.argmin(np.abs(mean))]
-    e1 = np.cross(ref, mean)
-    e1 = e1 / np.linalg.norm(e1)
-    e2 = np.cross(mean, e1)
-    c = np.clip(X @ mean, -1, 1)
-    x = np.sort(1 - c)
-    k = (n - 1) / np.sum(x)
-    i = np.arange(1, n + 1)
-    F = 1 - np.exp(-k * x)
-    D = max(np.max(i / n - F), np.max(F - (i - 1) / n))
+    q = fisher_qq_data(X)
+    n, k, D, V = q["n"], q["k"], q["D"], q["V"]
     m_e = (D - 0.2 / n) * (np.sqrt(n) + 0.26 + 0.5 / np.sqrt(n))
-    phi = np.arctan2(X @ e2, X @ e1)
-    u = _uniform_scores(phi)
-    V = np.max(i / n - u) + np.max(u - (i - 1) / n)
     m_u = V * (np.sqrt(n) - 0.467 + 1.623 / np.sqrt(n))
     crit_e, crit_u = _FISHER_GOF_POINTS[level]
     source = "Fisher, Lewis & Embleton (1987), eq. 5.15-5.16"

@@ -8,7 +8,7 @@ statistics themselves come from the feature sets (``fisher_statistics``,
 
 import numpy as np
 
-from apsg.feature._distributions import ESAG, Kent
+from apsg.feature._distributions import ESAG, ConfidenceRegion, Kent
 from apsg.math._vector import Axial3, Vector3
 
 CONFIDENCE_METHODS = (
@@ -21,6 +21,7 @@ CONFIDENCE_METHODS = (
     "esag",
     "jelinek",
     "lisle",
+    "region",
 )
 
 # confidence methods given by the confidence region of a fitted distribution
@@ -93,7 +94,8 @@ def confidence_curve(
     """Return the boundary of the confidence region of `fset` by `method`.
 
     Args:
-        fset: ``Vector3Set`` (methods "fisher", "watson", "bootstrap",
+        fset: ``ConfidenceRegion`` (method "region", a cone or an ellipse as
+            given), ``Vector3Set`` (methods "fisher", "watson", "bootstrap",
             "bootstrap_ellipse", "bingham", "kent", "esag"), ``EllipsoidSet``/``Stress3Set`` (method
             "jelinek") or ``PairSet``/``FaultSet`` (method "lisle").
         method (str): one of ``CONFIDENCE_METHODS``.
@@ -140,6 +142,12 @@ def confidence_curve(
             return np.vstack(
                 [bingham_curve(stats["lin"]), gap, bingham_curve(stats["fol"])]
             )
+        case "region":
+            if not isinstance(fset, ConfidenceRegion):
+                raise TypeError("method 'region' needs ConfidenceRegion objects")
+            if fset.kind == "cone":
+                return cone_curve(fset.mu, fset.alpha)
+            return bingham_curve(fset.as_dict())
         case "jelinek":
             ellipses = fset.mean_tensor(
                 level=level, normalize=normalize, anisoft=anisoft

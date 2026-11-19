@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 from scipy import stats
 
-from apsg import fol, lin, linset, pair, vec, vec2, vecset
+from apsg import data, fol, lin, linset, pair, vec, vec2, vecset
 from apsg.feature import (
     Direction,
     Foliation,
@@ -1204,8 +1204,9 @@ def test_bingham_ellipse_coverage_and_orientation():
 # Pairs (Lisle) ----------------------------------------------------------------
 
 # Lisle (1989), table 2: bedding/cleavage intersection lineations and bedding
-LISLE_LINEATIONS = [(58, 20), (46, 53), (32, 32), (79, 10)]
-LISLE_BEDDING = [(30, 23), (129, 86), (34, 32), (145, 24)]
+_LISLE = data.load("lisle_1989")
+LISLE_LINEATIONS = [tuple(x.geo) for x in _LISLE["lineations"]]
+LISLE_BEDDING = [tuple(x.geo) for x in _LISLE["bedding"]]
 
 
 def _lisle_pairs():

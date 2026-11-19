@@ -24,7 +24,7 @@ from pathlib import Path
 import numpy as np
 
 from apsg.feature._container import FoliationSet, Vector3Set
-from apsg.feature._distributions._base import as_rng
+from apsg.feature._distributions._base import ConfidenceRegion, as_rng
 from apsg.feature._geodata import Foliation, Lineation
 from apsg.feature._hypothesis import TestResult, common_mean_test
 from apsg.feature._tensor3 import OrientationTensor3, Rotation3
@@ -260,8 +260,13 @@ def _demag_from_labels(labels):
 
 
 def _read_lines(filename):
-    with open(filename, encoding="latin-1") as f:
-        text = f.read()
+    if hasattr(filename, "read"):  # open file (text or binary)
+        text = filename.read()
+        if isinstance(text, bytes):
+            text = text.decode("latin-1")
+    else:
+        with open(filename, encoding="latin-1") as f:
+            text = f.read()
     return text.split("\x1a")[0].splitlines()
 
 
@@ -628,7 +633,7 @@ class Specimen:
         of the file is used; a warning is issued when neither does.
 
         Args:
-            filename: path of the file.
+            filename: path of the file, or an open file object.
             demag: ``"thermal"`` or ``"af"``; guessed from the labels if None.
         """
         lines = [ln.translate(_PMD_GREEK) for ln in _read_lines(filename)]
@@ -1127,8 +1132,9 @@ def bailey_halls_mean(lines, poles, level=0.95):
 
     Returns:
         dict: ``mu`` (``Vector3``), ``k``, ``omega``, ``semi_axes`` (degrees,
-            major first), ``axes`` (two ``Vector3`` along them), ``n_lines``
-            and ``n_planes``.
+            major first), ``axes`` (two ``Vector3`` along them), ``region``
+            (the ellipse as ``ConfidenceRegion``, plottable by
+            ``StereoNet.confidence``), ``n_lines`` and ``n_planes``.
 
     References:
         Bailey, R.C. & Halls, H.C. (1984). Estimate of confidence in
@@ -1174,12 +1180,17 @@ def bailey_halls_mean(lines, poles, level=0.95):
     C2 = S * Fq / (M + N / 2 - 1)
     semi = np.degrees(np.sqrt(C2 / np.maximum(mu_, 1e-300)))
     order = np.argsort(semi)[::-1]
+    semi_axes = tuple(float(semi[i]) for i in order)
+    axes = tuple(Vector3(B @ W[:, i]) for i in order)
     return {
         "mu": Vector3(t),
         "k": float(k),
         "omega": float(omega),
-        "semi_axes": tuple(float(semi[i]) for i in order),
-        "axes": tuple(Vector3(B @ W[:, i]) for i in order),
+        "semi_axes": semi_axes,
+        "axes": axes,
+        "region": ConfidenceRegion(
+            mu=Vector3(t), level=level, axes=axes, gamma=semi_axes
+        ),
         "n_lines": M,
         "n_planes": N,
     }

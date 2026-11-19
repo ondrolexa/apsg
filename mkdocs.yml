@@ -132,7 +132,6 @@ validation:
 
 exclude_docs: |
   notebooks/rerender_notebooks.sh
-  notebooks/pmdata/README.md
 
 nav:
   - Home: index.md
@@ -156,6 +155,7 @@ nav:
       - pandas: api/pandas.md
       - database: api/database.md
       - paleomag: api/paleomag.md
+      - data: api/data.md
       - math: api/math.md
       - config: api/config.md
       - helpers: api/helpers.md

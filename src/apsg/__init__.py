@@ -169,6 +169,7 @@ from apsg.plotting import (
     FabricPlotStyleFactory as fabricplot_styles,
 )
 from apsg.plotting import (
+    FisherQQPlot,
     FlinnPlot,
     HsuPlot,
     RamsayPlot,
@@ -187,6 +188,7 @@ from apsg.plotting import (
 )
 
 __all__ = (
+    "FisherQQPlot",
     "FlinnPlot",
     "G",
     "HsuPlot",
