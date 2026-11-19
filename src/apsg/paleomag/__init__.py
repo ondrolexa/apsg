@@ -3,8 +3,10 @@
 Not imported by ``from apsg import *``; use ``from apsg.paleomag import *``.
 """
 
+from apsg.paleomag._components import ComponentCriteria
 from apsg.paleomag._inclination import inclination_only_mean
 from apsg.paleomag._plots import (
+    ComponentSearchPlot,
     DemagPlot,
     FoldTestPlot,
     InclinationOnlyPlot,
@@ -39,6 +41,8 @@ from apsg.paleomag._specimen import (
 
 __all__ = (
     "Component",
+    "ComponentCriteria",
+    "ComponentSearchPlot",
     "DemagPlot",
     "DemagStep",
     "FoldTestPlot",

@@ -134,6 +134,20 @@ _FILES = {
         17,
         file="trebic.zip",
     ),
+    "rs3_components": Dataset(
+        "rs3_components",
+        "paleomag",
+        "Six thermally demagnetized specimens of five sites (Remasoft RS3 files) with their "
+        "interpretation: the component (C) and great circle (G) rows are imported as "
+        "``Specimen.components`` (dict of ``Sample`` by site, or one ``Sample`` with ``site=``).",
+        "author's unpublished data: weak sediments measured on a 2G magnetometer and "
+        "interpreted in Remasoft",
+        6,
+        "Examples of the picks to compare with the automatic search of components: three "
+        "picks with and without the origin variant, a great circle, a single pick, and "
+        "specimens with noisy last steps. The picks need not be correct.",
+        file="rs3_components.zip",
+    ),
     "ams_table": Dataset(
         "ams_table",
         "ams",
@@ -168,6 +182,7 @@ _FILE_LOADERS = {
     "melechov_aex": L.load_melechov_aex,
     "trebic": L.load_trebic,
     "trebic_aex": L.load_trebic_aex,
+    "rs3_components": L.load_rs3_components,
     "ams_table": L.load_ams_table,
     "ams_table_no_tensor": L.load_ams_table_no_tensor,
 }

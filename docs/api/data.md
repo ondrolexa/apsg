@@ -19,7 +19,7 @@ cited from textbooks and papers (Fisher 1953, Fisher, Lewis & Embleton 1987, Fis
 Jupp 2000, Tauxe 2003, Lisle 1989, ...), and **synthetic** data with known properties generated with
 fixed seeds (Fisher, Kent, Watson and uniform samples, a folded
 bedding set, AMS and stress tensors, faults). `pmdata` is artificial: names, locations and
-numbers are invented. `melechov`, `melechov_aex`, `trebic`, `trebic_aex`, `ams_table` and `ams_table_no_tensor` are real AMS measurements, the author's unpublished data.
+numbers are invented. `melechov`, `melechov_aex`, `trebic`, `trebic_aex`, `ams_table`, `ams_table_no_tensor` (AMS) and `rs3_components` (paleomagnetism) are real measurements, the author's unpublished data.
 
 ## Available data
 
@@ -35,6 +35,7 @@ numbers are invented. `melechov`, `melechov_aex`, `trebic`, `trebic_aex`, `ams_t
 | `melechov_aex` | table | 51 | Anisoft AEX export of ``melechov``: mean susceptibility Km (SI), anisotropy degree P and shape parameter T of every measurement, indexed by specimen name. | author's unpublished data: measured on an AGICO Kappabridge, exported from Anisoft |
 | `trebic` | ams | 17 | AMS of 17 measured specimens of two sites (E236-2, TR1), as dict of ``AMSSite`` by site, read from the ASC reports (E236-2 in the layout of SUFAR 1.1 with a field column, TR1 of SUSAR with the code 12 90 12 0); ``format="ran"`` reads the RAN files of the same measurements, ``site=`` one site. | author's unpublished data: measured on an AGICO Kappabridge, reports of SUFAR 1.1 and SUSAR, RAN files and AEX tables exported from Anisoft |
 | `trebic_aex` | table | 17 | Anisoft AEX tables of ``trebic``: specimen name, mean susceptibility Km, the principal susceptibilities K1-K3, L, F, P, P', T, U and the directions of the axes in geographic coordinates (the table names differ from those of the reports). | author's unpublished data: measured on an AGICO Kappabridge, exported from Anisoft |
+| `rs3_components` | paleomag | 6 | Six thermally demagnetized specimens of five sites (Remasoft RS3 files) with their interpretation: the component (C) and great circle (G) rows are imported as ``Specimen.components`` (dict of ``Sample`` by site, or one ``Sample`` with ``site=``). | author's unpublished data: weak sediments measured on a 2G magnetometer and interpreted in Remasoft |
 | `ams_table` | ams | 3 | Table exported by Anisoft with the tensor components k11 ... k13 of three specimens (geographic coordinates; ``frame="specimen"`` reads them as specimen coordinates). | author's unpublished data: AMS measured on an AGICO Kappabridge, exported from Anisoft |
 | `ams_table_no_tensor` | ams | 6 | Anisoft export without tensor components: six specimens of two sites (GC2, GC4) with the principal directions and L, F, from which the normed tensors are rebuilt. | author's unpublished data: AMS measured on an AGICO Kappabridge, exported from Anisoft |
 | `fisher_1953` | vectors | 9 | Remanent magnetization of nine specimens of the 1947-48 Icelandic lava flow (declination, inclination). | Fisher, R.A. (1953) Dispersion on a sphere. Proc. R. Soc. London A 217, 295-305, Table 1; also Mardia & Jupp (2000) Table 9.1. |

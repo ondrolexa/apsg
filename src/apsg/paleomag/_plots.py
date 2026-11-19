@@ -9,6 +9,7 @@ fill a figure.
 
 from typing import ClassVar
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.special import ive
 
@@ -110,6 +111,29 @@ def _zijderveld_on(ax, specimen, coords, cfg):
     return unit
 
 
+def _components_on(ax, specimen, coords):
+    """Mark the steps of the stored line components in the orthogonal projections and
+    draw each fitted line through the centre of mass of its steps."""
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    V = np.asarray(specimen.vectors(coords), dtype=float)
+    labels = {lab: i for i, lab in enumerate(specimen.labels)}
+    for k, (name, comp) in enumerate(specimen.components.items()):
+        idx = [labels[lab] for lab in comp.labels if lab in labels]
+        if comp.kind != "line" or len(idx) < 2:
+            continue
+        color = colors[k % len(colors)]
+        pts = V[idx]
+        v = np.asarray(comp.transform(specimen.rotation(coords), coords).vector, float)
+        center = np.zeros(3) if comp.anchor else pts.mean(axis=0)
+        t = (pts - center) @ v
+        ends = center + np.outer([t.min(), t.max()], v)
+        N, E, Z = pts.T
+        ax.plot(E, N, "o", mfc="none", mec=color, ms=9, label=name)
+        ax.plot(E, -Z, "o", mfc="none", mec=color, ms=9)
+        ax.plot(ends[:, 1], ends[:, 0], "-", color=color, lw=1.5)
+        ax.plot(ends[:, 1], -ends[:, 2], "-", color=color, lw=1.5)
+
+
 def _demag_on(ax, specimen):
     M = specimen.intensity
     lv = specimen.levels
@@ -135,20 +159,24 @@ class ZijderveldPlot(PaleomagPlot):
 
     Keyword Args:
         coords (str): ``"specimen"``, ``"geo"`` (default) or ``"tilt"``.
+        components (bool): ring the steps of the stored line components and
+            draw their fitted lines (see ``Specimen.interpret``,
+            ``Specimen.interpret_auto``). Default False.
         **kwargs: the keyword arguments of ``PaleomagPlot``.
     """
 
     window_title = "Zijderveld plot"
-    _options: ClassVar[dict] = {"coords": "geo"}
+    _options: ClassVar[dict] = {"coords": "geo", "components": False}
 
     def _default_title(self):
         return f"{_title(self.data)}\n{_TITLES[_check_coords(self._opts['coords'])]}"
 
     def _draw(self):
         ax = self.fig.subplots()
-        self._unit = _zijderveld_on(
-            ax, self.data, _check_coords(self._opts["coords"]), self._kwargs
-        )
+        coords = _check_coords(self._opts["coords"])
+        self._unit = _zijderveld_on(ax, self.data, coords, self._kwargs)
+        if self._opts["components"]:
+            _components_on(ax, self.data, coords)
         return ax
 
     def _legend_defaults(self):
@@ -171,6 +199,79 @@ class DemagPlot(PaleomagPlot):
     def _draw(self):
         ax = self.fig.subplots()
         _demag_on(ax, self.data)
+        return ax
+
+
+class ComponentSearchPlot(PaleomagPlot):
+    """MAD of every window of steps of a ``Specimen``, for the automatic search of components.
+
+    Each point is a window from the step on the vertical axis to the step on the
+    horizontal axis, coloured by the MAD of its free line fit (capped at twice the
+    limit); windows over the limit of the criteria are grey. The segments chosen by
+    ``Specimen.find_components`` are outlined; they show how the limit and the
+    minimum number of steps shape the result.
+
+    Args:
+        specimen: ``Specimen``.
+
+    Keyword Args:
+        min_steps (int): smallest window, default 4.
+        criteria (ComponentCriteria): the limits, ``SEARCH_CRITERIA`` by default.
+        max_components (int): largest number of segments, default 3.
+        **kwargs: the keyword arguments of ``PaleomagPlot``.
+    """
+
+    window_title = "Component search"
+    _options: ClassVar[dict] = {
+        "min_steps": 4,
+        "criteria": None,
+        "max_components": 3,
+    }
+
+    def __init__(self, specimen, **kwargs):
+        super().__init__(specimen, **kwargs)
+        if "figsize" not in kwargs:
+            self._kwargs["figsize"] = (7, 6)
+
+    def _default_title(self):
+        return f"{_title(self.data)}: MAD of the windows"
+
+    def _draw(self):
+        from apsg.paleomag._components import SEARCH_CRITERIA
+
+        spec = self.data
+        crit = self._opts["criteria"] or SEARCH_CRITERIA
+        table = spec.window_fits(min_steps=self._opts["min_steps"])
+        ax = self.fig.subplots()
+        lim = crit.mad_max or 10.0
+        ok = table["mad"] <= lim
+        ax.scatter(
+            table["end"][~ok], table["start"][~ok], s=60, color="0.85", marker="s"
+        )
+        sc = ax.scatter(
+            table["end"][ok], table["start"][ok], s=60, c=table["mad"][ok],
+            cmap="viridis_r", vmin=0, vmax=lim, marker="s",
+        )  # fmt: skip
+        self.fig.colorbar(sc, ax=ax, label="MAD [deg]")
+        colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+        comps = spec.find_components(
+            crit, max_components=self._opts["max_components"], coords="specimen"
+        )
+        labels = {lab: i for i, lab in enumerate(spec.labels)}
+        for k, comp in enumerate(comps):
+            i, j = labels[comp.labels[0]], labels[comp.labels[-1]]
+            ax.add_patch(
+                plt.Rectangle(
+                    (j - 0.5, i - 0.5), 1, 1, fill=False, lw=2.5,
+                    ec=colors[k % len(colors)], label=f"C{k + 1} (MAD {comp.mad:.1f})",
+                )
+            )  # fmt: skip
+        ticks = range(len(spec))
+        ax.set_xticks(ticks, [f"{lv:g}" for lv in spec.levels], rotation=90)
+        ax.set_yticks(ticks, [f"{lv:g}" for lv in spec.levels])
+        ax.set_xlabel("Last step of the window")
+        ax.set_ylabel("First step of the window")
+        ax.set_aspect(1)
         return ax
 
 

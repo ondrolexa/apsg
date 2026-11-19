@@ -11,7 +11,9 @@ import it explicitly:
 ```
 
 A [`Specimen`][apsg.paleomag.Specimen] reads PMD, Remasoft RS3, SQUID, AGICO JR6, Caltech CIT and 2G Enterprises files (several specimens per file through [`Sample.from_file`][apsg.paleomag.Sample.from_file]) and fits
-components by principal component analysis; a [`Sample`][apsg.paleomag.Sample] collects
+components by principal component analysis, by hand or by the automatic search of
+[`Specimen.find_components`][apsg.paleomag.Specimen.find_components] (windows of steps, dynamic-programming
+segments, site stacking with [`Sample.stack`][apsg.paleomag.Sample.stack]); a [`Sample`][apsg.paleomag.Sample] collects
 specimens for mean directions, fold and reversal tests and virtual geomagnetic poles.
 
 ### Specimens and samples
@@ -23,6 +25,8 @@ specimens for mean directions, fold and reversal tests and virtual geomagnetic p
 ::: apsg.paleomag.DemagStep
 
 ::: apsg.paleomag.Component
+
+::: apsg.paleomag.ComponentCriteria
 
 ### Functions
 
@@ -62,6 +66,8 @@ All plots are `PaleomagPlot` subclasses: keyword arguments override `apsg_conf.p
 ::: apsg.paleomag.DemagPlot
 
 ::: apsg.paleomag.KappaTPlot
+
+::: apsg.paleomag.ComponentSearchPlot
 
 ::: apsg.paleomag.SpecimenStereoPlot
 

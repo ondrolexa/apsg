@@ -260,6 +260,10 @@ class Component:
         coords: coordinate system of `vector`.
         origin: True when the origin was added as a data point of the fit
             (the ``O`` variant of Remasoft).
+        alpha: angle in degrees between the free and the origin-anchored line fit
+            of the same steps (None when not computed, see `Specimen.find_components`).
+        levels: first and last treatment level of the steps used (None when
+            unknown).
     """
 
     kind: str
@@ -271,6 +275,8 @@ class Component:
     anchor: bool = False
     coords: str = "specimen"
     origin: bool = False
+    alpha: float | None = None
+    levels: tuple | None = None
 
     def __repr__(self):
         azi, inc = self.vector.geo
@@ -296,13 +302,24 @@ class Component:
     def to_json(self):
         """Return as JSON dict."""
         d = {k: getattr(self, k) for k in self.__dataclass_fields__}
-        return {**d, "vector": list(self.vector), "labels": list(self.labels)}
+        return {
+            **d,
+            "vector": list(self.vector),
+            "labels": list(self.labels),
+            "levels": None if self.levels is None else list(self.levels),
+        }
 
     @classmethod
     def from_json(cls, d):
         """Return ``Component`` from a dict of `to_json`."""
+        levels = d.get("levels")
         return cls(
-            **{**d, "vector": Vector3(d["vector"]), "labels": tuple(d["labels"])}
+            **{
+                **d,
+                "vector": Vector3(d["vector"]),
+                "labels": tuple(d["labels"]),
+                "levels": None if levels is None else tuple(levels),
+            }
         )
 
 
@@ -644,6 +661,7 @@ class Specimen:
             tuple(sub.labels),
             anchor,
             origin=origin,
+            levels=(float(np.min(sub.levels)), float(np.max(sub.levels))),
         )
         if coords == "specimen":
             return comp
@@ -660,6 +678,57 @@ class Specimen:
         )
         self.components[name] = comp
         return comp.transform(self.rotation("geo"), "geo")
+
+    def window_fits(self, min_steps=4, max_steps=None, steps=None):
+        """Line fits of every contiguous window of steps, as a ``DataFrame``.
+
+        See `apsg.paleomag._components.window_fits`.
+        """
+        from apsg.paleomag._components import window_fits
+
+        return window_fits(self, min_steps, max_steps, steps)
+
+    def find_component(self, criteria=None, **kwargs):
+        """The best single line component by the acceptance criteria, or None.
+
+        Keyword arguments: `score`, `end`, `tail`, `alpha_max`, `steps`, `coords`; see
+        `apsg.paleomag._components.find_component`.
+        """
+        from apsg.paleomag._components import find_component
+
+        return find_component(self, criteria, **kwargs)
+
+    def find_components(self, criteria=None, **kwargs):
+        """Split the demagnetization path into a few linear components.
+
+        Keyword arguments: `max_components`, `segment_penalty`, `skip_penalty`,
+        `share_boundary`, `steps`, `coords`; see
+        `apsg.paleomag._components.find_components`. The result is a heuristic and
+        should be checked on the Zijderveld diagram.
+        """
+        from apsg.paleomag._components import find_components
+
+        return find_components(self, criteria, **kwargs)
+
+    def interpret_auto(self, prefix="C", criteria=None, **kwargs):
+        """Find the components automatically and store them as ``C1``, ``C2``, ...
+
+        The components found by `find_components` replace those stored under
+        `prefix` followed by a number.
+
+        Returns:
+            list of Component: the components in geographic coordinates.
+        """
+        kwargs["coords"] = "specimen"
+        comps = self.find_components(criteria, **kwargs)
+        for key in [
+            k for k in self.components if re.fullmatch(f"{re.escape(prefix)}\\d+", k)
+        ]:
+            del self.components[key]
+        for i, comp in enumerate(comps, start=1):
+            self.components[f"{prefix}{i}"] = comp
+        R = self.rotation("geo")
+        return [c.transform(R, "geo") for c in comps]
 
     def component(self, name, coords="geo"):
         """Return the stored component `name` in `coords`."""
@@ -1896,7 +1965,7 @@ class Sample:
         kw = obj_json["kwargs"]
         return cls([Specimen.from_json(s) for s in kw["specimens"]], name=kw["name"])
 
-    def _components(self, name, coords, kind=None):
+    def _components(self, name, coords, kind=None, criteria=None):
         pairs = [
             (s, s.component(name, coords))
             for s in self.specimens
@@ -1904,20 +1973,84 @@ class Sample:
         ]
         if kind is not None:
             pairs = [(s, c) for s, c in pairs if c.kind == kind]
+        if criteria is not None:
+            passed = [(s, c) for s, c in pairs if criteria.passes(c)]
+            if len(passed) < len(pairs):
+                warnings.warn(
+                    f"{len(pairs) - len(passed)} of {len(pairs)} components {name!r} "
+                    "fail the acceptance criteria and were left out",
+                    stacklevel=3,
+                )
+            pairs = passed
         return pairs
 
-    def directions(self, name, coords="geo"):
-        """Line components `name` as ``Vector3Set`` of unit vectors."""
-        comps = self._components(name, coords, "line")
+    def grade(self, name, criteria=None):
+        """Grade the components `name` against acceptance criteria.
+
+        Args:
+            name: component name.
+            criteria: ``ComponentCriteria``, the PmagPy defaults (at least 4 steps,
+                MAD <= 5, DANG <= 10 degrees) if None.
+
+        Returns:
+            pandas.DataFrame: ``specimen``, ``kind``, ``n``, ``mad``, ``dang``, ``alpha``,
+            ``passed`` and the text of the criteria ``failed``.
+        """
+        from apsg.paleomag._components import grade_sample
+
+        return grade_sample(self, name, criteria)
+
+    def interpret_auto(self, prefix="C", criteria=None, **kwargs):
+        """Find the components of every specimen (`Specimen.interpret_auto`).
+
+        Returns:
+            dict: the components in geographic coordinates by specimen name.
+        """
+        return {
+            s.name: s.interpret_auto(prefix, criteria, **kwargs) for s in self.specimens
+        }
+
+    def interpret(
+        self, name, min_level, max_level, kind="line", anchor=False, origin=False
+    ):
+        """Fit the same range of treatment levels in every specimen.
+
+        Returns:
+            int: the number of specimens fitted (those with too few steps are skipped
+            with a warning).
+        """
+        from apsg.paleomag._components import interpret_levels
+
+        return interpret_levels(self, name, min_level, max_level, kind, anchor, origin)
+
+    def stack(self, coords="geo", normalize="nrm", min_specimens=3):
+        """Stack the specimens step by step into one pseudo-specimen.
+
+        See `apsg.paleomag._components.stack_sample`: the vectors of the
+        specimens at each shared treatment level are averaged, in `coords`.
+        """
+        from apsg.paleomag._components import stack_sample
+
+        return stack_sample(self, coords, normalize, min_specimens)
+
+    def directions(self, name, coords="geo", criteria=None):
+        """Line components `name` as ``Vector3Set`` of unit vectors.
+
+        Components failing `criteria` (``ComponentCriteria``) are left out."""
+        comps = self._components(name, coords, "line", criteria)
         return Vector3Set([c.vector.normalized() for _, c in comps], name=self.name)
 
-    def planes(self, name, coords="geo"):
-        """Plane components `name` as ``FoliationSet``."""
-        comps = self._components(name, coords, "plane")
+    def planes(self, name, coords="geo", criteria=None):
+        """Plane components `name` as ``FoliationSet``.
+
+        Components failing `criteria` (``ComponentCriteria``) are left out."""
+        comps = self._components(name, coords, "plane", criteria)
         return FoliationSet([c.fol for _, c in comps], name=self.name)
 
-    def mean(self, name, coords="geo", level=0.95):
+    def mean(self, name, coords="geo", level=0.95, criteria=None):
         """Mean direction of the components `name`.
+
+        Components failing `criteria` (``ComponentCriteria``) are left out.
 
         Fisher statistics (``Vector3Set.fisher_statistics``) when all
         components are lines; with plane components the combined mean of
@@ -1928,7 +2061,7 @@ class Sample:
             dict: ``mu``, ``k``, ``alpha`` (and ``kappa`` for lines only),
                 ``n_lines`` and ``n_planes``.
         """
-        comps = self._components(name, coords)
+        comps = self._components(name, coords, criteria=criteria)
         if not comps:
             raise ValueError(f"No specimen of {self.name} has component {name!r}")
         lines = [c.vector for _, c in comps if c.kind == "line"]

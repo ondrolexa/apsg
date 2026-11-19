@@ -294,3 +294,30 @@ def load_ams_table_no_tensor(**kw):
 
     kw.setdefault("site", lambda n: n.split("_")[0])
     return read_anisoft_table(file("ams_table_no_tensor.txt"), **kw)
+
+
+def _rs3_names():
+    with zipfile.ZipFile(file("rs3_components.zip")) as z:
+        return sorted(z.namelist(), key=_natural)
+
+
+def load_rs3_components(site=None, **kw):
+    """Six Remasoft RS3 specimens with their interpretation (``C`` and ``G`` rows)."""
+    from apsg.paleomag import Sample, Specimen  # not imported by `import apsg`
+
+    with zipfile.ZipFile(file("rs3_components.zip")) as z:
+        specs = []
+        for n in _rs3_names():
+            with z.open(n) as f:
+                specs.append(Specimen.from_rs3(f, components=True, **kw))
+    sites = Sample(specs).by_site()
+    if site is not None:
+        if site not in sites:
+            raise KeyError(f"unknown site {site!r}, available: {list(sites)}")
+        return sites[site]
+    return sites
+
+
+def rs3_components_folder():
+    """Folder with the RS3 files of ``rs3_components``, extracted once."""
+    return _folder("rs3_components", "rs3_components.zip")
