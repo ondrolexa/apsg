@@ -512,6 +512,31 @@ class PaleomagplotConfig(BaseConfig):
 
 
 @dataclass
+class AmsplotConfig(BaseConfig):
+    """AMS plots global configuration."""
+
+    title: Any = None
+    figsize: tuple = _figsize((5.5, 4.5))
+    title_kws: dict = field(default_factory=dict)
+    legend_position: str = _choice("right", LEGEND_POSITIONS)
+    legend_kws: dict = field(default_factory=dict)
+    level: float = _checked(0.95, lambda v: _number(v) and 0 < v < 1, "in (0, 1)")
+    marker: str = "o"
+    ms: float = _positive(5)
+    alpha: float = _checked(0.8, lambda v: _number(v) and 0 <= v <= 1, "in [0, 1]")
+    mean_marker: str = "*"
+    mean_ms: float = _positive(14)
+    k1_marker: str = "s"
+    k2_marker: str = "^"
+    k3_marker: str = "o"
+    k1_color: str = "tab:blue"
+    k2_color: str = "tab:green"
+    k3_color: str = "tab:red"
+    ellipse_ls: str = "-"
+    grid: bool = True
+
+
+@dataclass
 class QQplotConfig(BaseConfig):
     """Q-Q plots global configuration."""
 
@@ -587,6 +612,7 @@ class AppConfig(BaseConfig):
     )
     fabricplot_path: FabricplotPathConfig = field(default_factory=FabricplotPathConfig)
     paleomag: PaleomagplotConfig = field(default_factory=PaleomagplotConfig)
+    ams: AmsplotConfig = field(default_factory=AmsplotConfig)
     qqplot: QQplotConfig = field(default_factory=QQplotConfig)
 
 

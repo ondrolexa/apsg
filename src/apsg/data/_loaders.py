@@ -82,7 +82,18 @@ def _stress(d, name):
     return Stress3Set([Stress3(m) for m in d["matrices"]], name=name)
 
 
+def _ams(d, name):
+    from apsg.ams import AMSSite, AMSSpecimen
+
+    sites = {}
+    for sp in d["specimens"]:
+        s = AMSSpecimen.from_json(sp)
+        sites.setdefault(s.site, AMSSite(name=s.site)).append(s)
+    return sites
+
+
 KINDS = {
+    "ams": _ams,
     "vectors": _vectors,
     "lines": _lines,
     "planes": _planes,
@@ -109,6 +120,8 @@ def count(kind, data):
     """Number of items of a stored entry (per group for ``groups``)."""
     if "groups" in data:
         return sum(count(s["kind"], s) for s in data["groups"].values())
+    if kind == "ams":
+        return len(data["specimens"])
     if kind in ("tensors", "stress"):
         return len(data["matrices"])
     if kind == "table":

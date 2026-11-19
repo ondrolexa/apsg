@@ -28,7 +28,8 @@ work from an installed wheel as well as from a checkout. Three groups exist:
 
 Entries of kind `groups` return a dict of objects (for example `tauxe_table_4_2` gives
 `{"normal": ..., "reversed": ...}`); `grouped` data (histogram counts) and tables
-return a `pandas.DataFrame`.
+return a `pandas.DataFrame`. `ams_two_sites` (kind `ams`) gives a dict of
+`apsg.ams.AMSSite` by site, with core orientation and bedding of every specimen.
 """
 
 import pandas as pd

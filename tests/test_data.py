@@ -14,6 +14,7 @@ from apsg.feature._hypothesis import fisher_goodness_of_fit
 
 ROOT = Path(__file__).parent.parent
 KINDS = {
+    "ams",
     "vectors",
     "lines",
     "planes",
@@ -51,6 +52,8 @@ def test_every_dataset_loads_with_the_declared_size(name):
     obj = data.load(name)
     if info.kind == "paleomag":
         assert sum(len(s) for s in obj.values()) == info.n
+    elif info.kind == "ams":
+        assert sum(len(v) for v in obj.values()) == info.n
     elif info.kind == "groups":
         assert sum(len(v) for v in obj.values()) == info.n
         assert all(isinstance(v, FeatureSet) for v in obj.values())

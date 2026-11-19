@@ -241,7 +241,7 @@ The statistics methods of the feature sets are built on the distributions:
 ## Weighted data and mixtures
 
 Worked examples are in the [distributions tutorial](notebooks/04_apsg_distributions.ipynb)
-(mixtures and sampling bias) and the [various tutorial](notebooks/07_apsg_various.ipynb)
+(mixtures and sampling bias) and the [various tutorial](notebooks/10_apsg_various.ipynb)
 (`cluster_bingham`).
 
 Measurements taken along a line (borehole, scanline) or on a plane (outcrop)

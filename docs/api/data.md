@@ -61,6 +61,7 @@ numbers are invented.
 | `ams_sites` | tensors | 20 | Anisotropy of magnetic susceptibility tensors of 20 sites with a foliated, weakly lineated fabric. | synthetic, numpy, seed 112 |
 | `stress_tensors` | stress | 15 | 15 stress tensors (compression positive, sigma1 about 210/70, ratio 0.57). | synthetic, numpy, seed 113 |
 | `synthetic_faults` | faults | 60 | 60 normal faults in two conjugate sets (dip directions 60 and 240, dip 60) with dip-slip slickenlines. | synthetic, numpy, seed 114 |
+| `ams_two_sites` | ams | 26 | AMS of two sites, 14 and 12 specimens with core orientation and bedding: oblate grains in flattening (AM1), prolate grains in transpression (AM2). | synthetic, apsg.ams grain models, numpy, seed 115 |
 <!-- catalog:end -->
 
 ## Functions

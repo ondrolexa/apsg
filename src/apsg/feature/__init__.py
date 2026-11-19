@@ -73,7 +73,14 @@ from apsg.feature._hypothesis import (
     watson_u2_test,
 )
 from apsg.feature._sampling import terzaghi_weights
-from apsg.feature._statistics import anisotropy_test, jelinek_shape
+from apsg.feature._statistics import (
+    TensorBootstrap,
+    anisotropy_test,
+    compare_tensor_means,
+    jelinek_shape,
+    tensor_bootstrap,
+    tensor_error_bootstrap,
+)
 from apsg.feature._tensor2 import (
     DeformationGradient2,
     Ellipse,
@@ -146,6 +153,7 @@ __all__ = (
     "Stress2Set",
     "Stress3",
     "Stress3Set",
+    "TensorBootstrap",
     "TestResult",
     "Uniform2",
     "Uniform3",
@@ -164,6 +172,7 @@ __all__ = (
     "axial_common_mean_test",
     "bingham_test",
     "common_mean_test",
+    "compare_tensor_means",
     "equal_kappa_test",
     "fisher_goodness_of_fit",
     "fisher_kent_test",
@@ -174,6 +183,8 @@ __all__ = (
     "likelihood_ratio_test",
     "rao_spacing_test",
     "rayleigh_test",
+    "tensor_bootstrap",
+    "tensor_error_bootstrap",
     "terzaghi_weights",
     "watson_symmetry_test",
     "watson_u2_test",

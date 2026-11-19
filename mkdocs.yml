@@ -144,9 +144,10 @@ nav:
       - Distributions: notebooks/04_apsg_distributions.ipynb
       - Fabric plots: notebooks/05_apsg_fabricplots.ipynb
       - Pandas: notebooks/06_apsg_pandas.ipynb
-      - Various: notebooks/07_apsg_various.ipynb
-      - Database: notebooks/08_apsg_database.ipynb
-      - Paleomagnetism: notebooks/09_apsg_paleomag.ipynb
+      - Database: notebooks/07_apsg_database.ipynb
+      - Paleomagnetism: notebooks/08_apsg_paleomag.ipynb
+      - AMS: notebooks/09_apsg_ams.ipynb
+      - Various: notebooks/10_apsg_various.ipynb
   - Distributions: distributions.md
   - API reference:
       - api/index.md
@@ -155,6 +156,7 @@ nav:
       - pandas: api/pandas.md
       - database: api/database.md
       - paleomag: api/paleomag.md
+      - ams: api/ams.md
       - data: api/data.md
       - math: api/math.md
       - config: api/config.md

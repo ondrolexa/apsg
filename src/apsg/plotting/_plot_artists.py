@@ -430,16 +430,23 @@ class StereoNetArtistFactory:
             )
         if artist.kwargs["which"] not in (None, 0, 1, 2):
             raise ValueError("which must be None, 0, 1 or 2")
-        if tensors and method != "jelinek":
+        if tensors and method not in ("jelinek", "bootstrap_tensor"):
             raise TypeError(
                 "Not valid arguments for Stereonet confidence: "
                 f"method {method!r} is not valid for EllipsoidSet and Stress3Set "
-                "(use method 'jelinek')"
+                "(use method 'jelinek' or 'bootstrap_tensor')"
             )
-        if not tensors and method == "jelinek":
+        if not tensors and method in ("jelinek", "bootstrap_tensor"):
             raise TypeError(
                 "Not valid arguments for Stereonet confidence: "
-                "method 'jelinek' requires EllipsoidSet or Stress3Set"
+                f"method {method!r} requires EllipsoidSet or Stress3Set"
+            )
+        if method == "bootstrap_tensor" and any(
+            isinstance(arg, Stress3Set) for arg in args
+        ):
+            raise TypeError(
+                "Not valid arguments for Stereonet confidence: "
+                "method 'bootstrap_tensor' requires EllipsoidSet"
             )
         if pairs != (method == "lisle"):
             raise TypeError(

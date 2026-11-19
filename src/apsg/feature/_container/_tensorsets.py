@@ -9,7 +9,9 @@ from apsg.feature._container._base import FeatureSet, _per_item
 from apsg.feature._container._vectorsets import Vector2Set, Vector3Set
 from apsg.feature._distributions._rotations import MatrixFisher
 from apsg.feature._statistics import (
+    compare_tensor_means,
     jelinek_statistics,
+    tensor_bootstrap,
 )
 from apsg.feature._tensor2 import Ellipse, OrientationTensor2, Stress2
 from apsg.feature._tensor3 import (
@@ -279,6 +281,69 @@ class EllipsoidSet(FeatureSet):
         """
         self._require(3, "mean_tensor")
         return _mean_tensor(self, level, normalize, anisoft)
+
+    def bootstrap_tensor(self, n_resamples=1000, level=0.95, normalize=False, rng=None):
+        """Bootstrap the mean tensor and the confidence regions of its axes.
+
+        The tensors are resampled with replacement (Constable and Tauxe, 1990),
+        see ``tensor_bootstrap``. The regions need no small-error assumption of
+        ``mean_tensor`` and are larger when eigenvalues are close.
+
+        Args:
+            n_resamples (int): number of bootstrap samples. Default 1000.
+            level (float): confidence level. Default 0.95.
+            normalize (bool): divide each tensor by ``abs(trace) / 3``. Default
+                False.
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+
+        Returns:
+            TensorBootstrap: bootstrapped eigenvalues and eigenvectors, the
+            ``ellipses`` of the axes (as ``mean_tensor``) and eigenvalue
+            ``intervals``.
+        """
+        return tensor_bootstrap(
+            np.array([np.asarray(t) for t in self]),
+            n_resamples=n_resamples,
+            level=level,
+            normalize=normalize,
+            rng=rng,
+        )
+
+    def common_mean_test(
+        self,
+        other,
+        method="hotelling",
+        level=0.95,
+        normalize=False,
+        n_resamples=2000,
+        rng=None,
+    ):
+        """Test whether this and another set have the same mean tensor.
+
+        See ``compare_tensor_means``.
+
+        Args:
+            other (EllipsoidSet): the other sample.
+            method (str): ``"hotelling"`` (default) or ``"permutation"``.
+            level (float): confidence level. Default 0.95.
+            normalize (bool): divide each tensor by ``abs(trace) / 3`` first.
+            n_resamples (int): permutations for ``"permutation"``.
+            rng: None, an integer seed or a ``numpy.random.Generator``.
+
+        Returns:
+            TestResult: ``reject()`` is True when the mean tensors differ.
+        """
+        if not isinstance(other, EllipsoidSet):
+            raise TypeError("other must be an EllipsoidSet")
+        return compare_tensor_means(
+            np.array([np.asarray(t) for t in self]),
+            np.array([np.asarray(t) for t in other]),
+            level=level,
+            normalize=normalize,
+            method=method,
+            n_resamples=n_resamples,
+            rng=rng,
+        )
 
     def transform(self, F):
         """Return transformation of all features ``EllipsoidSet`` by matrix 'F'.

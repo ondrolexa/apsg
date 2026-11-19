@@ -27,6 +27,7 @@ from apsg.feature._distributions._special import (
 )
 from apsg.feature._distributions._spherical import Uniform3, _tangent_basis
 from apsg.feature._geodata import Lineation
+from apsg.feature._tensor3 import OrientationTensor3
 
 
 class AxialUniform3(Uniform3):
@@ -355,10 +356,84 @@ class ACG(OrientationDistribution):
         a, vecs = np.linalg.eigh(np.asarray(matrix, dtype=float))
         return cls(vecs[:, 2], vecs[:, 1], a[::-1])
 
+    @classmethod
+    def from_displacement(cls, D, kind="lines"):
+        """Create ``ACG`` of axes carried by a homogeneous displacement.
+
+        An initially uniform set of axes that is carried by the displacement
+        ``D`` (column vectors, ``x = D x0``) has the density of March (1932)
+        and Willis (1977, eq. 12), which is exactly an angular central
+        Gaussian: ``Lambda = D D'`` for lines (needles, ``sigma = rho^3 /
+        det D``) and ``Lambda = (D D')^-1`` for the poles of plates (March's
+        second ellipsoid, ``sigma = |det D| (u' D D' u)^(-3/2)``).
+
+        For grains that turn in a flow, ``D`` is the pseudo-displacement
+        ``VelocityGradient3.pseudo(K).defgrad(time)``.
+
+        Note:
+            Jezek (2026, eq. 5, 10) writes the strain ellipsoid as ``D'D`` for
+            column vectors, whose eigenvectors differ from those of the
+            fabric (27-76 degrees at shear strains 1-4); ``D D'`` is correct
+            for ``x = D x0``.
+
+        Args:
+            D: nonsingular 3x3 matrix, e.g. a ``DeformationGradient3``.
+            kind: ``"lines"`` (default) or ``"poles"``.
+
+        References:
+            March, A. (1932). Mathematische Theorie der Regelung nach der
+                Korngestalt bei affiner Deformation. Zeitschrift fuer
+                Kristallographie 81, 285-297.
+            Willis, D.G. (1977). A kinematic model of preferred orientation.
+                GSA Bulletin 88, 883-894.
+        """
+        D = np.asarray(D, dtype=float)
+        if D.shape != (3, 3) or not np.all(np.isfinite(D)):
+            raise ValueError("D must be a finite 3x3 matrix")
+        if abs(np.linalg.det(D)) < 1e-12 * max(1.0, np.abs(D).max()) ** 3:
+            raise ValueError("D must be nonsingular")
+        if kind not in ("lines", "poles"):
+            raise ValueError(f"kind must be 'lines' or 'poles', got {kind!r}")
+        L = D @ D.T
+        return cls.from_matrix(L if kind == "lines" else np.linalg.inv(L))
+
     @property
     def matrix(self):
         """ndarray: the matrix ``Lambda``, scaled to trace 3."""
         return self._axes.T @ np.diag(self._shape) @ self._axes
+
+    def ortensor(self):
+        """Return the exact orientation tensor ``E[u u']`` (trace 1).
+
+        With ``u = y / |y|``, ``y ~ N(0, Lambda)``, the eigenvalues are
+        ``tau_i = lambda_i int_0^inf (1 + 2 s lambda_i)^-1 prod_j (1 + 2 s
+        lambda_j)^(-1/2) ds``, evaluated by quadrature after ``s = t / (1 -
+        t)``; the eigenvectors are those of ``Lambda``.
+
+        Returns:
+            OrientationTensor3: orientation tensor of the distribution.
+        """
+        from scipy.integrate import quad
+
+        lam = self._shape
+
+        def integrand(t, i):
+            s = t / (1 - t)
+            return (
+                lam[i]
+                / (1 + 2 * s * lam[i])
+                * np.prod((1 + 2 * s * lam) ** -0.5)
+                / (1 - t) ** 2
+            )
+
+        tau = np.array(
+            [
+                quad(integrand, 0, 1, args=(i,), epsabs=1e-13, epsrel=1e-13)[0]
+                for i in range(3)
+            ]
+        )
+        tau /= tau.sum()
+        return OrientationTensor3(self._axes.T @ np.diag(tau) @ self._axes)
 
     @property
     def params(self):

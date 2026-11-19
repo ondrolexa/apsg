@@ -663,6 +663,31 @@ class VelocityGradient3(Matrix3):
         else:
             return DeformationGradient3(spla.expm(np.asarray(self) * time))
 
+    def pseudo(self, K):
+        """Return the pseudo-velocity-gradient ``K E + W`` of an axial grain.
+
+        A non-interacting rigid grain with kinematic coefficient ``K`` (Jeffery's
+        ``+-(r^2 - 1) / (r^2 + 1)`` for spheroids; see ``grain_K``) turns like
+        a material line carried by this reduced flow, in which the rate of
+        deformation ``E`` is scaled by ``K`` and the spin ``W`` is kept
+        (Willis, 1977, eq. 14). ``K = 1`` is a passive line, ``K = 0`` a grain
+        that only rotates with the spin. ``.defgrad(time)`` of the result is
+        the pseudo-displacement ``D_W``.
+
+        Args:
+            K (float): kinematic coefficient in [-1, 1].
+
+        Returns:
+            VelocityGradient3: the pseudo-velocity-gradient.
+
+        References:
+            Willis, D.G. (1977). A kinematic model of preferred orientation.
+                GSA Bulletin 88, 883-894.
+        """
+        if not -1 <= K <= 1:
+            raise ValueError(f"K must be in [-1, 1], got {K}")
+        return type(self)(K * self.rate() + self.spin())
+
     def rate(self):
         """Return rate of deformation tensor."""
 

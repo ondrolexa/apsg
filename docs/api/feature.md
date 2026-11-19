@@ -332,4 +332,12 @@ See [Orientation distributions](../distributions.md) for an overview.
 
 ::: apsg.feature.anisotropy_test
 
+::: apsg.feature.compare_tensor_means
+
+::: apsg.feature.tensor_bootstrap
+
+::: apsg.feature.tensor_error_bootstrap
+
+::: apsg.feature.TensorBootstrap
+
 ::: apsg.feature.jelinek_shape

@@ -20,6 +20,7 @@ CONFIDENCE_METHODS = (
     "kent",
     "esag",
     "jelinek",
+    "bootstrap_tensor",
     "lisle",
     "region",
 )
@@ -97,15 +98,15 @@ def confidence_curve(
         fset: ``ConfidenceRegion`` (method "region", a cone or an ellipse as
             given), ``Vector3Set`` (methods "fisher", "watson", "bootstrap",
             "bootstrap_ellipse", "bingham", "kent", "esag"), ``EllipsoidSet``/``Stress3Set`` (method
-            "jelinek") or ``PairSet``/``FaultSet`` (method "lisle").
+            "jelinek", "bootstrap_tensor") or ``PairSet``/``FaultSet`` (method "lisle").
         method (str): one of ``CONFIDENCE_METHODS``.
 
     Keyword Args:
         level (float): confidence level. Default 0.95.
         which (int): principal axis for "bingham" (default 0) and "jelinek"
             (default ``None``, all three).
-        n_resamples (int): number of resamples for "bootstrap" and
-            "bootstrap_ellipse".
+        n_resamples (int): number of resamples for "bootstrap",
+            "bootstrap_ellipse" and "bootstrap_tensor".
         normalize (bool): normalize tensors for "jelinek".
         anisoft (bool): AniSoft scaling of the region for "jelinek".
     """
@@ -148,6 +149,11 @@ def confidence_curve(
             if fset.kind == "cone":
                 return cone_curve(fset.mu, fset.alpha)
             return bingham_curve(fset.as_dict())
+        case "bootstrap_tensor":
+            ellipses = fset.bootstrap_tensor(
+                n_resamples=n_resamples, level=level, normalize=normalize
+            ).ellipses
+            return jelinek_curves(ellipses, which)
         case "jelinek":
             ellipses = fset.mean_tensor(
                 level=level, normalize=normalize, anisoft=anisoft

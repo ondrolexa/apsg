@@ -815,7 +815,10 @@ class StereoNet:
         confidence ellipses of the principal axes of the mean tensor are plotted (all
         three, or a single one selected by ``which``), following the linear perturbation
         method of Jelinek (1978). See ``EllipsoidSet.mean_tensor`` and
-        ``Stress3Set.mean_tensor``.
+        ``Stress3Set.mean_tensor``. ``method="bootstrap_tensor"`` (``EllipsoidSet`` only)
+        draws the regions containing the bootstrapped axes of the mean tensor
+        (Constable and Tauxe, 1990, ``EllipsoidSet.bootstrap_tensor``), which are
+        larger than the linearised ones when eigenvalues are close.
 
         Args:
             *args: Vector3Set like feature(s), e.g. LineationSet or FoliationSet, or
@@ -824,18 +827,18 @@ class StereoNet:
 
         Keyword Args:
             method (str): "fisher", "bingham", "watson", "bootstrap",
-                "bootstrap_ellipse", "kent", "esag", "jelinek" or "lisle". Default
+                "bootstrap_ellipse", "kent", "esag", "jelinek", "bootstrap_tensor" or "lisle". Default
                 "fisher" for vector sets, "watson" for lineation and foliation sets (``fisher_statistics`` of
                 axial data is deprecated), "jelinek" for tensor sets and "lisle"
                 for pair and fault sets
             which (int): index (0, 1 or 2) of the eigenvector the ellipse is
-                centered on (``method="bingham"`` and ``method="jelinek"`` only). 0 is
+                centered on (``method="bingham"``, ``"jelinek"`` and ``"bootstrap_tensor"`` only). 0 is
                 the major eigenvector, 2 is the minor (pole) eigenvector. Default None,
                 which means 0 for ``"bingham"`` and, for ``"jelinek"``, the ellipses
                 of all three principal axes of the mean tensor are plotted.
             level (float): confidence level. Default 0.95
-            n_resamples (int): number of bootstrap resamples (``method="bootstrap"``
-                and ``"bootstrap_ellipse"`` only). Default 1000
+            n_resamples (int): number of bootstrap resamples (``method="bootstrap"``,
+                ``"bootstrap_ellipse"`` and ``"bootstrap_tensor"`` only). Default 1000
             normalize (bool): normalize tensors by their mean value before averaging
                 (``method="jelinek"`` only). Default False
             anisoft (bool): multiply the tilts of the principal axes by an extra
