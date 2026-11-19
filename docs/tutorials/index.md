@@ -14,4 +14,4 @@ button to get the notebook and run it yourself.
 | [Pandas](../notebooks/06_apsg_pandas.ipynb) | APSG features in `DataFrame` columns |
 | [Various](../notebooks/07_apsg_various.ipynb) | configuration tricks with `apsg_conf`, stress inversion, `ClusterSet` and `cluster_bingham` |
 | [Database](../notebooks/08_apsg_database.ipynb) | reading and writing PySDB databases |
-| [Paleomagnetism](../notebooks/09_apsg_paleomag.ipynb) | demagnetization data of the Teel basalts: specimens, components, great circles, site means, fold tests, VGP and inclination-only data |
+| [Paleomagnetism](../notebooks/09_apsg_paleomag.ipynb) | artificial demagnetization data: specimens, components, great circles, site means, fold and reversal tests, VGP and inclination-only data |

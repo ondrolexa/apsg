@@ -1041,54 +1041,108 @@ def test_plots():
 
 
 # ---------------------------------------------------------------------------
-# tutorial data (Kilian et al. 2016, docs/notebooks/teel)
+# artificial tutorial data (docs/notebooks/pmdata, made by scripts/make_pmdata.py)
 # ---------------------------------------------------------------------------
 
-TEEL = Path(__file__).parent.parent / "docs" / "notebooks" / "teel"
-teel = pytest.mark.skipif(not TEEL.is_dir(), reason="tutorial data not available")
+PMDATA = Path(__file__).parent.parent / "docs" / "notebooks" / "pmdata"
+pmdata = pytest.mark.skipif(not PMDATA.is_dir(), reason="tutorial data not available")
 
 
-@teel
-def test_teel_files_read_without_orientation_warning():
-    files = sorted(TEEL.glob("*.pmd"))
-    assert len(files) == 67
+def _read_pmdata_site(site, lo=400, hi=580):
+    smp = Sample.from_files(sorted(PMDATA.glob(f"{site}.*.pmd")), name=site)
+    for s in smp:
+        s.interpret("MAG", s.between(lo, hi).labels)
+    return smp
+
+
+@pytest.fixture(scope="module")
+def pmdata_sites():
+    return {f"PM{i:02d}": _read_pmdata_site(f"PM{i:02d}") for i in range(1, 11)}
+
+
+@pmdata
+def test_pmdata_files_read_without_orientation_warning():
+    files = sorted(PMDATA.glob("*.pmd"))
+    assert len(files) == 71
     with warnings.catch_warnings():
         warnings.simplefilter("error")  # a misfit of the Dg/Ig columns warns
         specs = [Specimen.from_pmd(f) for f in files]
-    assert {s.site for s in specs} == {
-        "Z31", "Z34", "Z36", "Z38", "Z40", "Z47", "Z49", "Z51",
-    }  # fmt: skip
+    assert {s.site for s in specs} == {f"PM{i:02d}" for i in range(1, 11)}
     assert all(s.demag == "thermal" and s.steps[0].label == "NRM" for s in specs)
 
 
-@teel
-def test_teel_pca_reproduces_the_published_fits():
-    import pandas as pd
-
-    comps = pd.read_csv(TEEL / "teel_components.csv")
-    mag = comps[comps.component == "MAG"]
-    angles = []
-    for r in mag.itertuples():
-        spec = Specimen.from_pmd(TEEL / f"{r.specimen}.pmd")
-        fit = spec.pca(spec.between(r.step_min, r.step_max).labels, coords="geo")
-        angles.append(fit.vector.angle(Vector3(r.dec_geo, r.inc_geo)))
-    assert np.median(angles) < 0.2 and np.max(angles) < 5
+@pmdata
+def test_pmdata_files_survive_the_whitespace_hooks():
+    for f in sorted(PMDATA.glob("*.pmd")):
+        raw = f.read_bytes()
+        assert raw.endswith(b"\n")
+        assert not any(ln.endswith(b" ") for ln in raw.split(b"\r\n"))
 
 
-@teel
-@pytest.mark.parametrize("site", ["Z31", "Z36", "Z47"])
-def test_teel_site_means_agree_with_the_authors(site):
-    import pandas as pd
+@pmdata
+def test_pmdata_generator_is_reproducible():
+    import importlib.util
 
-    comps = pd.read_csv(TEEL / "teel_components.csv")
-    sites = pd.read_csv(TEEL / "teel_sites.csv", index_col="site")
-    smp = Sample.from_files(sorted(TEEL.glob(f"{site}.*.pmd")), name=site)
-    for s in smp:
-        r = comps[(comps.specimen == s.name) & (comps.component == "MAG")].iloc[0]
-        s.interpret("MAG", s.between(r.step_min, r.step_max).labels)
-    a = sites.loc[site]
-    for coords in ("geo", "tilt"):
-        m = smp.mean("MAG", coords)
-        ref = Vector3(a[f"dec_{coords}"], a[f"inc_{coords}"])
-        assert m["mu"].angle(ref) < 0.3
-        assert m["alpha"] == pytest.approx(a[f"alpha95_{coords}"], abs=0.1)
+    script = PMDATA.parent.parent.parent / "scripts" / "make_pmdata.py"
+    if not script.is_file():
+        pytest.skip("generator script not available")
+    spec = importlib.util.spec_from_file_location("make_pmdata", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    a, b = mod.generate(), mod.generate()
+    for site in a:
+        for x, y in zip(a[site], b[site], strict=True):
+            assert np.array_equal(np.asarray(x.moment), np.asarray(y.moment))
+
+
+@pmdata
+def test_pmdata_lines_are_well_defined(pmdata_sites):
+    mads = [s.components["MAG"].mad for smp in pmdata_sites.values() for s in smp]
+    assert len(mads) == 71
+    assert np.median(mads) < 3 and np.max(mads) < 15
+
+
+@pmdata
+def test_pmdata_tilt_correction_improves_each_polarity(pmdata_sites):
+    everything = Sample([s for smp in pmdata_sites.values() for s in smp])
+    normal = Sample(
+        [s for s in everything if s.component("MAG", "tilt").vector.geo[1] > 0]
+    )
+    reverse = Sample(
+        [s for s in everything if s.component("MAG", "tilt").vector.geo[1] < 0]
+    )
+    assert len(normal) + len(reverse) == 71 and len(reverse) == 23
+    for smp in (normal, reverse):
+        assert smp.mean("MAG", "tilt")["k"] > 3 * smp.mean("MAG", "geo")["k"]
+
+
+@pmdata
+def test_pmdata_fold_tests_show_a_prefolding_magnetization(pmdata_sites):
+    everything = Sample([s for smp in pmdata_sites.values() for s in smp])
+    ft = everything.fold_test("MAG", n=300, rng=0)
+    assert ft["ci"][0] < 100 < ft["ci"][1] and ft["ci"][0] > 50
+    sign = {k: np.sign(s.mean("MAG", "tilt")["mu"].z) for k, s in pmdata_sites.items()}
+    directions = [
+        -sign[k] * np.asarray(s.mean("MAG", "geo")["mu"])
+        for k, s in pmdata_sites.items()
+    ]
+    beds = [np.asarray(s[0].bedding) for s in pmdata_sites.values()]
+    mf = mcfadden_fold_test(directions, beds)
+    assert abs(mf["geo"]) > mf["critical"] > abs(mf["tilt"])
+
+
+@pmdata
+def test_pmdata_reversal_test_passes_and_circles_combine(pmdata_sites):
+    everything = Sample([s for smp in pmdata_sites.values() for s in smp])
+    assert not everything.reversal_test("MAG", "tilt").reject()
+    assert (
+        everything.reversal_test("MAG", "tilt", method="bootstrap", rng=0).statistic
+        == 0
+    )
+    pm04 = _read_pmdata_site("PM04")
+    lines = pm04.mean("MAG", "geo")
+    for name in ("PM04.2a", "PM04.5a", "PM04.7a"):
+        pm04[name].interpret("MAG", pm04[name].between(150, 560).labels, kind="plane")
+    combined = pm04.mean("MAG", "geo")
+    assert (combined["n_lines"], combined["n_planes"]) == (4, 3)
+    assert combined["mu"].angle(lines["mu"]) < 15

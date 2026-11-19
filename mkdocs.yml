@@ -132,7 +132,7 @@ validation:
 
 exclude_docs: |
   notebooks/rerender_notebooks.sh
-  notebooks/teel/README.md
+  notebooks/pmdata/README.md
 
 nav:
   - Home: index.md

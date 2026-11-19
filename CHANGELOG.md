@@ -25,7 +25,7 @@ sets are much faster, and the documentation has a fresh new home.
 - `StereoNet.confidence()` methods `"kent"`, `"esag"` and `"lisle"`.
 - `PairSet.lisle_statistics()` for the mean pair after Lisle (1989).
 - Documentation page and tutorial on orientation distributions, including Bingham mixtures, Terzaghi weights and `cluster_bingham()` examples.
-- Paleomagnetism tutorial on the Teel basalts of Kilian et al. (2016) with a subset of their data (`docs/notebooks/teel`, PMD files read by `Specimen.from_pmd`).
+- Paleomagnetism tutorial with artificial demagnetization data (`docs/notebooks/pmdata`, PMD files read by `Specimen.from_pmd`, made by the seeded script `scripts/make_pmdata.py`): specimens, components, site means, great circles, fold and reversal tests, VGP and inclination-only data.
 - Weighted orientation statistics: `weights=` of `fit()` for `VonMisesFisher`, `Watson` and `Bingham` (`fit_info.n_eff` is the effective sample size), of `Vector3Set.ortensor()`, `fisher_statistics()`, `watson_statistics()`, `bingham_statistics()` and `bootstrap_statistics()`, and `OrientationTensor3.from_features(weights=)`.
 - `terzaghi_weights()` and `Vector3Set.terzaghi_weights()` correct the orientation bias of borehole, scanline and outcrop sampling.
 - `BinghamMixture` (`dist_bingham_mixture`), a mixture of Bingham distributions fitted by EM with the number of components chosen by BIC (`BinghamMixture.select()`), `Vector3Set.fit_mixture()`, soft memberships and `split()` for identifying fracture sets. It is registered as `"bingham_mixture"` (`linset.fit("bingham_mixture", k=3)`, `linset.random_bingham_mixture()`).
