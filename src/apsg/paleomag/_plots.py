@@ -384,8 +384,12 @@ class SpecimenStereoPlot(PaleomagPlot):
         self._layout = None
 
 
-def _stereo_panel(fig, title, cfg, draw):
-    """Render a ``StereoNet`` filled by `draw(net)` into `fig`."""
+def _stereo_panel(fig, title, cfg, draw, owned=False):
+    """Render a ``StereoNet`` filled by `draw(net)` into `fig`.
+
+    With `owned` the net fits the figure to itself (title, legend) as
+    ``StereoNet.show`` does, instead of keeping the size of `fig`.
+    """
     s = StereoNet(
         title=title,
         legend_position=cfg["legend_position"],
@@ -393,7 +397,8 @@ def _stereo_panel(fig, title, cfg, draw):
         title_kws=cfg["title_kws"],
     )
     draw(s)
-    s.render2fig(fig)
+    s.fig = fig
+    s._render(owned=owned)
     return s
 
 
@@ -549,7 +554,10 @@ class FoldTestPlot(PaleomagPlot):
 
     def _draw(self):
         if self.kind == "tauxe_watson":
-            return self._tauxe_watson(self.fig)
+            # two stacked panels: no single main axes for FigureLayout, which would
+            # trim the figure to the upper panel only
+            self._tauxe_watson(self.fig).legend(loc="best", fontsize=8)
+            return None
         if self.kind == "mcfadden":
             return self._mcfadden(self.fig)
         f1, f2 = self.fig.subfigures(1, 2)
@@ -786,7 +794,16 @@ class LinesPlanesPlot(PaleomagPlot):
                     label=f"{cfg['level']:.0%} ellipse",
                 )
 
-        _stereo_panel(self.fig, self._title_text(), cfg, draw)
+        self._net = _stereo_panel(
+            self.fig, self._title_text(), cfg, draw, owned=self._owned
+        )
+        self._layout = self._net._layout
+
+    _owned = False
+
+    def _render(self, owned=False):
+        self._owned = owned
+        self._draw()
 
 
 def _inclination_pdf(inc, theta0, k):

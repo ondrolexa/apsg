@@ -1677,7 +1677,8 @@ def test_fold_test_plot_draws_the_results(pmdata_sites):
     plot = FoldTestPlot(res)
     assert plot.kind == "tauxe_watson"
     plot.fig = plt.figure()
-    ax = plot._draw()
+    assert plot._draw() is None  # two panels, no single main axes
+    ax = plot.fig.axes[0]
     line = ax.get_lines()[0]
     assert np.allclose(line.get_xdata(), res["fracs"])
     assert np.allclose(line.get_ydata(), res["tau1"])
