@@ -13,6 +13,6 @@ button to get the notebook and run it yourself.
 | [Fabric plots](../notebooks/05_apsg_fabricplots.ipynb) | Vollmer, Ramsay, Flinn and Hsu plots |
 | [Pandas](../notebooks/06_apsg_pandas.ipynb) | APSG features in `DataFrame` columns |
 | [Database](../notebooks/07_apsg_database.ipynb) | reading and writing PySDB databases |
-| [Paleomagnetism](../notebooks/08_apsg_paleomag.ipynb) | artificial demagnetization data: specimens, components, great circles, site means, fold and reversal tests, VGP and inclination-only data |
+| [Paleomagnetism](../notebooks/08_apsg_paleomag.ipynb) | artificial demagnetization data: specimens, components (manual and automatic), great circles, site means, fold and reversal tests, VGP and inclination-only data |
 | [AMS](../notebooks/09_apsg_ams.ipynb) | anisotropy of magnetic susceptibility: specimens and sites, coordinate systems, group statistics, grain models of magnetic fabrics |
 | [Various](../notebooks/10_apsg_various.ipynb) | configuration tricks with `apsg_conf`, stress inversion, `ClusterSet` and `cluster_bingham` |
