@@ -285,7 +285,7 @@ def test_ams_lineation_switches_with_grain_type():
 
 from apsg import data
 from apsg.ams import AMSSite, AMSSpecimen, from_dataframe, read_csv
-from apsg.paleomag._specimen import core_rotation
+from apsg.paleomag._specimen import bedding_vector, core_rotation
 
 
 def _spec(**kw):
@@ -863,38 +863,96 @@ def test_plots_are_closed_after_savefig(two_sites, tmp_path):
 # ---------------------------------------------------------------- instrument files
 
 import io
-from pathlib import Path
+import re
+import struct
 
 from apsg.ams import (
+    read_aex,
     read_ams,
     read_anisoft_table,
+    read_ran,
     read_sufar,
 )
+from apsg.ams._specimen import tensor_from_components
 
-FILES = Path(__file__).parent / "data_ams"
+# -- SUFAR-layout report (made from a SUSAR page of the Melechov data) and the Anisoft tables --
+
+TABLE = data.path("ams_table")
+NO_TENSOR = data.path("ams_table_no_tensor")
 
 
-def test_read_sufar_report():
-    with pytest.warns(UserWarning, match="incomplete"):
-        site = read_sufar(FILES / "sufar_report.asc")
-    assert site.name == "sufar_report" and site.names == ["1/2", "3/1"]
-    s = site[0]
-    assert s.azimuth == 345 and s.hade == -90 and s.frame == "specimen"
-    assert s.bulk == pytest.approx(2.063e-3)
-    assert s.std_error == pytest.approx(0.0004)
-    # normed tensor of the report, specimen coordinates
-    assert np.diag(s.tensor) == pytest.approx([1.0000, 1.0522, 0.9478])
-    assert s.tensor[0, 1] == pytest.approx(0.0123)
-    # the geographic tensor printed in the report is reproduced by the core orientation
-    geo = np.array(
-        [[0.9493, 0.0165, 0.0093], [0.0165, 1.0507, 0.0102], [0.0093, 0.0102, 1.0]]
+def _mel1_pages():
+    """The pages of the SUSAR report of site MEL1 (the Melechov data)."""
+    text = (data.path("melechov") / "MEL1.ASC").read_text(encoding="latin-1")
+    return [p for p in text.split("\f") if "ANISOTROPY" in p]
+
+
+def _as_sufar(text):
+    """The same page(s) in the layout of SUFAR 1.2: the susceptibility row has the
+    field instead of the norming factor, the title names the program."""
+    text = re.sub(r"PROGRAM\s+SUSAR", "Program SUFAR ver.1.2", text)
+    text = re.sub(
+        r"Mean\s+Norming\s+Standard", "Field         Mean      Standard", text
     )
-    assert s.tensor_in("geographic") == pytest.approx(geo, abs=2e-4)
-    assert s.params()["L"] == pytest.approx(1.057, abs=1e-3)
+    text = re.sub(
+        r"susc\.\s+factor\s+err\. \[%\]", "[A/m]         susc.     err. [%]", text
+    )
+    return re.sub(r"(?m)^ (\S+E[-+]\d+)\s+\S+E[-+]\d+", r"   300        \1", text)
+
+
+@pytest.fixture
+def sufar_report(tmp_path):
+    """A report of two specimens in the SUFAR layout."""
+    pages = [_as_sufar(p) for p in _mel1_pages()]
+    path = tmp_path / "sufar_report.asc"
+    path.write_text("\f".join(pages[:2]), encoding="latin-1")
+    return path
+
+
+@pytest.fixture
+def cut_report(tmp_path):
+    """The same report with a third page cut off in its tensor."""
+    pages = [_as_sufar(p) for p in _mel1_pages()]
+    third = pages[1].replace("MEL 1/1/2", "MEL 1/2/1")
+    third = third.split("system    I")[0] + "system    I        2      13      77"
+    path = tmp_path / "sufar_report.asc"
+    path.write_text("\f".join([*pages[:2], third]), encoding="latin-1")
+    return path
+
+
+def test_read_sufar_report(cut_report):
+    with pytest.warns(UserWarning, match="incomplete"):
+        site = read_sufar(cut_report)
+    assert site.name == "sufar_report" and site.names == ["MEL 1/1/1", "MEL 1/1/2"]
+    s = site[0]
+    assert s.azimuth == pytest.approx(141) and s.hade == pytest.approx(16)
+    assert s.frame == "specimen"
+    assert s.bulk == pytest.approx(576.4e-6)
+    assert s.std_error == pytest.approx(0.0014333, abs=1e-6)
+    # the SUFAR row has the field and no norming factor
+    assert s.meta["field"] == 300 and "norming_factor" not in s.meta
+    # normed tensor of the report, specimen coordinates
+    assert np.diag(s.tensor) == pytest.approx([0.9551, 0.9731, 1.0718])
+    assert s.tensor[0, 1] == pytest.approx(-0.0378)
+    # the geographic tensor printed in the report is reproduced by the core orientation
+    printed = _printed(data.path("melechov") / "MEL1.ASC", "Geograph")[0]
+    assert s.tensor_in("geographic") == pytest.approx(printed, abs=3e-4)
+    assert s.params()["L"] == pytest.approx(1.080, abs=1e-3)
+
+
+def test_sufar_and_susar_layouts_give_the_same_specimens(sufar_report):
+    susar = data.load("melechov", site="MEL1")
+    sufar = read_sufar(sufar_report)
+    assert len(sufar) == 2
+    for a, b in zip(susar, sufar, strict=False):
+        assert a.name == b.name and a.bulk == b.bulk and a.std_error == b.std_error
+        assert np.array_equal(a.tensor, b.tensor) and a.azimuth == b.azimuth
+        assert a.meta["F"] == b.meta["F"] and a.meta["holder"] == b.meta["holder"]
+    assert susar[0].meta["field"] is None and "norming_factor" in susar[0].meta
 
 
 def test_read_anisoft_table_with_tensor():
-    site = read_anisoft_table(FILES / "anisoft_table.txt")
+    site = read_anisoft_table(TABLE)
     assert site.names == ["1/2", "3/1", "4/1"]
     s = site[0]
     assert s.frame == "geographic" and s.bulk == pytest.approx(2062.694)
@@ -903,19 +961,18 @@ def test_read_anisoft_table_with_tensor():
     k1 = s.ellipsoid("geographic").eigenlins()[0]
     assert k1.geo[0] % 360 == pytest.approx(80.1, abs=0.3)
     assert k1.geo[1] == pytest.approx(11.8, abs=0.3)
-    assert (
-        read_anisoft_table(FILES / "anisoft_table.txt", frame="specimen")[0].frame
-        == "specimen"
-    )
+    assert read_anisoft_table(TABLE, frame="specimen")[0].frame == "specimen"
+    # the same table through apsg.data
+    assert data.load("ams_table")["ams_table"].names == site.names
 
 
 def test_read_anisoft_table_without_tensor_uses_directions():
-    site = read_anisoft_table(FILES / "anisoft_no_tensor.txt")
+    site = read_anisoft_table(NO_TENSOR)
     assert len(site) >= 2 and site[0].name.startswith("GC")
     s = site[0]
     p = s.params("geographic")
     # L and F of the table are those of the reconstructed tensor
-    text = (FILES / "anisoft_no_tensor.txt").read_text().splitlines()
+    text = NO_TENSOR.read_text().splitlines()
     head = text[0].split()
     row = text[1].split()
     assert p["L"] == pytest.approx(float(row[head.index("L")]), abs=2e-4)
@@ -923,20 +980,19 @@ def test_read_anisoft_table_without_tensor_uses_directions():
     k1 = s.ellipsoid("geographic").eigenlins()[0]
     assert k1.geo[0] % 360 == pytest.approx(float(row[head.index("Kmax_Dec")]), abs=0.2)
     assert np.trace(s.tensor) == pytest.approx(3)
-    groups = read_anisoft_table(
-        FILES / "anisoft_no_tensor.txt", site=lambda n: n.split("_")[0]
-    )
+    groups = read_anisoft_table(NO_TENSOR, site=lambda n: n.split("_")[0])
     assert set(groups) == {"GC2", "GC4"}
     assert groups["GC2"][0].site == "GC2"
+    assert set(data.load("ams_table_no_tensor")) == {"GC2", "GC4"}
 
 
-def test_read_ams_dispatch_and_errors(tmp_path):
+def test_read_ams_dispatch_and_errors(tmp_path, cut_report):
     with pytest.warns(UserWarning):
-        assert read_ams(FILES / "sufar_report.asc").names == ["1/2", "3/1"]
-    assert len(read_ams(FILES / "anisoft_table.txt", name="X")) == 3
-    assert read_ams(FILES / "anisoft_table.txt", name="X").name == "X"
+        assert read_ams(cut_report).names == ["MEL 1/1/1", "MEL 1/1/2"]
+    assert len(read_ams(TABLE, name="X")) == 3
+    assert read_ams(TABLE, name="X").name == "X"
     with pytest.raises(TypeError):
-        read_ams(FILES / "sufar_report.asc", frame="specimen")
+        read_ams(cut_report, frame="specimen")
     binary = tmp_path / "a.ams"
     binary.write_bytes(b"GC2_1   \x00\x00\x01\x00" * 20)
     with pytest.raises(ValueError, match="binary"):
@@ -948,13 +1004,437 @@ def test_read_ams_dispatch_and_errors(tmp_path):
     with pytest.raises(ValueError, match="SUFAR"):
         read_sufar(io.StringIO("nothing here"))
     # open text files work as well
-    with open(FILES / "anisoft_table.txt") as f:
+    with open(TABLE) as f:
         assert len(read_anisoft_table(f)) == 3
     with (
-        open(FILES / "sufar_report.asc", encoding="latin-1") as f,
+        open(cut_report, encoding="latin-1") as f,
         pytest.warns(UserWarning),
     ):
         assert len(read_sufar(f)) == 2
+
+
+def _first_page(text):
+    """The first page of a report."""
+    return text.split("\f")[0] + "\f"
+
+
+def _edit_sufar(text, op=None, azi=None, dip=None, tensor=None, foliation=None):
+    """Rewrite the orientation, specimen-system tensor or foliation of a page."""
+    if op is not None:
+        text = re.sub(
+            r"O\.P\. :(\s+\d+){4}", "O.P. : " + "  ".join(f"{c:3d}" for c in op), text
+        )
+    if azi is not None:
+        text = re.sub(r"Azi\s+\S+", f"Azi {azi:5g}", text)
+    if dip is not None:
+        text = re.sub(r"Dip\s+\S+", f"Dip {dip:5g}", text)
+    if tensor is not None:
+        k11, k22, k33, k12, k23, k13 = tensor
+        text = re.sub(
+            r"(Specimen  D[^\n]*?)[-\d.]+\s+[-\d.]+\s+[-\d.]+\n",
+            lambda m: f"{m.group(1)}{k11:8.4f} {k22:8.4f} {k33:8.4f}\n",
+            text,
+        )
+        text = re.sub(
+            r"(system    I[^\n]*?)[-\d.]+\s+[-\d.]+\s+[-\d.]+\n",
+            lambda m: f"{m.group(1)}{k12:8.4f} {k23:8.4f} {k13:8.4f}\n",
+            text,
+            count=1,
+        )
+    if foliation is not None:
+        text = re.sub(
+            r"(T1\s+F1\s+L1[^\n]*\n\n)\S+\s+\d+/\d+",
+            lambda m: f"{m.group(1)}S0        {foliation}",
+            text,
+            count=1,
+        )
+    return text
+
+
+def test_sufar_metadata(sufar_report):
+    s = read_sufar(sufar_report)[0]
+    m = s.meta
+    assert m["op"] == (12, 90, 6, 0)
+    assert m["nominal_volume"] == 10.0 and m["actual_volume"] == 10.0
+    assert m["holder"] == pytest.approx(-5.17e-6) and m["demag_factor"] is True
+    assert m["field"] == 300 and m["error_percent"] == pytest.approx(0.191)
+    assert (m["F"], m["F12"], m["F23"]) == pytest.approx((914.1, 559.4, 458.3))
+    assert m["foliation_tag"] == "S0" and s.bedding is not None
+    # a report without foliation (tag 00, dip 0) has no bedding
+    page = data.load("melechov", site="MEL2")[0]
+    assert page.bedding is None and page.meta["foliation_tag"] is None
+
+
+@pytest.mark.parametrize(
+    "op, azi, dip, spin",
+    [
+        ((12, 0, 12, 0), 141, 16, 0),
+        ((12, 90, 12, 0), 141, 74, 0),  # plunge of the core axis, hade = 90 - dip
+        ((6, 0, 12, 0), 141, 16, 180),  # arrow at 6 o'clock is absorbed
+        ((3, 0, 6, 0), 321, 16, 90),  # arrows at 3 and 9 turn the tensor
+        ((9, 0, 6, 0), 321, 16, 270),
+        ((12, 0, 3, 0), 231, 16, 0),  # azimuth measured with the arrow at 3
+    ],
+)
+def test_sufar_orientation_codes(op, azi, dip, spin):
+    text = _first_page(_mel1_pages()[0])
+    ref = read_sufar(io.StringIO(text))[0]
+    K = ref.tensor
+    c, s = np.cos(np.radians(-spin)), np.sin(np.radians(-spin))
+    R = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+    # measured in the frame turned by -spin, restored by the reader
+    comps = tuple(np.round((R @ K @ R.T)[[0, 1, 2, 0, 1, 0], [0, 1, 2, 1, 2, 2]], 5))
+    edited = _edit_sufar(text, op=op, azi=azi, dip=dip, tensor=comps)
+    got = read_sufar(io.StringIO(edited))[0]
+    assert got.meta["op"] == op
+    assert got.tensor_in("geographic") == pytest.approx(
+        ref.tensor_in("geographic"), abs=3e-4
+    )
+
+
+def test_sufar_foliation_with_strike_code():
+    text = _first_page(_mel1_pages()[0])
+    edited = _edit_sufar(text, op=(6, 0, 6, 90), foliation="110/30")
+    s = read_sufar(io.StringIO(edited))[0]
+    # P4 = 90: the foliation azimuth is the strike, the dip direction 90 more
+    assert s.bedding.angle(bedding_vector(200, 30)) == pytest.approx(0, abs=1e-6)
+    assert s.tensor_in("tectonic").shape == (3, 3)
+    dipdir = _edit_sufar(text, foliation="110/30")
+    s = read_sufar(io.StringIO(dipdir))[0]
+    assert s.bedding.angle(bedding_vector(110, 30)) == pytest.approx(0, abs=1e-6)
+
+
+def test_sufar_unsupported_and_missing_code():
+    text = _first_page(_mel1_pages()[0])
+    with pytest.raises(NotImplementedError, match="P1=5"):
+        read_sufar(io.StringIO(_edit_sufar(text, op=(5, 0, 6, 0))))
+    no_code = re.sub(r"O\.P\. :(\s+\d+){4}", "", text)
+    with pytest.warns(UserWarning, match="assuming 6 0 6 0"):
+        s = read_sufar(io.StringIO(no_code))[0]
+    assert s.meta["op"] == (6, 0, 6, 0)
+
+
+def test_anisoft_table_warns_about_dropped_rows():
+    lines = TABLE.read_text().splitlines()
+    text = "\n".join([*lines, "short row", lines[1].replace("2062.694", "x")])
+    with pytest.warns(UserWarning, match="2 table rows .* skipped"):
+        site = read_anisoft_table(io.StringIO(text))
+    assert site.names == ["1/2", "3/1", "4/1"]
+
+
+# -- the Melechov data: SUSAR reports, RAN files and AEX table of one measurement --
+
+
+def _melechov_specimens(fmt):
+    sites = data.load("melechov", format=fmt)
+    return [s for site in sites.values() for s in site]
+
+
+def _printed(report, label):
+    """Normed tensors printed in the system `label` of each page of a report."""
+    out = []
+    for page in report.read_text(encoding="latin-1").split("\f"):
+        if "ANISOTROPY" not in page:
+            continue
+        lines = page.replace("\r", "").splitlines()
+        tensor = None
+        for i, ln in enumerate(lines):
+            if ln.startswith(label):
+                diag = [float(x) for x in re.findall(r"-?\d+\.\d+", ln[8:])][-3:]
+                off = [float(x) for x in re.findall(r"-?\d+\.\d+", lines[i + 1])][-3:]
+                tensor = tensor_from_components(*diag, *off)
+        out.append(tensor)
+    return out
+
+
+def test_susar_report_of_the_melechov_data():
+    sites = data.load("melechov")
+    assert list(sites) == ["MEL1", "MEL2", "MEL3", "MEL4", "MEL5"]
+    assert [len(s) for s in sites.values()] == [10, 10, 10, 10, 11]
+    s = sites["MEL1"][0]
+    assert s.name == "MEL 1/1/1" and s.frame == "specimen" and s.site == "MEL1"
+    assert s.bulk == pytest.approx(576.4e-6)
+    assert s.meta["op"] == (12, 90, 6, 0) and s.meta["field"] is None
+    assert s.meta["norming_factor"] == pytest.approx(576.4e-6)
+    assert s.meta["F"] == pytest.approx(914.1) and s.meta["demag_factor"] is True
+    # Azi 321, Dip 74 with the code 12 90 6 0: the dip is the plunge of the core axis
+    assert s.azimuth == pytest.approx(141) and s.hade == pytest.approx(16)
+    assert s.meta["foliation_tag"] == "S0" and s.bedding is not None
+    # site MEL2 has no foliation
+    assert all(sp.bedding is None for sp in sites["MEL2"])
+    assert {sp.meta["foliation_tag"] for sp in sites["MEL2"]} == {None}
+
+
+def test_susar_orientation_matches_the_printed_systems():
+    folder = data.path("melechov")
+    n = bedded = 0
+    for k in range(1, 6):
+        specs = data.load("melechov", site=f"MEL{k}")
+        geo = _printed(folder / f"MEL{k}.ASC", "Geograph")
+        paleo = _printed(folder / f"MEL{k}.ASC", "Paleo 1")
+        assert len(geo) == len(specs)
+        for s, g, p in zip(specs, geo, paleo, strict=True):
+            # P2 = 90: specimen to geographic coordinates by the core orientation
+            assert s.tensor_in("geographic") == pytest.approx(g, abs=3e-4)
+            n += 1
+            if s.bedding is not None:  # the foliation, a dip direction (P4 = 0)
+                assert s.tensor_in("tectonic") == pytest.approx(p, abs=3e-4)
+                bedded += 1
+    assert n == 51 and bedded > 20
+
+
+def test_ran_matches_the_reports():
+    asc = _melechov_specimens("asc")
+    ran = _melechov_specimens("ran")
+    assert [s.name for s in ran] == [s.name for s in asc]
+    for a, r in zip(asc, ran, strict=True):
+        assert r.frame == "geographic" and r.azimuth is None
+        assert r.tensor_in("geographic") == pytest.approx(
+            a.tensor_in("geographic"), abs=2e-4
+        )
+        assert r.bulk == pytest.approx(a.bulk, rel=1e-3)
+        assert (r.bedding is None) == (a.bedding is None)
+        if a.bedding is not None:
+            assert r.bedding.angle(a.bedding) == pytest.approx(0, abs=1e-6)
+            assert r.tensor_in("tectonic") == pytest.approx(
+                a.tensor_in("tectonic"), abs=3e-4
+            )
+    r = ran[0]
+    assert r.meta["op"] == (12, 90, 6, 0) and r.meta["locality"] == "BABICE"
+    assert r.meta["foliation"] == (20, 90) and r.meta["foliation_tag"] == "S0"
+    assert r.meta["norming_factor"] == pytest.approx(576.4e-6, rel=1e-3)
+    with pytest.raises(ValueError, match="specimen coordinates"):
+        r.tensor_in("specimen")
+
+
+def test_ran_input_types_and_dispatch():
+    folder = data.path("melechov")
+    path = folder / "MEL1.RAN"
+    raw = path.read_bytes()
+    by_path = read_ran(path)
+    assert by_path.name == "MEL1" and len(by_path) == 10
+    assert read_ran(raw, name="x").name == "x"
+    with open(path, "rb") as f:
+        assert read_ran(f).names == by_path.names
+    # read_ams: by extension (any case) and by the structure of the content
+    upper = read_ams(path)
+    assert upper.names == by_path.names and upper.name == "MEL1"
+    assert read_ams(raw).names == by_path.names
+    with pytest.raises(TypeError):
+        read_ams(path, frame="specimen")
+    with pytest.raises(TypeError, match="binary"):
+        read_ran(io.StringIO("text file"))
+
+
+def test_aex_table_matches_the_measurements():
+    aex = data.load("melechov_aex")
+    asc = _melechov_specimens("asc")
+    ran = _melechov_specimens("ran")
+    assert list(aex.columns) == ["Km", "P", "T"] and list(aex.index) == [
+        s.name for s in asc
+    ]
+    path = data.path("melechov") / "MEL1-5.AEX"
+    plain = read_aex(path)
+    assert len(plain) == 51 and plain.index.tolist() == list(range(51))
+    assert plain["Km"].iloc[0] == pytest.approx(576.4e-6)
+    for specs, coords, tol_t in ((asc, "specimen", 1.5e-2), (ran, "geographic", 2e-3)):
+        params = [s.params(coords) for s in specs]
+        assert np.array([p["P"] for p in params]) == pytest.approx(aex["P"], abs=2e-3)
+        assert np.array([p["T"] for p in params]) == pytest.approx(aex["T"], abs=tol_t)
+        assert np.array([s.bulk for s in specs]) == pytest.approx(aex["Km"], rel=1e-3)
+
+
+def test_melechov_mean_tensor_matches_the_statistics_file():
+    # MEL1-5.AS1 of Anisoft (geographic coordinates, 51 specimens): eigenvalues
+    # and mean directions; its confidence angles are not reproduced
+    site = AMSSite(_melechov_specimens("ran"), name="MEL1-5")
+    mean = site.mean("geographic")
+    assert mean["n"] == 51
+    assert mean["eigenvalues"] == pytest.approx([1.027, 1.004, 0.969], abs=6e-4)
+    got = []
+    for e in mean["ellipses"]:
+        v = np.asarray(e["mu"], dtype=float)
+        dec = np.degrees(np.arctan2(v[1], v[0])) % 360
+        inc = np.degrees(np.arcsin(v[2] / np.linalg.norm(v)))
+        got.append(((dec + 180) % 360, -inc) if inc < 0 else (dec, inc))
+    assert np.array(got) == pytest.approx(
+        np.array([(253.3, 30.2), (9.4, 37.1), (136.1, 38.2)]), abs=0.15
+    )
+
+
+def test_real_sufar_report_and_the_orientation_codes():
+    # E236-2: a report of SUFAR 1.1 (field column), code 12 90 6 0; TR1: SUSAR, code
+    # 12 90 12 0 (P3 = 12). The geographic tensors printed in the reports are reproduced.
+    folder = data.path("trebic")
+    sites = data.load("trebic")
+    assert list(sites) == ["E236-2", "TR1"] and [len(s) for s in sites.values()] == [
+        10,
+        7,
+    ]
+    for key, op, field in (
+        ("E236-2", (12, 90, 6, 0), 300.0),
+        ("TR1", (12, 90, 12, 0), None),
+    ):
+        printed = _printed(folder / f"{key}.ASC", "Geograph")
+        for s, g in zip(sites[key], printed, strict=True):
+            assert s.meta["op"] == op and s.meta["field"] == field
+            assert s.tensor_in("geographic") == pytest.approx(g, abs=3e-4)
+    assert "norming_factor" not in sites["E236-2"][0].meta
+    assert sites["TR1"][0].meta["norming_factor"] == pytest.approx(sites["TR1"][0].bulk)
+    assert sites["E236-2"][0].meta["holder"] == pytest.approx(2.45e-6)
+
+
+def test_trebic_ran_matches_the_reports():
+    # the RAN files of SUFAR hold the field in their first value, those of SUSAR the mean
+    asc = data.load("trebic")
+    ran = data.load("trebic", format="ran")
+    for key, field in (("E236-2", 300.0), ("TR1", None)):
+        assert ran[key].names == asc[key].names
+        for a, r in zip(asc[key], ran[key], strict=True):
+            assert r.bulk == pytest.approx(a.bulk, rel=1e-3)
+            assert r.meta["field"] == field
+            assert r.tensor_in("geographic") == pytest.approx(
+                a.tensor_in("geographic"), abs=2e-4
+            )
+    assert ran["E236-2"][0].meta["op"] == (12, 90, 6, 0)
+    assert ran["TR1"][0].meta["op"] == (12, 90, 12, 0)
+
+
+def test_trebic_aex_matches_the_measurements():
+    from apsg import lin
+
+    aex = data.load("trebic_aex")
+    assert aex.shape == (17, 16) and aex.index.name == "Name"
+    assert list(aex.columns[:4]) == ["Km", "K1", "K2", "K3"]
+    asc = [s for site in data.load("trebic").values() for s in site]
+    ran = [s for site in data.load("trebic", format="ran").values() for s in site]
+    # the names of the table differ from those of the reports, rows are in the same order
+    assert aex.index[0] == "E-236/D/1" and asc[0].name == "E236D/1"
+    for specs, tol_t, tol_d in ((asc, 1.5e-2, 1.0), (ran, 2e-3, 0.2)):
+        for s, (_, row) in zip(specs, aex.iterrows(), strict=True):
+            p = s.params("geographic")
+            assert p["P"] == pytest.approx(row["P"], abs=2e-3)
+            assert p["T"] == pytest.approx(row["T"], abs=tol_t)
+            assert s.bulk == pytest.approx(row["Km"], rel=1e-3)
+            k = np.sort(np.linalg.eigvalsh(s.tensor_in("geographic")))[::-1] * s.bulk
+            assert k == pytest.approx([row["K1"], row["K2"], row["K3"]], rel=2e-3)
+            axes = s.ellipsoid("geographic").eigenlins()
+            assert axes[0].angle(lin(row["dK1geo"], row["iK1geo"])) < tol_d
+            assert axes[2].angle(lin(row["dK3geo"], row["iK3geo"])) < tol_d
+
+
+def test_aex_with_names_and_ran_field_on_synthetic_files():
+    text = (
+        "Spec Name   Km   K1\n"
+        "TR 1/1/1  1.0E-03  1.1E-03\n"
+        "A B C    2.0E-03  2.1E-03\n"
+        "short\n"
+    )
+    with pytest.warns(UserWarning, match="1 AEX rows"):
+        df = read_aex(io.StringIO(text))
+    assert df.index.tolist() == ["TR 1/1/1", "A B C"] and df.index.name == "Name"
+    assert list(df.columns) == ["Km", "K1"] and df["K1"].tolist() == [1.1e-3, 2.1e-3]
+    assert read_aex(io.StringIO("Name Km\nx 1\n")).index.tolist() == ["x"]
+    # RAN: the second value is the mean susceptibility, the first the field (SUFAR)
+    raw = _ran_bytes([("A", 2.5e-4, _K, "00", (0, 0), (0, 0))], field=300.0)
+    s = read_ran(raw)[0]
+    assert s.bulk == pytest.approx(2.5e-4) and s.meta["field"] == 300.0
+    s = read_ran(_ran_bytes([("A", 3e-4, _K, "00", (0, 0), (0, 0))]))[0]
+    assert s.bulk == pytest.approx(3e-4) and s.meta["field"] is None
+
+
+def _ran_bytes(records, codes=" 12 90 6  0 ", locality="SITE", rock="ROCK", field=None):
+    """A RAN file: records are (name, mean, tensor, tag, foliation, lineation)."""
+    head = struct.pack("<h", len(records) + 2)
+    head += locality.ljust(30).encode() + rock.ljust(16).encode()
+    head += codes.ljust(14).encode() + b"\0\0"
+    assert len(head) == 64
+    out = head
+    for name, mean, k, tag, fol, lin in records:
+        out += struct.pack(
+            "<12s8f2s4h2s4h",
+            name.ljust(12).encode(),
+            mean * 1e6 if field is None else field,
+            mean * 1e6,
+            *k,
+            tag.encode(),
+            *fol,
+            *lin,
+            b"00",
+            0,
+            0,
+            0,
+            0,
+        )
+    return out
+
+
+_K = (0.95, 1.0, 1.05, 0.01, -0.02, 0.005)
+
+
+def test_ran_reader_on_synthetic_files():
+    raw = _ran_bytes(
+        [
+            ("A 1/1", 2e-4, _K, "S0", (100, 30), (10, 0)),
+            ("A 1/2", 3e-4, _K, "00", (0, 0), (0, 0)),
+            ("A 2", 4e-4, _K, "K0", (45, 0), (0, 0)),
+        ],
+        codes=" 12 0  6  90",
+    )
+    site = read_ran(raw, name="s")
+    assert site.names == ["A 1/1", "A 1/2", "A 2"]
+    a, b, c = site
+    assert a.bulk == pytest.approx(2e-4, rel=1e-6)
+    assert a.tensor == pytest.approx(tensor_from_components(*_K), abs=1e-6)
+    assert a.meta["op"] == (12, 0, 6, 90)
+    # P4 = 90: the foliation azimuth is a strike, the dip direction 90 more
+    assert a.bedding.angle(bedding_vector(190, 30)) == pytest.approx(0, abs=1e-5)
+    assert b.bedding is None  # tag 00
+    assert c.bedding is None  # dip 0 is the same as no foliation
+    assert a.meta["lineation"] == (10, 0) and a.meta["rock"] == "ROCK"
+
+
+def test_ran_reader_rejects_and_warns():
+    good = _ran_bytes([("A 1/1", 2e-4, _K, "S0", (100, 30), (0, 0))])
+    with pytest.raises(ValueError, match="shorter"):
+        read_ran(good[:100])
+    bad_name = bytearray(good)
+    bad_name[64:68] = b"\x01\x02\x03\x04"
+    with pytest.raises(ValueError, match="not a RAN file"):
+        read_ran(bytes(bad_name))
+    nan = _ran_bytes([("A 1/1", 2e-4, (np.nan, *_K[1:]), "S0", (1, 1), (0, 0))])
+    with pytest.raises(ValueError, match="not a RAN file"):
+        read_ran(nan)
+    with pytest.warns(UserWarning, match="3 trailing bytes"):
+        assert len(read_ran(good + b"abc")) == 1
+    flat = _ran_bytes([("A 1/1", 2e-4, (2, 2, 2, 0, 0, 0), "S0", (1, 1), (0, 0))])
+    with pytest.warns(UserWarning, match="trace 3"):
+        read_ran(flat)
+    with pytest.warns(UserWarning, match="no orientation parameters"):
+        read_ran(_ran_bytes([("A", 2e-4, _K, "S0", (1, 1), (0, 0))], codes="?"))
+    # structure is detected without an extension, text is not mistaken for it
+    assert read_ams(good).names == ["A 1/1"]
+    with pytest.raises(ValueError, match="binary"):
+        read_ams(b"\x00" * 200)
+
+
+def test_aex_reader_edge_cases(tmp_path):
+    text = "Km P T\n 1.0E-03 1.1 0.2\n bad row\n 2.0E-03 1.2 x\n 3.0E-03 1.3 -0.4\n"
+    with pytest.warns(UserWarning, match="2 AEX rows .* skipped"):
+        df = read_aex(io.StringIO(text))
+    assert df["Km"].tolist() == [1e-3, 3e-3] and df["T"].tolist() == [0.2, -0.4]
+    df = read_aex(io.StringIO("Km P\n 1.0E-03 1.1\n"), names=["x"])
+    assert df.index.tolist() == ["x"]
+    with pytest.raises(ValueError, match="names"):
+        read_aex(io.StringIO("Km P\n 1 1.1\n"), names=["x", "y"])
+    with pytest.raises(ValueError, match="name the columns"):
+        read_aex(io.StringIO("1.0 2.0\n3.0 4.0\n"))
+    with pytest.raises(ValueError, match="empty"):
+        read_aex(io.StringIO(""))
+    path = tmp_path / "x.AEX"
+    path.write_text(text)
+    with pytest.raises(ValueError, match="read_aex"):
+        read_ams(path)
 
 
 # ---------------------------------------------------------------- Jeffery, models, inversion

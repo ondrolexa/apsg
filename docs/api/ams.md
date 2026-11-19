@@ -86,15 +86,20 @@ of a rock with one kind of uniaxial grains to the orientation tensor of the grai
 
 ### Tables
 
-Reports (`.asc`) and text tables exported by Anisoft or SUFAR are read by `read_sufar`,
-`read_anisoft_table` and `read_ams` (which recognises the layout); binary `.ams` and `.ran` files
-must be exported to text first. Tables with the six tensor components (`k11 k22 k33 k12 k23 k13`, the order of AGICO files),
+Reports (`.asc`, SUFAR, SAFYR and SUSAR layouts) and text tables exported by Anisoft are read by
+`read_asc` (`read_sufar`), `read_anisoft_table` and `read_ams` (which recognises the layout);
+the binary `.ran` files of the Kappabridge by `read_ran`, and the `.aex` parameter tables by
+`read_aex`. Binary Anisoft `.ams` files must be exported to text first. Tables with the six tensor components (`k11 k22 k33 k12 k23 k13`, the order of AGICO files),
 optional bulk susceptibility, core orientation and bedding are read from CSV files or data frames
 and written back by `AMSSite.to_csv()`.
 
 ::: apsg.ams.read_ams
 
 ::: apsg.ams.read_sufar
+
+::: apsg.ams.read_ran
+
+::: apsg.ams.read_aex
 
 ::: apsg.ams.read_anisoft_table
 

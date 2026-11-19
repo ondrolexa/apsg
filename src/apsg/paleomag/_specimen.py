@@ -120,6 +120,74 @@ def _dir(azi, inc):
     return np.array([cosd(azi) * cosd(inc), sind(azi) * cosd(inc), sind(inc)])
 
 
+_CLOCK_AZIMUTH = {12: 0.0, 3: 270.0, 6: 180.0, 9: 90.0}
+_CLOCK_SPIN = {12: 0.0, 3: 90.0, 6: 0.0, 9: 270.0}
+
+
+def _agico_orientation(p1, p2, p3, p4, azimuth, dip, bedding=None, source=""):
+    """Core orientation from the AGICO orientation parameters ``P1-P4``.
+
+    Used by the RS3 and JR6 readers and the SUFAR report reader. The
+    parameters follow AGICO (2009) as described by Sagnotti (2013) and the
+    conversion of PuffinPlot: P1 is the clock position (12, 3, 6, 9) of the
+    reference arrow (specimen x axis) on the frontal base of the core, P2 is 0
+    when `dip` is the dip of the frontal base (the hade of the core axis) and
+    90 when it is the plunge of the core axis, P3 is the clock position of the
+    measured `azimuth` and P4 is 0 when `bedding` is a dip direction and 90
+    when it is the strike (right-hand rule).
+
+    A reference arrow at 6 o'clock is a half turn of the specimen about the core
+    axis, which is absorbed by ``azimuth + 180`` and ``-hade``. The codes 12 0 6 0,
+    6 0 6 0 and 12 0 12 90 were checked against Remasoft files and 12 90 6 0 (with
+    P4 = 0 for the foliation) against SUSAR reports of AGICO (the specimen and
+    geographic tensors printed on 159 pages); the arrows at 3 and 9 o'clock follow
+    PuffinPlot and are not checked against instrument files. They cannot
+    be absorbed and are returned as `spin`, the angle about the specimen z axis
+    by which the measured vectors (or tensors) must be rotated,
+    ``M' = Rz(spin) M``.
+
+    Args:
+        p1, p2, p3, p4: orientation parameters.
+        azimuth: measured core azimuth in degrees.
+        dip: measured core dip (see P2) in degrees.
+        bedding: bedding strike or dip direction (see P4) or None.
+        source: file name for the error message.
+
+    Returns:
+        ``(azimuth, hade, spin, dipdir)`` in the PMD convention of
+        `core_rotation`; `dipdir` is None without `bedding`.
+
+    Raises:
+        NotImplementedError: for parameter values other than the supported ones.
+    """
+    if p1 not in _CLOCK_AZIMUTH or p3 not in _CLOCK_AZIMUTH or p2 not in (0, 90):
+        raise NotImplementedError(
+            f"{source}: orientation parameters P1={p1}, P2={p2}, P3={p3}, "
+            f"P4={p4} are not supported (supported: P1 and P3 3, 6, 9 or 12, "
+            "P2 0 or 90, P4 0 or 90)"
+        )
+    if p4 not in (0, 90):
+        raise NotImplementedError(
+            f"{source}: orientation parameters P1={p1}, P2={p2}, P3={p3}, "
+            f"P4={p4} are not supported (supported: P4 0 or 90)"
+        )
+    hade = dip if p2 == 0 else 90.0 - dip
+    azimuth = azimuth + _CLOCK_AZIMUTH[p3]
+    if p1 == 6:
+        azimuth, hade = azimuth + 180.0, -hade
+    dipdir = None if bedding is None else (bedding + p4) % 360
+    return azimuth % 360, hade, _CLOCK_SPIN[p1], dipdir
+
+
+def _spin(M, angle):
+    """Rotate the vector `M` about the z axis by `angle` degrees."""
+    if not angle:
+        return M
+    c, s = cosd(angle), sind(angle)
+    x, y, z = np.asarray(M, dtype=float)
+    return Vector3(c * x - s * y, s * x + c * y, z)
+
+
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
@@ -137,6 +205,9 @@ class DemagStep:
         a95: measurement precision angle in degrees (0 when not given).
         k: bulk susceptibility or None.
         comment: free text.
+        treatment: ``"nrm"``, ``"af"``, ``"thermal"``, ``"arm"``, ``"irm"`` or
+            None when not recorded.
+        field: applied field in mT of an ARM (bias field) or IRM step, else None.
     """
 
     label: str
@@ -145,10 +216,12 @@ class DemagStep:
     a95: float = 0.0
     k: float | None = None
     comment: str = ""
+    treatment: str | None = None
+    field: float | None = None
 
     def to_json(self):
         """Return as JSON dict."""
-        return {
+        d = {
             "label": self.label,
             "level": self.level,
             "M": list(self.M),
@@ -156,6 +229,10 @@ class DemagStep:
             "k": self.k,
             "comment": self.comment,
         }
+        for key in ("treatment", "field"):
+            if getattr(self, key) is not None:
+                d[key] = getattr(self, key)
+        return d
 
     @classmethod
     def from_json(cls, d):
@@ -181,6 +258,8 @@ class Component:
         labels: labels of the steps used.
         anchor: True when the fit was forced through the origin.
         coords: coordinate system of `vector`.
+        origin: True when the origin was added as a data point of the fit
+            (the ``O`` variant of Remasoft).
     """
 
     kind: str
@@ -191,6 +270,7 @@ class Component:
     labels: tuple
     anchor: bool = False
     coords: str = "specimen"
+    origin: bool = False
 
     def __repr__(self):
         azi, inc = self.vector.geo
@@ -247,16 +327,42 @@ def _level(label):
 
 
 def _demag_from_labels(labels):
-    """Guess the demagnetization type from step labels."""
+    """Guess the demagnetization type from step labels.
+
+    Thermal: ``T250``, ``250°C``, ``250C``; AF: ``M010``, ``H010``, ``AF10``,
+    ``100M``, ``100MT``.
+    """
     for label in labels:
         s = label.strip().upper()
         if s.startswith("NRM") or not s:
             continue
-        if "°C" in label or s.startswith("T"):
+        if "°C" in label or s.startswith("T") or re.fullmatch(r"[\d.]+\s*C", s):
             return "thermal"
-        if s.startswith(("M", "AF", "A")) or "MT" in s:
+        if (
+            s.startswith(("M", "AF", "A", "H"))
+            or "MT" in s
+            or re.fullmatch(r"[\d.]+\s*M", s)
+        ):
             return "af"
     return None
+
+
+def _check_geometry(spec, geo, tilt, source, tol=2.0, stacklevel=3):
+    """Warn when the orientation does not reproduce the file's own directions.
+
+    `geo` and `tilt` are lists of unit vectors or None, one per step.
+    """
+    errors = []
+    for computed, stored in ((spec.geo, geo), (spec.tilt, tilt)):
+        pairs = [(c, s) for c, s in zip(computed, stored) if s is not None]
+        if pairs:
+            errors.append(np.median(_angles(*zip(*pairs))))
+    if errors and max(errors) > tol:
+        warnings.warn(
+            f"{source}: orientation of {spec.name!r} does not reproduce the "
+            f"directions stored in the file (misfit {max(errors):.1f} deg)",
+            stacklevel=stacklevel,
+        )
 
 
 def _read_lines(filename):
@@ -300,6 +406,12 @@ class Specimen:
         filename: source file or None.
         components: fitted components by name, in specimen coordinates (see
             `interpret`).
+        depth: depth of a continuous (long core) measurement or None.
+        arm: steps of the anisotropy of remanence (ARM) treatment, which are
+            not part of the demagnetization series `steps` (``DemagStep`` with
+            ``treatment="arm"``: `level` is the AF field of the demagnetization
+            of the ARM and `field` the bias field).
+        irm: steps of an IRM treatment (`level` is the applied field in mT).
 
     Examples:
         >>> s = Specimen.from_file("K583B-15.rs3")  # doctest: +SKIP
@@ -324,10 +436,17 @@ class Specimen:
     date: datetime | None = None
     filename: str | None = None
     components: dict = field(default_factory=dict)
+    depth: float | None = None
+    arm: list = field(default_factory=list)
+    irm: list = field(default_factory=list)
 
     def __post_init__(self):
         self.steps = list(self.steps)
-        if not all(isinstance(s, DemagStep) for s in self.steps):
+        self.arm = list(self.arm)
+        self.irm = list(self.irm)
+        if not all(
+            isinstance(s, DemagStep) for s in (*self.steps, *self.arm, *self.irm)
+        ):
             raise TypeError("steps must be DemagStep instances")
         if self.demag not in _DEMAG:
             raise ValueError(f"demag must be one of {_DEMAG}, got {self.demag!r}")
@@ -447,13 +566,16 @@ class Specimen:
 
     # -- processing --------------------------------------------------------
 
-    def pca(self, steps=None, *, kind="line", anchor=False, coords="geo"):
+    def pca(self, steps=None, *, kind="line", anchor=False, origin=False, coords="geo"):
         """Principal component analysis of demagnetization data.
 
         The best-fit line (``kind="line"``) or plane (``kind="plane"``) of the
         selected steps (Kirschvink, 1980; Tauxe, 2003, §3.8, eq. 3.4-3.10). For a
         free fit the points are centred on their centre of mass; an anchored
-        fit (``anchor=True``) passes through the origin. The magnetization
+        fit (``anchor=True``) passes through the origin; ``origin=True`` adds
+        the origin as one more point of the centred fit of a line (the ``O``
+        variant of Remasoft), which pulls the line towards the origin without
+        forcing it through. The magnetization
         vectors are used unnormalized. The line points along the removed
         magnetization (first minus last step; along the data for anchored
         fits), the plane pole along ``first x last``, so the sense of the
@@ -464,6 +586,8 @@ class Specimen:
                 mask); None for all.
             kind: ``"line"`` or ``"plane"``.
             anchor: force the fit through the origin. Default False.
+            origin: include the origin as a data point (lines only, not with
+                `anchor`). Default False.
             coords: coordinate system of the result.
 
         Returns:
@@ -476,6 +600,8 @@ class Specimen:
         """
         if kind not in ("line", "plane"):
             raise ValueError(f"kind must be 'line' or 'plane', got {kind!r}")
+        if origin and (anchor or kind != "line"):
+            raise ValueError("origin applies to free line fits only")
         sub = self if steps is None else self[steps]
         if isinstance(sub, DemagStep):
             raise TypeError("pca needs a selection of steps, not a single step")
@@ -483,8 +609,15 @@ class Specimen:
         if len(sub) < n_min:
             raise ValueError(f"{kind} fit needs at least {n_min} steps")
         X = np.asarray(sub.V, dtype=float)
-        center = X.mean(axis=0)
-        Y = X if anchor else X - center
+        P = np.vstack([X, np.zeros(3)]) if origin else X
+        center = P.mean(axis=0)
+        Y = P if anchor else P - center
+        # the direction and the MAD do not depend on the scale; the eigenvalues
+        # of a tensor of weak vectors (< 1e-4 A/m) would be rounded to zero
+        scale = float(np.abs(Y).max())
+        if scale == 0:
+            raise ValueError("the selected vectors are identical, no line or plane")
+        Y = Y / scale
         T = OrientationTensor3(Y.T @ Y / len(Y))
         if kind == "line":
             v = np.asarray(T.V1, dtype=float)
@@ -493,7 +626,7 @@ class Specimen:
                 v = -v
             mad = T.MAD_l
             dang = None
-            if not anchor and np.linalg.norm(center) > 0:
+            if not anchor and not origin and np.linalg.norm(center) > 0:
                 dang = float(_angles([v], [center])[0])
         else:
             v = np.asarray(T.V3, dtype=float)
@@ -503,19 +636,28 @@ class Specimen:
             mad = T.MAD_p
             dang = None
         comp = Component(
-            kind, Vector3(v), float(mad), dang, len(sub), tuple(sub.labels), anchor
+            kind,
+            Vector3(v),
+            float(mad),
+            dang,
+            len(sub),
+            tuple(sub.labels),
+            anchor,
+            origin=origin,
         )
         if coords == "specimen":
             return comp
         return comp.transform(self.rotation(coords), coords)
 
-    def interpret(self, name, steps=None, *, kind="line", anchor=False):
+    def interpret(self, name, steps=None, *, kind="line", anchor=False, origin=False):
         """Fit a component by `pca` and store it under `name`.
 
         Returns:
             Component: the stored component in geographic coordinates.
         """
-        comp = self.pca(steps, kind=kind, anchor=anchor, coords="specimen")
+        comp = self.pca(
+            steps, kind=kind, anchor=anchor, origin=origin, coords="specimen"
+        )
         self.components[name] = comp
         return comp.transform(self.rotation("geo"), "geo")
 
@@ -532,6 +674,34 @@ class Specimen:
         return float(
             np.linalg.norm(np.diff(X, axis=0), axis=1).sum() + np.linalg.norm(X[-1])
         )
+
+    def susceptibility_jump(self, factor=2.5):
+        """Temperature of the first sudden increase of the susceptibility.
+
+        The first step whose susceptibility `k` exceeds `factor` times that of the
+        preceding step with a susceptibility, in a thermal demagnetization
+        series. It marks the growth of new magnetic minerals, as in the
+        susceptibility monitoring of PuffinPlot (limit 2.5).
+
+        Args:
+            factor: ratio of the susceptibilities of consecutive steps.
+
+        Returns:
+            float or None: the level (degrees C) of the step, None without a jump.
+
+        Raises:
+            ValueError: for an AF demagnetization.
+        """
+        if self.demag == "af":
+            raise ValueError("the susceptibility jump is for thermal demagnetization")
+        prev = None
+        for step in self.steps:
+            if step.k is None or not np.isfinite(step.k):
+                continue
+            if prev is not None and prev > 0 and step.k > prev * factor:
+                return step.level
+            prev = step.k
+        return None
 
     def mdf(self, vds=False):
         """Median destructive field (or temperature).
@@ -576,13 +746,16 @@ class Specimen:
 
     _META = (
         "name", "demag", "azimuth", "hade", "volume", "site", "latitude",
-        "longitude", "height", "rock", "age", "formation", "filename",
+        "longitude", "height", "rock", "age", "formation", "filename", "depth",
     )  # fmt: skip
 
     def to_json(self):
         """Return as JSON dict."""
         kwargs = {k: getattr(self, k) for k in self._META}
         kwargs["steps"] = [s.to_json() for s in self.steps]
+        for key in ("arm", "irm"):
+            if getattr(self, key):
+                kwargs[key] = [s.to_json() for s in getattr(self, key)]
         kwargs["bedding"] = list(self.bedding)
         kwargs["foldaxis"] = None if self.foldaxis is None else list(self.foldaxis)
         kwargs["date"] = None if self.date is None else self.date.isoformat()
@@ -594,6 +767,8 @@ class Specimen:
         """Return ``Specimen`` from a dict of `to_json`."""
         kw = dict(obj_json["kwargs"])
         kw["steps"] = [DemagStep.from_json(s) for s in kw["steps"]]
+        for key in ("arm", "irm"):
+            kw[key] = [DemagStep.from_json(s) for s in kw.get(key, [])]
         kw["bedding"] = Vector3(kw["bedding"])
         if kw.get("foldaxis") is not None:
             kw["foldaxis"] = Lineation(kw["foldaxis"])
@@ -607,16 +782,25 @@ class Specimen:
     # -- readers -----------------------------------------------------------
 
     @classmethod
-    def from_file(cls, filename, **kwargs):
-        """Read a ``.pmd``, ``.rs3`` or ``.squid`` file by its extension."""
-        ext = Path(filename).suffix.lower()
-        readers = {".pmd": cls.from_pmd, ".rs3": cls.from_rs3, ".squid": cls.from_squid}
-        if ext not in readers:
-            raise ValueError(f"Unsupported file type {ext!r}, expected {list(readers)}")
-        return readers[ext](filename, **kwargs)
+    def from_file(cls, filename, fmt=None, **kwargs):
+        """Read a file holding one specimen.
+
+        The format is taken from the extension (``.pmd``, ``.rs3``,
+        ``.squid``) or the content, or from `fmt`. Use ``Sample.from_file`` for
+        files with several specimens.
+        """
+        from apsg.paleomag._readers import _read_specimens
+
+        specimens = _read_specimens(filename, fmt=fmt, **kwargs)
+        if len(specimens) != 1:
+            raise ValueError(
+                f"{filename}: file holds {len(specimens)} specimens, "
+                "use Sample.from_file"
+            )
+        return specimens[0]
 
     @classmethod
-    def from_pmd(cls, filename, demag=None):
+    def from_pmd(cls, filename, demag=None, dialect=None):
         """Read a PMD file (Enkin's PaleoMac format).
 
         Line 2 holds the name and the orientation ``a``, ``b`` (core azimuth and
@@ -630,12 +814,18 @@ class Specimen:
         right) and files exported by Remasoft, which store the raw
         ``SDec``/``BDec`` of RS3 (core azimuth turned by 180 degrees, ``s`` the
         dip direction). The dialect reproducing the ``Dg Ig Ds Is`` columns
-        of the file is used; a warning is issued when neither does.
+        of the file is used; a warning is issued when neither does or when
+        the file has no such columns to decide with (then standard PMD is
+        assumed). Lines after the column header that are not data rows are
+        reported in a warning.
 
         Args:
             filename: path of the file, or an open file object.
             demag: ``"thermal"`` or ``"af"``; guessed from the labels if None.
+            dialect: ``"pmd"`` or ``"remasoft"`` to skip the detection.
         """
+        if dialect not in (None, "pmd", "remasoft"):
+            raise ValueError(f"dialect must be 'pmd' or 'remasoft', not {dialect!r}")
         lines = [ln.translate(_PMD_GREEK) for ln in _read_lines(filename)]
         ih = next((i for i, ln in enumerate(lines) if "a=" in ln and "b=" in ln), None)
         if ih is None:
@@ -647,6 +837,8 @@ class Specimen:
             raise ValueError(
                 f"{filename}: missing {sorted(missing)} in orientation line"
             )
+        if o["v"] <= 0:
+            raise ValueError(f"{filename}: volume v={o['v']:g} must be positive")
         name = head[: head.index("a=")].strip()
         title = lines[ih - 1].strip() if ih > 0 else ""
         site = title.split("/")[0].strip() if "/" in title else ""
@@ -659,10 +851,12 @@ class Specimen:
                 )
             except ValueError:
                 date = None
-        steps, dg, ds = [], [], []
-        for ln in lines[ih + 2 :]:
+        steps, dg, ds, skipped = [], [], [], []
+        for i, ln in enumerate(lines[ih + 2 :], start=ih + 3):
             m = _PMD_ROW.match(ln)
             if not m:
+                if ln.strip():
+                    skipped.append(i)
                 continue
             label = m["label"].strip()
             xyz = np.array([float(m["x"]), float(m["y"]), float(m["z"])])
@@ -684,22 +878,39 @@ class Specimen:
             ds.append(None if None in vals[2:4] else _dir(vals[2], vals[3]))
         if not steps:
             raise ValueError(f"{filename}: no data rows found")
+        if skipped:
+            shown = ", ".join(map(str, skipped[:3])) + (
+                ", ..." if len(skipped) > 3 else ""
+            )
+            warnings.warn(
+                f"{filename}: {len(skipped)} lines are not data rows and were "
+                f"skipped (lines {shown})",
+                stacklevel=2,
+            )
         dialects = {
             "pmd": (o["a"], o["b"], bedding_vector(o["s"] + 90, o["d"])),
             "remasoft": (o["a"] + 180, o["b"], bedding_vector(o["s"], o["d"])),
         }
-        best, misfit = None, np.inf
-        for key, (a, b, bed) in dialects.items():
+        best, misfit, comparable = dialect or "pmd", np.inf, False
+        for key, (a, b, bed) in dialects.items() if dialect is None else ():
             spec = cls(steps=steps, azimuth=a, hade=b, bedding=bed)
             err = []
             for computed, stored in ((spec.geo, dg), (spec.tilt, ds)):
                 pairs = [(c, s) for c, s in zip(computed, stored) if s is not None]
                 if pairs:
                     err.append(np.median(_angles(*zip(*pairs))))
+            comparable = comparable or bool(err)
             score = float(np.sum(err)) if err else 0.0
             if score < misfit:
                 best, misfit = key, score
-        if misfit > 2:
+        if dialect is None and not comparable:
+            warnings.warn(
+                f"{filename}: no Dg/Ig/Ds/Is columns to tell standard PMD from "
+                "Remasoft PMD; read as standard PMD (pass dialect='remasoft' "
+                "for a Remasoft export)",
+                stacklevel=2,
+            )
+        elif dialect is None and misfit > 2:
             warnings.warn(
                 f"{filename}: orientation does not reproduce the Dg/Ig and Ds/Is "
                 f"columns (misfit {misfit:.1f} deg); read as {best!r} PMD",
@@ -720,7 +931,7 @@ class Specimen:
         )
 
     @classmethod
-    def from_rs3(cls, filename, exclude=("C", "G"), demag=None):
+    def from_rs3(cls, filename, exclude=("C", "G"), demag=None, components=False):
         """Read a Remasoft RS3 file (AGICO).
 
         Fixed-width columns. The specimen line holds name, site, location,
@@ -736,11 +947,12 @@ class Specimen:
         and 90 when it is the plunge of the core axis, P3 is the clock
         position of the azimuth ``SDec`` measured in the field and P4 is 0
         when ``BDec`` is the dip direction of the bedding and 90 when it is
-        the strike (right-hand rule). Supported are P1 and P3 of 12 or 6,
-        P2 = 0 and P4 of 0 or 90: P3 = 6 turns ``SDec`` by 180 degrees and
-        P1 = 6 turns the specimen by 180 degrees about the core axis. The
-        codes 12 0 6 0, 6 0 6 0 and 12 0 12 90 were checked against the
-        ``Dge Ige Dtc Itc`` columns of Remasoft files.
+        the strike (right-hand rule). See `_agico_orientation`: P1 and P3 of
+        3, 6, 9 or 12, P2 of 0 or 90 and P4 of 0 or 90 are supported. The codes
+        12 0 6 0, 6 0 6 0 and 12 0 12 90 were checked against the
+        ``Dge Ige Dtc Itc`` columns of Remasoft files, the codes of P2 = 90 against
+        SUSAR reports (see `_agico_orientation`), the arrows at 3 and 9 o'clock
+        follow the conversion of PuffinPlot.
 
         Args:
             filename: path of the file.
@@ -748,10 +960,36 @@ class Specimen:
                 great circle (``G``) fits of Remasoft.
             demag: ``"thermal"`` or ``"af"``; from the step units or row IDs
                 if None.
+            components: also import the component (``C``) and great circle
+                (``G``) rows as ``Specimen.components``. Each row is refitted by
+                `pca` from the steps between its two limits (a ``C`` row is a free line,
+                with an ``O`` flag with the origin added as a data point, a ``G`` row a
+                plane through the origin) and a warning is issued when the printed
+                direction (specimen coordinates, the pole for a ``G`` row) or MAD
+                is not reproduced. Default False.
+
+        Warnings are issued for a missing core orientation, missing orientation
+        parameters (12 0 12 0 is assumed), step rows that cannot be read and
+        when the orientation does not reproduce the geographic and tilt-corrected
+        directions (``Dge Ige Dtc Itc``) printed in the rows.
+
+        Raises:
+            ValueError: if the file lacks the column line (``SDec``) or the
+                units line (``ID``).
         """
-        lines = [ln for ln in _read_lines(filename) if ln.strip()]
-        if len(lines) < 3:
-            raise ValueError(f"{filename}: not an RS3 file")
+        numbered = [
+            (i, ln) for i, ln in enumerate(_read_lines(filename), start=1) if ln.strip()
+        ]
+        lines = [ln for _, ln in numbered]
+        if (
+            len(lines) < 3
+            or "SDec" not in lines[0]
+            or not lines[2].lstrip().upper().startswith("ID")
+        ):
+            raise ValueError(
+                f"{filename}: not an RS3 file (expected a column line with SDec, "
+                "the specimen line and a units line starting with ID)"
+            )
         h = lines[1]
 
         def num(a, b):
@@ -760,33 +998,48 @@ class Specimen:
         def txt(a, b):
             return h[a:b].strip()
 
-        sdec, sinc = num(74, 80) or 0.0, num(80, 86) or 0.0
+        sdec, sinc = num(74, 80), num(80, 86)
+        if sdec is None or sinc is None:
+            warnings.warn(
+                f"{filename}: no core orientation (SDec, SInc), the specimen is "
+                "taken as unoriented",
+                stacklevel=2,
+            )
+        oriented = sdec is not None and sinc is not None
+        sdec, sinc = sdec or 0.0, sinc or 0.0
         bdec, binc = num(86, 92), num(92, 98)
         fdec, finc = num(98, 104), num(104, 110)
-        p1, p2, p3, p4 = (int(num(a, a + 3) or 0) for a in (110, 113, 116, 119))
-        if p1 not in (12, 6) or p2 != 0 or p3 not in (12, 6) or p4 not in (0, 90):
-            raise NotImplementedError(
-                f"{filename}: RS3 orientation parameters P1={p1}, P2={p2}, "
-                f"P3={p3}, P4={p4} are not supported (supported: P1 and P3 "
-                "12 or 6, P2 0, P4 0 or 90)"
+        codes = [num(a, a + 3) for a in (110, 113, 116, 119)]
+        if all(c is None for c in codes):
+            warnings.warn(
+                f"{filename}: no orientation parameters P1-P4, assuming 12 0 12 0",
+                stacklevel=2,
             )
-        azimuth = sdec + (180.0 if p3 == 6 else 0.0) + (180.0 if p1 == 6 else 0.0)
-        hade = -sinc if p1 == 6 else sinc
+            codes = [12, 0, 12, 0]
+        p1, p2, p3, p4 = (int(c or 0) for c in codes)
+        azimuth, hade, spin, dipdir = _agico_orientation(
+            p1, p2, p3, p4, sdec, sinc, bdec, source=filename
+        )
+        if not oriented:
+            azimuth, hade = 0.0, 0.0
         units = lines[2][3:14]
         if demag is None:
             if "mT" in units:
                 demag = "af"
             elif "C" in units:
                 demag = "thermal"
-        steps = []
-        for r in lines[3:]:
+        steps, geo, tilt, skipped, fits = [], [], [], [], []
+        for i, r in numbered[3:]:
             rid = r[0:2].strip()
+            if rid in ("C", "G"):
+                fits.append((i, r))
             if rid in exclude:
                 continue
             step = r[3:13].strip()
             M = _float(r[13:27].strip())
             dsp, isp = _float(r[27:33].strip()), _float(r[33:39].strip())
             if M is None or dsp is None or isp is None:
+                skipped.append(i)
                 continue
             if rid == "N":
                 label = "NRM"
@@ -798,22 +1051,37 @@ class Specimen:
                 DemagStep(
                     label,
                     _float(step, _level(label)),
-                    Vector3(M * _dir(dsp, isp)),
+                    _spin(Vector3(M * _dir(dsp, isp)), spin),
                     a95=_float(r[75:81].strip(), 0.0),
                     k=_float(r[81:95].strip()),
                     comment=r[115:].strip(),
                 )
             )
+            pair = []
+            for a in (39, 51):
+                d, n = _float(r[a : a + 6]), _float(r[a + 6 : a + 12])
+                pair.append(None if None in (d, n) else _dir(d, n))
+            geo.append(pair[0])
+            tilt.append(pair[1])
+        if skipped:
+            shown = ", ".join(map(str, skipped[:3])) + (
+                ", ..." if len(skipped) > 3 else ""
+            )
+            warnings.warn(
+                f"{filename}: {len(skipped)} step rows without intensity or direction "
+                f"were skipped (lines {shown})",
+                stacklevel=2,
+            )
         if demag is None:
             demag = _demag_from_labels([s.label for s in steps])
         bedding = Vector3(_UP)
         if bdec is not None and binc is not None:
-            bedding = bedding_vector(bdec + p4, binc)
-        return cls(
+            bedding = bedding_vector(dipdir, binc)
+        spec = cls(
             name=txt(0, 10),
             steps=steps,
             demag=demag,
-            azimuth=azimuth % 360,
+            azimuth=azimuth,
             hade=hade,
             bedding=bedding,
             foldaxis=Lineation(fdec, finc) if None not in (fdec, finc) else None,
@@ -826,6 +1094,73 @@ class Specimen:
             formation=txt(71, 74),
             filename=str(filename),
         )
+        _check_geometry(spec, geo, tilt, filename, stacklevel=3)
+        if components:
+            spec._rs3_components(fits, filename)
+        return spec
+
+    def _rs3_components(self, fits, source):
+        """Refit the ``C`` and ``G`` rows of an RS3 file as components.
+
+        The rows give a name, the limits (step labels) of the fit, the printed
+        direction in specimen coordinates and the MAD (``Prec``); they are fitted
+        again by `pca` from the steps between the limits and a warning is issued
+        when the printed values are not reproduced.
+        """
+
+        def find(token):
+            if token.upper().startswith("NRM"):
+                level = 0.0
+            else:
+                m = re.search(r"\d+(?:\.\d+)?", token)
+                if m is None:
+                    return None
+                level = float(m.group())
+            hits = [k for k, s in enumerate(self.steps) if abs(s.level - level) < 1e-6]
+            return hits[0] if hits else None
+
+        for i, r in fits:
+            name = r[3:13].strip() or r[0:2].strip()
+            tail = r[95:].split()
+            ends = [find(tok) for tok in tail[:2]] if len(tail) >= 2 else [None]
+            if len(ends) < 2 or None in ends:
+                warnings.warn(
+                    f"{source}: line {i}: steps of the limits {tail[:2]} of "
+                    f"component {name!r} not found, skipped",
+                    stacklevel=4,
+                )
+                continue
+            a, b = sorted(ends)
+            line = r[0:2].strip() == "C"
+            try:
+                comp = self.pca(
+                    slice(a, b + 1),
+                    kind="line" if line else "plane",
+                    anchor=not line,
+                    origin=line and "O" in tail[2:],
+                    coords="specimen",
+                )
+            except ValueError as err:
+                warnings.warn(
+                    f"{source}: line {i}: component {name!r} skipped ({err})",
+                    stacklevel=4,
+                )
+                continue
+            dsp, isp = _float(r[27:33].strip()), _float(r[33:39].strip())
+            mad = _float(r[75:81].strip())
+            if dsp is not None and isp is not None and mad is not None:
+                ang = float(_angles([np.asarray(comp.vector)], [_dir(dsp, isp)])[0])
+                ang = min(ang, 180 - ang)  # the sense of the line is not compared
+                if ang > 1 or abs(comp.mad - mad) > 1:
+                    warnings.warn(
+                        f"{source}: line {i}: component {name!r} differs from its refit "
+                        f"({ang:.1f} deg, MAD {mad:.1f} printed, {comp.mad:.1f} fitted)",
+                        stacklevel=4,
+                    )
+            key, n = name, 2
+            while key in self.components:
+                key, n = f"{name}{n}", n + 1
+            self.components[key] = comp
 
     @classmethod
     def from_squid(cls, filename, demag=None):
@@ -1424,9 +1759,58 @@ class Sample:
         self.name = name
 
     @classmethod
-    def from_files(cls, filenames, name="Default", **kwargs):
-        """Read specimens from files (see ``Specimen.from_file``)."""
-        return cls([Specimen.from_file(f, **kwargs) for f in filenames], name=name)
+    def from_file(cls, filename, name=None, fmt=None, **kwargs):
+        """Read all specimens of a file.
+
+        The format is taken from the extension or the content, or from `fmt`;
+        `name` defaults to the file stem.
+        """
+        from apsg.paleomag._readers import _read_specimens
+
+        if name is None:
+            name = "Default" if hasattr(filename, "read") else Path(filename).stem
+        return cls(_read_specimens(filename, fmt=fmt, **kwargs), name=name)
+
+    @classmethod
+    def from_files(cls, filenames, name="Default", fmt=None, **kwargs):
+        """Read the specimens of several files (see `from_file`)."""
+        from apsg.paleomag._readers import _read_specimens
+
+        specimens = []
+        for f in filenames:
+            specimens.extend(_read_specimens(f, fmt=fmt, **kwargs))
+        return cls(specimens, name=name)
+
+    @classmethod
+    def from_directory(
+        cls,
+        path,
+        pattern="*",
+        recursive=False,
+        name=None,
+        fmt=None,
+        errors="warn",
+        **kwargs,
+    ):
+        """Read all files of a directory, sorted by name.
+
+        Files whose format is not recognized are skipped unless `fmt` is given.
+        A file that cannot be read (for instance one with a header but no steps) is
+        skipped with a warning, unless ``errors="raise"``.
+
+        Args:
+            path: directory.
+            pattern: glob pattern of the files.
+            recursive: also search subdirectories.
+            name: sample name, the directory name by default.
+            fmt: format name overriding the detection.
+            errors: ``"warn"`` (default) or ``"raise"`` for files that cannot be read.
+            **kwargs: passed to the readers.
+        """
+        from apsg.paleomag._readers import _read_directory
+
+        specimens = _read_directory(path, pattern, recursive, fmt, errors, **kwargs)
+        return cls(specimens, name=Path(path).name if name is None else name)
 
     def __repr__(self):
         return f"Sample {self.name}: {len(self)} specimens"
@@ -1455,6 +1839,49 @@ class Sample:
     def names(self):
         """List of specimen names."""
         return [s.name for s in self.specimens]
+
+    def rpi(self, normalizer=None, method="susceptibility", **kwargs):
+        """Relative paleointensity of the specimens, see
+        ``relative_paleointensity``.
+
+        Args:
+            normalizer: ``Sample`` whose specimens of the same name are the
+                normalizers (AF demagnetization of the ARM or IRM); for
+                ``"arm_acquisition"`` the `arm` steps of the specimens themselves are
+                used if None.
+            method: ``"susceptibility"``, ``"af"`` or ``"arm_acquisition"``.
+            **kwargs: `min_level` and `max_level`.
+
+        Returns:
+            dict: ``RPIEstimate`` by specimen name. Specimens without a
+                normalizer are skipped with a warning.
+        """
+        from apsg.paleomag._procedures import relative_paleointensity
+
+        result, missing = {}, []
+        for s in self.specimens:
+            norm = None
+            if normalizer is not None:
+                if s.name not in normalizer.names:
+                    missing.append(s.name)
+                    continue
+                norm = normalizer[s.name]
+            result[s.name] = relative_paleointensity(s, norm, method, **kwargs)
+        if missing:
+            warnings.warn(
+                f"no normalizer for {', '.join(missing)}", UserWarning, stacklevel=2
+            )
+        return result
+
+    def by_site(self):
+        """Dict of ``Sample`` by the `site` of the specimens, in order of appearance.
+
+        For long-core data the site of a specimen is its core section.
+        """
+        groups = {}
+        for s in self.specimens:
+            groups.setdefault(s.site, []).append(s)
+        return {k: Sample(v, name=k) for k, v in groups.items()}
 
     def to_json(self):
         """Return as JSON dict."""

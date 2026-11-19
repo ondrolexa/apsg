@@ -10,7 +10,7 @@ import it explicitly:
 >>> ZijderveldPlot(s, coords="tilt").show()
 ```
 
-A [`Specimen`][apsg.paleomag.Specimen] reads PMD, Remasoft RS3 and SQUID files and fits
+A [`Specimen`][apsg.paleomag.Specimen] reads PMD, Remasoft RS3, SQUID, AGICO JR6, Caltech CIT and 2G Enterprises files (several specimens per file through [`Sample.from_file`][apsg.paleomag.Sample.from_file]) and fits
 components by principal component analysis; a [`Sample`][apsg.paleomag.Sample] collects
 specimens for mean directions, fold and reversal tests and virtual geomagnetic poles.
 
@@ -36,6 +36,12 @@ specimens for mean directions, fold and reversal tests and virtual geomagnetic p
 
 ::: apsg.paleomag.inclination_only_mean
 
+::: apsg.paleomag.relative_paleointensity
+
+::: apsg.paleomag.RPIEstimate
+
+::: apsg.paleomag.align_core_sections
+
 ::: apsg.paleomag.vgp
 
 ::: apsg.paleomag.core_rotation
@@ -54,6 +60,8 @@ All plots are `PaleomagPlot` subclasses: keyword arguments override `apsg_conf.p
 ::: apsg.paleomag.ZijderveldPlot
 
 ::: apsg.paleomag.DemagPlot
+
+::: apsg.paleomag.KappaTPlot
 
 ::: apsg.paleomag.SpecimenStereoPlot
 

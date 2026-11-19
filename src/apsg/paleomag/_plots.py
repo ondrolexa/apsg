@@ -174,6 +174,55 @@ class DemagPlot(PaleomagPlot):
         return ax
 
 
+class KappaTPlot(PaleomagPlot):
+    """Susceptibility and intensity against temperature of a thermal ``Specimen``.
+
+    The bulk susceptibility `k` of the steps (left axis) and ``M / Mmax`` (right
+    axis, dashed) against the treatment level. A vertical line marks the
+    `susceptibility_jump`, the growth of new magnetic minerals on heating.
+
+    Args:
+        specimen: ``Specimen`` with the susceptibility of its steps.
+
+    Keyword Args:
+        factor (float): ratio of consecutive susceptibilities of the jump, default 2.5.
+        **kwargs: the keyword arguments of ``PaleomagPlot``.
+    """
+
+    window_title = "Susceptibility-temperature plot"
+    _options: ClassVar[dict] = {"factor": 2.5}
+
+    def __init__(self, specimen, **kwargs):
+        super().__init__(specimen, **kwargs)
+        steps = [s for s in specimen.steps if s.k is not None]
+        if not steps:
+            raise ValueError(f"{specimen.name}: the steps have no susceptibility")
+        self._steps = steps
+        self._jump = specimen.susceptibility_jump(self._opts["factor"])
+
+    def _default_title(self):
+        jump = "" if self._jump is None else f", jump at {self._jump:g}°C"
+        return f"{_title(self.data)}{jump}"
+
+    def _draw(self):
+        ax = self.fig.subplots()
+        lv = [s.level for s in self._steps]
+        ax.plot(
+            lv, [s.k for s in self._steps], "o-", color=self._kwargs["horizontal_color"]
+        )
+        ax.set_xlabel("Temperature [°C]")
+        ax.set_ylabel("Susceptibility", color=self._kwargs["horizontal_color"])
+        ax.yaxis.grid()
+        M = self.data.intensity
+        twin = ax.twinx()
+        twin.plot(self.data.levels, M / M.max(), "k--")
+        twin.set_ylabel("M/Mmax")
+        twin.set_ylim(0, 1.02)
+        if self._jump is not None:
+            ax.axvline(self._jump, color=self._kwargs["vertical_color"], ls=":")
+        return ax
+
+
 def _specimen_net(specimen, coords, components, **kwargs):
     data = specimen.vectors(coords).normalized()
     s = StereoNet(**kwargs)

@@ -37,13 +37,13 @@ class Dataset:
 
 
 _FILES = {
-    "mele": Dataset(
-        "mele",
+    "faults": Dataset(
+        "faults",
         "faults",
         "Fault-slip data: fault plane, slickenline and sense of movement.",
         "tutorial data of APSG",
         94,
-        file="mele.csv",
+        file="faults.csv",
     ),
     "structures": Dataset(
         "structures",
@@ -83,14 +83,93 @@ _FILES = {
         10,
         file="pmdata.zip",
     ),
+    "melechov": Dataset(
+        "melechov",
+        "ams",
+        "AMS of 51 measured specimens of 5 sites (MEL1-MEL5) of the Melechov massif "
+        '(dict of ``AMSSite`` by site, read from the SUSAR reports; ``format="ran"`` '
+        "reads the binary RAN files of the same measurements, ``site=`` one site).",
+        "author's unpublished data: measured on an AGICO Kappabridge, reports of "
+        "SUSAR, RAN files and AEX table exported from Anisoft",
+        51,
+        "Core orientation P1-P4 = 12 90 6 0 (checked against the geographic and "
+        "`Paleo 1` tensors of the reports). The mean of the 51 geographic tensors is "
+        "reproduced by the AS1 statistics file of Anisoft: eigenvalues 1.027, 1.004, "
+        "0.969 and directions 253.3/30.2, 9.4/37.1, 136.1/38.2 (D/I of k1, k2, k3). "
+        "The RAN files hold the geographic tensors only (no core orientation).",
+        file="melechov.zip",
+    ),
+    "melechov_aex": Dataset(
+        "melechov_aex",
+        "table",
+        "Anisoft AEX export of ``melechov``: mean susceptibility Km (SI), anisotropy "
+        "degree P and shape parameter T of every measurement, indexed by specimen name.",
+        "author's unpublished data: measured on an AGICO Kappabridge, exported from Anisoft",
+        51,
+        file="melechov.zip",
+    ),
+    "trebic": Dataset(
+        "trebic",
+        "ams",
+        "AMS of 17 measured specimens of two sites (E236-2, TR1), as dict of "
+        "``AMSSite`` by site, read from the ASC reports (E236-2 in the layout of SUFAR "
+        '1.1 with a field column, TR1 of SUSAR with the code 12 90 12 0); ``format="ran"`` '
+        "reads the RAN files of the same measurements, ``site=`` one site.",
+        "author's unpublished data: measured on an AGICO Kappabridge, reports of "
+        "SUFAR 1.1 and SUSAR, RAN files and AEX tables exported from Anisoft",
+        17,
+        "The RAN files of SUFAR hold the field (A/m) in their first value, those of "
+        "SUSAR repeat the mean susceptibility; the tensors of the reports and RAN files "
+        "agree to the digits of the reports, and the AEX tables give the principal "
+        "susceptibilities and directions of every specimen.",
+        file="trebic.zip",
+    ),
+    "trebic_aex": Dataset(
+        "trebic_aex",
+        "table",
+        "Anisoft AEX tables of ``trebic``: specimen name, mean susceptibility Km, the "
+        "principal susceptibilities K1-K3, L, F, P, P', T, U and the directions of the "
+        "axes in geographic coordinates (the table names differ from those of the reports).",
+        "author's unpublished data: measured on an AGICO Kappabridge, exported from Anisoft",
+        17,
+        file="trebic.zip",
+    ),
+    "ams_table": Dataset(
+        "ams_table",
+        "ams",
+        "Table exported by Anisoft with the tensor components k11 ... k13 of three "
+        'specimens (geographic coordinates; ``frame="specimen"`` reads them as '
+        "specimen coordinates).",
+        "author's unpublished data: AMS measured on an AGICO Kappabridge, exported "
+        "from Anisoft",
+        3,
+        file="ams_table.txt",
+    ),
+    "ams_table_no_tensor": Dataset(
+        "ams_table_no_tensor",
+        "ams",
+        "Anisoft export without tensor components: six specimens of two sites "
+        "(GC2, GC4) with the principal directions and L, F, from which the "
+        "normed tensors are rebuilt.",
+        "author's unpublished data: AMS measured on an AGICO Kappabridge, exported "
+        "from Anisoft",
+        6,
+        file="ams_table_no_tensor.txt",
+    ),
 }
 
 _FILE_LOADERS = {
-    "mele": L.load_mele,
+    "faults": L.load_faults,
     "structures": L.load_structures,
     "structures_wide": L.load_structures_wide,
     "pmdata": L.load_pmdata,
     "pmdata_sites": L.load_pmdata_sites,
+    "melechov": L.load_melechov,
+    "melechov_aex": L.load_melechov_aex,
+    "trebic": L.load_trebic,
+    "trebic_aex": L.load_trebic_aex,
+    "ams_table": L.load_ams_table,
+    "ams_table_no_tensor": L.load_ams_table_no_tensor,
 }
 
 

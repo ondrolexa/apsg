@@ -231,12 +231,261 @@ def test_rs3_orientation_parameters(tmp_path, sdec, sinc, pcodes, bdec):
 
 @pytest.mark.parametrize(
     "pcodes, match",
-    [((3, 0, 6, 0), "P1=3"), ((12, 90, 6, 0), "P2=90"), ((12, 0, 6, 45), "P4=45")],
+    [((5, 0, 6, 0), "P1=5"), ((12, 45, 6, 0), "P2=45"), ((12, 0, 6, 45), "P4=45")],
 )
 def test_rs3_unsupported_orientation_parameters(tmp_path, pcodes, match):
     path = _edit_rs3_header(_write(_synthetic(), tmp_path / "s1.rs3"), 27, 81, pcodes)
     with pytest.raises(NotImplementedError, match=match):
         Specimen.from_rs3(path)
+
+
+def test_rs3_plunge_of_core_axis(tmp_path):
+    # P2 = 90: SInc is the plunge of the core axis, hade = 90 - SInc
+    spec = _synthetic()
+    path = _edit_rs3_header(
+        _write(spec, tmp_path / "s1.rs3"), 27, 90 - 81, (12, 90, 6, 0), 200
+    )
+    back = Specimen.from_rs3(path)
+    assert np.allclose(back.rotation("geo"), spec.rotation("geo"), atol=1e-6)
+
+
+@pytest.mark.parametrize("p1, spin", [(3, 90), (9, 270), (6, 180)])
+def test_rs3_arrow_clock_position(tmp_path, p1, spin):
+    # vectors measured with the arrow at 3, 6 or 9 o'clock are the canonical
+    # ones turned by -spin about the core axis (PuffinPlot rotateForP1)
+    spec = _synthetic()
+    c, s = np.cos(np.radians(-spin)), np.sin(np.radians(-spin))
+    Rz = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+    turned = Specimen(
+        name=spec.name,
+        steps=[replace(st, M=Vector3(Rz @ np.asarray(st.M))) for st in spec.steps],
+        demag=spec.demag,
+        azimuth=spec.azimuth,
+        hade=spec.hade,
+        bedding=spec.bedding,
+        site=spec.site,
+    )
+    path = _write(turned, tmp_path / "s1.rs3")
+    # the same SDec/SInc as written for 12 0 6 0; P1 = 6 is absorbed as
+    # azimuth + 180, hade -> -hade, so the measured vectors are kept
+    _edit_rs3_header(path, 27, 81, (p1, 0, 6, 0), 200)
+    # the direction columns of the file belong to the turned vectors, which the
+    # orientation parameters undo: the geometry check notices
+    with pytest.warns(UserWarning, match="does not reproduce"):
+        back = Specimen.from_rs3(path)
+    if p1 != 6:
+        assert np.allclose(back.rotation("geo"), spec.rotation("geo"), atol=1e-6)
+    got = np.array([np.asarray(st.M) for st in back.steps])
+    want = np.array([np.asarray(st.M) for st in spec.steps])
+    if p1 == 6:  # absorbed in the orientation: stored vectors are as measured
+        want = np.array([Rz @ w for w in want])
+    assert np.allclose(got, want, atol=5e-4)  # RS3 keeps 0.1 deg directions
+    assert np.allclose(np.asarray(back.geo), np.asarray(spec.geo), atol=5e-4)
+
+
+def _blank_rs3(path, line, a, b):
+    """Blank the columns a:b of a line of an RS3 file."""
+    lines = path.read_text(encoding="latin-1").splitlines()
+    lines[line] = lines[line][:a] + " " * (b - a) + lines[line][b:]
+    path.write_text("\r\n".join(lines) + "\r\n", encoding="latin-1")
+    return path
+
+
+def test_rs3_geometry_columns_are_checked(tmp_path):
+    spec = _synthetic()
+    path = _write(spec, tmp_path / "s1.rs3")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # the written columns agree
+        Specimen.from_rs3(path)
+    # turn the geographic direction of every row, keeping the tilt columns
+    lines = path.read_text(encoding="latin-1").splitlines()
+    for i in range(3, len(lines)):
+        dge = float(lines[i][39:45]) + 40
+        lines[i] = lines[i][:39] + f"{dge % 360:6.1f}" + lines[i][45:]
+    path.write_text("\r\n".join(lines) + "\r\n", encoding="latin-1")
+    with pytest.warns(UserWarning, match="does not reproduce"):
+        Specimen.from_rs3(path)
+
+
+def test_rs3_missing_orientation_and_codes_warn(tmp_path):
+    path = _write(_synthetic(), tmp_path / "s1.rs3")
+    with (
+        pytest.warns(UserWarning, match="no core orientation"),
+        pytest.warns(
+            UserWarning, match="does not reproduce"
+        ),  # the columns still hold it
+    ):
+        spec = Specimen.from_rs3(_blank_rs3(path, 1, 74, 86))
+    assert spec.azimuth == 0 and spec.hade == 0
+    path = _write(_synthetic(), tmp_path / "s2.rs3")
+    with (
+        pytest.warns(UserWarning, match="assuming 12 0 12 0"),
+        pytest.warns(UserWarning, match="does not reproduce"),
+    ):
+        spec = Specimen.from_rs3(_blank_rs3(path, 1, 110, 122))
+    assert spec.azimuth == pytest.approx(27.0)  # SDec 27 read as 12 0 12 0
+    # blank bedding is horizontal; the tilt columns of the file then disagree
+    path = _write(_synthetic(), tmp_path / "s3.rs3")
+    with pytest.warns(UserWarning, match="does not reproduce"):
+        spec = Specimen.from_rs3(_blank_rs3(path, 1, 86, 98))
+    assert np.allclose(np.asarray(spec.bedding), [0, 0, -1])
+
+
+def test_rs3_unreadable_rows_are_reported(tmp_path):
+    path = _write(_synthetic(), tmp_path / "s1.rs3")
+    _blank_rs3(path, 5, 13, 39)
+    _blank_rs3(path, 7, 13, 39)
+    with pytest.warns(UserWarning, match=r"2 step rows .*\b6\b"):
+        spec = Specimen.from_rs3(path)
+    assert len(spec) == len(_synthetic()) - 2
+
+
+def test_rs3_header_is_validated_and_sniffed(tmp_path):
+    path = _write(_synthetic(), tmp_path / "s1.rs3")
+    odd = path.rename(tmp_path / "s1.001")
+    assert Specimen.from_file(odd).name == "S1"  # content sniffing
+    assert Sample.from_directory(tmp_path).names == ["S1"]
+    text = odd.read_text(encoding="latin-1")
+    bad = tmp_path / "bad.rs3"
+    bad.write_text(text.replace("SDec", "Sxxx"), encoding="latin-1")
+    with pytest.raises(ValueError, match="not an RS3 file"):
+        Specimen.from_rs3(bad)
+    bad.write_text("\n".join(text.splitlines()[:2]), encoding="latin-1")
+    with pytest.raises(ValueError, match="not an RS3 file"):
+        Specimen.from_rs3(bad)
+
+
+def _rs3_fit_row(spec, rid, name, a, b, origin=False):
+    """A component (C) or great circle (G) row in the layout of Remasoft."""
+    kind = "line" if rid == "C" else "plane"
+    comp = spec.pca(
+        slice(a, b + 1), kind=kind, anchor=kind == "plane", origin=origin,
+        coords="specimen",
+    )  # fmt: skip
+    g = comp.transform(spec.rotation("geo"), "geo").vector.geo
+    t = comp.transform(spec.rotation("tilt"), "tilt").vector.geo
+    s = comp.vector.geo
+
+    def lim(k):
+        lv = spec.steps[k].level
+        return "NRM" if lv == 0 else f"{lv:g}°C"
+
+    flag = "O" if origin else ""
+    intensity = (
+        (b - a + 1)
+        if rid == "G"
+        else np.linalg.norm(np.asarray(spec.V[a : b + 1]).mean(axis=0))
+    )
+    return (
+        f"{rid:<2} {name:<10}{intensity:>14.7g}{s[0] % 360:6.1f}{s[1]:6.1f}"
+        f"{g[0] % 360:6.1f}{g[1]:6.1f}{t[0] % 360:6.1f}{t[1]:6.1f}{'':12}"
+        f"{comp.mad:6.1f}{'':14}{lim(a):<10}{lim(b):<9} {flag}"
+    ), comp
+
+
+def _rs3_with_fits(spec, path, fits):
+    path = _write(spec, path)
+    rows, comps = [], []
+    for args in fits:
+        row, comp = _rs3_fit_row(spec, *args)
+        rows.append(row)
+        comps.append(comp)
+    text = path.read_text(encoding="latin-1")
+    path.write_text(text + "\r\n".join(rows) + "\r\n", encoding="latin-1")
+    return path, comps
+
+
+def test_rs3_components_are_refitted(tmp_path):
+    spec = _synthetic()
+    fits = [
+        ("C", "CLT", 0, 3),
+        ("C", "CHT", 4, 11, True),
+        ("G", "GAll", 0, 6),
+    ]
+    path, comps = _rs3_with_fits(spec, tmp_path / "s1.rs3", fits)
+    assert Specimen.from_rs3(path).components == {}  # not imported by default
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # the printed values are reproduced
+        got = Specimen.from_rs3(path, components=True)
+    assert len(got) == len(spec)  # the fits are not steps
+    assert list(got.components) == ["CLT", "CHT", "GAll"]
+    clt, cht, gall = (got.components[k] for k in ("CLT", "CHT", "GAll"))
+    assert (clt.kind, clt.anchor, clt.origin, clt.n) == ("line", False, False, 4)
+    assert (cht.kind, cht.anchor, cht.origin) == ("line", False, True)
+    assert (gall.kind, gall.anchor, gall.origin) == ("plane", True, False)
+    assert clt.labels == ("T0", "T100", "T200", "T300")
+    for comp, want in zip((clt, cht, gall), comps, strict=True):
+        assert np.allclose(np.asarray(comp.vector), np.asarray(want.vector), atol=5e-3)
+        assert comp.mad == pytest.approx(
+            want.mad, abs=0.3
+        )  # 0.1 deg rounding in the file
+    assert cht.vector.angle(Vector3(*np.asarray(cht.vector))) < 1e-9
+
+
+def test_rs3_components_mismatch_missing_limits_and_duplicates(tmp_path):
+    spec = _synthetic()
+    path, _ = _rs3_with_fits(spec, tmp_path / "s1.rs3", [("C", "CLT", 0, 3)])
+    good = path.read_text(encoding="latin-1")
+    lines = good.splitlines()
+    row = lines[-1]
+    # printed direction not reproduced
+    lines[-1] = row[:27] + "100.0   5.0" + row[38:]
+    path.write_text("\r\n".join(lines) + "\r\n", encoding="latin-1")
+    with pytest.warns(UserWarning, match="differs from its refit"):
+        Specimen.from_rs3(path, components=True)
+    # a limit that is not a step is skipped
+    lines[-1] = row.replace("300°C", "333°C")
+    path.write_text("\r\n".join(lines) + "\r\n", encoding="latin-1")
+    with pytest.warns(UserWarning, match="not found, skipped"):
+        got = Specimen.from_rs3(path, components=True)
+    assert got.components == {}
+    # the same name twice is numbered
+    path.write_text(good + row + "\r\n", encoding="latin-1")
+    got = Specimen.from_rs3(path, components=True)
+    assert list(got.components) == ["CLT", "CLT2"]
+
+
+def test_pca_origin_variant():
+    # points on a line offset from the origin, plus noise-free curvature-free data
+    direction = np.array([0.6, 0.0, 0.8])
+    offset = np.array([0.0, 0.3, 0.0])
+    steps = [
+        DemagStep(f"T{i}", 100.0 * i, Vector3(offset + direction * (6 - i)))
+        for i in range(6)
+    ]
+    spec = Specimen(steps=steps, demag="thermal")
+    free = spec.pca(kind="line", coords="specimen")
+    org = spec.pca(kind="line", origin=True, coords="specimen")
+    assert free.mad == pytest.approx(0, abs=1e-6)  # collinear points
+    assert np.allclose(np.asarray(free.vector), direction, atol=1e-9)
+    assert org.origin and not free.origin and org.dang is None and org.n == 6
+    assert org.mad > 1 and abs(org.vector.angle(Vector3(*direction))) > 1
+    with pytest.raises(ValueError, match="origin"):
+        spec.pca(kind="line", origin=True, anchor=True)
+    with pytest.raises(ValueError, match="origin"):
+        spec.pca(kind="plane", origin=True)
+    assert Component.from_json(org.to_json()).origin is True
+    old = {k: v for k, v in org.to_json().items() if k != "origin"}
+    assert Component.from_json(old).origin is False  # files without the key
+    spec.interpret("O", origin=True)
+    assert spec.components["O"].origin
+
+
+@pytest.mark.parametrize("scale", [1.0, 1e-4, 1e-7])
+def test_pca_does_not_depend_on_the_intensity(scale):
+    # weak specimens (1e-4 A/m): the eigenvalues of the raw tensor are
+    # rounded to zero by the matrix code
+    base = _synthetic()
+    spec = replace(
+        base,
+        steps=[replace(s, M=Vector3(*(np.asarray(s.M) * scale))) for s in base.steps],
+    )
+    ref = base.pca(slice(1, 8), coords="specimen")
+    got = spec.pca(slice(1, 8), coords="specimen")
+    assert got.mad == pytest.approx(ref.mad, abs=1e-6) and got.mad > 0
+    assert np.allclose(np.asarray(got.vector), np.asarray(ref.vector), atol=1e-9)
+    with pytest.raises(ValueError, match="identical"):
+        Specimen(steps=[spec.steps[0], spec.steps[0]]).pca()
 
 
 def test_pmd_greek_header(tmp_path):
@@ -254,7 +503,7 @@ def test_pmd_greek_header(tmp_path):
 
 def test_from_file_rejects_unknown_extension(tmp_path):
     with pytest.raises(ValueError, match="Unsupported"):
-        Specimen.from_file(tmp_path / "x.dat")
+        Specimen.from_file(tmp_path / "x.xyz")
 
 
 def test_standard_pmd_roundtrip_and_glued_labels(tmp_path):
@@ -323,6 +572,110 @@ def test_pmd_inconsistent_orientation_warns(tmp_path):
     path.write_text(re.sub(r"a=\s*[-\d.]+", "a=100.0", text, count=1), "latin-1")
     with pytest.warns(UserWarning, match="does not reproduce"):
         Specimen.from_pmd(path)
+
+
+def _pmd_lines(spec, path):
+    return _write(spec, path).read_text(encoding="latin-1").splitlines()
+
+
+def test_pmd_skipped_lines_warn(tmp_path):
+    lines = _pmd_lines(_synthetic(), tmp_path / "s.pmd")
+    lines.insert(6, "this is not a data row")
+    path = tmp_path / "junk.pmd"
+    path.write_text("\r\n".join(lines), "latin-1")
+    with pytest.warns(UserWarning, match=r"1 lines are not data rows.*\b7\b"):
+        back = Specimen.from_pmd(path)
+    assert len(back) == len(_synthetic())
+
+
+def test_pmd_blank_and_terminator_lines_do_not_warn(tmp_path):
+    lines = _pmd_lines(_synthetic(), tmp_path / "s.pmd")
+    path = tmp_path / "blank.pmd"
+    path.write_text("\r\n".join(lines + ["", "  "]) + "\r\n\x1a\r\n", "latin-1")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        Specimen.from_pmd(path)
+
+
+def test_pmd_zero_volume_rejected(tmp_path):
+    path = _write(_synthetic(), tmp_path / "s.pmd")
+    text = path.read_text(encoding="latin-1")
+    path.write_text(re.sub(r"v=\S+m3", "v=0.0E+00m3", text, count=1), "latin-1")
+    with pytest.raises(ValueError, match="volume"):
+        Specimen.from_pmd(path)
+
+
+def test_pmd_without_direction_columns(tmp_path):
+    spec = _synthetic()
+    lines = _pmd_lines(spec, tmp_path / "s.pmd")
+    cut = lines[:2] + ["STEP  Xc [Am2]  Yc [Am2]  Zc [Am2]  MAG[A/m]"]
+    cut += [ln[:44] for ln in lines[3:]]
+    path = tmp_path / "bare.pmd"
+    path.write_text("\r\n".join(cut) + "\r\n", "latin-1")
+    with pytest.warns(UserWarning, match="no Dg/Ig/Ds/Is columns"):
+        std = Specimen.from_pmd(path)
+    assert np.allclose(std.rotation("geo"), spec.rotation("geo"), atol=1e-3)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # an explicit dialect needs no guess
+        rem = Specimen.from_pmd(path, dialect="remasoft")
+    assert rem.azimuth == pytest.approx((std.azimuth + 180) % 360)
+    with pytest.raises(ValueError, match="dialect"):
+        Specimen.from_pmd(path, dialect="other")
+
+
+@pytest.mark.parametrize(
+    "labels, demag",
+    [
+        (["NRM", "T250", "T300"], "thermal"),
+        (["NRM", "250°C"], "thermal"),
+        (["0", "250C"], "thermal"),
+        (["NRM", "M010", "M020"], "af"),
+        (["NRM", "H010"], "af"),
+        (["NRM", "100M", "200M"], "af"),
+        (["NRM", "100MT"], "af"),
+        (["NRM", "10", "20"], None),
+    ],
+)
+def test_demag_type_from_labels(labels, demag):
+    from apsg.paleomag._specimen import _demag_from_labels
+
+    assert _demag_from_labels(labels) == demag
+
+
+def test_file_dispatch_and_directory(tmp_path):
+    base = _synthetic()
+    for i, ext in enumerate(("pmd", "rs3")):
+        spec = replace(base, name=f"S{i}")
+        _write(spec, tmp_path / f"s{i}.{ext}")
+    (tmp_path / "notes.txt").write_text("not data")
+    (tmp_path / "sub").mkdir()
+    _write(replace(base, name="S9"), tmp_path / "sub" / "s9.pmd")
+    smp = Sample.from_directory(tmp_path)
+    assert smp.names == ["S0", "S1"] and smp.name == tmp_path.name
+    assert Sample.from_directory(tmp_path, recursive=True, name="all").names == [
+        "S0",
+        "S1",
+        "S9",
+    ]
+    assert Sample.from_directory(tmp_path, pattern="*.rs3").names == ["S1"]
+    assert Sample.from_file(tmp_path / "s0.pmd").names == ["S0"]
+    assert Sample.from_files([tmp_path / "s1.rs3"], name="X").name == "X"
+    with pytest.raises(NotADirectoryError):
+        Sample.from_directory(tmp_path / "s0.pmd")
+
+
+def test_file_content_sniffing_and_explicit_format(tmp_path):
+    path = _write(_synthetic(), tmp_path / "s.pmd")
+    odd = path.rename(tmp_path / "s.001")
+    assert Specimen.from_file(odd).name == "S1"  # sniffed
+    assert Specimen.from_file(odd, fmt="pmd").name == "S1"
+    with pytest.raises(ValueError, match="Unknown format"):
+        Specimen.from_file(odd, fmt="nope")
+    with open(odd, "rb") as f:
+        with pytest.raises(ValueError, match="fmt is required"):
+            Specimen.from_file(f)
+        f.seek(0)
+        assert Specimen.from_file(f, fmt="pmd").name == "S1"
 
 
 def _squid_text(a, b, s, d, rows):
@@ -974,6 +1327,83 @@ def test_inclination_only_input_checks():
         pytest.raises(ValueError, match="fold back"),
     ):
         inclination_only_mean([50, 55, 52, -48, -52, 45])
+
+
+# inclinations and the maximum likelihood results printed for them by PuffinPlot
+# (Lurcock & Wilson 2012, implementing Arason & Levi 2010): inc, kappa, t63, a95
+_AL_CASES = [
+    (
+        [39, 28, 43, 33, 7, -25, 2, -16, 10, 15, 39, -3, -84, -72, 14, -5, -41, 47]
+        + [-16, 43],
+        (8.565, 1.78808, 61.967, 36.253),
+    ),
+    ([40.0, 41, 42, 43, 44, 45, 46, -1], (39.530, 15.0558, 20.939, 14.751)),
+    (
+        [86, 86.5, 86.1, 87, 87.5, 87.2, 86.7, 86.7, 87.2, 87.1, 89, 89.9],
+        (87.495, 2602.30, 1.584, 0.851),
+    ),
+    (
+        [-86, -86.5, -86.1, -87, -87.5, -87.2, -86.7, -86.7, -87.2, -87.1, -89, -89.9],
+        (-87.495, 2602.30, 1.584, 0.851),
+    ),
+]
+
+
+@pytest.mark.parametrize("inc, expected", _AL_CASES)
+def test_inclination_only_arason_levi_reference_values(inc, expected):
+    res = inclination_only_mean(inc, method="arason_levi")
+    assert res["method"] == "arason_levi" and res["n"] == len(inc)
+    assert res["inc"] == pytest.approx(expected[0], abs=2e-3)
+    assert res["k"] == pytest.approx(expected[1], rel=2e-4)
+    assert res["t63"] == pytest.approx(expected[2], abs=2e-3)
+    assert res["alpha"] == pytest.approx(expected[3], abs=2e-3)
+
+
+def test_inclination_only_arason_levi_boundary_cases():
+    # data that fold back through the vertical: the estimate is the pole
+    res = inclination_only_mean(
+        [56.72, -71.16, 38.46, 82.34, -79.92, 6.70, 83.26, -44.58, 22.96, 62.48],
+        method="arason_levi",
+    )
+    assert res["inc"] == pytest.approx(90.0, abs=1e-6)
+    assert res["k"] == pytest.approx(0.681026, rel=1e-3)
+    assert np.isnan(res["alpha"])  # R <= 0: no confidence cone
+    # compatible with a uniform distribution
+    res = inclination_only_mean(
+        [-41.73, -13.53, -77.12, 64.31, 30.28, 54.24, -64.10, 11.15, -35.95, 68.74],
+        method="arason_levi",
+    )
+    assert res["k"] == 0.0 and np.isnan(res["inc"])
+    assert res["t63"] == pytest.approx(105.07, abs=0.01)  # 63 % of the sphere
+
+
+def test_inclination_only_arason_levi_mixed_polarities_do_not_warn():
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        inclination_only_mean([50, 55, 52, -48, -52, 45], method="arason_levi")
+
+
+def test_inclination_only_arason_levi_is_nearly_unbiased_and_beats_the_mean():
+    # I0 = 60, kappa = 40, N = 10 (the McFadden & Reid test above)
+    rng = np.random.default_rng(24)
+    ml, plain = [], []
+    for _ in range(100):
+        X = np.asarray(
+            Vector3Set.random_fisher(10, mean=Vector3(0, 60), kappa=40, rng=rng)
+        )
+        inc = np.degrees(np.arcsin(X[:, 2]))
+        ml.append(inclination_only_mean(inc, method="arason_levi")["inc"] - 60)
+        plain.append(inc.mean() - 60)
+    assert abs(np.mean(ml)) < 0.6
+    assert abs(np.mean(ml)) < abs(np.mean(plain)) + 0.3  # the mean is biased shallow
+
+
+def test_inclination_only_method_is_checked():
+    with pytest.raises(ValueError, match="method"):
+        inclination_only_mean([50, 60, 70], method="other")
+    with pytest.raises(ValueError, match="three"):
+        inclination_only_mean([50, 60], method="arason_levi")
+    assert inclination_only_mean([50, 55, 60, 52])["method"] == "mcfadden_reid"
 
 
 @pytest.mark.parametrize("lat", [-60, 0, 45])

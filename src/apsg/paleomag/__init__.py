@@ -8,6 +8,7 @@ from apsg.paleomag._plots import (
     DemagPlot,
     FoldTestPlot,
     InclinationOnlyPlot,
+    KappaTPlot,
     LinesPlanesPlot,
     PaleomagPlot,
     ReversalTestPlot,
@@ -15,6 +16,11 @@ from apsg.paleomag._plots import (
     SpecimenStereoPlot,
     TiltComparisonPlot,
     ZijderveldPlot,
+)
+from apsg.paleomag._procedures import (
+    RPIEstimate,
+    align_core_sections,
+    relative_paleointensity,
 )
 from apsg.paleomag._specimen import (
     Component,
@@ -37,8 +43,10 @@ __all__ = (
     "DemagStep",
     "FoldTestPlot",
     "InclinationOnlyPlot",
+    "KappaTPlot",
     "LinesPlanesPlot",
     "PaleomagPlot",
+    "RPIEstimate",
     "ReversalTestPlot",
     "Sample",
     "Specimen",
@@ -46,6 +54,7 @@ __all__ = (
     "SpecimenStereoPlot",
     "TiltComparisonPlot",
     "ZijderveldPlot",
+    "align_core_sections",
     "bailey_halls_mean",
     "bedding_vector",
     "core_rotation",
@@ -53,6 +62,7 @@ __all__ = (
     "kirschvink_mean",
     "lines_planes_mean",
     "mcfadden_fold_test",
+    "relative_paleointensity",
     "untilt_rotation",
     "vgp",
 )

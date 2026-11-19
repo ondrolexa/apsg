@@ -25,9 +25,12 @@ from apsg.ams._plots import (
 )
 from apsg.ams._readers import (
     from_dataframe,
+    read_aex,
     read_ams,
     read_anisoft_table,
+    read_asc,
     read_csv,
+    read_ran,
     read_sufar,
     to_dataframe,
 )
@@ -80,9 +83,12 @@ __all__ = (
     "kinematic_K",
     "orientation_tensor_from_ams",
     "osborn_factors",
+    "read_aex",
     "read_ams",
     "read_anisoft_table",
+    "read_asc",
     "read_csv",
+    "read_ran",
     "read_sufar",
     "tensor_bootstrap",
     "tensor_error_bootstrap",

@@ -26,8 +26,23 @@ sets are much faster, and the documentation has a fresh new home.
 - `PairSet.lisle_statistics()` for the mean pair after Lisle (1989).
 - Documentation page and tutorial on orientation distributions, including Bingham mixtures, Terzaghi weights and `cluster_bingham()` examples.
 - Paleomagnetism tutorial with artificial demagnetization data (PMD files read by `Specimen.from_pmd`, generated with a fixed seed): specimens, components, site means, great circles, fold and reversal tests, VGP and inclination-only data.
-- `apsg.data` provides example datasets without paths: `data.load("mele")`, `data.path("structures")`, `data.catalog()`. It holds the tutorial data, short published sets with citations (Fisher 1953, FLE B2, Tauxe Table 4.2, Fisher 1993 circular sets, ...) and seeded synthetic samples (Fisher, Kent, Watson, folds, tensors, faults).
+- `apsg.data` provides example datasets without paths: `data.load("faults")`, `data.path("structures")`, `data.catalog()`. It holds the tutorial data, short published sets with citations (Fisher 1953, FLE B2, Tauxe Table 4.2, Fisher 1993 circular sets, ...) and seeded synthetic samples (Fisher, Kent, Watson, folds, tensors, faults).
 - `Specimen.from_pmd()` accepts an open file.
+- `Sample.from_file()`, `Sample.from_files()` and `Sample.from_directory()` read files with several specimens and whole directories; the format is taken from the extension or the content (`fmt=` overrides it).
+- Readers for AGICO JR6 (`.jr6`), Caltech CIT (`.sam` index and specimen files) and 2G Enterprises (`.dat`, discrete samples) files. 2G files accept `moment="polar"`/`"cartesian"` and the tray (holder) subtraction `protocol`s of the 2G software; susceptibility, ARM and IRM steps are kept (`DemagStep.k`, `Specimen.arm`, `Specimen.irm`, `DemagStep.treatment`).
+- RS3, JR6 and SUFAR files with the orientation parameters P1 and P3 of 3, 6, 9 or 12 and P2 of 0 or 90 (were: 6 and 12, 0); P2 = 90 is checked against SUSAR reports.
+- `Specimen.from_rs3(components=True)` imports the component (`C`) and great circle (`G`) rows of Remasoft as `Specimen.components`, refitted by `pca` from the steps between their limits and checked against the printed direction and MAD; `Specimen.pca(origin=True)` is the Remasoft `O` variant (origin added as a data point of the line fit, `Component.origin`).
+- `Specimen.from_pmd(dialect=)` selects the standard or Remasoft PMD dialect, `Specimen.depth` holds the depth of long-core data.
+- 2G files of continuous long cores (`moment="polar"`): one specimen per section (`site`) and `depth`; `Sample.by_site()` splits them and `align_core_sections()` aligns the declinations of the sections of an unoriented core (top down, or to the mean declination).
+- `inclination_only_mean(method="arason_levi")`, the exact maximum-likelihood estimate of Arason & Levi (2010) for inclination-only data (reproduces the values of PuffinPlot); the result has the new key `method`.
+- `relative_paleointensity()` and `Sample.rpi()`: NRM over susceptibility, NRM against the AF demagnetized ARM or IRM, or against the stepwise ARM acquisition (mean ratio, slope, `r`), as `RPIEstimate`.
+- `Specimen.susceptibility_jump()` and `KappaTPlot` for the growth of the susceptibility on thermal demagnetization.
+- `read_ran()` reads the binary `.RAN` files of the AGICO Kappabridge (normed tensors in geographic coordinates, mean susceptibility, foliation), `read_aex()` the `.AEX` parameter tables (`Km P T`) of Anisoft as a `DataFrame`, `read_asc` is the new name of `read_sufar`, and `read_ams()` recognizes RAN files. The RAN layout is not published; it was decoded from example files and agrees with the ASC reports and AEX tables of the same measurements.
+- `data.load("trebic")` and `trebic_aex`: two sites in the layouts of SUFAR 1.1 (field column) and SUSAR, with the orientation code 12 90 12 0, RAN files and AEX tables with specimen names and principal values.
+- `Sample.from_directory(errors="warn")` skips files that cannot be read (for example a PMD header without steps) with a warning; `errors="raise"` raises.
+- `data.load("ams_table")` and `data.load("ams_table_no_tensor")`: Anisoft tables with and without tensor components (examples for `read_anisoft_table`).
+- `data.load("melechov")` (AMS of 51 specimens of five sites, from the SUSAR reports or the RAN files, `format="asc"`/`"ran"`) and `melechov_aex`.
+- `read_sufar()` honours the AGICO orientation code `O.P.` (P1-P4) and keeps the foliation as bedding and the volumes, holder, demagnetization factor, field and anisotropy tests in `AMSSpecimen.meta`.
 - `FisherQQPlot` shows Q-Q plots of directions against the Fisher distribution (colatitude and longitude, with the `M_E` and `M_U` tests).
 - `StereoNet.confidence()` plots a `ConfidenceRegion` (cone or ellipse) as given, e.g. `Kent.mean_confidence()`.
 - Paleomagnetic plots share one interface (`PaleomagPlot`): `ZijderveldPlot`, `DemagPlot`, `SpecimenStereoPlot`, `SpecimenPlot`, and new `FoldTestPlot`, `TiltComparisonPlot`, `ReversalTestPlot`, `InclinationOnlyPlot` and `LinesPlanesPlot` (with `method="bailey_halls"` for the confidence ellipse), configurable by `apsg_conf.paleomag`. The function wrappers `zijderveld_plot`, `demag_plot` and `stereo_plot` are removed; use the classes.
@@ -60,6 +75,9 @@ sets are much faster, and the documentation has a fresh new home.
 - `ACG.fit()` warns when the maximum-likelihood estimate does not exist (n <= 6 axes, Tyler 1987).
 
 ### Changed
+- `Specimen.from_rs3()` checks the orientation against the geographic and tilt-corrected directions printed in the file, warns about a missing core orientation, missing orientation parameters (12 0 12 0 assumed) and unreadable rows, and raises `ValueError` for files without the RS3 column and units lines; RS3 files are also recognized by content.
+- `read_anisoft_table()` warns about rows it cannot read instead of dropping them silently.
+- `Specimen.from_pmd()` warns about lines that are not data rows, about files without `Dg Ig Ds Is` columns (the dialect is then a guess) and rejects a zero volume; labels `H010`, `100M`, `100MT` and `250C` are recognized as treatments.
 - The `Bingham` and `Lisle` normalizers and maximum-likelihood fits are 10 to 100 times faster (Gauss-Legendre quadrature, analytic gradients and Newton's method with backtracking instead of adaptive quadrature and Nelder-Mead; `Lisle.fit` of 300 pairs takes 5 ms instead of 0.7 s).
 - Documentation moved to MkDocs with the Material theme.
 - `from_csv()`/`to_csv()` honour the `delimiter` argument.
@@ -91,6 +109,10 @@ sets are much faster, and the documentation has a fresh new home.
 - The `confidence_level` keyword of `RosePlot.muci()` (a percentage); use `level` (a fraction).
 
 ### Fixed
+- `read_aex()` dropped every row of exports whose first column is named `Spec Name` (specimen names, principal susceptibilities and directions); the names become the index.
+- `read_ran()` took the first value of a record as the mean susceptibility; in files of SUFAR 1.x it is the field (A/m), the susceptibility is the second value (`meta["field"]`).
+- `read_sufar()` skipped every page of SUSAR reports as incomplete (they have a norming factor instead of the field in the susceptibility row); SUFAR, SAFYR and SUSAR layouts are read.
+- `Specimen.pca()` returned MAD 0 or raised `ZeroDivisionError` for weak specimens (vectors below about 1e-4 A/m), because the eigenvalues of the tiny covariance were rounded to zero; the fit is now scale independent, and identical vectors raise `ValueError`.
 - The `Lisle` normalizer was inaccurate for strongly concentrated foliations with weakly concentrated lineations (`kappa1` near 0 with `kappa2` of 1000 or more, error up to 0.9 in the log normalizer), so fits and densities of such data change.
 - Pairs sampled from the Lisle distribution with `kappa2=0` were not perpendicular.
 - `RosePlot.pdf()` of `Vector2Set` is weighted by magnitude, as the bars and the pdf of `Direction2Set` were.

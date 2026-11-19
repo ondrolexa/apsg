@@ -8,7 +8,7 @@ available after `pip install apsg` without paths or downloads.
 >>> from apsg import data
 >>> data.catalog()                           # all datasets with description and source
 >>> data.info("fisher_1953")                 # citation and remarks
->>> f = data.load("mele")                    # FaultSet
+>>> f = data.load("faults")                    # FaultSet
 >>> smp = data.load("pmdata", site="PM04")   # paleomagnetic Sample
 >>> df = pd.read_csv(data.path("structures"))
 >>> data.tauxe_table_4_2()                   # dict: {"normal": ..., "reversed": ...}
@@ -19,18 +19,24 @@ cited from textbooks and papers (Fisher 1953, Fisher, Lewis & Embleton 1987, Fis
 Jupp 2000, Tauxe 2003, Lisle 1989, ...), and **synthetic** data with known properties generated with
 fixed seeds (Fisher, Kent, Watson and uniform samples, a folded
 bedding set, AMS and stress tensors, faults). `pmdata` is artificial: names, locations and
-numbers are invented.
+numbers are invented. `melechov`, `melechov_aex`, `trebic`, `trebic_aex`, `ams_table` and `ams_table_no_tensor` are real AMS measurements, the author's unpublished data.
 
 ## Available data
 
 <!-- catalog:start -->
 | Name | Kind | n | Description | Source |
 |----|----|----|----|----|
-| `mele` | faults | 94 | Fault-slip data: fault plane, slickenline and sense of movement. | tutorial data of APSG |
+| `faults` | faults | 94 | Fault-slip data: fault plane, slickenline and sense of movement. | tutorial data of APSG |
 | `structures` | table | 253 | Lineation and foliation measurements of several sites, one row per measurement (columns site, structure, azi, inc). | tutorial data of APSG |
 | `structures_wide` | table | 132 | The same kind of data in wide format: one row per measurement with the columns of S1, L1, S2 and L2 (empty where not measured). | tutorial data of APSG |
 | `pmdata` | paleomag | 71 | 71 thermally demagnetized drill-core specimens of 10 sites (dict of ``Sample`` by site, or one ``Sample`` with ``site=``). | artificial, seeded random generator: normal and reversed ChRM acquired before tilting, soft overprint, some great-circle and poorly behaved specimens |
 | `pmdata_sites` | table | 10 | Site table of ``pmdata``: location of the hypothetical study, bedding and number of specimens. | artificial, seeded random generator |
+| `melechov` | ams | 51 | AMS of 51 measured specimens of 5 sites (MEL1-MEL5) of the Melechov massif (dict of ``AMSSite`` by site, read from the SUSAR reports; ``format="ran"`` reads the binary RAN files of the same measurements, ``site=`` one site). | author's unpublished data: measured on an AGICO Kappabridge, reports of SUSAR, RAN files and AEX table exported from Anisoft |
+| `melechov_aex` | table | 51 | Anisoft AEX export of ``melechov``: mean susceptibility Km (SI), anisotropy degree P and shape parameter T of every measurement, indexed by specimen name. | author's unpublished data: measured on an AGICO Kappabridge, exported from Anisoft |
+| `trebic` | ams | 17 | AMS of 17 measured specimens of two sites (E236-2, TR1), as dict of ``AMSSite`` by site, read from the ASC reports (E236-2 in the layout of SUFAR 1.1 with a field column, TR1 of SUSAR with the code 12 90 12 0); ``format="ran"`` reads the RAN files of the same measurements, ``site=`` one site. | author's unpublished data: measured on an AGICO Kappabridge, reports of SUFAR 1.1 and SUSAR, RAN files and AEX tables exported from Anisoft |
+| `trebic_aex` | table | 17 | Anisoft AEX tables of ``trebic``: specimen name, mean susceptibility Km, the principal susceptibilities K1-K3, L, F, P, P', T, U and the directions of the axes in geographic coordinates (the table names differ from those of the reports). | author's unpublished data: measured on an AGICO Kappabridge, exported from Anisoft |
+| `ams_table` | ams | 3 | Table exported by Anisoft with the tensor components k11 ... k13 of three specimens (geographic coordinates; ``frame="specimen"`` reads them as specimen coordinates). | author's unpublished data: AMS measured on an AGICO Kappabridge, exported from Anisoft |
+| `ams_table_no_tensor` | ams | 6 | Anisoft export without tensor components: six specimens of two sites (GC2, GC4) with the principal directions and L, F, from which the normed tensors are rebuilt. | author's unpublished data: AMS measured on an AGICO Kappabridge, exported from Anisoft |
 | `fisher_1953` | vectors | 9 | Remanent magnetization of nine specimens of the 1947-48 Icelandic lava flow (declination, inclination). | Fisher, R.A. (1953) Dispersion on a sphere. Proc. R. Soc. London A 217, 295-305, Table 1; also Mardia & Jupp (2000) Table 9.1. |
 | `fle_b2` | vectors | 26 | Palaeomagnetic sample of 26 directions (declination, inclination) from Fisher, Lewis & Embleton, Appendix B2; the Fisher goodness-of-fit example. | Fisher, Lewis & Embleton (1987) Statistical Analysis of Spherical Data, Appendix B2 (Example 5.17). |
 | `mj_two_samples` | groups | 20 | Two samples of ten directions (azimuth, inclination) for two-sample tests (groups I and II). | Mardia & Jupp (2000) Directional Statistics, Example 10.7 (Table 10.3, Vistelius 1966). |

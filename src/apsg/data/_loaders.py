@@ -2,6 +2,7 @@
 
 import io
 import json
+import re
 import tempfile
 import zipfile
 from functools import cache
@@ -133,8 +134,8 @@ def count(kind, data):
 
 
 # -- files -------------------------------------------------------------------
-def load_mele(**kw):
-    return FaultSet.from_csv(file("mele.csv"), name=kw.pop("name", "mele"), **kw)
+def load_faults(**kw):
+    return FaultSet.from_csv(file("faults.csv"), name=kw.pop("name", "faults"), **kw)
 
 
 def load_structures(**kw):
@@ -186,3 +187,110 @@ def pmdata_folder():
         with zipfile.ZipFile(file("pmdata.zip")) as z:
             z.extractall(folder)
     return folder
+
+
+def _natural(text):
+    """Sort key putting ``MEL2`` before ``MEL10``."""
+    return [int(s) if s.isdigit() else s for s in re.split(r"(\d+)", text)]
+
+
+def _ams_zip_names(zipname):
+    with zipfile.ZipFile(file(zipname)) as z:
+        return z.namelist()
+
+
+def _ams_zip_sites(zipname):
+    names = [n for n in _ams_zip_names(zipname) if n.endswith(".ASC")]
+    return sorted((n[:-4] for n in names), key=_natural)
+
+
+def _load_ams_zip(zipname, format="asc", site=None):
+    """AMS specimens of the sites of an archive of ASC reports and RAN files."""
+    from apsg.ams import read_ran, read_sufar  # not imported by `import apsg`
+
+    readers = {"asc": ("ASC", read_sufar), "ran": ("RAN", read_ran)}
+    if format not in readers:
+        raise ValueError(f"format must be 'asc' or 'ran', not {format!r}")
+    sites = _ams_zip_sites(zipname)
+    if site is not None and site not in sites:
+        raise KeyError(f"unknown site {site!r}, available: {sites}")
+    ext, reader = readers[format]
+    out = {}
+    with zipfile.ZipFile(file(zipname)) as z:
+        for s in [site] if site else sites:
+            out[s] = reader(z.read(f"{s}.{ext}"), name=s)
+    return out[site] if site else out
+
+
+def _load_ams_aex(zipname, report_names):
+    """The AEX tables of an archive, one after the other in the order of the sites.
+
+    Tables without specimen names are indexed by the names of the ASC reports."""
+    import pandas as pd
+
+    from apsg.ams import read_aex
+
+    with zipfile.ZipFile(file(zipname)) as z:
+        files = sorted((n for n in z.namelist() if n.endswith(".AEX")), key=_natural)
+        df = pd.concat([read_aex(z.read(n)) for n in files], ignore_index=report_names)
+    if report_names:
+        df.index = [s.name for site in _load_ams_zip(zipname).values() for s in site]
+    return df
+
+
+def load_melechov(format="asc", site=None, **kw):
+    """AMS specimens of five sites, from the ASC reports or the RAN files."""
+    return _load_ams_zip("melechov.zip", format, site)
+
+
+def load_melechov_aex(**kw):
+    """The ``Km P T`` export of the Melechov specimens, indexed by specimen name."""
+    return _load_ams_aex("melechov.zip", True)
+
+
+def load_trebic(format="asc", site=None, **kw):
+    """AMS specimens of two sites, from the ASC reports (SUFAR 1.1, SUSAR) or RAN files."""
+    return _load_ams_zip("trebic.zip", format, site)
+
+
+def load_trebic_aex(**kw):
+    """The AEX exports of the two sites (with specimen names and principal values)."""
+    return _load_ams_aex("trebic.zip", False)
+
+
+def _folder(name, zipname):
+    from apsg import __version__
+
+    folder = Path(tempfile.gettempdir()) / f"apsg-data-{__version__}" / name
+    names = _ams_zip_names(zipname)
+    if not all((folder / n).exists() for n in names):
+        folder.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(file(zipname)) as z:
+            z.extractall(folder)
+    return folder
+
+
+def melechov_folder():
+    """Folder with the RAN, ASC and AEX files of ``melechov``, extracted once."""
+    return _folder("melechov", "melechov.zip")
+
+
+def trebic_folder():
+    """Folder with the RAN, ASC and AEX files of ``trebic``, extracted once."""
+    return _folder("trebic", "trebic.zip")
+
+
+def load_ams_table(**kw):
+    """Anisoft table with the tensor components (geographic coordinates)."""
+    from apsg.ams import read_anisoft_table  # not imported by `import apsg`
+
+    name = kw.pop("name", "ams_table")
+    return {name: read_anisoft_table(file("ams_table.txt"), name=name, **kw)}
+
+
+def load_ams_table_no_tensor(**kw):
+    """Tensor-less Anisoft export: tensors rebuilt from directions with L and F."""
+    from apsg.ams import read_anisoft_table
+
+    kw.setdefault("site", lambda n: n.split("_")[0])
+    return read_anisoft_table(file("ams_table_no_tensor.txt"), **kw)

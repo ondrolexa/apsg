@@ -99,10 +99,10 @@ def test_loads_return_independent_objects():
 
 
 def test_paths():
-    p = data.path("mele")
+    p = data.path("faults")
     assert p.is_file()
     assert np.array_equal(
-        np.asarray(FaultSet.from_csv(p).fol), np.asarray(data.load("mele").fol)
+        np.asarray(FaultSet.from_csv(p).fol), np.asarray(data.load("faults").fol)
     )
     assert data.path("structures").name == "structures.csv"
     folder = data.path("pmdata")
@@ -113,6 +113,26 @@ def test_paths():
         data.pmd_file("PM99.1a")
     with pytest.raises(ValueError):
         data.path("fisher_1953")
+
+
+def test_ams_table_datasets():
+    for name in ("ams_table", "ams_table_no_tensor"):
+        assert data.path(name).is_file() and data.info(name).kind == "ams"
+        assert "author's unpublished data" in data.info(name).source
+    table = data.load("ams_table")
+    assert list(table) == ["ams_table"] and table["ams_table"].names == [
+        "1/2",
+        "3/1",
+        "4/1",
+    ]
+    assert table["ams_table"][0].frame == "geographic"
+    assert data.load("ams_table", frame="specimen")["ams_table"][0].frame == "specimen"
+    sites = data.load("ams_table_no_tensor")
+    assert {k: len(v) for k, v in sites.items()} == {"GC2": 3, "GC4": 3}
+    # tensors are rebuilt from the directions and L, F: normed, as in the table
+    assert all(
+        np.trace(s.tensor) == pytest.approx(3) for v in sites.values() for s in v
+    )
 
 
 def test_pmdata_is_one_compact_file():
@@ -132,7 +152,7 @@ def test_tutorial_tables():
     assert list(data.load("structures").columns) == ["site", "structure", "azi", "inc"]
     wide = data.load("structures_wide")
     assert "S1_azi" in wide.columns and wide["S1_azi"].isna().any()
-    assert len(data.load("mele")) == 94
+    assert len(data.load("faults")) == 94
 
 
 # published data reproduce the printed statistics ---------------------------------
