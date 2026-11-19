@@ -355,54 +355,32 @@ def test_rs3_header_is_validated_and_sniffed(tmp_path):
         Specimen.from_rs3(bad)
 
 
-def _rs3_fit_row(spec, rid, name, a, b, origin=False):
-    """A component (C) or great circle (G) row in the layout of Remasoft."""
-    kind = "line" if rid == "C" else "plane"
-    comp = spec.pca(
-        slice(a, b + 1), kind=kind, anchor=kind == "plane", origin=origin,
-        coords="specimen",
-    )  # fmt: skip
-    g = comp.transform(spec.rotation("geo"), "geo").vector.geo
-    t = comp.transform(spec.rotation("tilt"), "tilt").vector.geo
-    s = comp.vector.geo
-
-    def lim(k):
-        lv = spec.steps[k].level
-        return "NRM" if lv == 0 else f"{lv:g}°C"
-
-    flag = "O" if origin else ""
-    intensity = (
-        (b - a + 1)
-        if rid == "G"
-        else np.linalg.norm(np.asarray(spec.V[a : b + 1]).mean(axis=0))
-    )
-    return (
-        f"{rid:<2} {name:<10}{intensity:>14.7g}{s[0] % 360:6.1f}{s[1]:6.1f}"
-        f"{g[0] % 360:6.1f}{g[1]:6.1f}{t[0] % 360:6.1f}{t[1]:6.1f}{'':12}"
-        f"{comp.mad:6.1f}{'':14}{lim(a):<10}{lim(b):<9} {flag}"
-    ), comp
+def _with_components(spec, fits):
+    """Store the component fits ``(name, kind, first, last, origin)`` on the specimen."""
+    for name, kind, first, last, *origin in fits:
+        spec.interpret(
+            name,
+            slice(first, last + 1),
+            kind=kind,
+            anchor=kind == "plane",
+            origin=bool(origin and origin[0]),
+        )
+    return spec
 
 
-def _rs3_with_fits(spec, path, fits):
-    path = _write(spec, path)
-    rows, comps = [], []
-    for args in fits:
-        row, comp = _rs3_fit_row(spec, *args)
-        rows.append(row)
-        comps.append(comp)
-    text = path.read_text(encoding="latin-1")
-    path.write_text(text + "\r\n".join(rows) + "\r\n", encoding="latin-1")
-    return path, comps
+_FITS = [
+    ("CLT", "line", 0, 3),
+    ("CHT", "line", 4, 11, True),
+    ("GAll", "plane", 0, 6),
+]
 
 
-def test_rs3_components_are_refitted(tmp_path):
-    spec = _synthetic()
-    fits = [
-        ("C", "CLT", 0, 3),
-        ("C", "CHT", 4, 11, True),
-        ("G", "GAll", 0, 6),
-    ]
-    path, comps = _rs3_with_fits(spec, tmp_path / "s1.rs3", fits)
+def test_rs3_components_are_written_and_refitted(tmp_path):
+    spec = _with_components(_synthetic(), _FITS)
+    path = tmp_path / "s1.rs3"
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        spec.to_rs3(path)
     assert Specimen.from_rs3(path).components == {}  # not imported by default
     with warnings.catch_warnings():
         warnings.simplefilter("error")  # the printed values are reproduced
@@ -414,17 +392,92 @@ def test_rs3_components_are_refitted(tmp_path):
     assert (cht.kind, cht.anchor, cht.origin) == ("line", False, True)
     assert (gall.kind, gall.anchor, gall.origin) == ("plane", True, False)
     assert clt.labels == ("T0", "T100", "T200", "T300")
-    for comp, want in zip((clt, cht, gall), comps, strict=True):
+    for name in got.components:
+        want, comp = spec.components[name], got.components[name]
+        assert comp.labels == want.labels and comp.levels == want.levels
         assert np.allclose(np.asarray(comp.vector), np.asarray(want.vector), atol=5e-3)
         assert comp.mad == pytest.approx(
             want.mad, abs=0.3
         )  # 0.1 deg rounding in the file
-    assert cht.vector.angle(Vector3(*np.asarray(cht.vector))) < 1e-9
+
+
+def test_rs3_component_rows_layout(tmp_path):
+    spec = _with_components(_synthetic(), _FITS)
+    path = tmp_path / "s1.rs3"
+    spec.to_rs3(path)
+    rows = path.read_text(encoding="latin-1").splitlines()[3 + len(spec) :]
+    assert [r[:2].strip() for r in rows] == ["C", "C", "G"]
+    clt, cht, gall = rows
+    assert clt[3:13].strip() == "CLT" and clt[95:105].strip() == "NRM"
+    assert clt[105:115].strip() == "300°C" and clt[115:].strip() == ""
+    assert cht[95:105].strip() == "350°C" and cht[115:].strip() == "O"
+    assert gall[13:27].strip() == "1" and gall[3:13].strip() == "GAll"
+    # directions: specimen, geographic and tilt-corrected, as in a step row
+    for row, name in zip(rows, ("CLT", "CHT", "GAll"), strict=True):
+        for a, coords in ((27, "specimen"), (39, "geo"), (51, "tilt")):
+            azi, inc = float(row[a : a + 6]), float(row[a + 6 : a + 12])
+            vec = (
+                spec.components[name].vector
+                if coords == "specimen"
+                else spec.component(name, coords).vector
+            )
+            assert _angle(_dir(azi, inc), np.asarray(vec)) < 0.1
+        assert float(row[75:81]) == pytest.approx(spec.components[name].mad, abs=0.06)
+    # the intensity of a line is the length of the removed vector
+    comp = spec.components["CLT"]
+    V = np.asarray(spec.V, dtype=float)
+    assert float(clt[13:27]) == pytest.approx(
+        abs((V[0] - V[3]) @ np.asarray(comp.vector)), rel=1e-5
+    )
+
+
+def test_rs3_af_limits_use_mt(tmp_path):
+    steps = [
+        DemagStep(f"M{i}", float(i), Vector3(1.0 - 0.1 * i, 0.2, 0.1))
+        for i in (0, 5, 10, 20, 30, 40)
+    ]
+    spec = Specimen(name="A1", steps=steps, demag="af")
+    spec.interpret("L", slice(1, 5))
+    spec.to_rs3(tmp_path / "a.rs3")
+    row = (tmp_path / "a.rs3").read_text(encoding="latin-1").splitlines()[-1]
+    assert row[95:105].strip() == "5mT" and row[105:115].strip() == "30mT"
+    assert Specimen.from_rs3(tmp_path / "a.rs3", components=True).components[
+        "L"
+    ].levels == (5.0, 30.0)
+
+
+def test_rs3_component_selection_skips_and_warnings(tmp_path):
+    spec = _with_components(_synthetic(), _FITS)
+    spec.interpret("Anch", slice(7, None), anchor=True)  # no RS3 row for this
+    spec.components["A_very_long_name"] = spec.components["CLT"]
+    path = tmp_path / "s1.rs3"
+    with pytest.warns(UserWarning) as rec:
+        spec.to_rs3(path)
+    text = " ".join(str(w.message) for w in rec)
+    assert "'Anch' is not written" in text and "'A_very_long_name' is cut" in text
+    got = Specimen.from_rs3(path, components=True)
+    assert list(got.components) == ["CLT", "CHT", "GAll", "A_very_lon"]
+    # selection by flag or name
+    spec.components.pop("Anch")
+    spec.components.pop("A_very_long_name")
+    spec.to_rs3(path, components=False)
+    assert Specimen.from_rs3(path, components=True).components == {}
+    spec.to_rs3(path, components=["GAll"])
+    assert list(Specimen.from_rs3(path, components=True).components) == ["GAll"]
+    spec.to_rs3(path, components="CHT")
+    assert list(Specimen.from_rs3(path, components=True).components) == ["CHT"]
+    with pytest.raises(KeyError, match="nope"):
+        spec.to_rs3(path, components=["CLT", "nope"])
+    # a component whose steps are not steps of the specimen is skipped
+    sliced = replace(spec, steps=spec.steps[:2], components=dict(spec.components))
+    with pytest.warns(UserWarning, match="not steps of the specimen"):
+        sliced.to_rs3(path)
 
 
 def test_rs3_components_mismatch_missing_limits_and_duplicates(tmp_path):
-    spec = _synthetic()
-    path, _ = _rs3_with_fits(spec, tmp_path / "s1.rs3", [("C", "CLT", 0, 3)])
+    spec = _with_components(_synthetic(), [("CLT", "line", 0, 3)])
+    path = tmp_path / "s1.rs3"
+    spec.to_rs3(path)
     good = path.read_text(encoding="latin-1")
     lines = good.splitlines()
     row = lines[-1]

@@ -1321,12 +1321,9 @@ class Specimen:
             # DOS end-of-file marker on its own line, newline-terminated
             f.write("\r\n".join(rows) + "\r\n\x1a\r\n")
 
-    def to_rs3(self, filename):
-        """Write the specimen as a Remasoft RS3 file (orientation parameters
-        12 0 6 0)."""
+    def _rs3_head_rows(self, unit):
+        """The column line, the specimen line and the units line of an RS3 file."""
         dd, dip = self._bedding_dd()
-        unit = "mT" if self.demag == "af" else "°C"
-        prefix = "M" if self.demag == "af" else "T"
 
         def f(value, fmt):
             return "" if value is None else format(value, fmt)
@@ -1334,7 +1331,7 @@ class Specimen:
         fold = ("", "")
         if self.foldaxis is not None:
             fold = (f"{self.foldaxis.geo[0]:.0f}", f"{self.foldaxis.geo[1]:.0f}")
-        rows = [
+        return [
             (
                 "Name      Site      Latitude  Longitude  Height    Rock           Age  "
                 "Fm SDec  SInc  BDec  BInc  FDec  FInc  P1 P2 P3 P4 Note"
@@ -1351,6 +1348,10 @@ class Specimen:
                 "   Itc   Dfc   Ifc   Prec    K[e-06 SI] Limit1    Limit2    Note      "
             ),
         ]
+
+    def _rs3_step_rows(self, prefix):
+        """The measurement rows of an RS3 file (`prefix` is the row ID of the steps)."""
+        rows = []
         for step, sp, g, t in zip(self.steps, self.V, self.geo, self.tilt):
             rid = "N" if step.label.upper().startswith("NRM") else prefix
             k = "" if step.k is None else f"{step.k:g}"
@@ -1360,10 +1361,112 @@ class Specimen:
                 f"{t.geo[0]:6.1f}{t.geo[1]:6.1f}{'':12}{step.a95:6.1f}{k:>14}"
                 f"{'':20} {step.comment}"
             )
+        return rows
+
+    def _rs3_component_rows(self, names, unit):
+        """Component (``C``) and great circle (``G``) rows of RS3 for the components `names`.
+
+        Returns:
+            tuple: the rows and a list of ``(name, reason)`` of the components that
+            RS3 cannot hold (a line forced through the origin, steps that are not
+            steps of the specimen).
+        """
+        labels = {lab: i for i, lab in enumerate(self.labels)}
+        rows, skipped = [], []
+
+        def limit(level):
+            return "NRM" if level == 0 else f"{level:g}{unit}"
+
+        def direction(vec):
+            azi, inc = vec.geo
+            return f"{azi % 360:6.1f}{inc:6.1f}"
+
+        for name in names:
+            comp = self.components[name]
+            if comp.kind == "line" and comp.anchor:
+                skipped.append(
+                    (name, "a line forced through the origin has no RS3 row")
+                )
+                continue
+            idx = [labels.get(lab) for lab in comp.labels]
+            if not idx or None in idx:
+                skipped.append((name, "its steps are not steps of the specimen"))
+                continue
+            first, last = min(idx), max(idx)
+            if comp.kind == "line":
+                rid, note = "C", "O" if comp.origin else ""
+                V = np.asarray(self.V, dtype=float)
+                v = np.asarray(comp.vector, dtype=float)
+                # the length of the removed vector; Remasoft's own value is not known
+                intensity = abs((V[first] - V[last]) @ v)
+            else:
+                rid, note, intensity = "G", "", 1.0  # the pole is a unit vector
+            if len(name) > 10:
+                warnings.warn(
+                    f"component name {name!r} is cut to 10 characters in the RS3 file",
+                    stacklevel=4,
+                )
+            rows.append(
+                (
+                    f"{rid:<2} {name[:10]:<10}{intensity:>14.7g}"
+                    f"{direction(comp.vector)}"
+                    f"{direction(self.component(name, 'geo').vector)}"
+                    f"{direction(self.component(name, 'tilt').vector)}"
+                    f"{'':12}{comp.mad:6.1f}{'':14}"
+                    f"{limit(self.steps[first].level):<10}"
+                    f"{limit(self.steps[last].level):<10}{note}"
+                ).rstrip()
+            )
+        return rows, skipped
+
+    def to_rs3(self, filename, components=True):
+        """Write the specimen as a Remasoft RS3 file (orientation parameters 12 0 6 0).
+
+        The file holds the column, specimen and units lines, one row per step and,
+        after them, one row per stored component: a ``C`` row for a line (the ``O`` flag
+        for a line fitted with the origin as a data point, `pca(origin=True)`) and a
+        ``G`` row for a plane (the direction columns hold its pole). The rows give the
+        directions of the component in specimen, geographic and tilt-corrected
+        coordinates, the MAD and the first and last step of the fit as limits (``NRM``,
+        ``300°C``, ``20mT``); `from_rs3` with ``components=True`` reads them back.
+
+        RS3 has no row for a line forced through the origin (``pca(anchor=True)``):
+        such components are skipped with a warning (refit them with ``origin=True`` to
+        write them). The intensity column of a ``C`` row is the length of the removed
+        vector (the projection of first minus last step on the fitted direction); it
+        differs from the number Remasoft writes, whose definition is not published, and
+        `from_rs3` ignores it. Component names are cut to 10 characters.
+
+        Args:
+            filename: path of the file.
+            components: ``True`` writes all components, ``False`` none, a name or a
+                list of names those.
+
+        Raises:
+            KeyError: for a name that is not a stored component.
+        """
+        if components is True:
+            names = list(self.components)
+        elif components is False or components is None:
+            names = []
+        else:
+            names = [components] if isinstance(components, str) else list(components)
+            unknown = [n for n in names if n not in self.components]
+            if unknown:
+                raise KeyError(f"no component {unknown[0]!r}")
+        unit = "mT" if self.demag == "af" else "°C"
+        rows = self._rs3_head_rows(unit)
+        rows += self._rs3_step_rows("M" if self.demag == "af" else "T")
+        fits, skipped = self._rs3_component_rows(names, unit)
+        for name, reason in skipped:
+            warnings.warn(
+                f"component {name!r} is not written to the RS3 file: {reason}",
+                stacklevel=2,
+            )
         with open(
             filename, "w", encoding="latin-1", errors="replace", newline=""
         ) as fh:
-            fh.write("\r\n".join(rows) + "\r\n")
+            fh.write("\r\n".join(rows + fits) + "\r\n")
 
 
 # ---------------------------------------------------------------------------
