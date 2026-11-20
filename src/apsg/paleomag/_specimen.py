@@ -256,7 +256,9 @@ class Component:
             data (Tauxe & Staudigel, 2004), None for planes and anchored fits.
         n: number of steps used.
         labels: labels of the steps used.
-        anchor: True when the fit was forced through the origin.
+        anchor: True when the fit was forced through the origin, ``"last"`` when it was
+            forced through the last of the steps (``Anchor to last point`` of
+            Remasoft), False for a free fit.
         coords: coordinate system of `vector`.
         origin: True when the origin was added as a data point of the fit
             (the ``O`` variant of Remasoft).
@@ -272,7 +274,7 @@ class Component:
     dang: float | None
     n: int
     labels: tuple
-    anchor: bool = False
+    anchor: bool | str = False
     coords: str = "specimen"
     origin: bool = False
     alpha: float | None = None
@@ -362,6 +364,21 @@ def _demag_from_labels(labels):
         ):
             return "af"
     return None
+
+
+def _demag_from_levels(levels):
+    """Guess the demagnetization type from the treatment levels alone.
+
+    For files that carry no unit (RS3 rows of a Remasoft file are all ``M``). Thermal
+    series reach more than 200 degrees or start at 50 or more; AF series start
+    at a few mT and rarely pass 200 mT. Checked on 90 thermal (first step 120-160,
+    last 240-600) and 44 AF specimens (first step 1, last 10-100 mT); a series that
+    fits neither, or has fewer than two levels, gives None.
+    """
+    lv = [x for x in levels if x > 0]
+    if len(lv) < 2:
+        return None
+    return "thermal" if max(lv) > 200 or min(lv) >= 50 else "af"
 
 
 def _check_geometry(spec, geo, tilt, source, tol=2.0, stacklevel=3):
@@ -589,10 +606,14 @@ class Specimen:
         The best-fit line (``kind="line"``) or plane (``kind="plane"``) of the
         selected steps (Kirschvink, 1980; Tauxe, 2003, §3.8, eq. 3.4-3.10). For a
         free fit the points are centred on their centre of mass; an anchored
-        fit (``anchor=True``) passes through the origin; ``origin=True`` adds
+        fit (``anchor=True``) passes through the origin and ``anchor="last"``
+        through the last selected step; ``origin=True`` adds
         the origin as one more point of the centred fit of a line (the ``O``
         variant of Remasoft), which pulls the line towards the origin without
-        forcing it through. The magnetization
+        forcing it through. The four combinations of Remasoft's ``Include ORIGIN``
+        and ``Anchor to last point`` are: free fit, ``anchor="last"``,
+        ``origin=True`` and ``anchor=True`` (both clicked: anchored to the origin).
+        The magnetization
         vectors are used unnormalized. The line points along the removed
         magnetization (first minus last step; along the data for anchored
         fits), the plane pole along ``first x last``, so the sense of the
@@ -602,7 +623,8 @@ class Specimen:
             steps: selection of steps (slice, positions, labels or boolean
                 mask); None for all.
             kind: ``"line"`` or ``"plane"``.
-            anchor: force the fit through the origin. Default False.
+            anchor: True forces the fit through the origin, ``"last"`` through the
+                last selected step (lines only). Default False.
             origin: include the origin as a data point (lines only, not with
                 `anchor`). Default False.
             coords: coordinate system of the result.
@@ -617,18 +639,22 @@ class Specimen:
         """
         if kind not in ("line", "plane"):
             raise ValueError(f"kind must be 'line' or 'plane', got {kind!r}")
+        if anchor not in (False, True, "last"):
+            raise ValueError(f"anchor must be False, True or 'last', got {anchor!r}")
+        if anchor == "last" and kind != "line":
+            raise ValueError("anchor='last' applies to lines only")
         if origin and (anchor or kind != "line"):
             raise ValueError("origin applies to free line fits only")
         sub = self if steps is None else self[steps]
         if isinstance(sub, DemagStep):
             raise TypeError("pca needs a selection of steps, not a single step")
-        n_min = (2 if kind == "line" else 3) - int(anchor)
+        n_min = (2 if kind == "line" else 3) - int(anchor is True)
         if len(sub) < n_min:
             raise ValueError(f"{kind} fit needs at least {n_min} steps")
         X = np.asarray(sub.V, dtype=float)
         P = np.vstack([X, np.zeros(3)]) if origin else X
-        center = P.mean(axis=0)
-        Y = P if anchor else P - center
+        center = X[-1] if anchor == "last" else P.mean(axis=0)
+        Y = P if anchor is True else P - center
         # the direction and the MAD do not depend on the scale; the eigenvalues
         # of a tensor of weak vectors (< 1e-4 A/m) would be rounded to zero
         scale = float(np.abs(Y).max())
@@ -638,7 +664,7 @@ class Specimen:
         T = OrientationTensor3(Y.T @ Y / len(Y))
         if kind == "line":
             v = np.asarray(T.V1, dtype=float)
-            ref = center if anchor or len(X) < 2 else X[0] - X[-1]
+            ref = center if anchor is True or len(X) < 2 else X[0] - X[-1]
             if np.dot(v, ref) < 0:
                 v = -v
             mad = T.MAD_l
@@ -1028,12 +1054,16 @@ class Specimen:
             exclude: row IDs to skip, by default the component (``C``) and
                 great circle (``G``) fits of Remasoft.
             demag: ``"thermal"`` or ``"af"``; from the step units or row IDs
-                if None.
+                if None. Remasoft files usually carry no unit (``Step[ ]``, every step
+                row ``M``), then the type is guessed from the levels (thermal above 200
+                or from 50 up, otherwise AF, see `_demag_from_levels`); pass `demag`
+                for a series that is not typical. Thermal steps are labelled ``T120``.
             components: also import the component (``C``) and great circle
                 (``G``) rows as ``Specimen.components``. Each row is refitted by
-                `pca` from the steps between its two limits (a ``C`` row is a free line,
-                with an ``O`` flag with the origin added as a data point, a ``G`` row a
-                plane through the origin) and a warning is issued when the printed
+                `pca` from the steps between its two limits (a ``C`` row is a free line;
+                the Note flags select the variant: ``O`` adds the origin as a data
+                point, ``A`` anchors the line to the last step and ``OA`` to the
+                origin; a ``G`` row is a plane through the origin) and a warning is issued when the printed
                 direction (specimen coordinates, the pole for a ``G`` row) or MAD
                 is not reproduced. Default False.
 
@@ -1142,7 +1172,21 @@ class Specimen:
                 stacklevel=2,
             )
         if demag is None:
-            demag = _demag_from_labels([s.label for s in steps])
+            # the rows of Remasoft files are all "M", whatever the treatment
+            ids = {r[0:2].strip() for _, r in numbered[3:]}
+            demag = (
+                "thermal"
+                if "T" in ids
+                else _demag_from_levels([st.level for st in steps])
+                or _demag_from_labels([s.label for s in steps])
+            )
+        if demag == "thermal":
+            steps = [
+                replace(st, label="T" + st.label[1:])
+                if st.label.startswith("M") and st.label[1:2].isdigit()
+                else st
+                for st in steps
+            ]
         bedding = Vector3(_UP)
         if bdec is not None and binc is not None:
             bedding = bedding_vector(dipdir, binc)
@@ -1201,12 +1245,20 @@ class Specimen:
                 continue
             a, b = sorted(ends)
             line = r[0:2].strip() == "C"
+            note = tail[2].upper() if len(tail) > 2 else ""
+            flags = note if note in ("O", "A", "OA", "AO") else ""  # Note column
+            if not line:
+                anchor = True
+            elif "A" in flags:  # anchored to the origin when O is set as well
+                anchor = True if "O" in flags else "last"
+            else:
+                anchor = False
             try:
                 comp = self.pca(
                     slice(a, b + 1),
                     kind="line" if line else "plane",
-                    anchor=not line,
-                    origin=line and "O" in tail[2:],
+                    anchor=anchor,
+                    origin=line and "O" in flags and not anchor,
                     coords="specimen",
                 )
             except ValueError as err:
@@ -1383,22 +1435,22 @@ class Specimen:
 
         for name in names:
             comp = self.components[name]
-            if comp.kind == "line" and comp.anchor:
-                skipped.append(
-                    (name, "a line forced through the origin has no RS3 row")
-                )
-                continue
             idx = [labels.get(lab) for lab in comp.labels]
             if not idx or None in idx:
                 skipped.append((name, "its steps are not steps of the specimen"))
                 continue
             first, last = min(idx), max(idx)
             if comp.kind == "line":
-                rid, note = "C", "O" if comp.origin else ""
+                # Remasoft's Note flags: O include origin, A anchor to the last point,
+                # OA (both) anchor to the origin
+                rid = "C"
+                note = {True: "OA", "last": "A"}.get(comp.anchor, "O" * comp.origin)
                 V = np.asarray(self.V, dtype=float)
                 v = np.asarray(comp.vector, dtype=float)
-                # the length of the removed vector; Remasoft's own value is not known
-                intensity = abs((V[first] - V[last]) @ v)
+                # the length of the removed vector (first step to the last one, or to
+                # the origin when anchored there); Remasoft's own value is not known
+                end = 0 if comp.anchor is True else V[last]
+                intensity = abs((V[first] - end) @ v)
             else:
                 rid, note, intensity = "G", "", 1.0  # the pole is a unit vector
             if len(name) > 10:
@@ -1423,19 +1475,20 @@ class Specimen:
         """Write the specimen as a Remasoft RS3 file (orientation parameters 12 0 6 0).
 
         The file holds the column, specimen and units lines, one row per step and,
-        after them, one row per stored component: a ``C`` row for a line (the ``O`` flag
-        for a line fitted with the origin as a data point, `pca(origin=True)`) and a
-        ``G`` row for a plane (the direction columns hold its pole). The rows give the
+        after them, one row per stored component: a ``C`` row for a line and a
+        ``G`` row for a plane (the direction columns hold its pole). The Note column of
+        a ``C`` row holds the Remasoft flags of the fit: ``O`` (`Include ORIGIN`,
+        `pca(origin=True)`), ``A`` (`Anchor to last point`, `pca(anchor="last")`) and
+        ``OA`` (both: anchored to the origin, `pca(anchor=True)`). The rows give the
         directions of the component in specimen, geographic and tilt-corrected
         coordinates, the MAD and the first and last step of the fit as limits (``NRM``,
         ``300°C``, ``20mT``); `from_rs3` with ``components=True`` reads them back.
 
-        RS3 has no row for a line forced through the origin (``pca(anchor=True)``):
-        such components are skipped with a warning (refit them with ``origin=True`` to
-        write them). The intensity column of a ``C`` row is the length of the removed
-        vector (the projection of first minus last step on the fitted direction); it
-        differs from the number Remasoft writes, whose definition is not published, and
-        `from_rs3` ignores it. Component names are cut to 10 characters.
+        The intensity column of a ``C`` row is the length of the removed vector (the
+        projection of first minus last step on the fitted direction, first step minus
+        origin for ``OA``); it differs from the number Remasoft writes, whose
+        definition is not published, and `from_rs3` ignores it. Component names are
+        cut to 10 characters.
 
         Args:
             filename: path of the file.

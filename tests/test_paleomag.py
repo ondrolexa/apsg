@@ -446,19 +446,97 @@ def test_rs3_af_limits_use_mt(tmp_path):
     ].levels == (5.0, 30.0)
 
 
+def test_rs3_without_units_guesses_the_demagnetization_type(tmp_path):
+    # Remasoft files have no unit in the header and "M" in every step row
+    def strip(path, **kw):
+        text = path.read_text(encoding="latin-1")
+        text = text.replace("Step[°C]", "Step[ ]").replace("Step[mT]", "Step[ ]")
+        lines = text.split("\r\n")
+        lines = [("M " + ln[2:] if ln[:2] in ("T ", "A ") else ln) for ln in lines]
+        path.write_text("\r\n".join(lines), encoding="latin-1")
+
+    thermal = _synthetic()
+    path = tmp_path / "t.rs3"
+    thermal.to_rs3(path)
+    strip(path)
+    got = Specimen.from_rs3(path)
+    assert got.demag == "thermal" and got.labels[1].startswith("T")
+    af = _synthetic(
+        demag="af",
+        steps=[
+            replace(st, level=lv, label=f"M{lv:g}")
+            for st, lv in zip(
+                thermal.steps,
+                [0, 1, 3, 5, 10, 20, 30, 40, 60, 80, 100, 100.0][: len(thermal.steps)],
+            )
+        ],
+    )
+    af.to_rs3(path)
+    strip(path)
+    assert Specimen.from_rs3(path).demag == "af"
+    assert Specimen.from_rs3(path, demag="thermal").demag == "thermal"
+    from apsg.paleomag._specimen import _demag_from_levels
+
+    assert _demag_from_levels([0, 120, 200, 300, 600]) == "thermal"
+    assert _demag_from_levels([0, 100, 150, 200]) == "thermal"
+    assert _demag_from_levels([0, 5, 10, 20, 100]) == "af"
+    assert _demag_from_levels([0]) is None and _demag_from_levels([]) is None
+
+
+def test_rs3_anchor_and_origin_variants_round_trip(tmp_path, recwarn):
+    # the four combinations of Include ORIGIN and Anchor to last point of Remasoft
+    spec = _synthetic()
+    sel = slice(3, 9)
+    variants = {
+        "A_free": ({}, ""),
+        "B_last": ({"anchor": "last"}, "A"),
+        "C_orig": ({"origin": True}, "O"),
+        "D_both": ({"anchor": True}, "OA"),
+    }
+    for name, (kw, _) in variants.items():
+        spec.interpret(name, sel, **kw)
+    path = tmp_path / "v.rs3"
+    spec.to_rs3(path)
+    rows = path.read_text(encoding="latin-1").splitlines()[-4:]
+    assert [r[115:].strip() for r in rows] == [f for _, f in variants.values()]
+    got = Specimen.from_rs3(path, components=True)
+    assert not [w for w in recwarn if "refit" in str(w.message)]
+    for name, (kw, _) in variants.items():
+        a, b = spec.components[name], got.components[name]
+        assert (b.anchor, b.origin) == (a.anchor, a.origin)
+        assert (
+            _angle(a.vector, b.vector) % 180 < 0.5
+            or _angle(a.vector, b.vector) % 180 > 179.5
+        )
+    # the anchored fits pass through their pivot
+    assert spec.components["B_last"].dang is None
+    assert spec.components["B_last"].anchor == "last"
+    with pytest.raises(ValueError, match="anchor"):
+        spec.pca(anchor="first")
+    with pytest.raises(ValueError, match="lines only"):
+        spec.pca(kind="plane", anchor="last")
+
+
+def test_pca_anchor_last_pivots_on_the_last_step():
+    spec = _synthetic()
+    comp = spec.pca(slice(3, 9), anchor="last", coords="specimen")
+    X = np.asarray(spec[3:9].V, dtype=float)
+    Y = X - X[-1]
+    w, vec = np.linalg.eigh(Y.T @ Y)
+    assert abs(np.asarray(comp.vector) @ vec[:, -1]) == pytest.approx(1, abs=1e-9)
+    mad = np.degrees(np.arctan(np.sqrt((w[0] + w[1]) / w[2])))
+    assert comp.mad == pytest.approx(mad, abs=1e-3)
+
+
 def test_rs3_component_selection_skips_and_warnings(tmp_path):
     spec = _with_components(_synthetic(), _FITS)
-    spec.interpret("Anch", slice(7, None), anchor=True)  # no RS3 row for this
     spec.components["A_very_long_name"] = spec.components["CLT"]
     path = tmp_path / "s1.rs3"
-    with pytest.warns(UserWarning) as rec:
+    with pytest.warns(UserWarning, match="'A_very_long_name' is cut"):
         spec.to_rs3(path)
-    text = " ".join(str(w.message) for w in rec)
-    assert "'Anch' is not written" in text and "'A_very_long_name' is cut" in text
     got = Specimen.from_rs3(path, components=True)
     assert list(got.components) == ["CLT", "CHT", "GAll", "A_very_lon"]
     # selection by flag or name
-    spec.components.pop("Anch")
     spec.components.pop("A_very_long_name")
     spec.to_rs3(path, components=False)
     assert Specimen.from_rs3(path, components=True).components == {}

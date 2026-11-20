@@ -149,12 +149,37 @@ def test_jr6_treatments_and_malformed_lines(tmp_path):
     assert [s.label for s in spec.arm] == ["M020"] and spec.arm[0].treatment == "arm"
     # a bare number needs the demagnetization type
     path.write_text(_jr6_line("A1", "100", M, 10, 20) + "\n")
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        with pytest.raises(ValueError, match="no JR6 data"):
-            Sample.from_file(path)
+    with pytest.raises(ValueError, match="pass demag="):
+        Sample.from_file(path)
     spec = Sample.from_file(path, demag="thermal")["A1"]
     assert spec.demag == "thermal" and spec.steps[0].level == 100
+    # steps listed out of order (as in AGICO example files) are sorted by level
+    path.write_text(
+        "\n".join(_jr6_line("A1", t, M, 10, 20) for t in ("A40", "NRM", "A10", "A25"))
+        + "\n"
+    )
+    assert Sample.from_file(path)["A1"].labels == ["NRM", "M010", "M025", "M040"]
+    # the level first, with a unit (inferred: 120°C is a thermal step, 20M an AF one)
+    path.write_text(
+        "\n".join(
+            _jr6_line("A1", t, M, 10, 20) for t in ("NRM", "20M", "120°C", "400C")
+        )
+        + "\n",
+        encoding="latin-1",
+    )
+    path.write_text(
+        path.read_text(encoding="latin-1") + _jr6_line("A1", "CA", M, 10, 20) + "\n",
+        encoding="latin-1",
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # a Remasoft component row is not malformed
+        spec = Sample.from_file(path)["A1"]
+    assert [(s.level, s.treatment) for s in spec.steps] == [
+        (0.0, "nrm"),
+        (20.0, "af"),
+        (120.0, "thermal"),
+        (400.0, "thermal"),
+    ]
 
 
 def test_jr6_unsupported_orientation(tmp_path):

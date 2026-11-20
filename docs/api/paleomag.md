@@ -10,7 +10,7 @@ import it explicitly:
 >>> ZijderveldPlot(s, coords="tilt").show()
 ```
 
-A [`Specimen`][apsg.paleomag.Specimen] reads PMD, Remasoft RS3, SQUID, AGICO JR6, Caltech CIT and 2G Enterprises files (several specimens per file through [`Sample.from_file`][apsg.paleomag.Sample.from_file]) and fits
+A [`Specimen`][apsg.paleomag.Specimen] reads PMD, Remasoft RS3 (thermal or AF is guessed from the levels, as the file has no unit), SQUID, AGICO JR6, Caltech CIT and 2G Enterprises files (several specimens per file through [`Sample.from_file`][apsg.paleomag.Sample.from_file]) and fits
 components by principal component analysis, by hand or by the automatic search of
 [`Specimen.find_components`][apsg.paleomag.Specimen.find_components] (windows of steps, dynamic-programming
 segments, site stacking with [`Sample.stack`][apsg.paleomag.Sample.stack]); a [`Sample`][apsg.paleomag.Sample] collects

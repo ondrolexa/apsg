@@ -5,6 +5,7 @@ JR6, ...) hold several specimens per file. ``Specimen.from_file`` and
 ``Sample.from_file`` / ``Sample.from_directory`` go through here.
 """
 
+import re
 import warnings
 from dataclasses import replace
 from pathlib import Path
@@ -55,21 +56,45 @@ def _by_name(items):
 # ---------------------------------------------------------------------------
 
 
+class _NeedsDemag(ValueError):
+    """A treatment without a type, for a file read without ``demag=``."""
+
+
 def _jr6_treatment(text, demag):
-    """Return (kind, level) of a JR6 treatment field."""
+    """Return (kind, level) of a JR6 treatment field.
+
+    The REMA6W manual only gives the field width (8 characters). Two spellings
+    occur: the type first (``T300``, ``A20``, ``M20`` = ARM) and the level first with
+    a unit after it (``20mT``, ``120°C``, ``350T``). The unit is read as AF for
+    ``M``/``MT`` and as thermal when it contains ``C`` or ``T``; this is inferred from
+    example files, not from the manual. A bare number has no type and needs `demag`.
+    Remasoft also writes its components as rows (``CA``, ``CB``, ...), which `_jr6`
+    skips.
+    """
     s = text.strip().upper()
     if not s or s.startswith("N"):
         return "nrm", 0.0
     kind = {"T": "thermal", "A": "af", "M": "arm"}.get(s[0])
-    number = _float(s[1:] if kind else s)
+    if kind is None:
+        m = re.match(r"([-+]?\d+\.?\d*)\s*(.*)", s)
+        number = _float(m.group(1)) if m else None
+        if number is None:
+            raise ValueError(f"unknown treatment {text!r}")
+        unit = m.group(2)
+        if unit in ("M", "MT"):
+            kind = "af"
+        elif "C" in unit or "T" in unit:
+            kind = "thermal"
+        if kind is None:
+            if demag is None:
+                raise _NeedsDemag(
+                    f"treatment {text!r} has no type, pass demag='thermal' or 'af'"
+                )
+            kind = demag
+        return kind, number
+    number = _float(s[1:])
     if number is None:
         raise ValueError(f"unknown treatment {text!r}")
-    if kind is None:
-        if demag is None:
-            raise ValueError(
-                f"treatment {text!r} has no type, pass demag='thermal' or 'af'"
-            )
-        kind = demag
     return kind, number
 
 
@@ -80,6 +105,8 @@ def _jr6(source, demag=None):
     for i, ln in enumerate(_read_lines(source), start=1):
         if not ln.strip():
             continue
+        if re.fullmatch(r"C[A-Z][A-Z0-9]*", ln[10:18].strip().upper()):
+            continue  # a component (CA, CB, ...) row written by Remasoft, not a step
         try:
             if len(ln.rstrip()) < 64:
                 raise ValueError("line too short")
@@ -88,6 +115,8 @@ def _jr6(source, demag=None):
             az, dip, faz, fdip = (float(ln[a : a + 4]) for a in (40, 44, 48, 52))
             p = [int(ln[a : a + 3]) for a in (64, 67, 70, 73)]
             kind, level = _jr6_treatment(ln[10:18], demag)
+        except _NeedsDemag:
+            raise
         except ValueError:
             bad.append(i)
             continue
@@ -117,6 +146,8 @@ def _jr6(source, demag=None):
                 label = f"M{level:03g}"
             step = DemagStep(label, level, M, treatment=kind)
             (arm if kind == "arm" else steps).append(step)
+        if len({st.treatment for st in steps} - {"nrm"}) <= 1:
+            steps.sort(key=lambda st: st.level)  # files may list the levels unsorted
         specimens.append(
             Specimen(
                 name=name,

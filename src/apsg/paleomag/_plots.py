@@ -124,7 +124,10 @@ def _components_on(ax, specimen, coords):
         color = colors[k % len(colors)]
         pts = V[idx]
         v = np.asarray(comp.transform(specimen.rotation(coords), coords).vector, float)
-        center = np.zeros(3) if comp.anchor else pts.mean(axis=0)
+        if comp.anchor == "last":
+            center = pts[-1]
+        else:
+            center = np.zeros(3) if comp.anchor else pts.mean(axis=0)
         t = (pts - center) @ v
         ends = center + np.outer([t.min(), t.max()], v)
         N, E, Z = pts.T
