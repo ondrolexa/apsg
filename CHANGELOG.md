@@ -6,151 +6,87 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Note: apsg's version numbers do not strictly follow [Semantic Versioning](https://semver.org/) --
 a patch-level release can include breaking changes, marked below as **BREAKING**.
 
-## [2.1.0] - Unreleased
+## [2.1.0] - 2026-11-22
 
 apsg 2.1 is a big step for orientation statistics. Fit, sample and compare more than a dozen
 distributions, from Fisher and Kent to Bingham and Lisle, in one consistent way. Split axes into
 fracture sets with Bingham mixtures, correct the orientation bias of boreholes and outcrops, and
 export the parameters of every set for discrete fracture network models. Ask your data real
-questions with a full set of hypothesis tests, each traced to its original source. Statistics of
-lineations and foliations no longer depend on how the axes were stored. Plots lay themselves out,
-legends go wherever you want, and bad input is caught at once instead of crashing later. Large data
-sets are much faster, and the documentation has a fresh new home.
+questions with a full set of hypothesis tests, each traced to its original source. Two new
+subpackages bring paleomagnetism (`apsg.paleomag`: readers for six file formats, component analysis
+including an automatic search, fold and reversal tests) and anisotropy of magnetic susceptibility
+(`apsg.ams`). Statistics of lineations and foliations no longer depend on how the axes were stored.
+Plots lay themselves out, legends go wherever you want, and bad input is caught at once instead of
+crashing later. Large data sets are much faster, and the documentation has a fresh new home.
 
 ### Added
-- `RosePlot(angles="math")` puts 0 on the right with angles counterclockwise (default `"geo"` keeps 0 on top, clockwise).
-- Orientation distributions with a common interface for fitting, sampling, density and model selection: uniform, von Mises, wrapped normal, Fisher, Kent, ESAG, Watson, Bingham, ACG and Lisle (for pairs).
-- `fit()` method on feature sets, e.g. `linset.fit("kent")`; distributions are available as `dist_fisher`, `dist_kent`, ...
-- `StereoNet.density()` and `RosePlot.density()` to plot the density of a fitted distribution.
-- `StereoNet.confidence()` methods `"kent"`, `"esag"` and `"lisle"`.
-- `PairSet.lisle_statistics()` for the mean pair after Lisle (1989).
-- Documentation page and tutorial on orientation distributions, including Bingham mixtures, Terzaghi weights and `cluster_bingham()` examples.
-- Paleomagnetism tutorial with artificial demagnetization data (PMD files read by `Specimen.from_pmd`, generated with a fixed seed): specimens, components, site means, great circles, fold and reversal tests, VGP and inclination-only data.
-- `apsg.data` provides example datasets without paths: `data.load("faults")`, `data.path("structures")`, `data.catalog()`. It holds the tutorial data, short published sets with citations (Fisher 1953, FLE B2, Tauxe Table 4.2, Fisher 1993 circular sets, ...) and seeded synthetic samples (Fisher, Kent, Watson, folds, tensors, faults).
-- `Specimen.from_pmd()` accepts an open file.
-- `Sample.from_file()`, `Sample.from_files()` and `Sample.from_directory()` read files with several specimens and whole directories; the format is taken from the extension or the content (`fmt=` overrides it).
-- Readers for AGICO JR6 (`.jr6`), Caltech CIT (`.sam` index and specimen files) and 2G Enterprises (`.dat`, discrete samples) files. 2G files accept `moment="polar"`/`"cartesian"` and the tray (holder) subtraction `protocol`s of the 2G software; susceptibility, ARM and IRM steps are kept (`DemagStep.k`, `Specimen.arm`, `Specimen.irm`, `DemagStep.treatment`).
-- RS3, JR6 and SUFAR files with the orientation parameters P1 and P3 of 3, 6, 9 or 12 and P2 of 0 or 90 (were: 6 and 12, 0); P2 = 90 is checked against SUSAR reports.
-- Automatic identification of magnetization components: `Specimen.window_fits()` (free and origin-anchored line fits of every window of steps in one pass, with MAD, DANG and the angle `alpha` between the fits), `find_component()` (best window by smallest MAD, or longest, with the characteristic-component rule `end="last"`), `find_components()` (segmentation of the Zijderveld path by dynamic programming into up to three linear components, steps that fit nothing left out) and `interpret_auto()`; `ComponentCriteria` (PmagPy limits: at least 4 steps, MAD <= 5, DANG <= 10 degrees) with `Sample.grade()` and a `criteria=` filter of `Sample.mean/directions/planes`; `Sample.stack()` (site stacking into a pseudo-specimen) and `Sample.interpret()` (the same range of levels in every specimen); `ZijderveldPlot(components=True)` and `ComponentSearchPlot`; `Component.alpha` and `Component.levels`. The search defaults (MAD <= 10, no DANG limit, smallest MAD) were chosen by comparison with 800 Remasoft picks of 439 weak-sediment specimens (the highest pick agrees within 5 degrees in about 53 % of the specimens that get a result, median 4.3 degrees; the legacy PmagPy limits are passed by 8 % of those picks). The result is a heuristic to check on the Zijderveld diagram. `data.load("rs3_components")` holds six specimens with their picks.
-- `Specimen.from_rs3()` no longer reads every Remasoft file as AF: RS3 files carry no unit (`Step[ ]`, every step row `M`), so the type is guessed from the levels (thermal above 200 or starting at 50 or more, otherwise AF; `demag=` overrides) and thermal steps are labelled `T120`. All 90 thermal and 44 AF example specimens with PMD twins are classified correctly.
-- JR6 reader: treatments written level first (`120°C`, `20mT`, `350T`) are understood besides the type-first ones (`T120`, `A20`); a bare number without `demag=` now raises a clear error instead of being skipped as a malformed line; steps listed out of order are sorted by level; Remasoft component rows (`CA`, `CB`, ...) are skipped silently. Checked on the AGICO example files (`antar_AF.jr6` with 6 and `antar06_TD.jr6` with 16 specimens, and single-specimen files whose RS3 twins agree to 0.03 degrees). The REMA6W manual only gives the field widths, so the unit rules are inferred from the example files.
-- `Specimen.to_rs3(components=True)` writes the stored components as Remasoft rows (`C` for lines, with the `O` flag for the origin variant, `G` for planes, limits `NRM`/`300°C`/`20mT`), so a specimen keeps its interpretation through a round trip with `from_rs3(components=True)`; `components=False` or a list of names selects none or some. The Note column carries the Remasoft flags of the fit: `O` (Include ORIGIN, `pca(origin=True)`), `A` (Anchor to last point, the new `pca(anchor="last")`: the line passes through the last selected step) and `OA` (both: anchored to the origin, `pca(anchor=True)`); `from_rs3(components=True)` reads all four variants (checked against a Remasoft file with one component of each). The intensity column of a `C` row is the length of the removed vector, not Remasoft's own value, whose definition is not published.
-- `Specimen.from_rs3(components=True)` imports the component (`C`) and great circle (`G`) rows of Remasoft as `Specimen.components`, refitted by `pca` from the steps between their limits and checked against the printed direction and MAD; `Specimen.pca(origin=True)` is the Remasoft `O` variant (origin added as a data point of the line fit, `Component.origin`).
-- `Specimen.from_pmd(dialect=)` selects the standard or Remasoft PMD dialect, `Specimen.depth` holds the depth of long-core data.
-- 2G files of continuous long cores (`moment="polar"`): one specimen per section (`site`) and `depth`; `Sample.by_site()` splits them and `align_core_sections()` aligns the declinations of the sections of an unoriented core (top down, or to the mean declination).
-- `inclination_only_mean(method="arason_levi")`, the exact maximum-likelihood estimate of Arason & Levi (2010) for inclination-only data (reproduces the values of PuffinPlot); the result has the new key `method`.
-- `relative_paleointensity()` and `Sample.rpi()`: NRM over susceptibility, NRM against the AF demagnetized ARM or IRM, or against the stepwise ARM acquisition (mean ratio, slope, `r`), as `RPIEstimate`.
-- `Specimen.susceptibility_jump()` and `KappaTPlot` for the growth of the susceptibility on thermal demagnetization.
-- `read_ran()` reads the binary `.RAN` files of the AGICO Kappabridge (normed tensors in geographic coordinates, mean susceptibility, foliation), `read_aex()` the `.AEX` parameter tables (`Km P T`) of Anisoft as a `DataFrame`, `read_asc` is the new name of `read_sufar`, and `read_ams()` recognizes RAN files. The RAN layout is not published; it was decoded from example files and agrees with the ASC reports and AEX tables of the same measurements.
-- `data.load("trebic")` and `trebic_aex`: two sites in the layouts of SUFAR 1.1 (field column) and SUSAR, with the orientation code 12 90 12 0, RAN files and AEX tables with specimen names and principal values.
-- `Sample.from_directory(errors="warn")` skips files that cannot be read (for example a PMD header without steps) with a warning; `errors="raise"` raises.
-- `data.load("ams_table")` and `data.load("ams_table_no_tensor")`: Anisoft tables with and without tensor components (examples for `read_anisoft_table`).
-- `data.load("melechov")` (AMS of 51 specimens of five sites, from the SUSAR reports or the RAN files, `format="asc"`/`"ran"`) and `melechov_aex`.
-- `read_sufar()` honours the AGICO orientation code `O.P.` (P1-P4) and keeps the foliation as bedding and the volumes, holder, demagnetization factor, field and anisotropy tests in `AMSSpecimen.meta`.
-- `FisherQQPlot` shows Q-Q plots of directions against the Fisher distribution (colatitude and longitude, with the `M_E` and `M_U` tests).
-- `StereoNet.confidence()` plots a `ConfidenceRegion` (cone or ellipse) as given, e.g. `Kent.mean_confidence()`.
-- Paleomagnetic plots share one interface (`PaleomagPlot`): `ZijderveldPlot`, `DemagPlot`, `SpecimenStereoPlot`, `SpecimenPlot`, and new `FoldTestPlot`, `TiltComparisonPlot`, `ReversalTestPlot`, `InclinationOnlyPlot` and `LinesPlanesPlot` (with `method="bailey_halls"` for the confidence ellipse), configurable by `apsg_conf.paleomag`. The function wrappers `zijderveld_plot`, `demag_plot` and `stereo_plot` are removed; use the classes.
-- Weighted orientation statistics: `weights=` of `fit()` for `VonMisesFisher`, `Watson` and `Bingham` (`fit_info.n_eff` is the effective sample size), of `Vector3Set.ortensor()`, `fisher_statistics()`, `watson_statistics()`, `bingham_statistics()` and `bootstrap_statistics()`, and `OrientationTensor3.from_features(weights=)`.
-- `terzaghi_weights()` and `Vector3Set.terzaghi_weights()` correct the orientation bias of borehole, scanline and outcrop sampling.
-- `BinghamMixture` (`dist_bingham_mixture`), a mixture of Bingham distributions fitted by EM with the number of components chosen by BIC (`BinghamMixture.select()`), `Vector3Set.fit_mixture()`, soft memberships and `split()` for identifying fracture sets. It is registered as `"bingham_mixture"` (`linset.fit("bingham_mixture", k=3)`, `linset.random_bingham_mixture()`).
-- `Vector3Set.cluster_bingham()` clusters axes into overlapping fracture sets by a Bingham mixture and returns `BinghamClusters` (`groups`, `idx`, `responsibilities`, `summary()`, optional `threshold` for unassigned data), with `table()`, `to_dataframe()`, `to_csv()` and `to_json()` exporting the parameters of every fracture set (mean orientation, weight, effective size, Bingham and Fisher concentrations, confidence cone and ellipse).
-- Circular distributions `WrappedCauchy`, `Cardioid` and `JonesPewsey`; the `MatrixFisher` distribution of rotations and `RotationSet` (`rotationset`) with the mean rotation.
-- Hypothesis tests returning a `TestResult` (statistic, p-value, `reject()`): Kuiper, Watson U², Hodges-Ajne and Rao spacing tests of uniformity on the circle (`uniformity_test(method=...)`), Arnold & Jupp test of uniformity of pairs (`PairSet.uniformity_test()`), goodness of fit of the Fisher distribution (`VonMisesFisher.goodness_of_fit()`), Fisher against Kent (`Kent.score_test()`), Watson against Bingham (`Watson.symmetry_test()`), likelihood ratio test of nested distributions, tests of a common mean direction or axis (`common_mean_test()`) and of a common concentration (`equal_kappa_test()`).
-- `kappa_confidence()` of fitted Fisher, von Mises and Watson distributions; fitting methods `"precision"` and `"corrected"` (Fisher) and `"corrected"` (von Mises); `VonMises.mean_confidence(method=...)` with the intervals of Fisher (1993).
-- `apsg.ams` reads and analyses anisotropy of magnetic susceptibility: `AMSSpecimen` and `AMSSite` with core orientation, bedding and geographic or tectonic coordinates, tables of Jelinek parameters, mean tensors with confidence regions, and CSV input and output. The data `ams_two_sites` and a new AMS tutorial show the workflow. The tutorials are renumbered: the various tutorial is now the last one.
-- Bootstrap of the mean tensor of AMS or other symmetric tensors (`EllipsoidSet.bootstrap_tensor()`, `AMSSite.bootstrap()`, `StereoNet.confidence(method="bootstrap_tensor")`), bootstrap of the measurement error of one specimen (`AMSSpecimen.bootstrap()`), and a test of equal mean tensors of two samples (`EllipsoidSet.common_mean_test()`, `AMSSite.compare()`), with Hotelling or permutation p-values.
-- AMS plots: `PjTPlot`, `LFPlot`, `PTPlot` (Jelinek and Flinn-type diagrams of one or more sites), `AMSStereoPlot` (principal axes with Jelinek or bootstrap regions, geographic and tectonic side by side) and `BootstrapPlot`, configured by `apsg_conf.ams`.
-- AMS file input: `read_sufar()` for SUFAR/Anisoft reports (`.asc`, with core orientation and standard errors), `read_anisoft_table()` for exported text tables (also those without tensor columns) and `read_ams()` choosing between them.
-- AMS flow models: `AMSModel` and `GrainPopulation` give the AMS of grains carried by a flow with the switch of the lineation, `jeffery_evolution()` integrates Jeffery orbits of triaxial ellipsoids, `orientation_tensor_from_ams()` inverts the AMS ellipsoid of a rock with one kind of uniaxial grains, and `ModelPlot` shows the evolution.
-- `apsg.ams` also has grain models of magnetic fabrics: `VelocityGradient3.pseudo()` and `grain_K()` for the turning of grains in a flow, `ACG.from_displacement()` for the March/Willis distribution of their axes (`ACG.ortensor()` is exact), and `ams_from_orientation()`, `ams_from_grains()`, `osborn_factors()` and `grain_anisotropy()` for the susceptibility tensor.
-- `Vector2Set.median()`, `moment()`, `skewness()`, `kurtosis()`, `circular_dispersion()` and `angular_deviation()`.
-- `mean_tensor()` returns confidence intervals of the eigenvalues, Jelínek's (1978) anisotropy test and the Jelínek (1981) shape parameters (`jelinek_shape()`).
-- Bootstrap confidence ellipse of Constable & Tauxe (1990), `bootstrap_statistics(method="ellipse")` and `StereoNet.confidence(method="bootstrap_ellipse")`.
+
+**Orientation distributions**
+- One interface for fitting, sampling, density and model selection: uniform, von Mises, wrapped normal, wrapped Cauchy, cardioid, Jones-Pewsey, Fisher, Kent, ESAG, Watson, Bingham, ACG, Lisle (pairs) and `MatrixFisher` (rotations, with `RotationSet`). Use `linset.fit("kent")` or the aliases `dist_fisher`, `dist_kent`, ...
+- Feature sets sample every distribution: `random(model=...)` and `random_<name>()` (e.g. `linset.random_watson()`), all with an `rng` keyword; `uniform_random()`, `uniform_sfs()` and `uniform_gss()` give uniform sets.
+- `StereoNet.density()` and `RosePlot.density()` draw a fitted distribution; `StereoNet.confidence()` gains the methods `"kent"`, `"esag"`, `"lisle"` and `"bootstrap_ellipse"` (Constable & Tauxe 1990) and plots any `ConfidenceRegion`, e.g. `Kent.mean_confidence()`.
+- `kappa_confidence()` and more fitting methods for concentrations (`"precision"`, `"corrected"`); `PairSet.lisle_statistics()` for the mean pair (Lisle 1989); `ACG.fit()` warns when the maximum-likelihood estimate does not exist.
+
+**Fracture sets and sampling bias**
+- `weights=` for `fit()` (Fisher, Watson, Bingham), `ortensor()` and the Fisher, Watson, Bingham and bootstrap statistics; `fit_info.n_eff` is the effective sample size.
+- `terzaghi_weights()` corrects the orientation bias of boreholes, scanlines and outcrops.
+- `BinghamMixture` and `Vector3Set.fit_mixture()` split axes into sets (number of components by BIC); `Vector3Set.cluster_bingham()` returns `BinghamClusters` with soft memberships, optional unassigned data, and `table()`, `to_dataframe()`, `to_csv()`, `to_json()` exporting the parameters of every set.
+
+**Hypothesis tests** (all return a `TestResult` with statistic, p-value and `reject()`)
+- Uniformity on the circle (Kuiper, Watson U², Hodges-Ajne, Rao) and of pairs (Arnold & Jupp), Fisher goodness of fit, Fisher against Kent, Watson against Bingham, likelihood ratio of nested distributions, common mean direction or axis, common concentration. `FisherQQPlot` shows Q-Q plots against the Fisher distribution.
 - Docstrings of the statistics cite the primary sources with equation numbers.
-- `Vector2Set.bootstrap_statistics()`, the bootstrap confidence interval of the mean direction, and the `method` keyword of `RosePlot.muci()` (`"fisher"` or `"bootstrap"`), like `StereoNet.confidence()`.
-- `weighted` keyword of `Vector2Set.fisher_statistics()` and `bootstrap_statistics()` (statistics of the magnitude-weighted mean direction).
-- `RosePlot` `bar()`, `pdf()` and `muci()` accept single `Vector2`/`Direction` features.
-- Feature sets generate samples of every distribution: `random(model=...)` and `random_<name>()` methods (e.g. `linset.random_watson()`, `folset.random_bingham()`, `pairset.random_lisle()`), all with an `rng` keyword.
-- `uniform_random()`, `uniform_sfs()` and `uniform_gss()` for uniformly distributed sets.
-- `apsg.paleomag` subpackage (not imported by `from apsg import *`; use `from apsg.paleomag import *`): `Specimen` holds the demagnetization steps (`DemagStep`) and orientation of one specimen, reads PMD (standard and Remasoft-exported dialects, detected from the file's direction columns; also PaleoMac headers with `α=`/`β=`), Remasoft RS3 (AGICO orientation parameters P1-P4, e.g. `12 0 6 0` and `12 0 12 90`) and SQUID files and writes PMD and RS3; per-specimen principal component analysis of lines and planes with MAD and DANG (`pca()`, `interpret()`, `Component`), median destructive field and vector difference sum. `Sample` collects specimens: Fisher mean or combined lines and great circles mean (McFadden & McElhinny 1988, `lines_planes_mean()`), bootstrap fold test (Tauxe & Watson 1994), reversal test and virtual geomagnetic pole (`vgp()`). Also `kirschvink_mean()` (Kirschvink 1980 methods 1 and 2) and `bailey_halls_mean()` (maximum likelihood mean with a confidence ellipse, Bailey & Halls 1984) for lines and great circles. `lines_planes_mean()` warns when given great circles only, since that estimate can be biased (Schmidt 1985). Plots `zijderveld_plot`, `demag_plot` and `stereo_plot`.
-- `mcfadden_fold_test()` and `Sample.mcfadden_fold_test()`, the correlation fold test of McFadden (1990) for complex folding (every site on its own limb), with the exact null distribution of Lord's integral, critical values of the paper's Table 2 and the percentage of untilting with the smallest correlation.
-- `Sample.reversal_test(method="bootstrap")`, the bootstrap reversal test that compares confidence intervals of the Cartesian components of the normal and reversed modes (Tauxe 2003, sect. 4.13-4.14); it can disagree with Watson's F test.
-- `inclination_only_mean()`, the mean inclination, precision and error angle of directions of unknown declination (McFadden & Reid 1982).
-- `ACG.fit()` warns when the maximum-likelihood estimate does not exist (n <= 6 axes, Tyler 1987).
+
+**Circular and tensor statistics**
+- `Vector2Set.median()`, `moment()`, `skewness()`, `kurtosis()`, `circular_dispersion()`, `angular_deviation()` and `bootstrap_statistics()`; `weighted=` for magnitude-weighted means; `RosePlot` accepts single `Vector2`/`Direction` features, `RosePlot.muci(method="bootstrap")` and `RosePlot(angles="math")`.
+- `mean_tensor()` gives confidence intervals of the eigenvalues, Jelínek's (1978) anisotropy test and shape parameters (`jelinek_shape()`).
+
+**Paleomagnetism (`apsg.paleomag`, import it explicitly)**
+- `Specimen` and `Sample` read and write demagnetization data and fit components by PCA of lines and planes (MAD, DANG). Samples give Fisher means or combined line and great-circle means (McFadden & McElhinny 1988, Kirschvink, Bailey & Halls), bootstrap and McFadden fold tests, reversal tests (Watson F or bootstrap) and virtual geomagnetic poles.
+- Formats: PMD (standard and Remasoft dialects, found automatically), Remasoft RS3, SQUID, AGICO JR6, Caltech CIT and 2G Enterprises (also continuous long cores, ARM and IRM steps). `Sample.from_file()`, `from_files()` and `from_directory(errors="warn")` read files with several specimens and whole folders; the format comes from the extension or the content.
+- AGICO orientation codes P1-P4 of 3, 6, 9 or 12 (P2 0 or 90) are understood in RS3, JR6 and SUFAR files.
+- Remasoft interpretations round-trip: `from_rs3(components=True)` imports the component and great-circle rows, `to_rs3()` writes them back, including the four fit options (free, `pca(origin=True)`, the new `pca(anchor="last")` and `pca(anchor=True)`).
+- **Automatic components:** `find_component()`, `find_components()` and `interpret_auto()` pick the best linear segments of a Zijderveld path, `window_fits()` fits every window of steps, `ComponentCriteria` with `Sample.grade()` filters by MAD, DANG and number of steps, and `Sample.stack()` and `Sample.interpret()` help with whole sites. The search was tuned on 800 Remasoft picks of 439 specimens and is a heuristic to check on the Zijderveld diagram (`ZijderveldPlot(components=True)`, `ComponentSearchPlot`).
+- Inclination-only means (McFadden & Reid, Arason & Levi), relative paleointensity (`Sample.rpi()`), `susceptibility_jump()`, `align_core_sections()` and `Sample.by_site()`.
+- Plots share one interface (`PaleomagPlot`, configured by `apsg_conf.paleomag`): `ZijderveldPlot`, `DemagPlot`, `SpecimenStereoPlot`, `SpecimenPlot`, `KappaTPlot`, `FoldTestPlot`, `TiltComparisonPlot`, `ReversalTestPlot`, `InclinationOnlyPlot`, `LinesPlanesPlot`.
+
+**Anisotropy of magnetic susceptibility (`apsg.ams`)**
+- `AMSSpecimen` and `AMSSite` with core orientation, bedding, geographic and tectonic coordinates, Jelinek parameters, mean tensors with confidence regions and CSV input and output.
+- Readers for AGICO instrument files: SUFAR, SAFYR and SUSAR reports (`read_asc()`, formerly `read_sufar()`), Kappabridge `.RAN` files (`read_ran()`), Anisoft `.AEX` and text tables (`read_aex()`, `read_anisoft_table()`); `read_ams()` picks the reader.
+- Bootstrap of mean tensors and of the measurement error of a specimen, and a test of equal mean tensors of two samples (Hotelling or permutation).
+- Plots `PjTPlot`, `LFPlot`, `PTPlot`, `AMSStereoPlot` and `BootstrapPlot` (`apsg_conf.ams`).
+- Flow models: `AMSModel`, `GrainPopulation`, `jeffery_evolution()`, `orientation_tensor_from_ams()`, `ModelPlot`, and the grain models behind them (`VelocityGradient3.pseudo()`, `ACG.from_displacement()`, `ams_from_orientation()`, `ams_from_grains()`).
+
+**Data and documentation**
+- `apsg.data` provides example datasets without paths: `data.load("faults")`, `data.path("structures")`, `data.catalog()`. It holds the tutorial data, short published sets with citations (Fisher 1953, Fisher, Lewis & Embleton, Tauxe, Fisher 1993) and seeded synthetic samples, plus AMS data (`melechov`, `trebic`, `ams_two_sites`, ...) and `rs3_components` (six specimens with Remasoft picks).
+- New tutorials on orientation distributions, paleomagnetism (artificial data) and AMS; the tutorials are renumbered, the various tutorial is now the last one.
 
 ### Changed
-- `Specimen.from_rs3()` checks the orientation against the geographic and tilt-corrected directions printed in the file, warns about a missing core orientation, missing orientation parameters (12 0 12 0 assumed) and unreadable rows, and raises `ValueError` for files without the RS3 column and units lines; RS3 files are also recognized by content.
-- `read_anisoft_table()` warns about rows it cannot read instead of dropping them silently.
-- `Specimen.from_pmd()` warns about lines that are not data rows, about files without `Dg Ig Ds Is` columns (the dialect is then a guess) and rejects a zero volume; labels `H010`, `100M`, `100MT` and `250C` are recognized as treatments.
-- The `Bingham` and `Lisle` normalizers and maximum-likelihood fits are 10 to 100 times faster (Gauss-Legendre quadrature, analytic gradients and Newton's method with backtracking instead of adaptive quadrature and Nelder-Mead; `Lisle.fit` of 300 pairs takes 5 ms instead of 0.7 s).
-- Documentation moved to MkDocs with the Material theme.
-- `from_csv()`/`to_csv()` honour the `delimiter` argument.
-- Invalid arguments raise `TypeError`/`ValueError` or warn with `UserWarning` instead of failing with `AssertionError` or printing.
-- Statistics of lineation and foliation sets no longer depend on the stored signs of the axes.
-- `StereoNet.confidence()` draws the Watson cone by default for lineations and foliations.
-- `random_kent()` is faster on concentrated data.
-- `RosePlot.muci()` draws the von Mises interval of `fisher_statistics()` by default (the bootstrap with `method="bootstrap"`, 1000 resamples by default), takes the confidence level as a fraction (`level=0.95`) and draws no interval when the data are too dispersed to give one. Its mean and interval are weighted by magnitude, like the bars; sets with fewer than two items, empty sets and calls without data warn instead of failing at render or drawing nothing.
-- Pairwise `angle()` of a set and clustering are vectorized: 2000 items take 0.1 s instead of about 50 s. Pairwise `cross()` is vectorized too.
-- `StereoNet`, `RosePlot` and the fabric plots size their figure to the content and use constrained layout: the figure keeps the plot at the size given by the new `figsize` keyword and grows by the legend and title.
-- The legend can be placed on any side of the plot with the new `legend_position` keyword (`"right"`, `"left"`, `"top"` or `"bottom"`); its number of columns is chosen so it is not longer than the plot, and is re-fitted when the window is resized.
-- The `StereoNet.contour()` colorbar is a small inset in the bottom right corner of the net and no longer changes the layout (new `colorbar_bounds` and `colorbar_fontsize` keywords).
-- **BREAKING:** The `tight_layout` keyword of `StereoNet`, `RosePlot` and the fabric plots is removed, and these plots no longer use `apsg_conf.figsize`.
-- **BREAKING:** `random_kent()` uses `beta = kappa / 4` by default.
-- **BREAKING:** `random()` of feature sets samples the uniform distribution models, so a given seed gives other samples than before; `PairSet.random()` and `FaultSet.random()` create 100 items by default.
-- **BREAKING:** `PairSet.from_csv()` no longer accepts `sense_str` and `scol`.
-- **BREAKING:** `SDBSession.getfaults()` is removed: the SDB format stores no sense of movement, so it only assigned one given sense to every pair. Use `getpairs()` and build the faults, e.g. `FaultSet([Fault(p, 1) for p in pairs])`.
-- **BREAKING:** `Cone.apical_angle` is a property, like `ConeSet.apical_angle` (use `c.apical_angle` instead of `c.apical_angle()`).
-- **BREAKING:** `fisher_statistics()["k"]` of 3D sets is Fisher's precision `(N - 1) / (N - R)`, the estimate alpha95 and palaeomagnetic practice use; the maximum-likelihood estimate it returned before is now `fisher_statistics()["kappa"]`. `csd()` uses the precision.
-- **BREAKING:** The paleomagnetic `Core` class is removed from `apsg.feature`, replaced by `Specimen` and `Sample` in `apsg.paleomag`. Its `pca()` normalized the centred vectors and so returned wrong directions and MAD; `from_pmd()` did not read the core orientation.
-- **BREAKING:** `uniformity_test()` returns a `TestResult`; its dict access with the old keys (`R`, `statistic`, `p_value`, `uniform`, `critical_value`) still works with a `FutureWarning`.
-- `SDBSession.getpairs()` raises `ValueError` when `ptype` is not a planar or `ltype` not a linear structure, instead of returning an empty set.
+- **Plots lay themselves out:** `StereoNet`, `RosePlot` and the fabric plots use constrained layout and size the figure to the content (new `figsize` keyword; the figure grows by legend and title). `legend_position` (`"right"`, `"left"`, `"top"`, `"bottom"`) puts the legend on any side, its columns follow the plot size, and the `contour()` colorbar is a small inset (`colorbar_bounds`, `colorbar_fontsize`).
+- **Much faster:** `Bingham` and `Lisle` fits are 10 to 100 times faster (`Lisle.fit` of 300 pairs: 5 ms instead of 0.7 s); pairwise `angle()`, `cross()` and clustering are vectorized (2000 items: 0.1 s instead of about 50 s); `random_kent()` is faster on concentrated data.
+- Invalid arguments raise `TypeError`/`ValueError` or warn instead of failing with `AssertionError` or printing; files with unreadable rows (PMD, RS3, Anisoft tables) warn instead of dropping them silently.
+- Statistics of lineation and foliation sets no longer depend on the stored signs of the axes, and `StereoNet.confidence()` draws the Watson cone for them by default.
+- `RosePlot.muci()` draws the von Mises interval of `fisher_statistics()` by default, takes the level as a fraction (`level=0.95`), weights mean and interval by magnitude like the bars, and warns instead of failing for too few data.
+- `from_csv()`/`to_csv()` honour `delimiter`; `SDBSession.getpairs()` raises `ValueError` for a wrong structure type; the documentation moved to MkDocs with the Material theme.
+- **BREAKING:** `tight_layout` is removed from `StereoNet`, `RosePlot` and the fabric plots, which no longer use `apsg_conf.figsize`.
+- **BREAKING:** `random()` of feature sets samples the uniform distribution models, so a seed gives other samples than before; `PairSet.random()` and `FaultSet.random()` create 100 items by default. `random_kent()` uses `beta = kappa / 4`.
+- **BREAKING:** `fisher_statistics()["k"]` of 3D sets is Fisher's precision `(N - 1) / (N - R)`; the maximum-likelihood estimate is now `["kappa"]`. `csd()` uses the precision.
+- **BREAKING:** `uniformity_test()` returns a `TestResult` (the old dict keys still work with a `FutureWarning`), and for lineations and foliations it is the Bingham test; the former test was not valid.
+- **BREAKING:** The paleomagnetic `Core` class is removed from `apsg.feature` in favour of `Specimen` and `Sample`; its `pca()` returned wrong directions and MAD. The functions `zijderveld_plot`, `demag_plot` and `stereo_plot` are replaced by the plot classes.
+- **BREAKING:** `SDBSession.getfaults()` is removed (the SDB format stores no sense of movement); use `getpairs()` and build the faults, e.g. `FaultSet([Fault(p, 1) for p in pairs])`.
+- **BREAKING:** `Cone.apical_angle` is a property, `PairSet.from_csv()` no longer accepts `sense_str` and `scol`.
 
 ### Deprecated
 - `fisher_statistics()`, `var()`, `delta()`, `rdegree()` and `csd()` of lineation and foliation sets; use `watson_statistics()`, `bingham_statistics()` or the distributions.
-- `random_normal()`; use `random_fisher()` or `random_kent()`.
-- `sfs()` and `gss()`; use `uniform_sfs()` and `uniform_gss()`.
-- The `position` keyword of `random_fisher()` and `random_vonmises()` and `p` of `random_kent()`; use `mean`.
-- The `confidence_level` keyword of `RosePlot.muci()` (a percentage); use `level` (a fraction).
+- `random_normal()` (use `random_fisher()` or `random_kent()`), `sfs()` and `gss()` (use `uniform_sfs()` and `uniform_gss()`), the `position` keyword of `random_fisher()`/`random_vonmises()` and `p` of `random_kent()` (use `mean`), and `confidence_level` of `RosePlot.muci()` (use `level`).
 
 ### Fixed
-- `read_aex()` dropped every row of exports whose first column is named `Spec Name` (specimen names, principal susceptibilities and directions); the names become the index.
-- `read_ran()` took the first value of a record as the mean susceptibility; in files of SUFAR 1.x it is the field (A/m), the susceptibility is the second value (`meta["field"]`).
-- `read_sufar()` skipped every page of SUSAR reports as incomplete (they have a norming factor instead of the field in the susceptibility row); SUFAR, SAFYR and SUSAR layouts are read.
-- `Specimen.pca()` returned MAD 0 or raised `ZeroDivisionError` for weak specimens (vectors below about 1e-4 A/m), because the eigenvalues of the tiny covariance were rounded to zero; the fit is now scale independent, and identical vectors raise `ValueError`.
-- The `Lisle` normalizer was inaccurate for strongly concentrated foliations with weakly concentrated lineations (`kappa1` near 0 with `kappa2` of 1000 or more, error up to 0.9 in the log normalizer), so fits and densities of such data change.
-- Pairs sampled from the Lisle distribution with `kappa2=0` were not perpendicular.
-- `RosePlot.pdf()` of `Vector2Set` is weighted by magnitude, as the bars and the pdf of `Direction2Set` were.
-- Sampling no longer hangs with an infinite concentration (`random_vonmises(kappa=inf)`, Watson and Bingham `rvs()`): distribution parameters must be finite numbers and mean/axis vectors finite and non-zero, else `ValueError`/`TypeError`.
-- `rvs(0)` returns an empty set instead of failing; the sample size must be a non-negative integer (`random_fisher(n=None)` no longer returns one item). `G()` takes a `feature` argument to create an empty set.
-- **BREAKING:** Features validate their input instead of storing it: components and angles must be finite real numbers (`TypeError` for strings, `None`, booleans or complex numbers, `ValueError` for NaN or infinity, also when produced by arithmetic such as `lin / 0`), plunge must be in [-90, 90], dip in [0, 180] and a cone apical angle in [0, 180]. Azimuths stay periodic.
-- **BREAKING:** Lineations, foliations and directions can't be zero vectors, and `angle()` with or `rotate()` about a zero vector raise `ValueError` (they returned 90 degrees and did nothing). `Vector2`/`Vector3` can still be zero.
-- `Pair`/`Fault` of zero or parallel vectors raise `ValueError`; a numeric `Fault` sense is taken by its sign as documented (`sense=7` gave a reverse fault).
-- `from_array()` and item-by-item `angle()`/`cross()` of sets of different lengths raise `ValueError` instead of dropping the extra items.
-- `feature_from_json()` raises `TypeError`/`ValueError` for malformed input (it returned `L:0/0` for bad arguments) and only resolves public apsg classes.
-- Tensor entries must be finite real numbers.
-- **BREAKING:** `Rotation2`/`Rotation3` of an improper matrix (determinant -1, a reflection) raise `ValueError`; it was kept with determinant -1, although the docs promised a correction. A non-orthogonal matrix raises `ValueError` instead of `TypeError`, and the product of a rotation with a reflection is a deformation gradient.
-- Statistics of an empty set (`R()`, `var()`, `delta()`, `rdegree()`, `csd()`, `uniformity_test()`, `ortensor()`) raise `ValueError` instead of `ZeroDivisionError`/`AttributeError`/`LinAlgError`; `mean_tensor()` needs at least 3 tensors. The pairwise `cross()` of a single item returns an empty set, `gss(n)`/`sfs(n)` need `n >= 1`, and empty sets plot as nothing (`great_circle()` of an empty set failed). The density (`contour()`) of no data raises `ValueError` instead of producing NaN values.
-- **BREAKING:** Configuration values are validated whenever they are set (directly, by `update()` or `apsg_conf_context()`), and unknown keys can't be set: `apsg_conf.notation = "xx"` raises `ValueError` instead of breaking every later `fol()`. `apsg_conf_context()` restores all values when one of them is invalid.
-- Plot parameters are validated when given, with `ValueError` instead of failing at render: `grid_step`, `clip_pole`, `figsize`, `kind`, `hemisphere`, `legend_position` of the plots, `bins`, `pdf_res`, `kappa` of `RosePlot`, `n` and `type` of `StereoGrid`, `levels`, `sigma`, `method` of `contour()`/`density()` (`levels=0` and `sigma=0` divided by zero, `sigma=-1` was accepted), and arc `kind`/`region`. A failed `show()`/`savefig()` closes its figure.
-- `from_csv()` raises `ValueError` naming the file and line for malformed files (empty file, undetectable delimiter, missing columns, values that are not finite numbers) instead of `csv.Error`/`IndexError`; a file with only a header gives an empty set. The delimiter is detected among `, ; tab space |` only.
-- Printing never fails: the axial ratio of a degenerate 2D tensor is `inf` (printing the orientation tensor of a single direction raised `ZeroDivisionError`), and huge matrix entries no longer print as `inf`.
-- Kamb density contouring of large data sets: the kernel is summed over chunks of the data, so 1,000,000 points need about 0.6 GB instead of 22 GiB.
-- **BREAKING:** Fitting a distribution, and `fisher_statistics()`/`watson_statistics()`/`bingham_statistics()`, raise `ValueError` for degenerate data (fewer than 2 items, all identical, or all on one great circle) instead of returning an infinite concentration.
-- **BREAKING:** Bingham confidence ellipse was too large and could be wrongly oriented.
-- **BREAKING:** `FaultSet.stress_inversion()` returned wrong stress tensors.
-- **BREAKING:** Circular statistics of `Vector2Set` and `Direction2Set` (confidence interval, axial directions).
-- **BREAKING:** `uniformity_test()` of lineation and foliation sets is the Bingham test; the former test of the cosines to the principal axis of the same data was not valid.
-- **BREAKING:** The confidence cone of `watson_statistics()` (and of the fitted `Watson` distribution) is the cone of Fisher, Lewis & Embleton (1987, eq. 6.11-6.13), with the nominal coverage; the former formula had no source.
-- **BREAKING:** `OrientationTensor3.strength` is Woodcock's `ln(S1/S3)` of the eigenvalues; it was half of it, computed from their square roots.
-- **BREAKING:** `watson_statistics()` now recognizes girdle distributions.
-- `RosePlot.muci()` confidence level for axial data.
-- Saving rose diagrams and fabric plots.
-- `RosePlot.bar()`/`pdf()` ignored `color`.
-- Mean direction of identical vectors.
-- Comparison of pairs and faults with reversed normals.
-- Tensors with a zero eigenvalue failed on shape parameters.
-- `from apsg.helpers import *`.
-- Several smaller bugs in `G()`, `Fault()`, `FaultSet.from_csv()` and `SDBSession`.
+- **BREAKING:** wrong results corrected: the Bingham confidence ellipse (too large, wrongly oriented), `FaultSet.stress_inversion()`, circular statistics of `Vector2Set` and `Direction2Set`, the confidence cone of `watson_statistics()` (now Fisher, Lewis & Embleton 1987, with nominal coverage), `OrientationTensor3.strength` (Woodcock's `ln(S1/S3)`; was half of it), and `watson_statistics()` now recognizes girdles. The `Lisle` normalizer was inaccurate for `kappa1` near 0 with `kappa2` of 1000 or more, so such fits change; Lisle pairs with `kappa2=0` were not perpendicular.
+- **BREAKING:** input is validated instead of stored: features need finite real components and angles (plunge in [-90, 90], dip in [0, 180], cone angle in [0, 180]), lineations, foliations and directions cannot be zero vectors, pairs and faults need non-parallel vectors, and an improper `Rotation2`/`Rotation3` (a reflection) raises `ValueError`.
+- **BREAKING:** configuration values are validated when set (also by `update()` and `apsg_conf_context()`), unknown keys can't be set, and plot parameters fail at the call with `ValueError` instead of at render. Fitting a distribution or `fisher`/`watson`/`bingham` statistics of degenerate data (fewer than 2 items, identical, or on one great circle) raises `ValueError` instead of returning an infinite concentration.
+- Sampling no longer hangs with an infinite concentration; `rvs(0)` returns an empty set. Statistics, plots and densities of empty sets raise a clear `ValueError` or draw nothing instead of failing obscurely. `from_csv()` and `feature_from_json()` report malformed input with `ValueError`/`TypeError` (naming file and line for CSV), and `from_array()` and pairwise operations of sets of different lengths raise instead of dropping items.
+- Printing never fails (degenerate 2D tensors, huge matrix entries); Kamb contouring of 1,000,000 points needs about 0.6 GB instead of 22 GiB.
+- `RosePlot`: `pdf()` of `Vector2Set` is weighted like the bars, `bar()`/`pdf()` honour `color`, and the `muci()` level for axial data and saving diagrams work.
+- Mean direction of identical vectors, comparison of pairs and faults with reversed normals, shape parameters of tensors with a zero eigenvalue, `from apsg.helpers import *`, and several smaller bugs in `G()`, `Fault()`, `FaultSet.from_csv()` and `SDBSession`.
 
 ## [2.0.6] - 2026-10-16
 
